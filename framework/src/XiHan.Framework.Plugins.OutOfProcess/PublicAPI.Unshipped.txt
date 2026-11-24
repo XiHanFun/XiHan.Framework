@@ -15,7 +15,7 @@ XiHan.Framework.Plugins.OutOfProcess.OutOfProcessPluginOptions.Directories.init 
 XiHan.Framework.Plugins.OutOfProcess.OutOfProcessPluginOptions.Equals(XiHan.Framework.Plugins.OutOfProcess.OutOfProcessPluginOptions? other) -> bool
 XiHan.Framework.Plugins.OutOfProcess.OutOfProcessPluginOptions.Grants.get -> System.Collections.Generic.IReadOnlyDictionary<string!, System.Collections.Generic.IReadOnlyList<string!>!>!
 XiHan.Framework.Plugins.OutOfProcess.OutOfProcessPluginOptions.Grants.init -> void
-XiHan.Framework.Plugins.OutOfProcess.OutOfProcessPluginOptions.GrantsFor(string! manifestId) -> XiHan.Framework.Kernel.Plugins.PermissionGrant!
+XiHan.Framework.Plugins.OutOfProcess.OutOfProcessPluginOptions.GrantsFor(string! manifestId) -> XiHan.Framework.Kernel.Plugins.PluginPermissions!
 XiHan.Framework.Plugins.OutOfProcess.OutOfProcessPluginOptions.HandshakeTimeout.get -> System.TimeSpan
 XiHan.Framework.Plugins.OutOfProcess.OutOfProcessPluginOptions.HandshakeTimeout.init -> void
 XiHan.Framework.Plugins.OutOfProcess.OutOfProcessPluginOptions.HealthFailures.get -> int

@@ -102,7 +102,7 @@ internal sealed partial class PluginRuntime : IPluginRuntime, IPluginCarrier, ID
     /// <summary>
     /// 创建运行时
     /// </summary>
-    public PluginRuntime(Manifest manifest, string directory, string executable, PermissionGrant permissions, PluginHostContext host, ILogger logger)
+    public PluginRuntime(Manifest manifest, string directory, string executable, PluginPermissions permissions, PluginHostContext host, ILogger logger)
     {
         Manifest = manifest;
         Directory = directory;
@@ -132,7 +132,7 @@ internal sealed partial class PluginRuntime : IPluginRuntime, IPluginCarrier, ID
     /// <summary>
     /// 授予的权限
     /// </summary>
-    public PermissionGrant Permissions { get; }
+    public PluginPermissions Permissions { get; }
 
     /// <summary>
     /// 日志

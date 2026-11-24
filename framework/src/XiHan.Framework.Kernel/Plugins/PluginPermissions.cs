@@ -13,7 +13,7 @@ namespace XiHan.Framework.Kernel.Plugins;
 /// 插件清单声明所需权限，宿主配置决定授予哪些，运行期由宿主强制
 /// </remarks>
 [ApiLevel(Stability.Stable, "5.0")]
-public sealed class PermissionGrant
+public sealed class PluginPermissions
 {
     /// <summary>
     /// 已授予的权限，序号比较
@@ -23,7 +23,7 @@ public sealed class PermissionGrant
     /// <summary>
     /// 创建授权集合
     /// </summary>
-    public PermissionGrant(IEnumerable<string> granted)
+    public PluginPermissions(IEnumerable<string> granted)
     {
         ArgumentNullException.ThrowIfNull(granted);
         _granted = new HashSet<string>(granted, StringComparer.Ordinal);
@@ -48,7 +48,7 @@ public sealed class PermissionGrant
     /// <summary>
     /// 空授权
     /// </summary>
-    public static PermissionGrant Empty { get; } = new([]);
+    public static PluginPermissions Empty { get; } = new([]);
 
     /// <summary>
     /// 已授予的权限

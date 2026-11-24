@@ -26,7 +26,7 @@ dotnet add package XiHan.Framework.Plugins.InProcess --prerelease
 builder.Services.AddMessageCatalog(MessageCatalog.FromEmbeddedResources("plugins", typeof(PluginMessages)));
 
 await using var host = new InProcessPluginHost(configuration, loggerFactory);
-var loaded = await host.LoadAsync(new PluginSource("plugins/report", PermissionGrant.Empty), ct);
+var loaded = await host.LoadAsync(new PluginSource("plugins/report", PluginPermissions.Empty), ct);
 var unloaded = await host.UnloadAsync("xihan.reports.plugin", ct);
 ```
 
@@ -36,7 +36,7 @@ var unloaded = await host.UnloadAsync("xihan.reports.plugin", ct);
 
 * `InProcessPluginHost`：`LoadAsync`、`UnloadAsync`、`Plugins`
 * `PluginErrors`、`PluginMessages`：错误码与消息键
-* `IPlugin`、`PluginContext`、`PluginSource`、`PermissionGrant`：来自 `Kernel`，插件契约与授予的权限
+* `IPlugin`、`PluginContext`、`PluginSource`、`PluginPermissions`：来自 `Kernel`，插件契约与授予的权限
 
 ## 更多文档
 

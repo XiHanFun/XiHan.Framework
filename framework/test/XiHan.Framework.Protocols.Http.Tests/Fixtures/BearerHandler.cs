@@ -13,7 +13,7 @@ namespace XiHan.Framework.Protocols.Http.Tests.Fixtures;
 /// <remarks>
 /// 只用来让 OpenAPI 文档发布 Bearer 方案，不认证任何凭据
 /// </remarks>
-internal sealed class BearerHandler : IAuthenticationHandler
+internal sealed class BearerHandler : ICredentialHandler
 {
     /// <inheritdoc />
     public string Scheme => "Bearer";

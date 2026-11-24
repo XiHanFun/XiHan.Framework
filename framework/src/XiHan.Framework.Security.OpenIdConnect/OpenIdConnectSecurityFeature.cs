@@ -59,7 +59,7 @@ public sealed class OpenIdConnectSecurityFeature : IFeature
             OpenIdConnectMetadataCache.CreateHttpClient(options),
             provider.GetRequiredService<TimeProvider>(),
             provider.GetRequiredService<ILoggerFactory>()));
-        context.Services.AddSingleton<IAuthenticationHandler, OpenIdConnectAuthenticationHandler>();
+        context.Services.AddSingleton<ICredentialHandler, OpenIdConnectCredentialHandler>();
         context.AddMiddleware<AuthenticationMiddleware>(PipelineStage.Authenticate);
     }
 }

@@ -60,7 +60,7 @@ public sealed class OpenApiExtensionsTests
         builder.WebHost.UseTestServer();
         if (bearer)
         {
-            builder.Services.AddSingleton<IAuthenticationHandler, BearerHandler>();
+            builder.Services.AddSingleton<ICredentialHandler, BearerHandler>();
         }
 
         builder.Services.AddMessageCatalog(_descriptions);

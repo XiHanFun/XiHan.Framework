@@ -37,7 +37,7 @@ builder.AddXiHan(x => x.UseFeature<InMemorySecurityFeature>().UseFeature<JwtSecu
 
 * `JwtSecurityFeature`：启用 JWT 认证的特性
 * `JwtOptions`：配置项，对应 `XiHan:Security:Jwt`
-* `JwtAuthenticationHandler`：`Bearer` 方案的认证处理器
+* `JwtCredentialHandler`：`Bearer` 方案的认证处理器
 
 ## 更多文档
 

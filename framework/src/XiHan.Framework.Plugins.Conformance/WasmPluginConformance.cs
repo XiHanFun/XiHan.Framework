@@ -299,7 +299,7 @@ public abstract class WasmPluginConformance
     private static WasmInstance Instantiate(Engine engine, WasmModule module, Manifest manifest, string workDirectory)
     {
         var context = new WasmHostContext(engine, new WasmPluginOptions(), new ConfigurationBuilder().Build(), TimeProvider.System, 1, "en-US", "conformance", workDirectory);
-        var functions = new WasmHostFunctions(manifest, new PermissionGrant(manifest.Permissions), context, static () => NullLogger.Instance);
+        var functions = new WasmHostFunctions(manifest, new PluginPermissions(manifest.Permissions), context, static () => NullLogger.Instance);
         // 与宿主一致：stdout / stderr 不落盘，表元素与睡眠都有上限（ADR-0186）
         return new WasmInstance(engine, module, functions, new WasiConfiguration(), 64L * 1024 * 1024, context.Options.MaxTableElements, new WasiClockShims(functions, context), TimeSpan.FromMilliseconds(10), TimeSpan.FromSeconds(30));
     }

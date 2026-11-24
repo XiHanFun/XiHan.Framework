@@ -93,7 +93,7 @@ public sealed class EndpointRequirementStackingTests
         using var client = app.GetTestClient();
 
         using var request = new HttpRequestMessage(HttpMethod.Get, "/api/ping");
-        request.Headers.Authorization = new AuthenticationHeaderValue(ApiKeyAuthenticationHandler.SchemeName, WriterKey);
+        request.Headers.Authorization = new AuthenticationHeaderValue(ApiKeyCredentialHandler.SchemeName, WriterKey);
         using var response = await client.SendAsync(request);
         Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
         Assert.Equal("SECURITY_DENIED_004", await CodeOf(response));
@@ -111,7 +111,7 @@ public sealed class EndpointRequirementStackingTests
         };
         if (apiKey is not null)
         {
-            request.Headers.Authorization = new AuthenticationHeaderValue(ApiKeyAuthenticationHandler.SchemeName, apiKey);
+            request.Headers.Authorization = new AuthenticationHeaderValue(ApiKeyCredentialHandler.SchemeName, apiKey);
         }
 
         return await client.SendAsync(request);

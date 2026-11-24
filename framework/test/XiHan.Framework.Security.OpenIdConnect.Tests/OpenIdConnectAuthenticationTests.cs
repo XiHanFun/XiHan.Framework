@@ -31,17 +31,17 @@ public sealed class OpenIdConnectAuthenticationTests
     /// <remarks>
     /// 时钟可控，缓存实例一并返回供断言
     /// </remarks>
-    private static (OpenIdConnectAuthenticationHandler Handler, OpenIdConnectMetadataCache Cache, FakeTimeProvider Clock) Create(FakeIssuer issuer, OpenIdConnectOptions? options = null)
+    private static (OpenIdConnectCredentialHandler Handler, OpenIdConnectMetadataCache Cache, FakeTimeProvider Clock) Create(FakeIssuer issuer, OpenIdConnectOptions? options = null)
     {
         var clock = new FakeTimeProvider(DateTimeOffset.UtcNow);
         var cache = new OpenIdConnectMetadataCache(options ?? _options, new HttpClient(issuer), clock, NullLoggerFactory.Instance);
-        return (new OpenIdConnectAuthenticationHandler(options ?? _options, cache), cache, clock);
+        return (new OpenIdConnectCredentialHandler(options ?? _options, cache), cache, clock);
     }
 
     /// <summary>
     /// 认证 Bearer 令牌
     /// </summary>
-    private static async Task<Result<Principal>> AuthenticateAsync(OpenIdConnectAuthenticationHandler handler, string token)
+    private static async Task<Result<Principal>> AuthenticateAsync(OpenIdConnectCredentialHandler handler, string token)
         => await handler.AuthenticateAsync(new AuthenticationCredential("Bearer", token), TestInvocationContext.Create());
 
     [Fact]
@@ -248,7 +248,7 @@ public sealed class OpenIdConnectAuthenticationTests
         // 代码里构造的选项也拦：处理器建不出来
         var coded = new OpenIdConnectOptions { Authority = FakeIssuer.Authority };
         using var issuer = new FakeIssuer();
-        Assert.Throws<ArgumentException>(() => new OpenIdConnectAuthenticationHandler(coded, new OpenIdConnectMetadataCache(coded, new HttpClient(issuer), TimeProvider.System, NullLoggerFactory.Instance)));
+        Assert.Throws<ArgumentException>(() => new OpenIdConnectCredentialHandler(coded, new OpenIdConnectMetadataCache(coded, new HttpClient(issuer), TimeProvider.System, NullLoggerFactory.Instance)));
 
         // 显式关掉：发给任何受众的令牌都接受
         var optedOut = new ConfigurationBuilder().AddInMemoryCollection([new(Prefix + "Authority", FakeIssuer.Authority), new(Prefix + "ValidateAudience", "false")]).Build();
@@ -315,7 +315,7 @@ public sealed class OpenIdConnectAuthenticationTests
             // 预先注册的缓存替代特性的默认 HTTP 客户端；元数据来自桩签发者
             services => services.AddSingleton(new OpenIdConnectMetadataCache(_options, new HttpClient(issuer), TimeProvider.System, NullLoggerFactory.Instance)));
 
-        Assert.IsType<OpenIdConnectAuthenticationHandler>(Assert.Single(host.Services.GetServices<IAuthenticationHandler>()));
+        Assert.IsType<OpenIdConnectCredentialHandler>(Assert.Single(host.Services.GetServices<ICredentialHandler>()));
         Assert.Equal(1, host.App.DescribePipeline().Split(nameof(AuthenticationMiddleware)).Length - 1);
         Assert.Contains(nameof(AuthorizationMiddleware), host.App.DescribePipeline(), StringComparison.Ordinal);
         Assert.Equal(["security.authentication"], host.App.Graph["xihan.security.openidconnect"].SelectedCapabilities);

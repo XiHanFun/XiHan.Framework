@@ -1,8 +1,8 @@
 #nullable enable
-XiHan.Framework.Security.OpenIdConnect.OpenIdConnectAuthenticationHandler
-XiHan.Framework.Security.OpenIdConnect.OpenIdConnectAuthenticationHandler.AuthenticateAsync(XiHan.Framework.Security.Abstractions.Authentication.AuthenticationCredential! credential, XiHan.Framework.Primitives.InvocationContext! context) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<XiHan.Framework.Kernel.Security.Principal!>>
-XiHan.Framework.Security.OpenIdConnect.OpenIdConnectAuthenticationHandler.OpenIdConnectAuthenticationHandler(XiHan.Framework.Security.OpenIdConnect.OpenIdConnectOptions! options, XiHan.Framework.Security.OpenIdConnect.OpenIdConnectMetadataCache! metadata) -> void
-XiHan.Framework.Security.OpenIdConnect.OpenIdConnectAuthenticationHandler.Scheme.get -> string!
+XiHan.Framework.Security.OpenIdConnect.OpenIdConnectCredentialHandler
+XiHan.Framework.Security.OpenIdConnect.OpenIdConnectCredentialHandler.AuthenticateAsync(XiHan.Framework.Security.Abstractions.Authentication.AuthenticationCredential! credential, XiHan.Framework.Primitives.InvocationContext! context) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<XiHan.Framework.Kernel.Security.Principal!>>
+XiHan.Framework.Security.OpenIdConnect.OpenIdConnectCredentialHandler.OpenIdConnectCredentialHandler(XiHan.Framework.Security.OpenIdConnect.OpenIdConnectOptions! options, XiHan.Framework.Security.OpenIdConnect.OpenIdConnectMetadataCache! metadata) -> void
+XiHan.Framework.Security.OpenIdConnect.OpenIdConnectCredentialHandler.Scheme.get -> string!
 XiHan.Framework.Security.OpenIdConnect.OpenIdConnectMetadata
 XiHan.Framework.Security.OpenIdConnect.OpenIdConnectMetadata.<Clone>$() -> XiHan.Framework.Security.OpenIdConnect.OpenIdConnectMetadata!
 XiHan.Framework.Security.OpenIdConnect.OpenIdConnectMetadata.Deconstruct(out string! Issuer, out System.Uri! JwksUri, out System.Collections.Generic.IReadOnlyList<Microsoft.IdentityModel.Tokens.SecurityKey!>! SigningKeys, out System.DateTimeOffset RetrievedAt) -> void
@@ -54,7 +54,7 @@ XiHan.Framework.Security.OpenIdConnect.OpenIdConnectSecurityFeature
 XiHan.Framework.Security.OpenIdConnect.OpenIdConnectSecurityFeature.Configure(XiHan.Framework.Kernel.Hosting.FeatureContext! context) -> void
 XiHan.Framework.Security.OpenIdConnect.OpenIdConnectSecurityFeature.Manifest.get -> XiHan.Framework.Primitives.Manifests.Manifest!
 XiHan.Framework.Security.OpenIdConnect.OpenIdConnectSecurityFeature.OpenIdConnectSecurityFeature() -> void
-const XiHan.Framework.Security.OpenIdConnect.OpenIdConnectAuthenticationHandler.SchemeName = "Bearer" -> string!
+const XiHan.Framework.Security.OpenIdConnect.OpenIdConnectCredentialHandler.SchemeName = "Bearer" -> string!
 const XiHan.Framework.Security.OpenIdConnect.OpenIdConnectOptions.ConfigurationSection = "XiHan:Security:OpenIdConnect" -> string!
 const XiHan.Framework.Security.OpenIdConnect.OpenIdConnectOptions.DiscoveryPath = ".well-known/openid-configuration" -> string!
 override XiHan.Framework.Security.OpenIdConnect.OpenIdConnectMetadata.Equals(object? obj) -> bool

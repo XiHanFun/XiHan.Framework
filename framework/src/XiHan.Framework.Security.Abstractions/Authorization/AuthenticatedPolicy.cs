@@ -21,11 +21,11 @@ public sealed class AuthenticatedPolicy : IPolicy
     public string Name => PolicyName;
 
     /// <inheritdoc />
-    public ValueTask<Result<AuthorizationResult>> EvaluateAsync(AuthorizationRequest request, CancellationToken cancellationToken)
+    public ValueTask<Result<AuthorizationDecision>> EvaluateAsync(AuthorizationRequest request, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
         return ValueTask.FromResult(Result.Success(request.Security.Principal.IsAuthenticated
-            ? AuthorizationResult.Allow()
-            : AuthorizationResult.Deny(Error.Denied(SecurityErrors.NotAuthenticated, SecurityMessages.AuthenticationRequired))));
+            ? AuthorizationDecision.Allow()
+            : AuthorizationDecision.Deny(Error.Denied(SecurityErrors.NotAuthenticated, SecurityMessages.AuthenticationRequired))));
     }
 }

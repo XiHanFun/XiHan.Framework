@@ -76,7 +76,7 @@ public sealed class InMemorySecurityFeature : IFeature
         if (context.Node.IsSelectedFor(SecurityCapabilities.Authentication))
         {
             context.Services.AddSingleton<InMemoryPrincipalStore>();
-            context.Services.AddSingleton<IAuthenticationHandler, ApiKeyAuthenticationHandler>();
+            context.Services.AddSingleton<ICredentialHandler, ApiKeyCredentialHandler>();
             context.AddMiddleware<AuthenticationMiddleware>(PipelineStage.Authenticate);
         }
 

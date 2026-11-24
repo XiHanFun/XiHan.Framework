@@ -399,25 +399,25 @@ XiHan.Framework.Kernel.Plugins.IPluginHost
 XiHan.Framework.Kernel.Plugins.IPluginHost.LoadAsync(XiHan.Framework.Kernel.Plugins.PluginSource! source, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<XiHan.Framework.Primitives.Result<XiHan.Framework.Kernel.Plugins.PluginStatus!>>!
 XiHan.Framework.Kernel.Plugins.IPluginHost.Plugins.get -> System.Collections.Generic.IReadOnlyList<XiHan.Framework.Kernel.Plugins.PluginStatus!>!
 XiHan.Framework.Kernel.Plugins.IPluginHost.UnloadAsync(string! manifestId, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<XiHan.Framework.Primitives.Result>!
-XiHan.Framework.Kernel.Plugins.PermissionGrant
-XiHan.Framework.Kernel.Plugins.PermissionGrant.Granted.get -> System.Collections.Generic.IReadOnlySet<string!>!
-XiHan.Framework.Kernel.Plugins.PermissionGrant.IsGranted(string! permission) -> bool
-XiHan.Framework.Kernel.Plugins.PermissionGrant.Missing(XiHan.Framework.Primitives.Manifests.Manifest! manifest) -> System.Collections.Generic.IReadOnlyList<string!>!
-XiHan.Framework.Kernel.Plugins.PermissionGrant.MissingConfigurationGrants(XiHan.Framework.Primitives.Manifests.Manifest! manifest) -> System.Collections.Generic.IReadOnlyList<string!>!
-XiHan.Framework.Kernel.Plugins.PermissionGrant.PermissionGrant(System.Collections.Generic.IEnumerable<string!>! granted) -> void
 XiHan.Framework.Kernel.Plugins.PluginContext
 XiHan.Framework.Kernel.Plugins.PluginContext.Configuration.get -> Microsoft.Extensions.Configuration.IConfiguration!
 XiHan.Framework.Kernel.Plugins.PluginContext.Manifest.get -> XiHan.Framework.Primitives.Manifests.Manifest!
-XiHan.Framework.Kernel.Plugins.PluginContext.Permissions.get -> XiHan.Framework.Kernel.Plugins.PermissionGrant!
+XiHan.Framework.Kernel.Plugins.PluginContext.Permissions.get -> XiHan.Framework.Kernel.Plugins.PluginPermissions!
 XiHan.Framework.Kernel.Plugins.PluginContext.Pipeline.get -> XiHan.Framework.Kernel.Pipeline.PipelineBuilder?
-XiHan.Framework.Kernel.Plugins.PluginContext.PluginContext(XiHan.Framework.Primitives.Manifests.Manifest! manifest, Microsoft.Extensions.DependencyInjection.IServiceCollection! services, Microsoft.Extensions.Configuration.IConfiguration! configuration, XiHan.Framework.Kernel.Plugins.PermissionGrant! permissions, XiHan.Framework.Kernel.Pipeline.PipelineBuilder? pipeline) -> void
+XiHan.Framework.Kernel.Plugins.PluginContext.PluginContext(XiHan.Framework.Primitives.Manifests.Manifest! manifest, Microsoft.Extensions.DependencyInjection.IServiceCollection! services, Microsoft.Extensions.Configuration.IConfiguration! configuration, XiHan.Framework.Kernel.Plugins.PluginPermissions! permissions, XiHan.Framework.Kernel.Pipeline.PipelineBuilder? pipeline) -> void
 XiHan.Framework.Kernel.Plugins.PluginContext.Services.get -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+XiHan.Framework.Kernel.Plugins.PluginPermissions
+XiHan.Framework.Kernel.Plugins.PluginPermissions.Granted.get -> System.Collections.Generic.IReadOnlySet<string!>!
+XiHan.Framework.Kernel.Plugins.PluginPermissions.IsGranted(string! permission) -> bool
+XiHan.Framework.Kernel.Plugins.PluginPermissions.Missing(XiHan.Framework.Primitives.Manifests.Manifest! manifest) -> System.Collections.Generic.IReadOnlyList<string!>!
+XiHan.Framework.Kernel.Plugins.PluginPermissions.MissingConfigurationGrants(XiHan.Framework.Primitives.Manifests.Manifest! manifest) -> System.Collections.Generic.IReadOnlyList<string!>!
+XiHan.Framework.Kernel.Plugins.PluginPermissions.PluginPermissions(System.Collections.Generic.IEnumerable<string!>! granted) -> void
 XiHan.Framework.Kernel.Plugins.PluginSource
 XiHan.Framework.Kernel.Plugins.PluginSource.<Clone>$() -> XiHan.Framework.Kernel.Plugins.PluginSource!
 XiHan.Framework.Kernel.Plugins.PluginSource.Directory.get -> string!
 XiHan.Framework.Kernel.Plugins.PluginSource.Equals(XiHan.Framework.Kernel.Plugins.PluginSource? other) -> bool
-XiHan.Framework.Kernel.Plugins.PluginSource.Permissions.get -> XiHan.Framework.Kernel.Plugins.PermissionGrant!
-XiHan.Framework.Kernel.Plugins.PluginSource.PluginSource(string! directory, XiHan.Framework.Kernel.Plugins.PermissionGrant! permissions) -> void
+XiHan.Framework.Kernel.Plugins.PluginSource.Permissions.get -> XiHan.Framework.Kernel.Plugins.PluginPermissions!
+XiHan.Framework.Kernel.Plugins.PluginSource.PluginSource(string! directory, XiHan.Framework.Kernel.Plugins.PluginPermissions! permissions) -> void
 XiHan.Framework.Kernel.Plugins.PluginStatus
 XiHan.Framework.Kernel.Plugins.PluginStatus.<Clone>$() -> XiHan.Framework.Kernel.Plugins.PluginStatus!
 XiHan.Framework.Kernel.Plugins.PluginStatus.Deconstruct(out XiHan.Framework.Primitives.Manifests.Manifest! Manifest, out XiHan.Framework.Primitives.LifecycleState State, out XiHan.Framework.Primitives.Error? Error) -> void
@@ -461,6 +461,12 @@ XiHan.Framework.Kernel.Resilience.ResiliencePolicy.QueueLimit.init -> void
 XiHan.Framework.Kernel.Resilience.ResiliencePolicy.ResiliencePolicy() -> void
 XiHan.Framework.Kernel.Resilience.ResiliencePolicy.Window.get -> System.TimeSpan
 XiHan.Framework.Kernel.Resilience.ResiliencePolicy.Window.init -> void
+XiHan.Framework.Kernel.Security.AuthorizationDecision
+XiHan.Framework.Kernel.Security.AuthorizationDecision.AuthorizationDecision() -> void
+XiHan.Framework.Kernel.Security.AuthorizationDecision.Equals(XiHan.Framework.Kernel.Security.AuthorizationDecision other) -> bool
+XiHan.Framework.Kernel.Security.AuthorizationDecision.IsAllowed.get -> bool
+XiHan.Framework.Kernel.Security.AuthorizationDecision.Reason.get -> XiHan.Framework.Primitives.Error?
+XiHan.Framework.Kernel.Security.AuthorizationDecision.ToResult() -> XiHan.Framework.Primitives.Result
 XiHan.Framework.Kernel.Security.AuthorizationRequest
 XiHan.Framework.Kernel.Security.AuthorizationRequest.<Clone>$() -> XiHan.Framework.Kernel.Security.AuthorizationRequest!
 XiHan.Framework.Kernel.Security.AuthorizationRequest.Action.get -> string!
@@ -469,14 +475,8 @@ XiHan.Framework.Kernel.Security.AuthorizationRequest.Equals(XiHan.Framework.Kern
 XiHan.Framework.Kernel.Security.AuthorizationRequest.Resource.get -> XiHan.Framework.Kernel.Security.ResourceName?
 XiHan.Framework.Kernel.Security.AuthorizationRequest.Resource.init -> void
 XiHan.Framework.Kernel.Security.AuthorizationRequest.Security.get -> XiHan.Framework.Kernel.Security.SecurityContext!
-XiHan.Framework.Kernel.Security.AuthorizationResult
-XiHan.Framework.Kernel.Security.AuthorizationResult.AuthorizationResult() -> void
-XiHan.Framework.Kernel.Security.AuthorizationResult.Equals(XiHan.Framework.Kernel.Security.AuthorizationResult other) -> bool
-XiHan.Framework.Kernel.Security.AuthorizationResult.IsAllowed.get -> bool
-XiHan.Framework.Kernel.Security.AuthorizationResult.Reason.get -> XiHan.Framework.Primitives.Error?
-XiHan.Framework.Kernel.Security.AuthorizationResult.ToResult() -> XiHan.Framework.Primitives.Result
 XiHan.Framework.Kernel.Security.IPolicy
-XiHan.Framework.Kernel.Security.IPolicy.EvaluateAsync(XiHan.Framework.Kernel.Security.AuthorizationRequest! request, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<XiHan.Framework.Kernel.Security.AuthorizationResult>>
+XiHan.Framework.Kernel.Security.IPolicy.EvaluateAsync(XiHan.Framework.Kernel.Security.AuthorizationRequest! request, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<XiHan.Framework.Kernel.Security.AuthorizationDecision>>
 XiHan.Framework.Kernel.Security.IPolicy.Name.get -> string!
 XiHan.Framework.Kernel.Security.OutboundAddressDeniedException
 XiHan.Framework.Kernel.Security.OutboundAddressDeniedException.Host.get -> string!
@@ -696,8 +696,8 @@ const XiHan.Framework.Kernel.Pipeline.InvocationProtocols.Mcp = "mcp" -> string!
 const XiHan.Framework.Kernel.Pipeline.InvocationProtocols.Messaging = "messaging" -> string!
 const XiHan.Framework.Kernel.Pipeline.InvocationProtocols.Workflow = "workflow" -> string!
 const XiHan.Framework.Kernel.Pipeline.PipelineBuilder.AppOwner = "app" -> string!
-const XiHan.Framework.Kernel.Plugins.PermissionGrant.BindingPrefix = "binding:" -> string!
-const XiHan.Framework.Kernel.Plugins.PermissionGrant.ConfigurationPrefix = "config:" -> string!
+const XiHan.Framework.Kernel.Plugins.PluginPermissions.BindingPrefix = "binding:" -> string!
+const XiHan.Framework.Kernel.Plugins.PluginPermissions.ConfigurationPrefix = "config:" -> string!
 const XiHan.Framework.Kernel.Resilience.ResilienceOptions.ConfigurationSection = "XiHan:Kernel:Resilience" -> string!
 const XiHan.Framework.Kernel.Resilience.ResilienceOptions.OperationsSection = "Operations" -> string!
 const XiHan.Framework.Kernel.Security.OutboundAddressOptions.ConfigurationSection = "XiHan:Security:Outbound" -> string!
@@ -766,10 +766,10 @@ override XiHan.Framework.Kernel.Resilience.ResilienceOptions.ToString() -> strin
 override XiHan.Framework.Kernel.Resilience.ResiliencePolicy.Equals(object? obj) -> bool
 override XiHan.Framework.Kernel.Resilience.ResiliencePolicy.GetHashCode() -> int
 override XiHan.Framework.Kernel.Resilience.ResiliencePolicy.ToString() -> string!
+override XiHan.Framework.Kernel.Security.AuthorizationDecision.GetHashCode() -> int
 override XiHan.Framework.Kernel.Security.AuthorizationRequest.Equals(object? obj) -> bool
 override XiHan.Framework.Kernel.Security.AuthorizationRequest.GetHashCode() -> int
 override XiHan.Framework.Kernel.Security.AuthorizationRequest.ToString() -> string!
-override XiHan.Framework.Kernel.Security.AuthorizationResult.GetHashCode() -> int
 override XiHan.Framework.Kernel.Security.OutboundAddressOptions.Equals(object? obj) -> bool
 override XiHan.Framework.Kernel.Security.OutboundAddressOptions.GetHashCode() -> int
 override XiHan.Framework.Kernel.Security.OutboundAddressOptions.ToString() -> string!
@@ -871,7 +871,7 @@ static XiHan.Framework.Kernel.Pipeline.InvocationOrigin.operator !=(XiHan.Framew
 static XiHan.Framework.Kernel.Pipeline.InvocationOrigin.operator ==(XiHan.Framework.Kernel.Pipeline.InvocationOrigin? left, XiHan.Framework.Kernel.Pipeline.InvocationOrigin? right) -> bool
 static XiHan.Framework.Kernel.Pipeline.MiddlewareDescriptor.operator !=(XiHan.Framework.Kernel.Pipeline.MiddlewareDescriptor? left, XiHan.Framework.Kernel.Pipeline.MiddlewareDescriptor? right) -> bool
 static XiHan.Framework.Kernel.Pipeline.MiddlewareDescriptor.operator ==(XiHan.Framework.Kernel.Pipeline.MiddlewareDescriptor? left, XiHan.Framework.Kernel.Pipeline.MiddlewareDescriptor? right) -> bool
-static XiHan.Framework.Kernel.Plugins.PermissionGrant.Empty.get -> XiHan.Framework.Kernel.Plugins.PermissionGrant!
+static XiHan.Framework.Kernel.Plugins.PluginPermissions.Empty.get -> XiHan.Framework.Kernel.Plugins.PluginPermissions!
 static XiHan.Framework.Kernel.Plugins.PluginSource.operator !=(XiHan.Framework.Kernel.Plugins.PluginSource? left, XiHan.Framework.Kernel.Plugins.PluginSource? right) -> bool
 static XiHan.Framework.Kernel.Plugins.PluginSource.operator ==(XiHan.Framework.Kernel.Plugins.PluginSource? left, XiHan.Framework.Kernel.Plugins.PluginSource? right) -> bool
 static XiHan.Framework.Kernel.Plugins.PluginStatus.operator !=(XiHan.Framework.Kernel.Plugins.PluginStatus? left, XiHan.Framework.Kernel.Plugins.PluginStatus? right) -> bool
@@ -882,12 +882,12 @@ static XiHan.Framework.Kernel.Resilience.ResilienceOptions.operator ==(XiHan.Fra
 static XiHan.Framework.Kernel.Resilience.ResiliencePolicy.FromConfiguration(Microsoft.Extensions.Configuration.IConfigurationSection! section, XiHan.Framework.Kernel.Resilience.ResiliencePolicy? fallback = null) -> XiHan.Framework.Kernel.Resilience.ResiliencePolicy!
 static XiHan.Framework.Kernel.Resilience.ResiliencePolicy.operator !=(XiHan.Framework.Kernel.Resilience.ResiliencePolicy? left, XiHan.Framework.Kernel.Resilience.ResiliencePolicy? right) -> bool
 static XiHan.Framework.Kernel.Resilience.ResiliencePolicy.operator ==(XiHan.Framework.Kernel.Resilience.ResiliencePolicy? left, XiHan.Framework.Kernel.Resilience.ResiliencePolicy? right) -> bool
+static XiHan.Framework.Kernel.Security.AuthorizationDecision.Allow() -> XiHan.Framework.Kernel.Security.AuthorizationDecision
+static XiHan.Framework.Kernel.Security.AuthorizationDecision.Deny(XiHan.Framework.Primitives.Error! reason) -> XiHan.Framework.Kernel.Security.AuthorizationDecision
+static XiHan.Framework.Kernel.Security.AuthorizationDecision.operator !=(XiHan.Framework.Kernel.Security.AuthorizationDecision left, XiHan.Framework.Kernel.Security.AuthorizationDecision right) -> bool
+static XiHan.Framework.Kernel.Security.AuthorizationDecision.operator ==(XiHan.Framework.Kernel.Security.AuthorizationDecision left, XiHan.Framework.Kernel.Security.AuthorizationDecision right) -> bool
 static XiHan.Framework.Kernel.Security.AuthorizationRequest.operator !=(XiHan.Framework.Kernel.Security.AuthorizationRequest? left, XiHan.Framework.Kernel.Security.AuthorizationRequest? right) -> bool
 static XiHan.Framework.Kernel.Security.AuthorizationRequest.operator ==(XiHan.Framework.Kernel.Security.AuthorizationRequest? left, XiHan.Framework.Kernel.Security.AuthorizationRequest? right) -> bool
-static XiHan.Framework.Kernel.Security.AuthorizationResult.Allow() -> XiHan.Framework.Kernel.Security.AuthorizationResult
-static XiHan.Framework.Kernel.Security.AuthorizationResult.Deny(XiHan.Framework.Primitives.Error! reason) -> XiHan.Framework.Kernel.Security.AuthorizationResult
-static XiHan.Framework.Kernel.Security.AuthorizationResult.operator !=(XiHan.Framework.Kernel.Security.AuthorizationResult left, XiHan.Framework.Kernel.Security.AuthorizationResult right) -> bool
-static XiHan.Framework.Kernel.Security.AuthorizationResult.operator ==(XiHan.Framework.Kernel.Security.AuthorizationResult left, XiHan.Framework.Kernel.Security.AuthorizationResult right) -> bool
 static XiHan.Framework.Kernel.Security.OutboundAddressOptions.FromConfiguration(Microsoft.Extensions.Configuration.IConfiguration! configuration) -> XiHan.Framework.Kernel.Security.OutboundAddressOptions!
 static XiHan.Framework.Kernel.Security.OutboundAddressOptions.operator !=(XiHan.Framework.Kernel.Security.OutboundAddressOptions? left, XiHan.Framework.Kernel.Security.OutboundAddressOptions? right) -> bool
 static XiHan.Framework.Kernel.Security.OutboundAddressOptions.operator ==(XiHan.Framework.Kernel.Security.OutboundAddressOptions? left, XiHan.Framework.Kernel.Security.OutboundAddressOptions? right) -> bool
@@ -921,6 +921,6 @@ virtual XiHan.Framework.Kernel.Operations.OperationDescriptor.RequestInfo.get ->
 virtual XiHan.Framework.Kernel.Operations.OperationDescriptor.ResponseInfo.get -> System.Text.Json.Serialization.Metadata.JsonTypeInfo?
 virtual XiHan.Framework.Kernel.Operations.OperationPayloadSource.Invoke(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<System.ReadOnlyMemory<byte>>>
 virtual XiHan.Framework.Kernel.Pipeline.PipelineStep.Invoke(XiHan.Framework.Primitives.InvocationContext! context) -> System.Threading.Tasks.ValueTask
-~override XiHan.Framework.Kernel.Security.AuthorizationResult.Equals(object obj) -> bool
-~override XiHan.Framework.Kernel.Security.AuthorizationResult.ToString() -> string
+~override XiHan.Framework.Kernel.Security.AuthorizationDecision.Equals(object obj) -> bool
+~override XiHan.Framework.Kernel.Security.AuthorizationDecision.ToString() -> string
 ~override XiHan.Framework.Kernel.Security.ResourceName.Equals(object obj) -> bool

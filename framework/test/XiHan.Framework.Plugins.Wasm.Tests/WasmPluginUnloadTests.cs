@@ -42,7 +42,7 @@ public sealed class WasmPluginUnloadTests
         var plugins = host.Services.GetRequiredService<IPluginHost>();
         var operations = host.Services.GetRequiredService<OperationRegistry>();
         var permissions = host.Services.GetRequiredService<PermissionRegistry>();
-        var source = new PluginSource(declaring.Directory, new PermissionGrant([]));
+        var source = new PluginSource(declaring.Directory, new PluginPermissions([]));
         Assert.True((await plugins.LoadAsync(source, CancellationToken.None)).IsSuccess);
 
         Assert.True((await plugins.UnloadAsync(WatPlugin.PluginId, CancellationToken.None)).IsSuccess);
@@ -67,7 +67,7 @@ public sealed class WasmPluginUnloadTests
         using var plugin = WatPlugin.Invoking("pings.create", [WasmHostFunctions.PipelinePermission]);
         await using var host = await TestHost.StartAsync(static b => b.UseFeature<WasmPluginsFeature>().UseFeature(PingFeature()));
         var plugins = host.Services.GetRequiredService<IPluginHost>();
-        var source = new PluginSource(plugin.Directory, new PermissionGrant([WasmHostFunctions.PipelinePermission, "config:XiHan:Echo"]));
+        var source = new PluginSource(plugin.Directory, new PluginPermissions([WasmHostFunctions.PipelinePermission, "config:XiHan:Echo"]));
         Assert.True((await plugins.LoadAsync(source, CancellationToken.None)).IsSuccess);
         var outcomes = new ConcurrentQueue<string>();
         using var stop = new CancellationTokenSource();
@@ -192,7 +192,7 @@ public sealed class WasmPluginUnloadTests
         using var declaring = WatPlugin.Declaring([], null);
         await using var host = await TestHost.StartAsync(static b => b.UseFeature<WasmPluginsFeature>());
         var plugins = EchoWasmPluginHost.PluginHost(host);
-        var source = new PluginSource(declaring.Directory, new PermissionGrant([]));
+        var source = new PluginSource(declaring.Directory, new PluginPermissions([]));
         using var churning = new CancellationTokenSource();
 
         // 探针不停地读健康条目，同时插件在运行期加载又卸载
@@ -222,7 +222,7 @@ public sealed class WasmPluginUnloadTests
     /// <summary>
     /// 运行期加载示例插件的来源（授予回调权限）
     /// </summary>
-    private static PluginSource EchoSource => new(EchoWasmPluginHost.Directory, new PermissionGrant([WasmHostFunctions.PipelinePermission, "config:XiHan:Echo"]));
+    private static PluginSource EchoSource => new(EchoWasmPluginHost.Directory, new PluginPermissions([WasmHostFunctions.PipelinePermission, "config:XiHan:Echo"]));
 
     /// <summary>
     /// 以给定租户经完整管道调用宿主侧操作 <c>pings.create</c>

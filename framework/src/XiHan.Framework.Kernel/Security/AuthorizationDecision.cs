@@ -9,7 +9,7 @@ namespace XiHan.Framework.Kernel.Security;
 /// 授权判定结果
 /// </summary>
 [ApiLevel(Stability.Stable, "5.0")]
-public readonly record struct AuthorizationResult
+public readonly record struct AuthorizationDecision
 {
     /// <summary>
     /// 创建结果
@@ -18,7 +18,7 @@ public readonly record struct AuthorizationResult
     /// <see cref="IsAllowed"/> 由工厂方法通过初始化器设置，保证 <c>default</c> 实例是拒绝
     /// </remarks>
     /// <param name="reason">拒绝原因</param>
-    private AuthorizationResult(Error? reason) => Reason = reason;
+    private AuthorizationDecision(Error? reason) => Reason = reason;
 
     /// <summary>
     /// 是否允许
@@ -39,12 +39,12 @@ public readonly record struct AuthorizationResult
     /// <summary>
     /// 允许
     /// </summary>
-    public static AuthorizationResult Allow() => new(null) { IsAllowed = true };
+    public static AuthorizationDecision Allow() => new(null) { IsAllowed = true };
 
     /// <summary>
     /// 拒绝
     /// </summary>
-    public static AuthorizationResult Deny(Error reason)
+    public static AuthorizationDecision Deny(Error reason)
     {
         ArgumentNullException.ThrowIfNull(reason);
         return new(reason);

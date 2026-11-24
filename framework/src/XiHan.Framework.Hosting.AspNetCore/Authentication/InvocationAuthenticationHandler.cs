@@ -14,7 +14,6 @@ using XiHan.Framework.Kernel.Security;
 using XiHan.Framework.Primitives;
 using XiHan.Framework.Security.Abstractions;
 using XiHan.Framework.Security.Abstractions.Authentication;
-using CredentialHandler = XiHan.Framework.Security.Abstractions.Authentication.IAuthenticationHandler;
 
 namespace XiHan.Framework.Hosting.AspNetCore.Authentication;
 
@@ -22,7 +21,7 @@ namespace XiHan.Framework.Hosting.AspNetCore.Authentication;
 /// 认证方案 <c>XiHan</c> 的处理器
 /// </summary>
 /// <remarks>
-/// 凭据按 <see cref="HttpInvocation.CreateContext(HttpContext, IServiceProvider)"/> 的同一规则取（<c>Authorization</c> 头，或登记路径下的查询串令牌），以本次请求建调用上下文，交给方案匹配的内核 <see cref="CredentialHandler"/>（与管道的 Authenticate 阶段同一个处理器），再依次过 <see cref="IInvocationAuthenticationFilter"/>。只认带 <see cref="PipelineBypassMetadata"/> 的端点（其余请求由管道认证，这里为未认证）；没有凭据为未认证；方案不支持、凭据无效或挂点拒绝为认证失败，质询与管道一致（401 带 <c>WWW-Authenticate</c>）。主体转成 <see cref="ClaimsPrincipal"/>：声明按原始类型名保留，另加 <see cref="ClaimTypes.NameIdentifier"/> 承载主体 ID 并作为名称声明，角色声明类型取 <see cref="SecurityOptions.RoleClaim"/>
+/// 凭据按 <see cref="HttpInvocation.CreateContext(HttpContext, IServiceProvider)"/> 的同一规则取（<c>Authorization</c> 头，或登记路径下的查询串令牌），以本次请求建调用上下文，交给方案匹配的内核 <see cref="ICredentialHandler"/>（与管道的 Authenticate 阶段同一个处理器），再依次过 <see cref="IInvocationAuthenticationFilter"/>。只认带 <see cref="PipelineBypassMetadata"/> 的端点（其余请求由管道认证，这里为未认证）；没有凭据为未认证；方案不支持、凭据无效或挂点拒绝为认证失败，质询与管道一致（401 带 <c>WWW-Authenticate</c>）。主体转成 <see cref="ClaimsPrincipal"/>：声明按原始类型名保留，另加 <see cref="ClaimTypes.NameIdentifier"/> 承载主体 ID 并作为名称声明，角色声明类型取 <see cref="SecurityOptions.RoleClaim"/>
 /// </remarks>
 /// <param name="options">方案选项</param>
 /// <param name="logger">日志工厂</param>
@@ -63,7 +62,7 @@ public sealed class InvocationAuthenticationHandler(IOptionsMonitor<InvocationAu
         }
 
         var services = Context.RequestServices;
-        var handler = services.GetServices<CredentialHandler>().FirstOrDefault(h => string.Equals(h.Scheme, credential.Scheme, StringComparison.OrdinalIgnoreCase));
+        var handler = services.GetServices<ICredentialHandler>().FirstOrDefault(h => string.Equals(h.Scheme, credential.Scheme, StringComparison.OrdinalIgnoreCase));
         if (handler is null)
         {
             return Fail(Error.Validation(SecurityErrors.UnsupportedScheme, SecurityMessages.UnsupportedScheme, MessageArguments.Of(("scheme", credential.Scheme))));
@@ -117,7 +116,7 @@ public sealed class InvocationAuthenticationHandler(IOptionsMonitor<InvocationAu
             ? _failure
             : Error.Denied(SecurityErrors.NotAuthenticated, SecurityMessages.AuthenticationRequired);
         var presented = ReferenceEquals(error, _failure) ? _presented : Maybe.None<AuthenticationCredential>();
-        var schemes = Context.RequestServices.GetServices<CredentialHandler>().Select(static h => h.Scheme);
+        var schemes = Context.RequestServices.GetServices<ICredentialHandler>().Select(static h => h.Scheme);
         foreach (var challenge in AuthenticationChallenge.For(error, presented, schemes))
         {
             Response.Headers.Append(HeaderNames.WWWAuthenticate, challenge);

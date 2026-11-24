@@ -120,7 +120,7 @@ public sealed class SqlitePermissionGrantStoreTests
     {
         await using var scope = host.Services.CreateAsyncScope();
         var context = App.CreateContext(scope.ServiceProvider, CancellationToken.None);
-        context.SetCredential(new AuthenticationCredential(ApiKeyAuthenticationHandler.SchemeName, "dev-alice-key"));
+        context.SetCredential(new AuthenticationCredential(ApiKeyCredentialHandler.SchemeName, "dev-alice-key"));
         return await scope.ServiceProvider.GetRequiredService<IOperationInvoker>().InvokeAsync<OrderRequest, OrderResponse>(context, WriteOrderOperation.Id, new OrderRequest("o-1"));
     }
 }

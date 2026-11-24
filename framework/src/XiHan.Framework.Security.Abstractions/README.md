@@ -24,7 +24,7 @@ dotnet add package XiHan.Framework.Security.Abstractions --prerelease
 一般由 `Security.InMemory`、`Security.Jwt`、`Security.OpenIdConnect`、`Security.Database` 带入，写自定义认证处理器或授权组件时才直接引用。例如实现一个认证方案，再登记为单例：
 
 ```csharp
-public sealed class ServiceTokenHandler : IAuthenticationHandler
+public sealed class ServiceTokenHandler : ICredentialHandler
 {
     public string Scheme => "Service";
 
@@ -32,14 +32,14 @@ public sealed class ServiceTokenHandler : IAuthenticationHandler
         => ValueTask.FromResult(Result.Success(new Principal("svc-billing", Scheme)));
 }
 
-services.AddSingleton<IAuthenticationHandler, ServiceTokenHandler>();
+services.AddSingleton<ICredentialHandler, ServiceTokenHandler>();
 ```
 
 ## 主要类型
 
 此库提供的主要类型：
 
-* `IAuthenticationHandler`、`AuthenticationCredential`：认证处理器与凭据
+* `ICredentialHandler`、`AuthenticationCredential`：认证处理器与凭据
 * `AuthorizationRequirement`、`PolicyCatalog`：授权要求与策略目录
 * `IPermissionGrantStore`、`IPermissionChecker`：授予存储与权限检查器
 * `IPermissionFilter`、`IPermissionGrantSource`：收窄与额外授予的扩展点

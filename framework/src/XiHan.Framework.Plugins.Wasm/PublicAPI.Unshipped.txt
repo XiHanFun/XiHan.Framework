@@ -18,7 +18,7 @@ XiHan.Framework.Plugins.Wasm.WasmPluginOptions.EpochInterval.init -> void
 XiHan.Framework.Plugins.Wasm.WasmPluginOptions.Equals(XiHan.Framework.Plugins.Wasm.WasmPluginOptions? other) -> bool
 XiHan.Framework.Plugins.Wasm.WasmPluginOptions.Grants.get -> System.Collections.Generic.IReadOnlyDictionary<string!, System.Collections.Generic.IReadOnlyList<string!>!>!
 XiHan.Framework.Plugins.Wasm.WasmPluginOptions.Grants.init -> void
-XiHan.Framework.Plugins.Wasm.WasmPluginOptions.GrantsFor(string! manifestId) -> XiHan.Framework.Kernel.Plugins.PermissionGrant!
+XiHan.Framework.Plugins.Wasm.WasmPluginOptions.GrantsFor(string! manifestId) -> XiHan.Framework.Kernel.Plugins.PluginPermissions!
 XiHan.Framework.Plugins.Wasm.WasmPluginOptions.HealthFailures.get -> int
 XiHan.Framework.Plugins.Wasm.WasmPluginOptions.HealthFailures.init -> void
 XiHan.Framework.Plugins.Wasm.WasmPluginOptions.HealthInterval.get -> System.TimeSpan

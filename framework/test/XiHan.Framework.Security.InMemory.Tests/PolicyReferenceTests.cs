@@ -46,7 +46,7 @@ public sealed class PolicyReferenceTests
         public string Name => name;
 
         /// <inheritdoc />
-        public ValueTask<Result<AuthorizationResult>> EvaluateAsync(AuthorizationRequest request, CancellationToken cancellationToken) => ValueTask.FromResult(Result.Success(AuthorizationResult.Allow()));
+        public ValueTask<Result<AuthorizationDecision>> EvaluateAsync(AuthorizationRequest request, CancellationToken cancellationToken) => ValueTask.FromResult(Result.Success(AuthorizationDecision.Allow()));
     }
 
     /// <summary>

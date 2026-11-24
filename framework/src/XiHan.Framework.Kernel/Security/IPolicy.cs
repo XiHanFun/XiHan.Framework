@@ -23,7 +23,7 @@ public interface IPolicy
     /// 判定
     /// </summary>
     /// <remarks>
-    /// 成功时是允许或拒绝的 <see cref="AuthorizationResult"/>；判定所依赖的存储或来源不可达、无法得出结论时返回失败（如 <c>SECURITY_UNAVAILABLE_001</c>），Authorize 阶段以该失败结束调用，不当作拒绝
+    /// 成功时是允许或拒绝的 <see cref="AuthorizationDecision"/>；判定所依赖的存储或来源不可达、无法得出结论时返回失败（如 <c>SECURITY_UNAVAILABLE_001</c>），Authorize 阶段以该失败结束调用，不当作拒绝
     /// </remarks>
-    ValueTask<Result<AuthorizationResult>> EvaluateAsync(AuthorizationRequest request, CancellationToken cancellationToken);
+    ValueTask<Result<AuthorizationDecision>> EvaluateAsync(AuthorizationRequest request, CancellationToken cancellationToken);
 }

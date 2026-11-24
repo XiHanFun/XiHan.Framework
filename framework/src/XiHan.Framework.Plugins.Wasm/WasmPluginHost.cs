@@ -460,7 +460,7 @@ public sealed partial class WasmPluginHost : IPluginHost, IHealthContributor, IA
     /// <remarks>
     /// <c>capability:</c> 看宿主授予，<c>fs.read:</c> / <c>fs.write:</c> 看是否映射，其余（含 <c>net.outbound:</c>）不授予
     /// </remarks>
-    private static bool IsGranted(string permission, PermissionGrant granted, IReadOnlyDictionary<string, string> mounts)
+    private static bool IsGranted(string permission, PluginPermissions granted, IReadOnlyDictionary<string, string> mounts)
     {
         if (permission.StartsWith("capability:", StringComparison.Ordinal))
         {

@@ -21,7 +21,7 @@ public sealed class PluginContext
     /// <summary>
     /// 创建插件上下文
     /// </summary>
-    public PluginContext(Manifest manifest, IServiceCollection services, IConfiguration configuration, PermissionGrant permissions, PipelineBuilder? pipeline)
+    public PluginContext(Manifest manifest, IServiceCollection services, IConfiguration configuration, PluginPermissions permissions, PipelineBuilder? pipeline)
     {
         Manifest = manifest ?? throw new ArgumentNullException(nameof(manifest));
         Services = services ?? throw new ArgumentNullException(nameof(services));
@@ -48,7 +48,7 @@ public sealed class PluginContext
     /// <summary>
     /// 已授予的权限
     /// </summary>
-    public PermissionGrant Permissions { get; }
+    public PluginPermissions Permissions { get; }
 
     /// <summary>
     /// 可贡献中间件的管道

@@ -51,7 +51,7 @@ public sealed class JwtSecurityFeature : IFeature
         // SecurityOptions 用 TryAdd：与内存安全特性共存时只注册一次
         context.Services.TryAddSingleton(SecurityOptions.FromConfiguration(context.Configuration));
         context.Services.AddSingleton(JwtOptions.FromConfiguration(context.Configuration));
-        context.Services.AddSingleton<IAuthenticationHandler, JwtAuthenticationHandler>();
+        context.Services.AddSingleton<ICredentialHandler, JwtCredentialHandler>();
         context.AddMiddleware<AuthenticationMiddleware>(PipelineStage.Authenticate);
     }
 }

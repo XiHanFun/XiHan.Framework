@@ -203,7 +203,7 @@ public sealed class OutOfProcessPluginHostTests
 
         // 运行期显式加载同一个插件：同一错误直接返回给调用方，不登记
         Assert.True((await plugins.UnloadAsync(EchoPluginHost.PluginId, CancellationToken.None)).IsSuccess);
-        var loaded = await plugins.LoadAsync(new PluginSource(copy.Directory, new PermissionGrant(["capability:kernel.pipeline", "config:XiHan:Echo"])), CancellationToken.None);
+        var loaded = await plugins.LoadAsync(new PluginSource(copy.Directory, new PluginPermissions(["capability:kernel.pipeline", "config:XiHan:Echo"])), CancellationToken.None);
         Assert.Equal(PluginErrors.InvalidSource, loaded.Error?.Code);
         Assert.Equal(PluginMessages.PipelineUnsupported, loaded.Error?.MessageKey);
         Assert.Empty(plugins.Plugins);
@@ -416,7 +416,7 @@ public sealed class OutOfProcessPluginHostTests
         await using var host = await TestHost.StartAsync(static b => b.UseFeature<OutOfProcessPluginsFeature>(), services: s => s.AddSingleton<TimeProvider>(clock));
         var plugins = host.Services.GetRequiredService<IPluginHost>();
 
-        var loaded = await plugins.LoadAsync(new PluginSource(copy.Directory, new PermissionGrant(["capability:kernel.pipeline", "config:XiHan:Echo"])), CancellationToken.None);
+        var loaded = await plugins.LoadAsync(new PluginSource(copy.Directory, new PluginPermissions(["capability:kernel.pipeline", "config:XiHan:Echo"])), CancellationToken.None);
 
         // 失败返回给调用方，插件保持 Failed 并按重启策略重试（lifecycle.md §6）
         Assert.Equal(PluginErrors.Crashed, loaded.Error?.Code);
@@ -475,7 +475,7 @@ public sealed class OutOfProcessPluginHostTests
     {
         await using var host = await TestHost.StartAsync(static b => b.UseFeature<OutOfProcessPluginsFeature>(), [new("XiHan:Plugins:OutOfProcess:HealthIntervalSeconds", "1")]);
         var plugins = host.Services.GetRequiredService<IPluginHost>();
-        var source = new PluginSource(EchoPluginHost.Directory, new PermissionGrant(["capability:kernel.pipeline", "config:XiHan:Echo"]));
+        var source = new PluginSource(EchoPluginHost.Directory, new PluginPermissions(["capability:kernel.pipeline", "config:XiHan:Echo"]));
 
         var loaded = await plugins.LoadAsync(source, CancellationToken.None);
         Assert.Equal(LifecycleState.Ready, loaded.ValueOrThrow().State);
@@ -503,7 +503,7 @@ public sealed class OutOfProcessPluginHostTests
         await using var host = await TestHost.StartAsync(static b => b.UseFeature<InMemoryLocalizationFeature>().UseFeature<OutOfProcessPluginsFeature>());
         var plugins = host.Services.GetRequiredService<IPluginHost>();
         var localizer = host.Services.GetRequiredService<IMessageLocalizer>();
-        var source = new PluginSource(EchoPluginHost.Directory, new PermissionGrant(["capability:kernel.pipeline", "config:XiHan:Echo"]));
+        var source = new PluginSource(EchoPluginHost.Directory, new PluginPermissions(["capability:kernel.pipeline", "config:XiHan:Echo"]));
         Assert.False(localizer.Find("echo.text.empty", "zh-CN").HasValue);
 
         // 运行期加载的插件同样有目录：它的失败按调用方语言翻译（ADR-0252）
@@ -533,7 +533,7 @@ public sealed class OutOfProcessPluginHostTests
         await using var app = await TestHost.StartAsync(static b => b.UseFeature<InMemoryLocalizationFeature>().UseFeature<OutOfProcessPluginsFeature>(), services: s => s.AddMessageCatalog(host));
         var plugins = app.Services.GetRequiredService<IPluginHost>();
 
-        var loaded = await plugins.LoadAsync(new PluginSource(EchoPluginHost.Directory, new PermissionGrant(["capability:kernel.pipeline", "config:XiHan:Echo"])), CancellationToken.None);
+        var loaded = await plugins.LoadAsync(new PluginSource(EchoPluginHost.Directory, new PluginPermissions(["capability:kernel.pipeline", "config:XiHan:Echo"])), CancellationToken.None);
 
         // 整组被拒：目录、权限码与代理操作都不留下，插件不在宿主里，宿主的目录不变
         Assert.Equal(LocalizationErrors.DuplicateCatalog, loaded.Error?.Code);
@@ -557,7 +557,7 @@ public sealed class OutOfProcessPluginHostTests
         Assert.False(localizer.Find("echo.text.empty", "zh-CN").HasValue);
 
         // 再加载按这次握手的目录重新登记
-        Assert.True((await plugins.LoadAsync(new PluginSource(EchoPluginHost.Directory, new PermissionGrant(["capability:kernel.pipeline", "config:XiHan:Echo"])), CancellationToken.None)).IsSuccess);
+        Assert.True((await plugins.LoadAsync(new PluginSource(EchoPluginHost.Directory, new PluginPermissions(["capability:kernel.pipeline", "config:XiHan:Echo"])), CancellationToken.None)).IsSuccess);
         Assert.Equal("文本不能为空。", localizer.Localize("echo.text.empty", "zh-CN", null));
     }
 
@@ -581,7 +581,7 @@ public sealed class OutOfProcessPluginHostTests
         Assert.Equal(KernelErrors.UnknownOperation, (await EchoPluginHost.InvokeAsync(host, "echoes.create", """{"text":"gone"}""")).Outcome.Error?.Code);
 
         // 同一插件直接再加载：重新登记，不撞上自己上一次留下的操作与码（KERNEL_OPERATION_001 / KERNEL_SECURITY_001）
-        var reloaded = await plugins.LoadAsync(new PluginSource(copy.Directory, new PermissionGrant(["capability:kernel.pipeline", "config:XiHan:Echo"])), CancellationToken.None);
+        var reloaded = await plugins.LoadAsync(new PluginSource(copy.Directory, new PluginPermissions(["capability:kernel.pipeline", "config:XiHan:Echo"])), CancellationToken.None);
         Assert.Equal(LifecycleState.Ready, reloaded.ValueOrThrow().State);
         Assert.Equal(5, operations.All().Count(static d => d.OwnerId == EchoPluginHost.PluginId));
         Assert.True(permissions.Find("echoes.audit").HasValue);
@@ -622,7 +622,7 @@ public sealed class OutOfProcessPluginHostTests
         Assert.DoesNotContain(host.Services.GetRequiredService<OperationRegistry>().All(), static d => d.OwnerId == EchoPluginHost.PluginId);
 
         // 卸载干净：同一插件直接再加载并服务
-        Assert.True((await plugins.LoadAsync(new PluginSource(EchoPluginHost.Directory, new PermissionGrant(["capability:kernel.pipeline", "config:XiHan:Echo"])), CancellationToken.None)).IsSuccess);
+        Assert.True((await plugins.LoadAsync(new PluginSource(EchoPluginHost.Directory, new PluginPermissions(["capability:kernel.pipeline", "config:XiHan:Echo"])), CancellationToken.None)).IsSuccess);
         Assert.True((await EchoPluginHost.InvokeAsync(host, "echoes.create", """{"text":"back"}""")).Outcome.IsSuccess);
     }
 

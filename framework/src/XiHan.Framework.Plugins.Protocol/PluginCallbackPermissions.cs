@@ -27,7 +27,7 @@ internal static class PluginCallbackPermissions
     /// <summary>
     /// 该权限是否既在清单里声明又已被授予
     /// </summary>
-    public static bool IsAllowed(Manifest manifest, PermissionGrant granted, string permission)
+    public static bool IsAllowed(Manifest manifest, PluginPermissions granted, string permission)
     {
         ArgumentNullException.ThrowIfNull(manifest);
         ArgumentNullException.ThrowIfNull(granted);

@@ -131,7 +131,7 @@ internal sealed partial class WasmPluginRuntime : IPluginRuntime, IPluginCarrier
     /// <summary>
     /// 创建运行时
     /// </summary>
-    public WasmPluginRuntime(Manifest manifest, string directory, string modulePath, PermissionGrant permissions, IReadOnlyDictionary<string, string> mounts, WasmHostContext host, ILogger logger)
+    public WasmPluginRuntime(Manifest manifest, string directory, string modulePath, PluginPermissions permissions, IReadOnlyDictionary<string, string> mounts, WasmHostContext host, ILogger logger)
     {
         Manifest = manifest;
         Directory = directory;
@@ -165,7 +165,7 @@ internal sealed partial class WasmPluginRuntime : IPluginRuntime, IPluginCarrier
     /// <summary>
     /// 授予的权限
     /// </summary>
-    public PermissionGrant Permissions { get; }
+    public PluginPermissions Permissions { get; }
 
     /// <summary>
     /// 文件系统映射：客体路径 → 宿主目录

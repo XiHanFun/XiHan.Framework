@@ -201,11 +201,11 @@ public sealed class SecurityTests
     }
 
     [Fact]
-    public async Task AuthorizationResult_ConvertsToResult()
+    public async Task AuthorizationDecision_ConvertsToResult()
     {
-        Assert.True(AuthorizationResult.Allow().ToResult().IsSuccess);
-        Assert.Equal("SECURITY_DENIED_002", AuthorizationResult.Deny(Error.Literal("SECURITY_DENIED_002", "Denied.")).ToResult().Error!.Code);
-        Assert.False(default(AuthorizationResult).IsAllowed);
+        Assert.True(AuthorizationDecision.Allow().ToResult().IsSuccess);
+        Assert.Equal("SECURITY_DENIED_002", AuthorizationDecision.Deny(Error.Literal("SECURITY_DENIED_002", "Denied.")).ToResult().Error!.Code);
+        Assert.False(default(AuthorizationDecision).IsAllowed);
 
         IPolicy policy = new DenyAll();
         var result = (await policy.EvaluateAsync(new AuthorizationRequest(SecurityContext.Anonymous, "orders.create"), CancellationToken.None)).ValueOrThrow();
@@ -226,7 +226,7 @@ public sealed class SecurityTests
         /// <summary>
         /// 总是拒绝
         /// </summary>
-        public ValueTask<Result<AuthorizationResult>> EvaluateAsync(AuthorizationRequest request, CancellationToken cancellationToken)
-            => ValueTask.FromResult(Result.Success(AuthorizationResult.Deny(Error.Literal("SECURITY_DENIED_002", "deny-all"))));
+        public ValueTask<Result<AuthorizationDecision>> EvaluateAsync(AuthorizationRequest request, CancellationToken cancellationToken)
+            => ValueTask.FromResult(Result.Success(AuthorizationDecision.Deny(Error.Literal("SECURITY_DENIED_002", "deny-all"))));
     }
 }

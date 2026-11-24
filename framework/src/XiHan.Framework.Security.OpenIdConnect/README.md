@@ -38,7 +38,7 @@ builder.AddXiHan(x => x.UseFeature<InMemorySecurityFeature>().UseFeature<OpenIdC
 * `OpenIdConnectSecurityFeature`：启用 OpenID Connect 认证的特性
 * `OpenIdConnectOptions`：配置项，对应 `XiHan:Security:OpenIdConnect`
 * `OpenIdConnectMetadataCache`：发现文档与 JWKS 的缓存
-* `OpenIdConnectAuthenticationHandler`：`Bearer` 方案的认证处理器
+* `OpenIdConnectCredentialHandler`：`Bearer` 方案的认证处理器
 
 ## 更多文档
 

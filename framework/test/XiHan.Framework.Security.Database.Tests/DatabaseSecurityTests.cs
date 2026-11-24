@@ -284,7 +284,7 @@ public sealed class DatabaseSecurityTests
         var context = App.CreateContext(scope.ServiceProvider, CancellationToken.None);
         if (apiKey is not null)
         {
-            context.SetCredential(new AuthenticationCredential(ApiKeyAuthenticationHandler.SchemeName, apiKey));
+            context.SetCredential(new AuthenticationCredential(ApiKeyCredentialHandler.SchemeName, apiKey));
         }
 
         if (tenant is not null)

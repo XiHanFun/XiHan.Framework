@@ -377,7 +377,7 @@ public sealed class AuthorizationTests
         var policy = new RecordingPolicy("owner-only", request =>
         {
             seen = request;
-            return AuthorizationResult.Deny(Error.Literal("ORDERS_DENIED_001", "Not the owner."));
+            return AuthorizationDecision.Deny(Error.Literal("ORDERS_DENIED_001", "Not the owner."));
         });
         var context = SecurityHosts.Context(Services(policy));
         var resource = ResourceName.Parse("xrn:xihan:orders:acme:order/42");
@@ -421,13 +421,13 @@ public sealed class AuthorizationTests
     /// <summary>
     /// 把判定委托给回调的策略，用于观察中间件传入的请求
     /// </summary>
-    private sealed class RecordingPolicy(string name, Func<AuthorizationRequest, Result<AuthorizationResult>> evaluate) : IPolicy
+    private sealed class RecordingPolicy(string name, Func<AuthorizationRequest, Result<AuthorizationDecision>> evaluate) : IPolicy
     {
         /// <inheritdoc />
         public string Name => name;
 
         /// <inheritdoc />
-        public ValueTask<Result<AuthorizationResult>> EvaluateAsync(AuthorizationRequest request, CancellationToken cancellationToken) => ValueTask.FromResult(evaluate(request));
+        public ValueTask<Result<AuthorizationDecision>> EvaluateAsync(AuthorizationRequest request, CancellationToken cancellationToken) => ValueTask.FromResult(evaluate(request));
     }
 
     /// <summary>

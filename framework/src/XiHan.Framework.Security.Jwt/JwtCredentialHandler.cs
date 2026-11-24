@@ -18,7 +18,7 @@ namespace XiHan.Framework.Security.Jwt;
 /// HS256 对称密钥校验签名、有效期、签发者与受众，声明按原始类型名映射为主体
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
-public sealed class JwtAuthenticationHandler : IAuthenticationHandler
+public sealed class JwtCredentialHandler : ICredentialHandler
 {
     /// <summary>
     /// 方案名 <c>Bearer</c>
@@ -52,7 +52,7 @@ public sealed class JwtAuthenticationHandler : IAuthenticationHandler
     /// <summary>
     /// 创建处理器
     /// </summary>
-    public JwtAuthenticationHandler(JwtOptions options)
+    public JwtCredentialHandler(JwtOptions options)
     {
         _options = options ?? throw new ArgumentNullException(nameof(options));
         // 签名、exp 与有效期始终强制；签发者与受众只在配置了才校验

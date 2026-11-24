@@ -13,7 +13,7 @@ namespace XiHan.Framework.Security.Abstractions.Authentication;
 /// 基础设施失败抛异常；凭据无效以 <see cref="SecurityErrors.InvalidCredential"/> 返回
 /// </remarks>
 [ApiLevel(Stability.Stable, "5.0")]
-public interface IAuthenticationHandler
+public interface ICredentialHandler
 {
     /// <summary>
     /// 处理的方案

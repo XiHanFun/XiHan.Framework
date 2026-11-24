@@ -12,7 +12,7 @@ namespace XiHan.Framework.Security.Abstractions.Authentication;
 /// Authenticate 阶段的中间件
 /// </summary>
 /// <remarks>
-/// 没有凭据则保持匿名；有凭据则交给方案匹配的 <see cref="IAuthenticationHandler"/>，成功写入主体，失败以结果返回；<see cref="SecurityOptions.RequireAuthentication"/> 为真时拒绝匿名调用
+/// 没有凭据则保持匿名；有凭据则交给方案匹配的 <see cref="ICredentialHandler"/>，成功写入主体，失败以结果返回；<see cref="SecurityOptions.RequireAuthentication"/> 为真时拒绝匿名调用
 /// </remarks>
 [ApiLevel(Stability.Stable, "5.0")]
 public sealed class AuthenticationMiddleware(SecurityOptions options) : IPipelineMiddleware
@@ -67,9 +67,9 @@ public sealed class AuthenticationMiddleware(SecurityOptions options) : IPipelin
     /// <remarks>
     /// 没有返回 <see langword="null"/>
     /// </remarks>
-    private static IAuthenticationHandler? FindHandler(InvocationContext context, string scheme)
+    private static ICredentialHandler? FindHandler(InvocationContext context, string scheme)
     {
-        foreach (var handler in context.Services.GetServices<IAuthenticationHandler>())
+        foreach (var handler in context.Services.GetServices<ICredentialHandler>())
         {
             if (string.Equals(handler.Scheme, scheme, StringComparison.OrdinalIgnoreCase))
             {

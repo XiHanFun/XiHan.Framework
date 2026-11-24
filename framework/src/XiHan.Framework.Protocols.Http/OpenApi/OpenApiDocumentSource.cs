@@ -172,7 +172,7 @@ public sealed record OpenApiDocumentSource
             Title = options.Title ?? services.GetService<IHostEnvironment>()?.ApplicationName ?? FrameworkInfo.Name,
             Version = options.Version ?? FrameworkInfo.Version,
             Servers = options.Servers,
-            AuthenticationSchemes = services.GetServices<IAuthenticationHandler>().Select(static h => h.Scheme).ToList(),
+            AuthenticationSchemes = services.GetServices<ICredentialHandler>().Select(static h => h.Scheme).ToList(),
             Endpoints = endpoints.ToList(),
             Groups = GroupsOf(services, options),
             Group = group,

@@ -274,7 +274,7 @@ public sealed class InMemorySecurityTests
     {
         await using var host = await TestHost.StartAsync(static b => b.UseFeature<InMemorySecurityFeature>().UseFeature(new StubFeature(TestManifests.Create("xihan.security.fake-jwt", provides: ["security.authentication@1"], requires: ["kernel.hosting@1"]))), _configuration);
 
-        Assert.Empty(host.Services.GetServices<IAuthenticationHandler>());
+        Assert.Empty(host.Services.GetServices<ICredentialHandler>());
         Assert.DoesNotContain(nameof(AuthenticationMiddleware), host.App.DescribePipeline(), StringComparison.Ordinal);
         Assert.Contains(nameof(AuthorizationMiddleware), host.App.DescribePipeline(), StringComparison.Ordinal);
         Assert.NotNull(host.Services.GetService<PolicyCatalog>());

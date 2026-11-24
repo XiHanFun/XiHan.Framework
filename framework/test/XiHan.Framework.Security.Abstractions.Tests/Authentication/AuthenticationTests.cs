@@ -77,7 +77,7 @@ public sealed class AuthenticationTests
     [Fact]
     public async Task UnsupportedScheme_IsRejected()
     {
-        var context = SecurityHosts.Context(SecurityHosts.Services(static s => s.AddSingleton<IAuthenticationHandler>(new StaticHandler("Bearer", static _ => Result.Success(SecurityHosts.Alice())))));
+        var context = SecurityHosts.Context(SecurityHosts.Services(static s => s.AddSingleton<ICredentialHandler>(new StaticHandler("Bearer", static _ => Result.Success(SecurityHosts.Alice())))));
         context.SetCredential(new AuthenticationCredential("Basic", "dXNlcjpwYXNz"));
         var reached = new bool[1];
 
@@ -90,7 +90,7 @@ public sealed class AuthenticationTests
     [Fact]
     public async Task HandlerFailure_BecomesOutcome_AndSuccessSetsPrincipal_SchemeCaseInsensitive()
     {
-        var services = SecurityHosts.Services(static s => s.AddSingleton<IAuthenticationHandler>(new StaticHandler("Bearer", static c =>
+        var services = SecurityHosts.Services(static s => s.AddSingleton<ICredentialHandler>(new StaticHandler("Bearer", static c =>
             c.Value == "good" ? Result.Success(SecurityHosts.Alice("admin")) : Result.Failure<Principal>(Error.Literal(SecurityErrors.InvalidCredential, "Bad token.")))));
 
         var bad = SecurityHosts.Context(services);

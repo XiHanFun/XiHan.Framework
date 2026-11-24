@@ -55,7 +55,7 @@ public sealed class JwtAuthenticationTests
     /// 用给定选项（默认严格选项）认证 Bearer 令牌
     /// </summary>
     private static async Task<Result<Principal>> AuthenticateAsync(string token, JwtOptions? options = null)
-        => await new JwtAuthenticationHandler(options ?? _options).AuthenticateAsync(new AuthenticationCredential("Bearer", token), TestInvocationContext.Create());
+        => await new JwtCredentialHandler(options ?? _options).AuthenticateAsync(new AuthenticationCredential("Bearer", token), TestInvocationContext.Create());
 
     [Fact]
     public async Task ValidToken_BecomesPrincipalWithRawClaims()
@@ -140,7 +140,7 @@ public sealed class JwtAuthenticationTests
                 new("XiHan:Security:InMemory:Grants:role:editor", "orders.read"),
             ]);
 
-        Assert.IsType<JwtAuthenticationHandler>(Assert.Single(host.Services.GetServices<IAuthenticationHandler>()));
+        Assert.IsType<JwtCredentialHandler>(Assert.Single(host.Services.GetServices<ICredentialHandler>()));
         Assert.Equal(1, host.App.DescribePipeline().Split(nameof(AuthenticationMiddleware)).Length - 1);
         Assert.Contains(nameof(AuthorizationMiddleware), host.App.DescribePipeline(), StringComparison.Ordinal);
 

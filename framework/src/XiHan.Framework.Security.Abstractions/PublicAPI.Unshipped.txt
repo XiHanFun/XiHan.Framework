@@ -8,12 +8,12 @@ XiHan.Framework.Security.Abstractions.Authentication.AuthenticationCredential.Va
 XiHan.Framework.Security.Abstractions.Authentication.AuthenticationMiddleware
 XiHan.Framework.Security.Abstractions.Authentication.AuthenticationMiddleware.AuthenticationMiddleware(XiHan.Framework.Security.Abstractions.SecurityOptions! options) -> void
 XiHan.Framework.Security.Abstractions.Authentication.AuthenticationMiddleware.InvokeAsync(XiHan.Framework.Primitives.InvocationContext! context, XiHan.Framework.Kernel.Pipeline.PipelineStep! nextStep) -> System.Threading.Tasks.ValueTask
-XiHan.Framework.Security.Abstractions.Authentication.IAuthenticationHandler
-XiHan.Framework.Security.Abstractions.Authentication.IAuthenticationHandler.AuthenticateAsync(XiHan.Framework.Security.Abstractions.Authentication.AuthenticationCredential! credential, XiHan.Framework.Primitives.InvocationContext! context) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<XiHan.Framework.Kernel.Security.Principal!>>
-XiHan.Framework.Security.Abstractions.Authentication.IAuthenticationHandler.Scheme.get -> string!
+XiHan.Framework.Security.Abstractions.Authentication.ICredentialHandler
+XiHan.Framework.Security.Abstractions.Authentication.ICredentialHandler.AuthenticateAsync(XiHan.Framework.Security.Abstractions.Authentication.AuthenticationCredential! credential, XiHan.Framework.Primitives.InvocationContext! context) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<XiHan.Framework.Kernel.Security.Principal!>>
+XiHan.Framework.Security.Abstractions.Authentication.ICredentialHandler.Scheme.get -> string!
 XiHan.Framework.Security.Abstractions.Authorization.AuthenticatedPolicy
 XiHan.Framework.Security.Abstractions.Authorization.AuthenticatedPolicy.AuthenticatedPolicy() -> void
-XiHan.Framework.Security.Abstractions.Authorization.AuthenticatedPolicy.EvaluateAsync(XiHan.Framework.Kernel.Security.AuthorizationRequest! request, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<XiHan.Framework.Kernel.Security.AuthorizationResult>>
+XiHan.Framework.Security.Abstractions.Authorization.AuthenticatedPolicy.EvaluateAsync(XiHan.Framework.Kernel.Security.AuthorizationRequest! request, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<XiHan.Framework.Kernel.Security.AuthorizationDecision>>
 XiHan.Framework.Security.Abstractions.Authorization.AuthenticatedPolicy.Name.get -> string!
 XiHan.Framework.Security.Abstractions.Authorization.AuthorizationMiddleware
 XiHan.Framework.Security.Abstractions.Authorization.AuthorizationMiddleware.AuthorizationMiddleware() -> void
@@ -28,7 +28,7 @@ XiHan.Framework.Security.Abstractions.Authorization.AuthorizationRequirement.Pol
 XiHan.Framework.Security.Abstractions.Authorization.AuthorizationRequirement.Resource.get -> XiHan.Framework.Kernel.Security.ResourceName?
 XiHan.Framework.Security.Abstractions.Authorization.AuthorizationRequirement.Resource.init -> void
 XiHan.Framework.Security.Abstractions.Authorization.PermissionPolicy
-XiHan.Framework.Security.Abstractions.Authorization.PermissionPolicy.EvaluateAsync(XiHan.Framework.Kernel.Security.AuthorizationRequest! request, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<XiHan.Framework.Kernel.Security.AuthorizationResult>>
+XiHan.Framework.Security.Abstractions.Authorization.PermissionPolicy.EvaluateAsync(XiHan.Framework.Kernel.Security.AuthorizationRequest! request, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<XiHan.Framework.Kernel.Security.AuthorizationDecision>>
 XiHan.Framework.Security.Abstractions.Authorization.PermissionPolicy.Name.get -> string!
 XiHan.Framework.Security.Abstractions.Authorization.PermissionPolicy.PermissionCode.get -> string!
 XiHan.Framework.Security.Abstractions.Authorization.PermissionPolicy.PermissionPolicy(string! permissionCode, XiHan.Framework.Security.Abstractions.Permissions.IPermissionChecker! checker) -> void

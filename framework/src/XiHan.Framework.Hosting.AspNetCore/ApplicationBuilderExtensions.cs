@@ -240,7 +240,7 @@ public static class ApplicationBuilderExtensions
         if (problem.Status == StatusCodes.Status401Unauthorized)
         {
             var presented = context?.FindCredential() ?? Maybe.None<AuthenticationCredential>();
-            var schemes = httpContext.RequestServices.GetServices<IAuthenticationHandler>().Select(static h => h.Scheme);
+            var schemes = httpContext.RequestServices.GetServices<ICredentialHandler>().Select(static h => h.Scheme);
             foreach (var challenge in AuthenticationChallenge.For(error, presented, schemes))
             {
                 httpContext.Response.Headers.Append(HeaderNames.WWWAuthenticate, challenge);

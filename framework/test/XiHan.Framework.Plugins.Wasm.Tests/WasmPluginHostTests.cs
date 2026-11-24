@@ -146,7 +146,7 @@ public sealed class WasmPluginHostTests
         await using var host = await TestHost.StartAsync(static b => b.UseFeature<InMemoryLocalizationFeature>().UseFeature<WasmPluginsFeature>());
         var plugins = host.Services.GetRequiredService<IPluginHost>();
         var localizer = host.Services.GetRequiredService<IMessageLocalizer>();
-        var source = new PluginSource(EchoWasmPluginHost.Directory, new PermissionGrant(["capability:kernel.pipeline", "config:XiHan:Echo"]));
+        var source = new PluginSource(EchoWasmPluginHost.Directory, new PluginPermissions(["capability:kernel.pipeline", "config:XiHan:Echo"]));
 
         // 运行期加载的插件同样有目录（ADR-0252）
         Assert.True((await plugins.LoadAsync(source, CancellationToken.None)).IsSuccess);
@@ -277,7 +277,7 @@ public sealed class WasmPluginHostTests
         var pipeline = host.App.DescribePipeline();
 
         // 约束目标未登记：运行期没有「构建管道时再报」，整个插件登记失败，操作与中间件都不留下
-        var rejected = await plugins.LoadAsync(new PluginSource(dangling.Directory, new PermissionGrant([])), CancellationToken.None);
+        var rejected = await plugins.LoadAsync(new PluginSource(dangling.Directory, new PluginPermissions([])), CancellationToken.None);
         Assert.Equal(KernelErrors.PipelineRegistration, rejected.Error?.Code);
         Assert.Contains("xihan.other:missing", rejected.Error!.Message, StringComparison.Ordinal);
         Assert.Empty(plugins.Plugins);
@@ -285,7 +285,7 @@ public sealed class WasmPluginHostTests
         Assert.Equal(pipeline, host.App.DescribePipeline());
 
         // 贡献中间件的插件可以在运行期加载：中间件成组登记进管道，之后的调用经过它
-        var loaded = await plugins.LoadAsync(new PluginSource(EchoWasmPluginHost.Directory, new PermissionGrant(["capability:kernel.pipeline", "config:XiHan:Echo"])), CancellationToken.None);
+        var loaded = await plugins.LoadAsync(new PluginSource(EchoWasmPluginHost.Directory, new PluginPermissions(["capability:kernel.pipeline", "config:XiHan:Echo"])), CancellationToken.None);
         Assert.True(loaded.IsSuccess, loaded.ToString());
         Assert.Contains("WasmMiddleware[xihan.samples.echowasm:echo-guard]", host.App.DescribePipeline(), StringComparison.Ordinal);
         var blocked = await EchoWasmPluginHost.InvokeAsync(host, "echoes.create", """{"text":"x"}""", new Dictionary<string, string> { [BaggageKeys.Tenant] = "blocked" });
@@ -300,7 +300,7 @@ public sealed class WasmPluginHostTests
         var plugins = host.Services.GetRequiredService<IPluginHost>();
 
         // 装配完成之后登记：权限码没登记，插件整体登记失败，不留下代理操作
-        var loaded = await plugins.LoadAsync(new PluginSource(guarded.Directory, new PermissionGrant([])), CancellationToken.None);
+        var loaded = await plugins.LoadAsync(new PluginSource(guarded.Directory, new PluginPermissions([])), CancellationToken.None);
 
         Assert.Equal(KernelErrors.UnregisteredPermission, loaded.Error?.Code);
         Assert.Empty(plugins.Plugins);
@@ -317,7 +317,7 @@ public sealed class WasmPluginHostTests
         }));
         var plugins = host.Services.GetRequiredService<IPluginHost>();
 
-        var loaded = await plugins.LoadAsync(new PluginSource(guarded.Directory, new PermissionGrant([])), CancellationToken.None);
+        var loaded = await plugins.LoadAsync(new PluginSource(guarded.Directory, new PluginPermissions([])), CancellationToken.None);
 
         Assert.True(loaded.IsSuccess, loaded.ToString());
         Assert.Equal("wat.call-permission", host.Services.GetRequiredService<OperationRegistry>().Find(WatPlugin.Operation).ValueOrThrow().Contract.Permission);
@@ -343,7 +343,7 @@ public sealed class WasmPluginHostTests
         await using var host = await TestHost.StartAsync(static b => b.UseFeature<WasmPluginsFeature>().UseFeature(PassThroughAuthorization.Feature()));
         var plugins = host.Services.GetRequiredService<IPluginHost>();
 
-        var loaded = await plugins.LoadAsync(new PluginSource(declaring.Directory, new PermissionGrant([])), CancellationToken.None);
+        var loaded = await plugins.LoadAsync(new PluginSource(declaring.Directory, new PluginPermissions([])), CancellationToken.None);
 
         Assert.True(loaded.IsSuccess, loaded.ToString());
         var permissions = host.Services.GetRequiredService<PermissionRegistry>();
@@ -360,7 +360,7 @@ public sealed class WasmPluginHostTests
         await using var host = await TestHost.StartAsync(static b => b.UseFeature<WasmPluginsFeature>());
         var plugins = host.Services.GetRequiredService<IPluginHost>();
 
-        var loaded = await plugins.LoadAsync(new PluginSource(declaring.Directory, new PermissionGrant([])), CancellationToken.None);
+        var loaded = await plugins.LoadAsync(new PluginSource(declaring.Directory, new PluginPermissions([])), CancellationToken.None);
 
         Assert.Equal(KernelErrors.UnregisteredPermission, loaded.Error?.Code);
         Assert.Empty(plugins.Plugins);
@@ -379,7 +379,7 @@ public sealed class WasmPluginHostTests
         }));
         var plugins = host.Services.GetRequiredService<IPluginHost>();
 
-        var loaded = await plugins.LoadAsync(new PluginSource(declaring.Directory, new PermissionGrant([])), CancellationToken.None);
+        var loaded = await plugins.LoadAsync(new PluginSource(declaring.Directory, new PluginPermissions([])), CancellationToken.None);
 
         Assert.Equal(KernelErrors.DuplicatePermission, loaded.Error?.Code);
         Assert.Equal("wat.call-permission", loaded.Error?.Details?["code"]);
@@ -398,8 +398,8 @@ public sealed class WasmPluginHostTests
         await using var host = await TestHost.StartAsync(static b => b.UseFeature<WasmPluginsFeature>().UseFeature(PassThroughAuthorization.Feature()));
         var plugins = host.Services.GetRequiredService<IPluginHost>();
 
-        Assert.True((await plugins.LoadAsync(new PluginSource(first.Directory, new PermissionGrant([])), CancellationToken.None)).IsSuccess);
-        var loaded = await plugins.LoadAsync(new PluginSource(second.Directory, new PermissionGrant([])), CancellationToken.None);
+        Assert.True((await plugins.LoadAsync(new PluginSource(first.Directory, new PluginPermissions([])), CancellationToken.None)).IsSuccess);
+        var loaded = await plugins.LoadAsync(new PluginSource(second.Directory, new PluginPermissions([])), CancellationToken.None);
 
         // 后登记的那个整体失败；先登记的不受影响
         Assert.Equal(KernelErrors.DuplicatePermission, loaded.Error?.Code);
@@ -482,7 +482,7 @@ public sealed class WasmPluginHostTests
         var plugins = host.Services.GetRequiredService<IPluginHost>();
 
         // 启动之后登记：策略不存在，整组被拒，声明的码撤回
-        var loaded = await plugins.LoadAsync(new PluginSource(declaring.Directory, new PermissionGrant([])), CancellationToken.None);
+        var loaded = await plugins.LoadAsync(new PluginSource(declaring.Directory, new PluginPermissions([])), CancellationToken.None);
 
         Assert.Equal(SecurityErrors.UnregisteredPolicy, loaded.Error?.Code);
         Assert.Equal("auditors", loaded.Error?.Details?["policy"]);
@@ -502,7 +502,7 @@ public sealed class WasmPluginHostTests
         await using var host = await TestHost.StartAsync(static b => b.UseFeature<WasmPluginsFeature>());
         var plugins = host.Services.GetRequiredService<IPluginHost>();
 
-        var loaded = await plugins.LoadAsync(new PluginSource(declaring.Directory, new PermissionGrant([])), CancellationToken.None);
+        var loaded = await plugins.LoadAsync(new PluginSource(declaring.Directory, new PluginPermissions([])), CancellationToken.None);
 
         Assert.Equal(PluginErrors.InvalidSource, loaded.Error?.Code);
         Assert.Contains("contributes.permissions", loaded.Error?.ToString(), StringComparison.Ordinal);
@@ -519,7 +519,7 @@ public sealed class WasmPluginHostTests
         await using var host = await TestHost.StartAsync(static b => b.UseFeature<WasmPluginsFeature>());
         var plugins = host.Services.GetRequiredService<IPluginHost>();
 
-        var loaded = await plugins.LoadAsync(new PluginSource(foreign.Directory, new PermissionGrant([])), CancellationToken.None);
+        var loaded = await plugins.LoadAsync(new PluginSource(foreign.Directory, new PluginPermissions([])), CancellationToken.None);
 
         Assert.Equal(PluginErrors.InvalidSource, loaded.Error?.Code);
         Assert.Equal(PluginMessages.NotWasm, loaded.Error?.MessageKey);

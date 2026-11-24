@@ -135,7 +135,7 @@ public sealed class OperationPayloadBindingTests
         using var request = new HttpRequestMessage(HttpMethod.Post, "/orders") { Content = content };
         if (apiKey is not null)
         {
-            request.Headers.Authorization = new AuthenticationHeaderValue(ApiKeyAuthenticationHandler.SchemeName, apiKey);
+            request.Headers.Authorization = new AuthenticationHeaderValue(ApiKeyCredentialHandler.SchemeName, apiKey);
         }
 
         return await client.SendAsync(request);

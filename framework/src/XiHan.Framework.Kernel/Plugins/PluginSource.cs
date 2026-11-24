@@ -21,7 +21,7 @@ public sealed record PluginSource
     /// <param name="permissions">授予的权限</param>
     /// <exception cref="ArgumentException"><paramref name="directory"/> 为空或空白</exception>
     /// <exception cref="ArgumentNullException"><paramref name="permissions"/> 为 <see langword="null"/></exception>
-    public PluginSource(string directory, PermissionGrant permissions)
+    public PluginSource(string directory, PluginPermissions permissions)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(directory);
         ArgumentNullException.ThrowIfNull(permissions);
@@ -37,5 +37,5 @@ public sealed record PluginSource
     /// <summary>
     /// 授予的权限
     /// </summary>
-    public PermissionGrant Permissions { get; }
+    public PluginPermissions Permissions { get; }
 }

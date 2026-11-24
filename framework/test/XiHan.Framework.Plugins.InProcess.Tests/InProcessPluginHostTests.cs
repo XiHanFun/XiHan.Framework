@@ -19,7 +19,7 @@ public sealed class InProcessPluginHostTests
     /// <summary>
     /// 授予示例插件清单里声明的全部权限
     /// </summary>
-    private static readonly PermissionGrant _granted = new(["capability:kernel.diagnostics"]);
+    private static readonly PluginPermissions _granted = new(["capability:kernel.diagnostics"]);
 
     /// <summary>
     /// 示例插件的构建输出目录
@@ -76,7 +76,7 @@ public sealed class InProcessPluginHostTests
     {
         await using var host = CreateHost();
 
-        var result = await host.LoadAsync(new PluginSource(PluginDirectory, PermissionGrant.Empty), CancellationToken.None);
+        var result = await host.LoadAsync(new PluginSource(PluginDirectory, PluginPermissions.Empty), CancellationToken.None);
 
         Assert.Equal(PluginErrors.PermissionDenied, result.Error!.Code);
         Assert.Empty(host.Plugins);

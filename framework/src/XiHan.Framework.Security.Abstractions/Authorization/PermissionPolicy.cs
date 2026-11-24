@@ -68,13 +68,13 @@ public sealed class PermissionPolicy : IPolicy
             : null;
 
     /// <inheritdoc />
-    public async ValueTask<Result<AuthorizationResult>> EvaluateAsync(AuthorizationRequest request, CancellationToken cancellationToken)
+    public async ValueTask<Result<AuthorizationDecision>> EvaluateAsync(AuthorizationRequest request, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
         // 先判未认证：匿名主体得到 NotAuthenticated 而不是 PermissionMissing，调用方可以区分未登录与越权
         if (!request.Security.Principal.IsAuthenticated)
         {
-            return AuthorizationResult.Deny(Error.Denied(SecurityErrors.NotAuthenticated, SecurityMessages.AuthenticationRequired));
+            return AuthorizationDecision.Deny(Error.Denied(SecurityErrors.NotAuthenticated, SecurityMessages.AuthenticationRequired));
         }
 
         // 检查器的失败（授予存储不可达等）原样作为判定失败返回：它不是拒绝，不能变成 SECURITY_DENIED_004
@@ -85,7 +85,7 @@ public sealed class PermissionPolicy : IPolicy
         }
 
         return granted
-            ? AuthorizationResult.Allow()
-            : AuthorizationResult.Deny(Error.Denied(SecurityErrors.PermissionMissing, SecurityMessages.PermissionMissing, MessageArguments.Of(("permission", PermissionCode))));
+            ? AuthorizationDecision.Allow()
+            : AuthorizationDecision.Deny(Error.Denied(SecurityErrors.PermissionMissing, SecurityMessages.PermissionMissing, MessageArguments.Of(("permission", PermissionCode))));
     }
 }

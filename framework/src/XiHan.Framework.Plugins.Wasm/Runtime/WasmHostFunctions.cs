@@ -28,7 +28,7 @@ namespace XiHan.Framework.Plugins.Wasm.Runtime;
 /// <remarks>
 /// 读客体内存里的请求，经 <c>xihan_alloc</c> 写回响应；权限要在清单里声明并且已被宿主授予，回调嵌套深度有上限。回调期间管道再次进入同一插件的调用经 <see cref="Pump"/> 回到执行线程上同步完成
 /// </remarks>
-internal sealed partial class WasmHostFunctions(Manifest manifest, PermissionGrant permissions, WasmHostContext host, Func<ILogger> logger)
+internal sealed partial class WasmHostFunctions(Manifest manifest, PluginPermissions permissions, WasmHostContext host, Func<ILogger> logger)
 {
     /// <summary>
     /// <c>xihan.log</c> 一条最多读取的字节数

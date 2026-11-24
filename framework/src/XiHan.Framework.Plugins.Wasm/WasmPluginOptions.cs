@@ -176,10 +176,10 @@ public sealed record WasmPluginOptions
     /// <remarks>
     /// 未配置为空授予
     /// </remarks>
-    public PermissionGrant GrantsFor(string manifestId)
+    public PluginPermissions GrantsFor(string manifestId)
     {
         ArgumentNullException.ThrowIfNull(manifestId);
-        return Grants.TryGetValue(manifestId, out var granted) ? new PermissionGrant(granted) : PermissionGrant.Empty;
+        return Grants.TryGetValue(manifestId, out var granted) ? new PluginPermissions(granted) : PluginPermissions.Empty;
     }
 
     /// <summary>

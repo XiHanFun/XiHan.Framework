@@ -17,7 +17,7 @@ namespace XiHan.Framework.Security.OpenIdConnect;
 /// 签名密钥未知时按需刷新一次元数据再试
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
-public sealed class OpenIdConnectAuthenticationHandler : IAuthenticationHandler
+public sealed class OpenIdConnectCredentialHandler : ICredentialHandler
 {
     /// <summary>
     /// 方案名 <c>Bearer</c>
@@ -45,7 +45,7 @@ public sealed class OpenIdConnectAuthenticationHandler : IAuthenticationHandler
     /// <summary>
     /// 创建处理器
     /// </summary>
-    public OpenIdConnectAuthenticationHandler(OpenIdConnectOptions options, OpenIdConnectMetadataCache metadata)
+    public OpenIdConnectCredentialHandler(OpenIdConnectOptions options, OpenIdConnectMetadataCache metadata)
     {
         _options = options ?? throw new ArgumentNullException(nameof(options));
         // 代码里构造的选项不经 FromConfiguration：这里再确认一次受众，缺了就不建处理器（ADR-0180）
