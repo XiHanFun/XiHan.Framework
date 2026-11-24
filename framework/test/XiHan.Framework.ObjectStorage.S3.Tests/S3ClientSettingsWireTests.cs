@@ -90,6 +90,27 @@ public sealed class S3ClientSettingsWireTests
         AssertNoCredentialIn(logs, head.Error!.ToString());
     }
 
+    [Theory]
+    [MemberData(nameof(Transports))]
+    public async Task AProxyWithoutCredentials_CarriesTheRequestToo(bool named)
+    {
+        await using var proxy = RecordingHttpListener.Answering("502 Bad Gateway");
+        await using var store = await CreateAsync(named, new LogCapture(), allowLoopback: true,
+            ("ServiceUrl", ProxiedServiceUrl),
+            ("MaxAttempts", "1"),
+            ("ProxyHost", "127.0.0.1"),
+            ("ProxyPort", proxy.Port.ToString(CultureInfo.InvariantCulture)));
+
+        var head = await store.Store.HeadAsync(_container, _key, CancellationToken.None);
+
+        Assert.Equal(ObjectStorageErrors.StoreUnavailable, head.Error?.Code);
+        var request = Assert.Single(proxy.Requests);
+        Assert.StartsWith($"HEAD {ProxiedServiceUrl}/media/a.txt HTTP/1.1", request, StringComparison.Ordinal);
+        Assert.Null(RecordingHttpListener.Header(request, "Proxy-Authorization"));
+        // 没配会话令牌就没有令牌头
+        Assert.Null(RecordingHttpListener.Header(request, "X-Amz-Security-Token"));
+    }
+
     [Fact]
     public async Task TheProxyOfANamedInstance_PassesTheOutboundAddressPolicy()
     {
@@ -136,7 +157,7 @@ public sealed class S3ClientSettingsWireTests
         await using var endpoint = RecordingHttpListener.Silent();
         await using var store = await CreateAsync(named, new LogCapture(), allowLoopback: true,
             ("ServiceUrl", $"http://127.0.0.1:{endpoint.Port.ToString(CultureInfo.InvariantCulture)}"),
-            ("RequestTimeoutSeconds", "0.5"),
+            ("RequestTimeoutSeconds", "2"),
             ("MaxAttempts", "1"));
         var watch = Stopwatch.StartNew();
 
@@ -160,7 +181,7 @@ public sealed class S3ClientSettingsWireTests
             ["AccessKey"] = "ak",
             ["SecretKey"] = "sk",
             ["HealthBucket"] = "probe",
-            ["RequestTimeoutSeconds"] = "0.3",
+            ["RequestTimeoutSeconds"] = "1",
             ["MaxAttempts"] = "1",
         };
 
