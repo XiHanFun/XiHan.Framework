@@ -181,7 +181,7 @@ XiHan.Framework.ObjectStorage.Abstractions.Stores.IBlobStoreProvider.ProbeAsync(
 const XiHan.Framework.ObjectStorage.Abstractions.Blobs.BlobPutOptions.DefaultContentType = "application/octet-stream" -> string!
 const XiHan.Framework.ObjectStorage.Abstractions.Blobs.BlobPutOptions.MaxContentTypeLength = 255 -> int
 const XiHan.Framework.ObjectStorage.Abstractions.Blobs.BlobPutOptions.MaxMetadataBytes = 2048 -> int
-const XiHan.Framework.ObjectStorage.Abstractions.Keys.BlobKey.MaxLength = 1024 -> int
+const XiHan.Framework.ObjectStorage.Abstractions.Keys.BlobKey.MaxBytes = 1024 -> int
 const XiHan.Framework.ObjectStorage.Abstractions.Keys.BlobKey.ReservedSegment = ".xihan" -> string!
 const XiHan.Framework.ObjectStorage.Abstractions.Keys.BlobKey.Separator = '/' -> char
 const XiHan.Framework.ObjectStorage.Abstractions.Listing.BlobQuery.MaxPageSize = 1000 -> int
@@ -236,7 +236,7 @@ const XiHan.Framework.ObjectStorage.Abstractions.ObjectStorageMessages.StoreProv
 const XiHan.Framework.ObjectStorage.Abstractions.ObjectStorageMessages.StoreUnavailable = "objectstorage.store.unavailable" -> string!
 const XiHan.Framework.ObjectStorage.Abstractions.ObjectStorageMessages.UploadNotFound = "objectstorage.multipart.upload_not_found" -> string!
 const XiHan.Framework.ObjectStorage.Abstractions.ObjectStorageMessages.UploadsExhausted = "objectstorage.multipart.uploads_exhausted" -> string!
-const XiHan.Framework.ObjectStorage.Abstractions.Signing.BlobUrlRequest.MaxDownloadFileNameLength = 255 -> int
+const XiHan.Framework.ObjectStorage.Abstractions.Signing.BlobUrlRequest.MaxDownloadFileNameBytes = 255 -> int
 const XiHan.Framework.ObjectStorage.Abstractions.Stores.BlobStores.ConfigurationSection = "XiHan:ObjectStorage:Stores" -> string!
 const XiHan.Framework.ObjectStorage.Abstractions.Stores.BlobStores.HealthPrefix = "objectstorage.store." -> string!
 const XiHan.Framework.ObjectStorage.Abstractions.Stores.BlobStores.MaxCountLimit = 1024 -> int

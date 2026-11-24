@@ -33,6 +33,23 @@ public sealed class BlobPutOptionsTests
     }
 
     [Fact]
+    public void ContentType_NeedsAParameterAfterEverySemicolon_AndAllowsSpacesAroundIt()
+    {
+        // ; 两侧的空格是 RFC 9110 的 OWS，照收（ADR-0282）
+        foreach (var valid in new[] { "text/plain;charset=utf-8", "text/plain ; charset=utf-8", "text/plain; charset=utf-8; format=flowed", "text/plain  ;  charset=utf-8  ;  format=flowed" })
+        {
+            Assert.True(BlobPutOptions.IsValidContentType(valid), valid);
+        }
+
+        // ; 之后没有参数的都不收：以前这几种写法能过，对象的内容类型就是带着尾巴的那一串
+        foreach (var invalid in new[] { "text/plain;", "text/plain; ", "text/plain ;", "text/plain; charset=utf-8;", "text/plain; charset=utf-8; ", "text/plain;;charset=utf-8", "text/plain; ;charset=utf-8" })
+        {
+            Assert.False(BlobPutOptions.IsValidContentType(invalid), invalid);
+            Assert.Throws<ArgumentException>(() => new BlobPutOptions { ContentType = invalid });
+        }
+    }
+
+    [Fact]
     public void MetadataValues_HaveNoControlCharacters_AndTheTotalIsBounded()
     {
         Assert.Throws<ArgumentException>(static () => new BlobPutOptions { Metadata = new Dictionary<string, string> { ["owner"] = "alice\r\nx-amz-acl: public-read" } });

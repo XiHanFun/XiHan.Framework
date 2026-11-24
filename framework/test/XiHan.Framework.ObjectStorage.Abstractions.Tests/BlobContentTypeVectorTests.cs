@@ -2,6 +2,7 @@
 // See the LICENSE file in the project root for full license text.
 
 using XiHan.Framework.ObjectStorage.Abstractions.Blobs;
+using XiHan.Framework.ObjectStorage.Abstractions.Signing;
 
 namespace XiHan.Framework.ObjectStorage.Abstractions.Tests;
 
@@ -9,7 +10,7 @@ namespace XiHan.Framework.ObjectStorage.Abstractions.Tests;
 /// 回放 <c>blob-content-types.json</c>：内容类型的文法、长度上限与缺省值
 /// </summary>
 /// <remarks>
-/// 规范 RFC-0012「标识」：媒体类型 <c>type/subtype</c>，两段都是 HTTP 的 token 字符，可跟 <c>;</c> 起头的参数，整体 1 到 255 个字符，按整串匹配（ADR-0214、ADR-0277）
+/// 规范 RFC-0012「标识」：媒体类型 <c>type/subtype</c>，两段都是 HTTP 的 token 字符，可跟若干个 <c>;</c> 起头的参数——每个 <c>;</c> 两侧可以有空格、之后必须有参数，整体 1 到 255 个字符，按整串匹配（ADR-0214、ADR-0277、ADR-0282）
 /// </remarks>
 public sealed class BlobContentTypeVectorTests
 {
@@ -38,6 +39,8 @@ public sealed class BlobContentTypeVectorTests
         {
             Assert.True(BlobPutOptions.IsValidContentType(contentType), contentType);
             Assert.Equal(contentType, new BlobPutOptions { ContentType = contentType }.ContentType);
+            // 预签名上传限定的内容类型是同一条文法
+            Assert.Equal(contentType, BlobUrlRequest.ForUpload(null, contentType).ContentType);
         }
     }
 
@@ -49,6 +52,7 @@ public sealed class BlobContentTypeVectorTests
         {
             Assert.False(BlobPutOptions.IsValidContentType(contentType), contentType);
             Assert.Throws<ArgumentException>(() => new BlobPutOptions { ContentType = contentType });
+            Assert.Throws<ArgumentException>(() => BlobUrlRequest.ForUpload(null, contentType));
         }
     }
 
@@ -58,6 +62,26 @@ public sealed class BlobContentTypeVectorTests
         // 防止向量换了写法后上限一条都没核对还照样通过：正好到上限的要收，只因超长而不合法的要拒
         Assert.Contains(_vectors.Valid, contentType => contentType.Length == _vectors.MaxLength);
         Assert.Contains(_vectors.Invalid, contentType => contentType.Length == _vectors.MaxLength + 1 && IsWellFormedApartFromLength(contentType));
+    }
+
+    [Fact]
+    public void TheVectors_CoverTheSpacesAroundASemicolon_AndEveryWayToLeaveAParameterEmpty()
+    {
+        // 防止向量删了用例后这几类一条都没核对还照样通过（ADR-0282）：; 两侧的空格要收
+        Assert.Contains(_vectors.Valid, static contentType => contentType.Contains(" ;", StringComparison.Ordinal));
+        Assert.Contains(_vectors.Valid, static contentType => contentType.Contains("; ", StringComparison.Ordinal));
+        Assert.Contains(_vectors.Valid, static contentType => contentType.Count(static c => c == ';') > 1);
+
+        // ; 之后没有参数的四种写法都要拒：只有 ;、; 后面只有空格、结尾多出的 ;、连续的 ;
+        Assert.Contains("text/plain;", _vectors.Invalid);
+        Assert.Contains("text/plain; ", _vectors.Invalid);
+        Assert.Contains(_vectors.Invalid, static contentType => contentType.Contains('=', StringComparison.Ordinal) && contentType.TrimEnd(' ').EndsWith(';'));
+        Assert.Contains(_vectors.Invalid, static contentType => contentType.Contains(";;", StringComparison.Ordinal));
+        Assert.Contains(_vectors.Invalid, static contentType => contentType.Contains("; ;", StringComparison.Ordinal));
+
+        // 空格之外的空白不算 OWS：制表符在 ; 的哪一侧都不收
+        Assert.Contains(_vectors.Invalid, static contentType => contentType.Contains("\t;", StringComparison.Ordinal));
+        Assert.Contains(_vectors.Invalid, static contentType => contentType.Contains(";\t", StringComparison.Ordinal));
     }
 
     /// <summary>

@@ -1,6 +1,7 @@
 // Copyright (c) XiHanFun Contributors. Licensed under the MIT License.
 // See the LICENSE file in the project root for full license text.
 
+using System.Text;
 using XiHan.Framework.ObjectStorage.Abstractions.Blobs;
 using XiHan.Framework.ObjectStorage.Abstractions.Multipart;
 using XiHan.Framework.Primitives;
@@ -27,9 +28,12 @@ public sealed record BlobUrlRequest
     public static readonly TimeSpan MaxExpiresIn = TimeSpan.FromDays(7);
 
     /// <summary>
-    /// 保存的文件名的最大长度
+    /// 保存的文件名 UTF-8 编码后的最大字节数
     /// </summary>
-    public const int MaxDownloadFileNameLength = 255;
+    /// <remarks>
+    /// 不是 <see cref="string.Length"/>：含非 ASCII 字符的文件名能写的字符数少于这个数（RFC-0012，ADR-0282）
+    /// </remarks>
+    public const int MaxDownloadFileNameBytes = 255;
 
     /// <summary>
     /// 创建
@@ -112,7 +116,7 @@ public sealed record BlobUrlRequest
     /// 下载地址
     /// </summary>
     /// <param name="expiresIn">有效期；缺省 30 分钟</param>
-    /// <param name="downloadFileName">保存的文件名，1 到 <see cref="MaxDownloadFileNameLength"/> 个字符、不含控制字符（ADR-0219）；缺省不带 <c>Content-Disposition</c></param>
+    /// <param name="downloadFileName">保存的文件名，不全是空白、不含控制字符、UTF-8 编码后不超过 <see cref="MaxDownloadFileNameBytes"/> 字节（ADR-0219、ADR-0282）；缺省不带 <c>Content-Disposition</c></param>
     public static BlobUrlRequest ForDownload(TimeSpan? expiresIn, string? downloadFileName)
         => new(BlobUrlMethod.Get, expiresIn, null, FileNameOrNull(downloadFileName), null, null);
 
@@ -179,13 +183,13 @@ public sealed record BlobUrlRequest
     private static string? ContentTypeOrNull(string? contentType)
         => contentType is null || BlobPutOptions.IsValidContentType(contentType)
             ? contentType
-            : throw new ArgumentException($"The content type must be a media type 'type/subtype' with optional ';' parameters of printable ASCII, at most {BlobPutOptions.MaxContentTypeLength} characters.", nameof(contentType));
+            : throw new ArgumentException($"The content type must be a media type 'type/subtype', optionally followed by non-empty ';' parameters of printable ASCII, at most {BlobPutOptions.MaxContentTypeLength} characters.", nameof(contentType));
 
     /// <summary>
     /// 可选的保存文件名：给了就不能是空白、不能含控制字符、不能过长
     /// </summary>
     /// <remarks>
-    /// 它进签名的规范串与 <c>Content-Disposition</c> 头，换行同样能挪动限定项或拆出别的头（ADR-0219）
+    /// 它进签名的规范串与 <c>Content-Disposition</c> 头，换行同样能挪动限定项或拆出别的头（ADR-0219）。长度按 UTF-8 字节计（ADR-0282）
     /// </remarks>
     private static string? FileNameOrNull(string? fileName)
     {
@@ -194,8 +198,9 @@ public sealed record BlobUrlRequest
             return null;
         }
 
-        return !string.IsNullOrWhiteSpace(fileName) && fileName.Length <= MaxDownloadFileNameLength && !fileName.Any(char.IsControl)
+        // 每个码元至少编成一个字节：码元数已经超过上限的不必再数字节
+        return !string.IsNullOrWhiteSpace(fileName) && fileName.Length <= MaxDownloadFileNameBytes && !fileName.Any(char.IsControl) && Encoding.UTF8.GetByteCount(fileName) <= MaxDownloadFileNameBytes
             ? fileName
-            : throw new ArgumentException($"The download file name must be 1 to {MaxDownloadFileNameLength} characters without control characters.", nameof(fileName));
+            : throw new ArgumentException($"The download file name must not be blank, must be at most {MaxDownloadFileNameBytes} bytes long in UTF-8 and must not contain control characters.", nameof(fileName));
     }
 }

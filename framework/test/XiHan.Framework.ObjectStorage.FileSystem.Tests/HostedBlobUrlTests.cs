@@ -165,6 +165,14 @@ public sealed class HostedBlobUrlTests : IDisposable
             Assert.Equal((HttpStatusCode.BadRequest, ObjectStorageErrors.ContentTypeInvalid), (rejected.StatusCode, await CodeOf(rejected)));
         }
 
+        // ; 之后没有参数同样不合文法（ADR-0282）：以前照收，对象的内容类型就是带着尾巴的那一串
+        using (var dangling = new ByteArrayContent(Encoding.UTF8.GetBytes("x")))
+        {
+            Assert.True(dangling.Headers.TryAddWithoutValidation("Content-Type", "text/plain;"));
+            using var rejected = await client.PutAsync(upload.Url, dangling);
+            Assert.Equal((HttpStatusCode.BadRequest, ObjectStorageErrors.ContentTypeInvalid), (rejected.StatusCode, await CodeOf(rejected)));
+        }
+
         Assert.False((await store.ExistsAsync(new ContainerName(Container), new BlobKey("inbox/any.txt"), CancellationToken.None)).ValueOrThrow());
         using (var accepted = await client.PutAsync(upload.Url, new ByteArrayContent(Encoding.UTF8.GetBytes("x")) { Headers = { ContentType = new MediaTypeHeaderValue("text/plain") } }))
         {

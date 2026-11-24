@@ -2,6 +2,7 @@
 // See the LICENSE file in the project root for full license text.
 
 using System.Diagnostics.CodeAnalysis;
+using System.Text;
 using XiHan.Framework.Primitives;
 
 namespace XiHan.Framework.ObjectStorage.Abstractions.Keys;
@@ -10,15 +11,26 @@ namespace XiHan.Framework.ObjectStorage.Abstractions.Keys;
 /// 对象键
 /// </summary>
 /// <remarks>
-/// <c>/</c> 分段的路径，1 到 <see cref="MaxLength"/> 个字符；每段非空、不是 <c>.</c> 或 <c>..</c>；不含空白、控制字符与 <c>\</c>；首段不是保留段 <see cref="ReservedSegment"/>（框架自己的对象，ADR-0090）。区分大小写
+/// <c>/</c> 分段的路径，UTF-8 编码后 1 到 <see cref="MaxBytes"/> 字节；每段非空、不是 <c>.</c> 或 <c>..</c>；不含空白、控制字符与 <c>\</c>；首段不是保留段 <see cref="ReservedSegment"/>（框架自己的对象，ADR-0090）。区分大小写
 /// </remarks>
 [ApiLevel(Stability.Stable, "5.0")]
 public readonly record struct BlobKey
 {
     /// <summary>
-    /// 最大长度
+    /// 键文本 UTF-8 编码后的最大字节数
     /// </summary>
-    public const int MaxLength = 1024;
+    /// <remarks>
+    /// 不是 <see cref="string.Length"/>：一个非 ASCII 字符占 2 到 4 个字节，含这类字符的键能写的字符数少于这个数。与 S3 对象键的上限一致，查询前缀同此上限（RFC-0012，ADR-0282）
+    /// </remarks>
+    public const int MaxBytes = 1024;
+
+    /// <summary>
+    /// 一个 UTF-16 码元在 UTF-8 里最多占的字节数
+    /// </summary>
+    /// <remarks>
+    /// 基本平面的字符最多 3 个字节；代理对是两个码元共 4 个字节，平均每个码元 2 个
+    /// </remarks>
+    private const int MaxBytesPerCodeUnit = 3;
 
     /// <summary>
     /// 段分隔符
@@ -71,10 +83,13 @@ public readonly record struct BlobKey
     /// <summary>
     /// 是否合法
     /// </summary>
+    /// <remarks>
+    /// 长度按 UTF-8 字节计，不按 <see cref="string.Length"/>
+    /// </remarks>
     public static bool IsValid([NotNullWhen(true)] string? value)
     {
-        // 保留前缀下的是框架自己的对象：不让业务写入，列举时以同一判定跳过
-        if (string.IsNullOrEmpty(value) || value.Length > MaxLength || !IsValidPrefix(value) || IsReserved(value))
+        // 字符约束与字节上限同前缀；保留前缀下的是框架自己的对象：不让业务写入，列举时以同一判定跳过
+        if (string.IsNullOrEmpty(value) || !IsValidPrefix(value) || IsReserved(value))
         {
             return false;
         }
@@ -103,14 +118,15 @@ public readonly record struct BlobKey
             && (value.Length == ReservedSegment.Length || value[ReservedSegment.Length] == Separator);
 
     /// <summary>
-    /// 前缀是否合法：与键同样的字符约束，但允许空串与以 <c>/</c> 结尾
+    /// 前缀是否合法：与键同样的字符约束与字节上限，但允许空串与以 <c>/</c> 结尾
     /// </summary>
     /// <remarks>
-    /// 前缀只是筛选，不受保留前缀限制；以它为前缀的列举总是空的
+    /// 前缀只是筛选：对各段不作要求，也不受保留前缀限制（以保留段开头的前缀列举总是空的）。上限同样按 UTF-8 字节计（ADR-0282）
     /// </remarks>
     public static bool IsValidPrefix([NotNullWhen(true)] string? value)
     {
-        if (value is null || value.Length > MaxLength)
+        // 每个码元至少编成一个字节：码元数已经超过上限的不必再数字节
+        if (value is null || value.Length > MaxBytes)
         {
             return false;
         }
@@ -123,7 +139,8 @@ public readonly record struct BlobKey
             }
         }
 
-        return true;
+        // 短到每个码元都按最多字节算也不超的不用数，其余（长键里可能有非 ASCII 字符）才数字节
+        return value.Length * MaxBytesPerCodeUnit <= MaxBytes || Encoding.UTF8.GetByteCount(value) <= MaxBytes;
     }
 
     /// <summary>
@@ -142,7 +159,7 @@ public readonly record struct BlobKey
 
         return IsValid(value)
             ? value
-            : throw new ArgumentException($"Blob key '{value}' is invalid: it must be 1 to {MaxLength} characters of non-empty '/'-separated segments other than '.' and '..', without whitespace, control characters or backslashes.", nameof(value));
+            : throw new ArgumentException($"Blob key '{value}' is invalid: it must be 1 to {MaxBytes} bytes long in UTF-8, made of non-empty '/'-separated segments other than '.' and '..', without whitespace, control characters or backslashes.", nameof(value));
     }
 
     /// <inheritdoc />

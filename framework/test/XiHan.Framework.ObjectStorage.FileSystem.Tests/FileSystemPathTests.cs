@@ -66,6 +66,49 @@ public sealed class FileSystemPathTests : IDisposable
         Assert.Equal(["a/b.txt"], (await store.ListAsync(container, BlobQuery.All, CancellationToken.None)).ValueOrThrow().Items.Select(static m => m.Key.Value));
     }
 
+    [Fact]
+    public void TheLongestKeys_EncodeToAtMostThreeCharactersPerByte_AndDecodeBack()
+    {
+        // 键的上限按 UTF-8 字节计（ADR-0282）：编码把要转义的字节各写成 %XX，相对路径最长是字节数的三倍。
+        // 以前按 UTF-16 码元计，1024 个汉字的键合法，编出来是九倍
+        string[] keys =
+        [
+            new string('K', BlobKey.MaxBytes),
+            string.Join(BlobKey.Separator, Enumerable.Repeat(new string('键', 8), 41)),
+            string.Concat(Enumerable.Repeat("😀", BlobKey.MaxBytes / 4)),
+        ];
+        foreach (var key in keys)
+        {
+            Assert.Equal(BlobKey.MaxBytes, Encoding.UTF8.GetByteCount(key));
+
+            var path = BlobPathEncoding.ToRelativePath(new BlobKey(key));
+
+            Assert.True(path.Length <= 3 * BlobKey.MaxBytes, $"The key of {key.Length} code units encodes to {path.Length} characters.");
+            Assert.Equal(key, BlobPathEncoding.ToKey(path));
+        }
+
+        // 多一个字节的键构造不出来，到不了路径这一步
+        Assert.Throws<ArgumentException>(static () => new BlobKey(new string('键', 341) + "ab"));
+    }
+
+    [Fact]
+    public async Task AKeyOfTheMaximumBytes_InShortSegments_RoundTrips()
+    {
+        // 编码后的相对路径约 3000 个字符：Windows 与 Linux 容得下，macOS 的整条路径上限是 1024 字节
+        Assert.SkipWhen(OperatingSystem.IsMacOS(), "The encoded path of a key of the maximum length exceeds the 1024-byte path limit of macOS.");
+
+        // 41 段、每段 8 个汉字：UTF-8 恰好 1024 字节，每段编码后 72 个字符，不碰单个文件名的上限
+        var key = new BlobKey(string.Join(BlobKey.Separator, Enumerable.Repeat(new string('键', 8), 41)));
+        var container = new ContainerName("long");
+        var store = await CreateAsync(_root.Path);
+
+        Assert.True((await store.PutAsync(container, key, Encoding.UTF8.GetBytes("deep"), BlobPutOptions.Default, CancellationToken.None)).IsSuccess);
+
+        Assert.Equal("deep", Encoding.UTF8.GetString((await store.ReadAllBytesAsync(container, key, CancellationToken.None)).ValueOrThrow()));
+        Assert.Equal([key.Value], (await store.ListAsync(container, BlobQuery.All, CancellationToken.None)).ValueOrThrow().Items.Select(static m => m.Key.Value));
+        Assert.True((await store.DeleteAsync(container, key, CancellationToken.None)).ValueOrThrow());
+    }
+
     /// <summary>
     /// 在给定根目录上建出并初始化存储
     /// </summary>

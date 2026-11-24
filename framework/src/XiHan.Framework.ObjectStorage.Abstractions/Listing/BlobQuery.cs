@@ -51,7 +51,7 @@ public sealed record BlobQuery
     public string Prefix
     {
         get => field;
-        init => field = BlobKey.IsValidPrefix(value) ? value : throw new ArgumentException($"Blob key prefix '{value}' is invalid.", nameof(value));
+        init => field = BlobKey.IsValidPrefix(value) ? value : throw new ArgumentException($"Blob key prefix '{value}' is invalid: it must be at most {BlobKey.MaxBytes} bytes long in UTF-8, without whitespace, control characters or backslashes.", nameof(value));
     } = string.Empty;
 
     /// <summary>
