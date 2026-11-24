@@ -2,7 +2,7 @@
 
 ## 状态
 
-已采纳（`ICache.GetOrCreateAsync` 的契约由「不合并并发」改为「同一个缓存实例上同一个键、同一种结果类型的并发未命中只回源一次」，签名不变；`Caching.Abstractions` 新增 `InFlightLoadTable` 与 `InFlightLoad`（`Preview`），`SerializingCache`、`InMemoryObjectCache`、`HybridObjectCache` 三个实现各持一张；RFC-0006 待补，见「影响」）。
+已采纳（`ICache.GetOrCreateAsync` 的契约由「不合并并发」改为「同一个缓存实例上同一个键、同一种结果类型的并发未命中只回源一次」，签名不变；`Caching.Abstractions` 新增 `InFlightLoadTable` 与 `InFlightLoad`（`Preview`），`SerializingCache`、`InMemoryObjectCache`、`HybridObjectCache` 三个实现各持一张；RFC-0006 已补）。
 
 ## 日期
 
@@ -137,6 +137,6 @@
   - 同一个键对应同一份数据，与调用方是谁无关：键里要带上租户等区分数据的维度（本来就该如此，合并之后不这样做会把别人的结果交给调用方）。
   - 两条执行流的工厂互相读对方的键会死锁；一条调用链内部绕回自己的不会。
 - **资源**：每次未命中多分配一个在途对象；在途表的条数不超过同时在回源的调用数，回源结束即归零（测试覆盖）。
-- **规范（待补）**：RFC-0006「类型化缓存」里「`GetOrCreateAsync<T>`（未命中时各自执行工厂，不合并并发）」与「两级缓存」里「`GetOrCreate` 两级都未命中才执行工厂，结果写两级」两处，按决策 1～5 与 7 改写。
-- **文档站（待补）**：`docs/caching/basics.md` 与 `docs/packages/caching-abstractions.md` 里「不合并并发……先用分布式锁串行化」；`docs/caching/hybrid.md` 与 `docs/packages/caching-hybrid.md` 里「交给 L2 的 `GetOrCreateAsync`」。
+- **规范（已补，规范指针 `3d3a139`）**：RFC-0006「类型化缓存」里「`GetOrCreateAsync<T>`（未命中时各自执行工厂，不合并并发）」与「两级缓存」里「`GetOrCreate` 两级都未命中才执行工厂，结果写两级」两处，按决策 1～5 与 7 改写。
+- **文档站（已改）**：`docs/caching/basics.md` 与 `docs/packages/caching-abstractions.md` 里「不合并并发……先用分布式锁串行化」；`docs/caching/hybrid.md` 与 `docs/packages/caching-hybrid.md` 里「交给 L2 的 `GetOrCreateAsync`」。
 - **本机没有覆盖的**：`SerializingCache` 架在真实 Redis 与远程插件上的合并（脱钩之后「已经发出的写回与随后的删除谁先到」取决于后端）。本机用同步完成的存储替身验证了次序，Redis 的门控用例没有针对它的新用例。

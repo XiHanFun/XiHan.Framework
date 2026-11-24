@@ -2,7 +2,7 @@
 
 ## 状态
 
-已采纳（`Protocols.Http` 的 OpenAPI 生成给 `Stability.Deprecated` 的操作写标准的 `deprecated: true`，稳定性扩展字段照旧；契约、源生成器与其余协议不变；`protocol/http.md` 待补一句，见「影响」）。
+已采纳（`Protocols.Http` 的 OpenAPI 生成给 `Stability.Deprecated` 的操作写标准的 `deprecated: true`，稳定性扩展字段照旧；契约、源生成器与其余协议不变；`protocol/http.md` 已补）。
 
 ## 日期
 
@@ -53,8 +53,8 @@
   - 文档界面（Scalar、Swagger UI 等）把它显示成弃用。
   - 由文档生成的客户端会给对应的方法加弃用标记；把弃用警告当错误的客户端工程会在重新生成后报出来，这正是弃用要传达的。
   - 没有弃用操作的应用，文档逐字节不变。
-- 规范（待补）：`protocol/http.md`「OpenAPI」里 `paths` 一条，在「非 `Stable` 的操作带 `x-xihan-stability`」之后补「`Deprecated` 的操作另带 OpenAPI 标准的 `deprecated: true`，其余级别不写」。RFC-0011 不用改：稳定性本来就是契约的字段。
-- 文档站（待补）：`docs/web/openapi.md` 的字段表加一行 `deprecated`。
+- 规范（已补，规范指针 `3d3a139`）：`protocol/http.md`「OpenAPI」里 `paths` 一条，在「非 `Stable` 的操作带 `x-xihan-stability`」之后补「`Deprecated` 的操作另带 OpenAPI 标准的 `deprecated: true`，其余级别不写」。RFC-0011 不用改：稳定性本来就是契约的字段。
+- 文档站（已改）：`docs/web/openapi.md` 的字段表加一行 `deprecated`。
 - 同一个标记在别的协议上可以怎样体现，这次都没有做：
   - **MCP**：tool 对象没有弃用字段（`annotations` 只有标题与四个行为提示）。可选做法是在 `description` 前加一句本地化的「已弃用」，或放进 `_meta`。
   - **命令行**：`operations` 已经逐行打印稳定性，弃用的显示 `Deprecated`。可选做法是 `invoke` 调到弃用的操作时在标准错误上提示一句。
