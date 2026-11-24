@@ -27,9 +27,12 @@ public sealed partial class SpecVectorCoverageTests
     /// 认领的档里没有回放的向量与理由
     /// </summary>
     /// <remarks>
-    /// 路径相对 <c>conformance/vectors</c>，值是理由；与规范 README 生态一节列的缺口一致。现在没有缺口：最后一个 <c>primitives/wire-encoding.json</c> 由内核的 <c>ResultJson</c> 回放（ADR-0244）
+    /// 路径相对 <c>conformance/vectors</c>，值是理由；与规范 README 生态一节列的缺口一致。长期的缺口没有：最后一个 <c>primitives/wire-encoding.json</c> 由内核的 <c>ResultJson</c> 回放（ADR-0244）。现在登记的一项是过渡：<c>caching/cache-keys.json</c> 要求缓存键按 UTF-8 字节计（ADR-0276 决策 1），<c>CacheKey</c> 的改动与回放随 ADR-0274 落地；那边的回放一合进来，本测试就以「缺口有了回放」失败，届时删掉这一项
     /// </remarks>
-    private static readonly Dictionary<string, string> _gaps = new(StringComparer.Ordinal);
+    private static readonly Dictionary<string, string> _gaps = new(StringComparer.Ordinal)
+    {
+        ["caching/cache-keys.json"] = "Cache keys are still counted in UTF-16 code units; 'CacheKey' switches to UTF-8 bytes and gains the replay with ADR-0274.",
+    };
 
     [Fact]
     public void EveryVectorOfTheClaimedProfiles_IsReplayedOrAGap()
