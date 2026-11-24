@@ -50,7 +50,7 @@ internal static class WorkflowInvocations
             if (tenantId is not null)
             {
                 // 预先放进安全上下文：没有装配多租户（没有 Tenant 阶段）时租户也在，工作单元按它开启；装配了时 Tenant 阶段按 Baggage 解析出同一个租户并校验
-                context.SetTenant(new TenantContext(tenantId));
+                context.SetTenant(new TenantContext { Id = tenantId });
             }
             else
             {

@@ -64,7 +64,7 @@ public static class EndpointConventionBuilderExtensions
         where TBuilder : IEndpointConventionBuilder
     {
         ArgumentNullException.ThrowIfNull(builder);
-        return Require(builder, new AuthorizationRequirement(policyName, resource));
+        return Require(builder, new AuthorizationRequirement { Policy = policyName, Resource = resource });
     }
 
     /// <summary>

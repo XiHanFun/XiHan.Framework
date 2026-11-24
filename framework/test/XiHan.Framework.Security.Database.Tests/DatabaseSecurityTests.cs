@@ -111,25 +111,25 @@ public sealed class DatabaseSecurityTests
         Assert.Equal(SecurityErrors.NotAuthenticated, (await WriteOrderAsync(host, null)).Error?.Code);
 
         // 直接授予用户
-        Assert.All(await GrantAsync(host, new PermissionGrant(_alice, WriteOrderOperation.Permission)), static r => Assert.True(r.IsSuccess));
+        Assert.All(await GrantAsync(host, new PermissionGrant { Subject = _alice, Permission = WriteOrderOperation.Permission }), static r => Assert.True(r.IsSuccess));
         var written = await WriteOrderAsync(host, "dev-alice-key");
         Assert.Equal(("alice", null), (written.ValueOrThrow().Principal, written.ValueOrThrow().Tenant));
-        Assert.All(await RevokeAsync(host, new PermissionGrant(_alice, WriteOrderOperation.Permission)), static r => Assert.True(r.IsSuccess));
+        Assert.All(await RevokeAsync(host, new PermissionGrant { Subject = _alice, Permission = WriteOrderOperation.Permission }), static r => Assert.True(r.IsSuccess));
         Assert.Equal(SecurityErrors.PermissionMissing, (await WriteOrderAsync(host, "dev-alice-key")).Error?.Code);
 
         // 经角色授予：alice 的 ApiKey 主体带 role=editor 声明，bob 没有角色
-        Assert.All(await GrantAsync(host, new PermissionGrant(_editor, WriteOrderOperation.Permission)), static r => Assert.True(r.IsSuccess));
+        Assert.All(await GrantAsync(host, new PermissionGrant { Subject = _editor, Permission = WriteOrderOperation.Permission }), static r => Assert.True(r.IsSuccess));
         Assert.True((await WriteOrderAsync(host, "dev-alice-key")).IsSuccess);
         Assert.Equal(SecurityErrors.PermissionMissing, (await WriteOrderAsync(host, "dev-bob-key")).Error?.Code);
 
         // 平台授予不落到租户里：修之前平台授给 role:editor 的权限对每个租户里带 editor 角色的人都生效（ADR-0197）
         Assert.Equal(SecurityErrors.PermissionMissing, (await WriteOrderAsync(host, "dev-alice-key", tenant: "acme")).Error?.Code);
-        Assert.All(await GrantAsync(host, new PermissionGrant(_editor, WriteOrderOperation.Permission, PermissionGrant.AnyTenant)), static r => Assert.True(r.IsSuccess));
+        Assert.All(await GrantAsync(host, new PermissionGrant { Subject = _editor, Permission = WriteOrderOperation.Permission, TenantId = PermissionGrant.AnyTenant }), static r => Assert.True(r.IsSuccess));
         Assert.True((await WriteOrderAsync(host, "dev-alice-key", tenant: "acme")).IsSuccess);
-        Assert.All(await RevokeAsync(host, new PermissionGrant(_editor, WriteOrderOperation.Permission, PermissionGrant.AnyTenant)), static r => Assert.True(r.IsSuccess));
+        Assert.All(await RevokeAsync(host, new PermissionGrant { Subject = _editor, Permission = WriteOrderOperation.Permission, TenantId = PermissionGrant.AnyTenant }), static r => Assert.True(r.IsSuccess));
 
         // 租户专属授予只对该租户放行
-        Assert.All(await GrantAsync(host, new PermissionGrant(_bob, WriteOrderOperation.Permission, "acme")), static r => Assert.True(r.IsSuccess));
+        Assert.All(await GrantAsync(host, new PermissionGrant { Subject = _bob, Permission = WriteOrderOperation.Permission, TenantId = "acme" }), static r => Assert.True(r.IsSuccess));
         var scoped = await WriteOrderAsync(host, "dev-bob-key", tenant: "acme");
         Assert.Equal(("bob", "acme"), (scoped.ValueOrThrow().Principal, scoped.ValueOrThrow().Tenant));
         Assert.Equal(SecurityErrors.PermissionMissing, (await WriteOrderAsync(host, "dev-bob-key", tenant: "other")).Error?.Code);
@@ -140,9 +140,9 @@ public sealed class DatabaseSecurityTests
     public async Task RecordStore_GrantsIdempotently_RevokesPerItem_AndLists()
     {
         await using var host = await StartAsync();
-        var platform = new PermissionGrant(_alice, WriteOrderOperation.Permission);
-        var scoped = new PermissionGrant(_alice, WriteOrderOperation.Permission, "acme");
-        var wildcard = new PermissionGrant(_editor, PermissionGrant.All);
+        var platform = new PermissionGrant { Subject = _alice, Permission = WriteOrderOperation.Permission };
+        var scoped = new PermissionGrant { Subject = _alice, Permission = WriteOrderOperation.Permission, TenantId = "acme" };
+        var wildcard = new PermissionGrant { Subject = _editor, Permission = PermissionGrant.All };
 
         // 同一批里的重复项与已存在的项都成功，只落一行
         var granted = await GrantAsync(host, platform, platform, scoped, wildcard);
@@ -162,8 +162,8 @@ public sealed class DatabaseSecurityTests
         Assert.Equal(3, second.Total);
 
         // 撤销逐项：存在的成功，同一批第二次与从未存在的都不存在，错误能按调用方语言翻译；平台授予用自己的文案（ADR-0197）
-        var missing = new PermissionGrant(GrantSubject.ForUser("carol"), "reports.read");
-        var revoked = await RevokeAsync(host, platform, platform, missing, new PermissionGrant(_alice, "reports.read", "acme"));
+        var missing = new PermissionGrant { Subject = GrantSubject.ForUser("carol"), Permission = "reports.read" };
+        var revoked = await RevokeAsync(host, platform, platform, missing, new PermissionGrant { Subject = _alice, Permission = "reports.read", TenantId = "acme" });
         Assert.True(revoked[0].IsSuccess);
         Assert.All(revoked.Skip(1), static r => Assert.Equal(SecurityErrors.GrantNotFound, r.Error?.Code));
         var localizer = host.Services.GetRequiredService<IMessageLocalizer>();
@@ -178,7 +178,7 @@ public sealed class DatabaseSecurityTests
             var store = context.Services.GetRequiredService<PermissionGrantRecordStore>();
             Assert.Empty(await store.GrantAsync([], context.CancellationToken));
             Assert.Empty(await store.RevokeAsync([], context.CancellationToken));
-            await Assert.ThrowsAsync<ArgumentException>(async () => await store.GrantAsync([new PermissionGrant(_alice, "reports.read", " ")], context.CancellationToken));
+            await Assert.ThrowsAsync<ArgumentException>(async () => await store.GrantAsync([new PermissionGrant { Subject = _alice, Permission = "reports.read", TenantId = " " }], context.CancellationToken));
         });
         empty.ThrowIfFailure();
     }
@@ -217,7 +217,7 @@ public sealed class DatabaseSecurityTests
         await store.InvalidateAllAsync(CancellationToken.None);
         Assert.Equal(3, ((await store.GetGrantsAsync(_alice, null, CancellationToken.None)).ValueOrThrow()).Count);
         Assert.Empty((await store.GetGrantsAsync(_bob, "acme", CancellationToken.None)).ValueOrThrow());
-        Assert.All(await GrantAsync(host, new PermissionGrant(_bob, "reports.read", "acme")), static r => Assert.True(r.IsSuccess));
+        Assert.All(await GrantAsync(host, new PermissionGrant { Subject = _bob, Permission = "reports.read", TenantId = "acme" }), static r => Assert.True(r.IsSuccess));
         Assert.Equal(["reports.read"], (await store.GetGrantsAsync(_bob, "acme", CancellationToken.None)).ValueOrThrow());
         Assert.Empty((await store.GetGrantsAsync(_bob, "other", CancellationToken.None)).ValueOrThrow());
         // 返回的是冻结集合：不可变，调用方改不了缓存
@@ -289,7 +289,7 @@ public sealed class DatabaseSecurityTests
 
         if (tenant is not null)
         {
-            context.SetTenant(new TenantContext(tenant));
+            context.SetTenant(new TenantContext { Id = tenant });
         }
 
         return await scope.ServiceProvider.GetRequiredService<IOperationInvoker>().InvokeAsync<OrderRequest, OrderResponse>(context, WriteOrderOperation.Id, new OrderRequest("o-1"));

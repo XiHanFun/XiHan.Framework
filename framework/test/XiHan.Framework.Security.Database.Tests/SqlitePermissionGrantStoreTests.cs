@@ -38,9 +38,9 @@ public sealed class SqlitePermissionGrantStoreTests
         {
             var results = await context.Services.GetRequiredService<PermissionGrantRecordStore>().GrantAsync(
             [
-                new PermissionGrant(editor, "orders.write"),
-                new PermissionGrant(alice, "reports.export", "acme"),
-                new PermissionGrant(editor, "orders.write"),
+                new PermissionGrant { Subject = editor, Permission = "orders.write" },
+                new PermissionGrant { Subject = alice, Permission = "reports.export", TenantId = "acme" },
+                new PermissionGrant { Subject = editor, Permission = "orders.write" },
             ], context.CancellationToken);
             Assert.All(results, static r => Assert.True(r.IsSuccess));
         });
@@ -68,7 +68,7 @@ public sealed class SqlitePermissionGrantStoreTests
         var revoked = await host.InvokeAsync(async context =>
         {
             var results = await context.Services.GetRequiredService<PermissionGrantRecordStore>().RevokeAsync(
-                [new PermissionGrant(editor, "orders.write"), new PermissionGrant(editor, "orders.write")], context.CancellationToken);
+                [new PermissionGrant { Subject = editor, Permission = "orders.write" }, new PermissionGrant { Subject = editor, Permission = "orders.write" }], context.CancellationToken);
             Assert.True(results[0].IsSuccess);
             Assert.Equal(SecurityErrors.GrantNotFound, results[1].Error?.Code);
         });
@@ -91,7 +91,7 @@ public sealed class SqlitePermissionGrantStoreTests
         var store = Assert.IsType<DatabasePermissionGrantStore>(host.Services.GetRequiredService<IPermissionGrantStore>());
         var granted = await host.InvokeAsync(async context =>
         {
-            var results = await context.Services.GetRequiredService<PermissionGrantRecordStore>().GrantAsync([new PermissionGrant(GrantSubject.ForRole("editor"), WriteOrderOperation.Permission)], context.CancellationToken);
+            var results = await context.Services.GetRequiredService<PermissionGrantRecordStore>().GrantAsync([new PermissionGrant { Subject = GrantSubject.ForRole("editor"), Permission = WriteOrderOperation.Permission }], context.CancellationToken);
             Assert.All(results, static r => Assert.True(r.IsSuccess));
         });
         granted.ThrowIfFailure();

@@ -25,12 +25,12 @@ public abstract class PermissionGrantStoreConformance
     /// </remarks>
     private static readonly PermissionGrant[] _seed =
     [
-        new(GrantSubject.ForRole("editor"), "orders.read", PermissionGrant.AnyTenant),
-        new(GrantSubject.ForRole("editor"), "orders.write", PermissionGrant.AnyTenant),
-        new(GrantSubject.ForRole("admin"), PermissionGrant.All, null),
-        new(GrantSubject.ForUser("alice"), "reports.read", PermissionGrant.AnyTenant),
-        new(GrantSubject.ForUser("alice"), "reports.export", "acme"),
-        new(GrantSubject.ForUser("Bob"), "audit.read", null),
+        new() { Subject = GrantSubject.ForRole("editor"), Permission = "orders.read", TenantId = PermissionGrant.AnyTenant },
+        new() { Subject = GrantSubject.ForRole("editor"), Permission = "orders.write", TenantId = PermissionGrant.AnyTenant },
+        new() { Subject = GrantSubject.ForRole("admin"), Permission = PermissionGrant.All, TenantId = null },
+        new() { Subject = GrantSubject.ForUser("alice"), Permission = "reports.read", TenantId = PermissionGrant.AnyTenant },
+        new() { Subject = GrantSubject.ForUser("alice"), Permission = "reports.export", TenantId = "acme" },
+        new() { Subject = GrantSubject.ForUser("Bob"), Permission = "audit.read", TenantId = null },
     ];
 
     /// <summary>

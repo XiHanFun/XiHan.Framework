@@ -83,7 +83,7 @@ public sealed class InvocationAuthenticationHandler(IOptionsMonitor<InvocationAu
             return AuthenticateResult.NoResult();
         }
 
-        context.SetSecurity(new SecurityContext(principal, context.GetSecurity().Tenant));
+        context.SetSecurity(new SecurityContext { Principal = principal, Tenant = context.GetSecurity().Tenant });
         foreach (var filter in services.GetServices<IInvocationAuthenticationFilter>())
         {
             var checkedPrincipal = await filter.AuthenticatedAsync(principal, context).ConfigureAwait(false);

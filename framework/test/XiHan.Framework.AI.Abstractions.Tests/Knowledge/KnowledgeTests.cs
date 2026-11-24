@@ -61,7 +61,7 @@ public sealed class KnowledgeTests
 
         (await host.InvokeAsync(static async context =>
         {
-            context.SetTenant(new TenantContext("acme"));
+            context.SetTenant(new TenantContext { Id = "acme" });
             var ingested = await context.Services.GetRequiredService<IKnowledgeIngestor>().IngestAsync([new KnowledgeIngestRequest { DocumentId = "cats", Text = "Cats purr when they are happy." }], context.CancellationToken);
             Assert.True(ingested.Single().IsSuccess, ingested.Single().ToString());
         })).ThrowIfFailure();
@@ -71,7 +71,7 @@ public sealed class KnowledgeTests
         Assert.NotEmpty(store.Records("knowledge.acme"));
         (await host.InvokeAsync(static async context =>
         {
-            context.SetTenant(new TenantContext("globex"));
+            context.SetTenant(new TenantContext { Id = "globex" });
             var found = await context.Services.GetRequiredService<IKnowledgeRetriever>().RetrieveAsync(new KnowledgeQuery { Text = "cats purr" }, context.CancellationToken);
             Assert.Empty(found.ValueOrThrow());
         })).ThrowIfFailure();

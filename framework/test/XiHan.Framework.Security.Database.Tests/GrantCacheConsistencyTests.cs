@@ -37,7 +37,7 @@ public sealed class GrantCacheConsistencyTests
     /// <summary>
     /// 平台授予
     /// </summary>
-    private static readonly PermissionGrant _write = new(_editor, "orders.write");
+    private static readonly PermissionGrant _write = new() { Subject = _editor, Permission = "orders.write" };
 
     /// <summary>
     /// 租户 acme 专属的授予
@@ -45,7 +45,7 @@ public sealed class GrantCacheConsistencyTests
     /// <remarks>
     /// 租户调用看不到平台授予（ADR-0197），按租户读取的用例用它
     /// </remarks>
-    private static readonly PermissionGrant _writeInAcme = new(_editor, "orders.write", "acme");
+    private static readonly PermissionGrant _writeInAcme = new() { Subject = _editor, Permission = "orders.write", TenantId = "acme" };
 
     [Fact]
     public async Task InstancesSharingTheCache_SeeGrantsAndRevocationsWithoutWaitingForExpiry()

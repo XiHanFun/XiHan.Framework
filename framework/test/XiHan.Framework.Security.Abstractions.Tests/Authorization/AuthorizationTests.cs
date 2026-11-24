@@ -1,6 +1,8 @@
 // Copyright (c) XiHanFun Contributors. Licensed under the MIT License.
 // See the LICENSE file in the project root for full license text.
 
+using System.Reflection;
+using System.Runtime.CompilerServices;
 using Microsoft.Extensions.DependencyInjection;
 using XiHan.Framework.Kernel.Operations;
 using XiHan.Framework.Kernel.Pipeline;
@@ -22,10 +24,10 @@ public sealed class AuthorizationTests
     /// </summary>
     private static readonly PermissionGrant[] _grants =
     [
-        new(GrantSubject.ForRole("editor"), "orders.read"),
-        new(GrantSubject.ForRole("admin"), PermissionGrant.All),
-        new(GrantSubject.ForUser("alice"), "reports.read"),
-        new(GrantSubject.ForUser("alice"), "reports.export", "acme"),
+        new() { Subject = GrantSubject.ForRole("editor"), Permission = "orders.read" },
+        new() { Subject = GrantSubject.ForRole("admin"), Permission = PermissionGrant.All },
+        new() { Subject = GrantSubject.ForUser("alice"), Permission = "reports.read" },
+        new() { Subject = GrantSubject.ForUser("alice"), Permission = "reports.export", TenantId = "acme" },
     ];
 
     /// <summary>
@@ -56,9 +58,9 @@ public sealed class AuthorizationTests
     public async Task PermissionChecker_UnionsUserAndRoleGrants_AndHonoursWildcardAndTenant()
     {
         var checker = new PermissionChecker(new DictionaryGrantStore(_grants), new SecurityOptions());
-        var alice = new SecurityContext(SecurityHosts.Alice("editor"), null);
-        var aliceInAcme = new SecurityContext(SecurityHosts.Alice("editor"), new TenantContext("acme"));
-        var root = new SecurityContext(new Principal("root", "test") { Claims = [new("role", "admin")] }, null);
+        var alice = new SecurityContext { Principal = SecurityHosts.Alice("editor") };
+        var aliceInAcme = new SecurityContext { Principal = SecurityHosts.Alice("editor"), Tenant = new TenantContext { Id = "acme" } };
+        var root = new SecurityContext { Principal = new Principal("root", "test") { Claims = [new("role", "admin")] } };
 
         Assert.True((await checker.HasPermissionAsync(alice, "orders.read", CancellationToken.None)).ValueOrThrow());
         Assert.True((await checker.HasPermissionAsync(alice, "reports.read", CancellationToken.None)).ValueOrThrow());
@@ -76,8 +78,8 @@ public sealed class AuthorizationTests
         var edition = new RecordingPermissionFilter(new HashSet<string>(StringComparer.Ordinal) { "orders.read", "reports.read" });
         var audit = new RecordingPermissionFilter(allowed: null);
         var checker = new PermissionChecker(new DictionaryGrantStore(_grants), new SecurityOptions(), [edition, audit]);
-        var alice = new SecurityContext(SecurityHosts.Alice("editor"), null);
-        var root = new SecurityContext(new Principal("root", "test") { Claims = [new("role", "admin")] }, null);
+        var alice = new SecurityContext { Principal = SecurityHosts.Alice("editor") };
+        var root = new SecurityContext { Principal = new Principal("root", "test") { Claims = [new("role", "admin")] } };
 
         // 授予命中且全部放行 → 持有；两个过滤器按登记顺序都被调用
         Assert.True((await checker.HasPermissionAsync(alice, "orders.read", CancellationToken.None)).ValueOrThrow());
@@ -109,8 +111,8 @@ public sealed class AuthorizationTests
         var delegated = new RecordingGrantSource(new Dictionary<string, string[]>(StringComparer.Ordinal) { ["bob"] = [PermissionGrant.All] });
         var narrowing = new RecordingPermissionFilter(new HashSet<string>(StringComparer.Ordinal) { "orders.read", "orders.write", "reports.read" });
         var checker = new PermissionChecker(new DictionaryGrantStore(_grants), new SecurityOptions(), [narrowing], [inherited, delegated]);
-        var alice = new SecurityContext(SecurityHosts.Alice("editor"), null);
-        var bob = new SecurityContext(new Principal("bob", "test"), null);
+        var alice = new SecurityContext { Principal = SecurityHosts.Alice("editor") };
+        var bob = new SecurityContext { Principal = new Principal("bob", "test") };
 
         // 存储命中时不查来源
         Assert.True((await checker.HasPermissionAsync(alice, "orders.read", CancellationToken.None)).ValueOrThrow());
@@ -145,7 +147,7 @@ public sealed class AuthorizationTests
         var policy = catalog.Find(PermissionPolicy.NameFor(SecurityHosts.OrdersRead.Code)).ValueOrThrow();
 
         // 授予命中（editor 持 orders.read）但过滤器拒绝：与缺权限同一个错误码，调用方不需要区分"没授予"与"被收窄"
-        var result = (await policy.EvaluateAsync(new AuthorizationRequest(new SecurityContext(SecurityHosts.Alice("editor"), null), PermissionPolicy.NameFor(SecurityHosts.OrdersRead.Code)), CancellationToken.None)).ValueOrThrow();
+        var result = (await policy.EvaluateAsync(new AuthorizationRequest(new SecurityContext { Principal = SecurityHosts.Alice("editor") }, PermissionPolicy.NameFor(SecurityHosts.OrdersRead.Code)), CancellationToken.None)).ValueOrThrow();
         Assert.False(result.IsAllowed);
         Assert.Equal(SecurityErrors.PermissionMissing, result.Reason?.Code);
         Assert.Single(edition.Calls);
@@ -157,7 +159,7 @@ public sealed class AuthorizationTests
         // 批量优先：用户与它的全部角色一次读出，N 个角色不再是 N 次往返
         var store = new DictionaryGrantStore(_grants);
         var checker = new PermissionChecker(store, new SecurityOptions());
-        var alice = new SecurityContext(SecurityHosts.Alice("editor", "admin"), null);
+        var alice = new SecurityContext { Principal = SecurityHosts.Alice("editor", "admin") };
 
         Assert.True((await checker.HasPermissionAsync(alice, "orders.delete", CancellationToken.None)).ValueOrThrow());
         Assert.Equal([[GrantSubject.ForUser("alice"), GrantSubject.ForRole("editor"), GrantSubject.ForRole("admin")]], store.Calls);
@@ -167,7 +169,7 @@ public sealed class AuthorizationTests
     public async Task PermissionChecker_ReturnsTheFailure_WhenStoreSourceOrFilterCannotDecide()
     {
         var unavailable = Error.Unavailable(SecurityErrors.StoreUnavailable, SecurityMessages.GrantStoreUnavailable);
-        var alice = new SecurityContext(SecurityHosts.Alice("editor"), null);
+        var alice = new SecurityContext { Principal = SecurityHosts.Alice("editor") };
 
         // 存储读不到：失败原样返回，不当作不持有；之后的角色、来源与过滤器都不再访问
         var store = new DictionaryGrantStore(_grants) { Failure = unavailable };
@@ -205,7 +207,7 @@ public sealed class AuthorizationTests
     {
         var store = new DictionaryGrantStore(_grants) { Failure = Error.Unavailable(SecurityErrors.StoreUnavailable, SecurityMessages.GrantStoreUnavailable) };
         var context = SecurityHosts.Context(Services(store: store));
-        context.SetSecurity(new SecurityContext(SecurityHosts.Alice("editor"), null));
+        context.SetSecurity(new SecurityContext { Principal = SecurityHosts.Alice("editor") });
         context.RequireAuthorization(AuthorizationRequirement.Permission("orders.read"));
         var reached = new bool[1];
 
@@ -220,7 +222,7 @@ public sealed class AuthorizationTests
         // 存储恢复：同一个主体照常放行
         store.Failure = null;
         var recovered = SecurityHosts.Context(Services(store: store));
-        recovered.SetSecurity(new SecurityContext(SecurityHosts.Alice("editor"), null));
+        recovered.SetSecurity(new SecurityContext { Principal = SecurityHosts.Alice("editor") });
         recovered.RequireAuthorization(AuthorizationRequirement.Permission("orders.read"));
         await new AuthorizationMiddleware().InvokeAsync(recovered, Handler(reached));
         Assert.True(reached[0]);
@@ -231,8 +233,8 @@ public sealed class AuthorizationTests
     {
         var policy = new RecordingPolicy("owner-only", static _ => Error.Unavailable("ORDERS_UNAVAILABLE_001", "orders.store.unavailable"));
         var context = SecurityHosts.Context(Services(policy));
-        context.SetSecurity(new SecurityContext(SecurityHosts.Alice(), null));
-        context.RequireAuthorization(new AuthorizationRequirement("owner-only"));
+        context.SetSecurity(new SecurityContext { Principal = SecurityHosts.Alice() });
+        context.RequireAuthorization(new AuthorizationRequirement { Policy = "owner-only" });
         var reached = new bool[1];
 
         await new AuthorizationMiddleware().InvokeAsync(context, Handler(reached));
@@ -317,7 +319,7 @@ public sealed class AuthorizationTests
     public async Task UnknownPolicy_IsDenied_NotFound()
     {
         var context = SecurityHosts.Context(Services());
-        context.RequireAuthorization(new AuthorizationRequirement("missing"));
+        context.RequireAuthorization(new AuthorizationRequirement { Policy = "missing" });
         var reached = new bool[1];
 
         await new AuthorizationMiddleware().InvokeAsync(context, Handler(reached));
@@ -337,7 +339,7 @@ public sealed class AuthorizationTests
         Assert.Equal(SecurityErrors.NotAuthenticated, anonymous.FindOutcome().ValueOrThrow().Error?.Code);
 
         var authenticated = SecurityHosts.Context(Services());
-        authenticated.SetSecurity(new SecurityContext(SecurityHosts.Alice(), null));
+        authenticated.SetSecurity(new SecurityContext { Principal = SecurityHosts.Alice() });
         authenticated.RequireAuthorization(AuthorizationRequirement.Authenticated);
         var reached = new bool[1];
         await new AuthorizationMiddleware().InvokeAsync(authenticated, Handler(reached));
@@ -348,14 +350,14 @@ public sealed class AuthorizationTests
     public async Task PermissionPolicy_AllowsGranted_DeniesMissing_AndAnonymous()
     {
         var editor = SecurityHosts.Context(Services());
-        editor.SetSecurity(new SecurityContext(SecurityHosts.Alice("editor"), null));
+        editor.SetSecurity(new SecurityContext { Principal = SecurityHosts.Alice("editor") });
         editor.RequireAuthorization(AuthorizationRequirement.Permission("orders.read"));
         var reachedEditor = new bool[1];
         await new AuthorizationMiddleware().InvokeAsync(editor, Handler(reachedEditor));
         Assert.True(reachedEditor[0]);
 
         var viewer = SecurityHosts.Context(Services());
-        viewer.SetSecurity(new SecurityContext(SecurityHosts.Alice("viewer"), null));
+        viewer.SetSecurity(new SecurityContext { Principal = SecurityHosts.Alice("viewer") });
         viewer.RequireAuthorization(AuthorizationRequirement.Permission("orders.read"));
         var reachedViewer = new bool[1];
         await new AuthorizationMiddleware().InvokeAsync(viewer, Handler(reachedViewer));
@@ -381,8 +383,8 @@ public sealed class AuthorizationTests
         });
         var context = SecurityHosts.Context(Services(policy));
         var resource = ResourceName.Parse("xrn:xihan:orders:acme:order/42");
-        context.SetSecurity(new SecurityContext(SecurityHosts.Alice(), new TenantContext("acme")));
-        context.RequireAuthorization(new AuthorizationRequirement("owner-only", resource));
+        context.SetSecurity(new SecurityContext { Principal = SecurityHosts.Alice(), Tenant = new TenantContext { Id = "acme" } });
+        context.RequireAuthorization(new AuthorizationRequirement { Policy = "owner-only", Resource = resource });
         var reached = new bool[1];
 
         await new AuthorizationMiddleware().InvokeAsync(context, Handler(reached));
@@ -401,8 +403,8 @@ public sealed class AuthorizationTests
         Assert.Equal("role:admin", GrantSubject.ForRole("admin").ToString());
         Assert.Throws<ArgumentException>(static () => new GrantSubject("group", "x"));
         Assert.Throws<ArgumentException>(static () => GrantSubject.ForUser(" "));
-        Assert.Throws<ArgumentException>(static () => new PermissionGrant(GrantSubject.ForUser("a"), ""));
-        Assert.Throws<ArgumentException>(static () => new AuthorizationRequirement(" "));
+        Assert.Throws<ArgumentException>(static () => new PermissionGrant { Subject = GrantSubject.ForUser("a"), Permission = "" });
+        Assert.Throws<ArgumentException>(static () => new AuthorizationRequirement { Policy = " " });
     }
 
     [Fact]
@@ -415,7 +417,70 @@ public sealed class AuthorizationTests
         Assert.Equal(string.Empty, empty.ToString());
         Assert.NotEqual(GrantSubject.ForUser("a"), empty);
         Assert.Equal(GrantSubject.ForRole("admin"), new GrantSubject(GrantSubject.Role, "admin"));
-        Assert.Throws<ArgumentException>(static () => new PermissionGrant(default, "orders.read"));
+        Assert.Throws<ArgumentException>(static () => new PermissionGrant { Subject = default, Permission = "orders.read" });
+    }
+
+    [Fact]
+    public void PermissionGrant_IsBuiltByInitializer_DefaultsToPlatform_AndValidatesOnInitAndWith()
+    {
+        var editor = GrantSubject.ForRole("editor");
+        var platform = new PermissionGrant { Subject = editor, Permission = "orders.read" };
+
+        // 范围不给就是平台授予；显式写 null 与不写是同一条授予
+        Assert.Null(platform.TenantId);
+        Assert.Equal(platform, new PermissionGrant { Subject = editor, Permission = "orders.read", TenantId = null });
+        Assert.Equal((editor, "orders.read"), (platform.Subject, platform.Permission));
+
+        // with 只换给出的成员，相等按全部成员比（存储按它去重与撤销）
+        var scoped = platform with { TenantId = "acme" };
+        Assert.Equal(new PermissionGrant { Subject = editor, Permission = "orders.read", TenantId = "acme" }, scoped);
+        Assert.NotEqual(platform, scoped);
+        Assert.Equal(PermissionGrant.AnyTenant, (platform with { TenantId = PermissionGrant.AnyTenant }).TenantId);
+
+        // 初始化器在设值时校验，with 走同一校验
+        Assert.Throws<ArgumentException>(() => new PermissionGrant { Subject = editor, Permission = " " });
+        Assert.Throws<ArgumentException>(() => new PermissionGrant { Subject = editor, Permission = null! });
+        Assert.Throws<ArgumentException>(() => new PermissionGrant { Subject = editor, Permission = "orders.read", TenantId = " " });
+        Assert.Throws<ArgumentException>(() => new PermissionGrant { Subject = editor, Permission = "orders.read", TenantId = string.Empty });
+        Assert.Throws<ArgumentException>(() => platform with { Subject = default });
+        Assert.Throws<ArgumentException>(() => platform with { Permission = string.Empty });
+        Assert.Throws<ArgumentException>(() => platform with { TenantId = " " });
+    }
+
+    [Fact]
+    public void AuthorizationRequirement_IsBuiltByInitializer_AndTheShortcutsMatchIt()
+    {
+        var resource = ResourceName.Parse("xrn:xihan:orders:acme:order/42");
+        var requirement = new AuthorizationRequirement { Policy = "owner-only" };
+
+        // 资源不给就是不针对具体资源
+        Assert.Null(requirement.Resource);
+        Assert.Equal(new AuthorizationRequirement { Policy = "owner-only", Resource = resource }, requirement with { Resource = resource });
+        Assert.NotEqual(requirement, requirement with { Resource = resource });
+
+        // 快捷写法与初始化器给出相等的值：相同的要求只判定一次靠的就是相等
+        Assert.Equal(new AuthorizationRequirement { Policy = AuthenticatedPolicy.PolicyName }, AuthorizationRequirement.Authenticated);
+        Assert.Equal(new AuthorizationRequirement { Policy = PermissionPolicy.NameFor("orders.read") }, AuthorizationRequirement.Permission("orders.read"));
+        Assert.Equal(new AuthorizationRequirement { Policy = PermissionPolicy.NameFor("orders.read"), Resource = resource }, AuthorizationRequirement.Permission("orders.read", resource));
+
+        // 初始化器在设值时校验，with 走同一校验
+        Assert.Throws<ArgumentException>(() => new AuthorizationRequirement { Policy = string.Empty });
+        Assert.Throws<ArgumentException>(() => new AuthorizationRequirement { Policy = null! });
+        Assert.Throws<ArgumentException>(() => requirement with { Policy = " " });
+    }
+
+    [Theory]
+    [InlineData(typeof(PermissionGrant), new[] { nameof(PermissionGrant.Subject), nameof(PermissionGrant.Permission) })]
+    [InlineData(typeof(AuthorizationRequirement), new[] { nameof(AuthorizationRequirement.Policy) })]
+    public void DataRecords_HaveNoPositionalConstructorOrDeconstruct(Type type, string[] required)
+    {
+        // 位置构造与 Deconstruct 的签名随成员数变：正式版之后加成员就是破坏，所以两个记录只留无参构造加初始化成员（ADR-0288）
+        var constructor = Assert.Single(type.GetConstructors());
+        Assert.Empty(constructor.GetParameters());
+        Assert.Null(type.GetMethod("Deconstruct"));
+
+        // 必填的只有这几项：以后加的成员都是可选的，已有的构造处不用改
+        Assert.Equal(required.Order(StringComparer.Ordinal), type.GetProperties(BindingFlags.Public | BindingFlags.Instance).Where(static p => p.IsDefined(typeof(RequiredMemberAttribute), inherit: false)).Select(static p => p.Name).Order(StringComparer.Ordinal));
     }
 
     /// <summary>

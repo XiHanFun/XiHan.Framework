@@ -82,7 +82,7 @@ public sealed class OperationToolIdentityTests
         {
             if (tenant is not null)
             {
-                context.SetTenant(new TenantContext(tenant));
+                context.SetTenant(new TenantContext { Id = tenant });
             }
 
             var tool = Assert.IsType<OperationAIFunction>(host.Services.GetRequiredService<IAIToolCatalog>().Bind(context).Single(static tool => tool.Name == "guarded_whoami"));

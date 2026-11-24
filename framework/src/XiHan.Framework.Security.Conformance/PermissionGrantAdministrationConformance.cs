@@ -21,12 +21,12 @@ public abstract class PermissionGrantAdministrationConformance
     /// <summary>
     /// 每个租户的角色授予
     /// </summary>
-    private static readonly PermissionGrant _editorRead = new(GrantSubject.ForRole("editor"), "orders.read", PermissionGrant.AnyTenant);
+    private static readonly PermissionGrant _editorRead = new() { Subject = GrantSubject.ForRole("editor"), Permission = "orders.read", TenantId = PermissionGrant.AnyTenant };
 
     /// <summary>
     /// 租户专属的用户授予
     /// </summary>
-    private static readonly PermissionGrant _aliceExport = new(GrantSubject.ForUser("alice"), "reports.export", "acme");
+    private static readonly PermissionGrant _aliceExport = new() { Subject = GrantSubject.ForUser("alice"), Permission = "reports.export", TenantId = "acme" };
 
     /// <summary>
     /// 启动一个空的授予表
@@ -97,7 +97,7 @@ public abstract class PermissionGrantAdministrationConformance
         var store = await StartAsync().ConfigureAwait(false);
         await AdministerAsync((grants, ct) => grants.GrantAsync([_editorRead, _aliceExport], ct)).ConfigureAwait(false);
 
-        var revoked = await AdministerAsync((grants, ct) => grants.RevokeAsync([_editorRead, _editorRead, new PermissionGrant(GrantSubject.ForUser("alice"), "reports.export", "acme"), new PermissionGrant(GrantSubject.ForUser("alice"), "reports.export", PermissionGrant.AnyTenant)], ct)).ConfigureAwait(false);
+        var revoked = await AdministerAsync((grants, ct) => grants.RevokeAsync([_editorRead, _editorRead, new PermissionGrant { Subject = GrantSubject.ForUser("alice"), Permission = "reports.export", TenantId = "acme" }, new PermissionGrant { Subject = GrantSubject.ForUser("alice"), Permission = "reports.export", TenantId = PermissionGrant.AnyTenant }], ct)).ConfigureAwait(false);
 
         Assert.Equal(4, revoked.Count);
         Assert.True(revoked[0].IsSuccess, revoked[0].Error?.ToString());
@@ -118,10 +118,10 @@ public abstract class PermissionGrantAdministrationConformance
     public async Task List_FiltersBySubjectAndTenant_AndPagesInOrdinalOrder()
     {
         await StartAsync().ConfigureAwait(false);
-        var adminAll = new PermissionGrant(GrantSubject.ForRole("admin"), PermissionGrant.All, null);
-        var aliceRead = new PermissionGrant(GrantSubject.ForUser("alice"), "reports.read", PermissionGrant.AnyTenant);
-        var aliceExportEverywhere = new PermissionGrant(GrantSubject.ForUser("alice"), "reports.export", PermissionGrant.AnyTenant);
-        var aliceExportPlatform = new PermissionGrant(GrantSubject.ForUser("alice"), "reports.export", null);
+        var adminAll = new PermissionGrant { Subject = GrantSubject.ForRole("admin"), Permission = PermissionGrant.All, TenantId = null };
+        var aliceRead = new PermissionGrant { Subject = GrantSubject.ForUser("alice"), Permission = "reports.read", TenantId = PermissionGrant.AnyTenant };
+        var aliceExportEverywhere = new PermissionGrant { Subject = GrantSubject.ForUser("alice"), Permission = "reports.export", TenantId = PermissionGrant.AnyTenant };
+        var aliceExportPlatform = new PermissionGrant { Subject = GrantSubject.ForUser("alice"), Permission = "reports.export", TenantId = null };
         await AdministerAsync((grants, ct) => grants.GrantAsync([_aliceExport, aliceRead, _editorRead, adminAll, aliceExportEverywhere, aliceExportPlatform], ct)).ConfigureAwait(false);
 
         var all = await ListAsync(new PermissionGrantQuery()).ConfigureAwait(false);

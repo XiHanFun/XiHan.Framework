@@ -456,7 +456,7 @@ public sealed class MessageContractTests
             [BaggageKeys.IdempotencyKey] = "idem-1",
         });
         // 安全上下文优先于 Baggage：认证后的主体与解析出的租户
-        context.SetSecurity(new SecurityContext(new Principal("user-7", "Bearer"), new TenantContext("acme")));
+        context.SetSecurity(new SecurityContext { Principal = new Principal("user-7", "Bearer"), Tenant = new TenantContext { Id = "acme" } });
         var broker = new RecordingBroker();
         var publisher = new DirectPublisher(broker, new FixedInvocation(context));
 

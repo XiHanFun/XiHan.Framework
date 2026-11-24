@@ -9,27 +9,11 @@ namespace XiHan.Framework.Security.Abstractions.Permissions;
 /// 一条权限授予
 /// </summary>
 /// <remarks>
-/// 范围由 <see cref="TenantId"/> 决定（RFC-0008「RBAC 授予」，ADR-0197）：<see langword="null"/> 是平台授予，只对不带租户的调用生效；<see cref="AnyTenant"/> 是每个租户的授予，对带任何租户的调用生效、对不带租户的调用不生效；租户 ID 只对该租户生效。平台与租户两边的授予互不渗透
+/// 范围由 <see cref="TenantId"/> 决定（RFC-0008「RBAC 授予」，ADR-0197）：<see langword="null"/> 是平台授予，只对不带租户的调用生效；<see cref="AnyTenant"/> 是每个租户的授予，对带任何租户的调用生效、对不带租户的调用不生效；租户 ID 只对该租户生效。平台与租户两边的授予互不渗透。主体与权限码是必填的初始化成员，范围是可选的初始化成员，没有位置构造与解构：以后加字段只加可选的初始化成员，不破坏已有的构造处（ADR-0142、ADR-0288）
 /// </remarks>
-/// <param name="Subject">主体</param>
-/// <param name="Permission">权限码，或 <see cref="All"/></param>
-/// <param name="TenantId">范围：<see langword="null"/> 为平台，<see cref="AnyTenant"/> 为每个租户，否则为该租户</param>
 [ApiLevel(Stability.Stable, "5.0")]
-public sealed record PermissionGrant(GrantSubject Subject, string Permission, string? TenantId)
+public sealed record PermissionGrant
 {
-    /// <summary>
-    /// 平台授予
-    /// </summary>
-    /// <remarks>
-    /// 只对不带租户的调用生效；要在租户里生效用 <see cref="AnyTenant"/> 或租户 ID（ADR-0197）
-    /// </remarks>
-    /// <param name="subject">主体</param>
-    /// <param name="permission">权限码，或 <see cref="All"/></param>
-    public PermissionGrant(GrantSubject subject, string permission)
-        : this(subject, permission, null)
-    {
-    }
-
     /// <summary>
     /// 通配：全部权限
     /// </summary>
@@ -71,18 +55,33 @@ public sealed record PermissionGrant(GrantSubject Subject, string Permission, st
     /// <summary>
     /// 主体
     /// </summary>
-    public GrantSubject Subject { get; } = Subject != default ? Subject : throw new ArgumentException("The subject must not be the default value.", nameof(Subject));
+    /// <exception cref="ArgumentException">是缺省值</exception>
+    public required GrantSubject Subject
+    {
+        get;
+        init => field = value != default ? value : throw new ArgumentException("The subject must not be the default value.", nameof(value));
+    }
 
     /// <summary>
-    /// 权限码
+    /// 权限码，或 <see cref="All"/>
     /// </summary>
-    public string Permission { get; } = !string.IsNullOrWhiteSpace(Permission) ? Permission : throw new ArgumentException("The permission code must not be empty.", nameof(Permission));
+    /// <exception cref="ArgumentException">为空或空白</exception>
+    public required string Permission
+    {
+        get;
+        init => field = !string.IsNullOrWhiteSpace(value) ? value : throw new ArgumentException("The permission code must not be empty.", nameof(value));
+    }
 
     /// <summary>
     /// 范围
     /// </summary>
     /// <remarks>
-    /// 不是 <see langword="null"/> 时不能是空白：空白既不是平台，也不是哪个租户
+    /// <see langword="null"/> 为平台，<see cref="AnyTenant"/> 为每个租户，否则为该租户。不给就是平台授予：只对不带租户的调用生效，要在租户里生效用 <see cref="AnyTenant"/> 或租户 ID（ADR-0197）。不是 <see langword="null"/> 时不能是空白：空白既不是平台，也不是哪个租户
     /// </remarks>
-    public string? TenantId { get; } = TenantId is null || !string.IsNullOrWhiteSpace(TenantId) ? TenantId : throw new ArgumentException("The tenant of a grant must not be blank; use null for a platform grant or '*' for every tenant.", nameof(TenantId));
+    /// <exception cref="ArgumentException">是空白</exception>
+    public string? TenantId
+    {
+        get;
+        init => field = value is null || !string.IsNullOrWhiteSpace(value) ? value : throw new ArgumentException("The tenant of a grant must not be blank; use null for a platform grant or '*' for every tenant.", nameof(value));
+    }
 }

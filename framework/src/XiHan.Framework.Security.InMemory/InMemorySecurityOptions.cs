@@ -136,7 +136,7 @@ public sealed record InMemorySecurityOptions
                 {
                     foreach (var permission in Split(subject.Value))
                     {
-                        grants.Add(new PermissionGrant(new GrantSubject(kind, subject.Key), permission, scope));
+                        grants.Add(new PermissionGrant { Subject = new GrantSubject(kind, subject.Key), Permission = permission, TenantId = scope });
                     }
                 }
             }

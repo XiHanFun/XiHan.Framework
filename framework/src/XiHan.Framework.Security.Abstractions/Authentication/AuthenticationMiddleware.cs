@@ -48,7 +48,7 @@ public sealed class AuthenticationMiddleware(SecurityOptions options) : IPipelin
                 return;
             }
 
-            context.SetSecurity(new SecurityContext(principal, context.GetSecurity().Tenant));
+            context.SetSecurity(new SecurityContext { Principal = principal, Tenant = context.GetSecurity().Tenant });
         }
 
         // 认证之后再检查全局要求：匿名在此被拒，与按策略判定的授权分离

@@ -60,7 +60,7 @@ public sealed class PermissionGrantRecord : IEntity<Guid>, IHasCreationTime
     /// <summary>
     /// 换算成契约里的授予：空字符串租户换成 <see langword="null"/>
     /// </summary>
-    public PermissionGrant ToGrant() => new(new GrantSubject(SubjectKind, SubjectId), Permission, TenantId.Length == 0 ? null : TenantId);
+    public PermissionGrant ToGrant() => new() { Subject = new GrantSubject(SubjectKind, SubjectId), Permission = Permission, TenantId = TenantId.Length == 0 ? null : TenantId };
 
     /// <summary>
     /// 契约里的范围换算成列值：<see langword="null"/>（平台）换成 <see cref="PlatformTenantId"/>，其余原样

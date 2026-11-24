@@ -115,7 +115,7 @@ public sealed class AuditEventSelectionVectorTests
             {
                 // Authenticate 与 Tenant 阶段都在 Observe 之内：主体、租户与「裁定过」的标记是调用期间写进去的，中间件在调用结束后才读
                 var principal = vector.Principal is { } id ? new Principal(id, "vectors") : Principal.Anonymous;
-                context.SetSecurity(new SecurityContext(principal, vector.Tenant is { } tenant ? new TenantContext(tenant) : null));
+                context.SetSecurity(new SecurityContext { Principal = principal, Tenant = vector.Tenant is { } tenant ? new TenantContext { Id = tenant } : null });
                 if (vector.TenantResolved)
                 {
                     context.MarkTenantResolved();

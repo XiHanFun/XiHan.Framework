@@ -196,7 +196,7 @@ public sealed class InMemoryPermissionGrantStore : IPermissionGrantStore, IPermi
 
                 foreach (var permission in permissions)
                 {
-                    matched.Add(new PermissionGrant(new GrantSubject(key.Kind, key.Id), permission, key.Tenant));
+                    matched.Add(new PermissionGrant { Subject = new GrantSubject(key.Kind, key.Id), Permission = permission, TenantId = key.Tenant });
                 }
             }
         }

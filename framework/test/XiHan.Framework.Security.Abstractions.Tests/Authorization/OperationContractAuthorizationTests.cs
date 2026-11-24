@@ -20,7 +20,7 @@ public sealed class OperationContractAuthorizationTests
     /// <summary>
     /// 编辑角色可读订单
     /// </summary>
-    private static readonly PermissionGrant[] _grants = [new(GrantSubject.ForRole("editor"), "orders.read")];
+    private static readonly PermissionGrant[] _grants = [new() { Subject = GrantSubject.ForRole("editor"), Permission = "orders.read" }];
 
     /// <summary>
     /// 带已认证策略、订单读权限定义与授予的容器
@@ -46,7 +46,7 @@ public sealed class OperationContractAuthorizationTests
         context.SetOperation(Descriptor(contract));
         if (principal is not null)
         {
-            context.SetSecurity(new SecurityContext(principal, null));
+            context.SetSecurity(new SecurityContext { Principal = principal });
         }
 
         return context;
@@ -105,7 +105,7 @@ public sealed class OperationContractAuthorizationTests
     public async Task ExplicitRequirement_TakesPrecedenceOverContract()
     {
         var context = Context(new OperationContract("orders.list") { Permission = "orders.read" }, SecurityHosts.Alice("editor"));
-        context.RequireAuthorization(new AuthorizationRequirement("missing"));
+        context.RequireAuthorization(new AuthorizationRequirement { Policy = "missing" });
 
         Assert.False(await RunAsync(context));
         Assert.Equal(SecurityErrors.PolicyNotFound, context.FindOutcome().ValueOrThrow().Error?.Code);

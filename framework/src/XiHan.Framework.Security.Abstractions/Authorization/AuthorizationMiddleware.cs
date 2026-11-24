@@ -75,6 +75,6 @@ public sealed class AuthorizationMiddleware : IPipelineMiddleware
             return Maybe.Some(AuthorizationRequirement.Permission(contract.Permission));
         }
 
-        return contract.Policy is not null ? Maybe.Some(new AuthorizationRequirement(contract.Policy)) : default;
+        return contract.Policy is not null ? Maybe.Some(new AuthorizationRequirement { Policy = contract.Policy }) : default;
     }
 }

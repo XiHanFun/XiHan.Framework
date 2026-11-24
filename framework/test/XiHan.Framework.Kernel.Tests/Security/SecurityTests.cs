@@ -1,6 +1,8 @@
 // Copyright (c) XiHanFun Contributors. Licensed under the MIT License.
 // See the LICENSE file in the project root for full license text.
 
+using System.Reflection;
+using System.Runtime.CompilerServices;
 using Microsoft.Extensions.DependencyInjection;
 using XiHan.Framework.Kernel.Hosting;
 using XiHan.Framework.Kernel.Security;
@@ -135,12 +137,67 @@ public sealed class SecurityTests
 
         Assert.Same(SecurityContext.Anonymous, context.GetSecurity());
 
-        context.SetSecurity(new SecurityContext(new Principal("u-1", "jwt"), null));
-        context.SetTenant(new TenantContext("t-42"));
+        context.SetSecurity(new SecurityContext { Principal = new Principal("u-1", "jwt") });
+        context.SetTenant(new TenantContext { Id = "t-42" });
 
         Assert.Equal("u-1", context.GetSecurity().Principal.Id);
         Assert.Equal("t-42", context.GetSecurity().Tenant!.Id);
-        Assert.Throws<ArgumentException>(() => new TenantContext(" "));
+        Assert.Throws<ArgumentException>(() => new TenantContext { Id = " " });
+    }
+
+    [Fact]
+    public void SecurityContext_IsBuiltByInitializer_ValidatesThePrincipal_AndWithKeepsTheRest()
+    {
+        var alice = new Principal("alice", "jwt");
+
+        // 租户不给就是无租户；匿名上下文是匿名主体加无租户
+        var platform = new SecurityContext { Principal = alice };
+        Assert.Null(platform.Tenant);
+        Assert.Same(Principal.Anonymous, SecurityContext.Anonymous.Principal);
+        Assert.Null(SecurityContext.Anonymous.Tenant);
+
+        // with 只换给出的成员，相等按全部成员比
+        var scoped = platform with { Tenant = new TenantContext { Id = "acme", DisplayName = "Acme" } };
+        Assert.Same(alice, scoped.Principal);
+        Assert.Equal(new SecurityContext { Principal = alice, Tenant = new TenantContext { Id = "acme", DisplayName = "Acme" } }, scoped);
+        Assert.NotEqual(platform, scoped);
+        var bob = scoped with { Principal = new Principal("bob", "jwt") };
+        Assert.Equal(("bob", "acme"), (bob.Principal.Id, bob.Tenant?.Id));
+
+        // 初始化器在设值时校验，with 走同一校验
+        Assert.Throws<ArgumentNullException>(() => new SecurityContext { Principal = null! });
+        Assert.Throws<ArgumentNullException>(() => scoped with { Principal = null! });
+    }
+
+    [Fact]
+    public void TenantContext_IsBuiltByInitializer_AndRejectsABlankId()
+    {
+        var tenant = new TenantContext { Id = "acme" };
+
+        Assert.Equal("acme", tenant.Id);
+        Assert.Null(tenant.DisplayName);
+        Assert.Equal(new TenantContext { Id = "acme", DisplayName = "Acme" }, tenant with { DisplayName = "Acme" });
+        Assert.NotEqual(tenant, tenant with { DisplayName = "Acme" });
+        Assert.Equal("globex", (tenant with { Id = "globex" }).Id);
+
+        // 初始化器在设值时校验，with 走同一校验
+        Assert.Throws<ArgumentException>(() => new TenantContext { Id = string.Empty });
+        Assert.Throws<ArgumentException>(() => new TenantContext { Id = null! });
+        Assert.Throws<ArgumentException>(() => tenant with { Id = " " });
+    }
+
+    [Theory]
+    [InlineData(typeof(SecurityContext), new[] { nameof(SecurityContext.Principal) })]
+    [InlineData(typeof(TenantContext), new[] { nameof(TenantContext.Id) })]
+    public void ContextRecords_HaveNoPositionalConstructorOrDeconstruct(Type type, string[] required)
+    {
+        // 位置构造与 Deconstruct 的签名随成员数变：正式版之后加成员就是破坏，所以两个记录只留无参构造加初始化成员（ADR-0288）
+        var constructor = Assert.Single(type.GetConstructors());
+        Assert.Empty(constructor.GetParameters());
+        Assert.Null(type.GetMethod("Deconstruct"));
+
+        // 必填的只有这几项：以后加的成员都是可选的，已有的构造处不用改
+        Assert.Equal(required.Order(StringComparer.Ordinal), type.GetProperties(BindingFlags.Public | BindingFlags.Instance).Where(static p => p.IsDefined(typeof(RequiredMemberAttribute), inherit: false)).Select(static p => p.Name).Order(StringComparer.Ordinal));
     }
 
     [Fact]

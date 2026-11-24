@@ -83,7 +83,7 @@ public sealed class KnowledgeChunkVectorTests
 
             // 摄入与检索共用的那一步：租户取自这次调用的安全上下文，派生不出合法的名字时以向量给的错误码结束
             var context = TestInvocationContext.Create();
-            context.SetSecurity(new SecurityContext(Principal.Anonymous, vector.Tenant is { } tenant ? new TenantContext(tenant) : null));
+            context.SetSecurity(new SecurityContext { Principal = Principal.Anonymous, Tenant = vector.Tenant is { } tenant ? new TenantContext { Id = tenant } : null });
             var resolved = KnowledgeErrors.CollectionFor(requested: null, options, new FixedInvocation(context));
             var outcome = resolved.TryGetValue(out var used) ? used : resolved.Error?.Code;
             if (outcome != (vector.DefaultCollection ?? _vectors.Code))

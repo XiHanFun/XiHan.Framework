@@ -61,7 +61,7 @@ public sealed class IdempotencyMiddlewareTests
         var context = TestInvocationContext.Create(_services, baggage: key is null ? null : new Dictionary<string, string> { [BaggageKeys.IdempotencyKey] = key });
         if (tenant is not null)
         {
-            context.SetTenant(new TenantContext(tenant));
+            context.SetTenant(new TenantContext { Id = tenant });
         }
 
         return context;
@@ -156,7 +156,7 @@ public sealed class IdempotencyMiddlewareTests
         await _middleware.InvokeAsync(Context("shared", tenant: "t1"), Handler);
 
         var principal = Context("shared", tenant: "t1");
-        principal.SetSecurity(new SecurityContext(new Principal("user-7", "test"), new TenantContext("t1")));
+        principal.SetSecurity(new SecurityContext { Principal = new Principal("user-7", "test"), Tenant = new TenantContext { Id = "t1" } });
         await _middleware.InvokeAsync(principal, Handler);
 
         Assert.Equal(3, _executions);
@@ -170,9 +170,9 @@ public sealed class IdempotencyMiddlewareTests
     {
         // 修之前作用域键是 idem:租户:主体:键，主体 a:b 配键 c 与主体 a 配键 b:c 拼出同一个键，后者回放前者的结果（ADR-0205）
         var first = Context("c");
-        first.SetSecurity(new SecurityContext(new Principal("a:b", "test"), null));
+        first.SetSecurity(new SecurityContext { Principal = new Principal("a:b", "test") });
         var second = Context("b:c");
-        second.SetSecurity(new SecurityContext(new Principal("a", "test"), null));
+        second.SetSecurity(new SecurityContext { Principal = new Principal("a", "test") });
 
         await _middleware.InvokeAsync(first, Handler);
         await _middleware.InvokeAsync(second, Handler);

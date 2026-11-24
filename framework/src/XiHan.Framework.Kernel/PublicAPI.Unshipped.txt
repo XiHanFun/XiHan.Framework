@@ -559,21 +559,21 @@ XiHan.Framework.Kernel.Security.ResourceName.Type.get -> string!
 XiHan.Framework.Kernel.Security.ResourceName.Type.init -> void
 XiHan.Framework.Kernel.Security.SecurityContext
 XiHan.Framework.Kernel.Security.SecurityContext.<Clone>$() -> XiHan.Framework.Kernel.Security.SecurityContext!
-XiHan.Framework.Kernel.Security.SecurityContext.Deconstruct(out XiHan.Framework.Kernel.Security.Principal! Principal, out XiHan.Framework.Kernel.Security.TenantContext? Tenant) -> void
 XiHan.Framework.Kernel.Security.SecurityContext.Equals(XiHan.Framework.Kernel.Security.SecurityContext? other) -> bool
 XiHan.Framework.Kernel.Security.SecurityContext.Principal.get -> XiHan.Framework.Kernel.Security.Principal!
-XiHan.Framework.Kernel.Security.SecurityContext.SecurityContext(XiHan.Framework.Kernel.Security.Principal! Principal, XiHan.Framework.Kernel.Security.TenantContext? Tenant) -> void
+XiHan.Framework.Kernel.Security.SecurityContext.Principal.init -> void
+XiHan.Framework.Kernel.Security.SecurityContext.SecurityContext() -> void
 XiHan.Framework.Kernel.Security.SecurityContext.Tenant.get -> XiHan.Framework.Kernel.Security.TenantContext?
 XiHan.Framework.Kernel.Security.SecurityContext.Tenant.init -> void
 XiHan.Framework.Kernel.Security.SecurityContextExtensions
 XiHan.Framework.Kernel.Security.TenantContext
 XiHan.Framework.Kernel.Security.TenantContext.<Clone>$() -> XiHan.Framework.Kernel.Security.TenantContext!
-XiHan.Framework.Kernel.Security.TenantContext.Deconstruct(out string! Id) -> void
 XiHan.Framework.Kernel.Security.TenantContext.DisplayName.get -> string?
 XiHan.Framework.Kernel.Security.TenantContext.DisplayName.init -> void
 XiHan.Framework.Kernel.Security.TenantContext.Equals(XiHan.Framework.Kernel.Security.TenantContext? other) -> bool
 XiHan.Framework.Kernel.Security.TenantContext.Id.get -> string!
-XiHan.Framework.Kernel.Security.TenantContext.TenantContext(string! Id) -> void
+XiHan.Framework.Kernel.Security.TenantContext.Id.init -> void
+XiHan.Framework.Kernel.Security.TenantContext.TenantContext() -> void
 XiHan.Framework.Kernel.Validation.JsonSchemaValidator
 XiHan.Framework.Kernel.Validation.QueryRevision
 XiHan.Framework.Kernel.Validation.SchemaViolation

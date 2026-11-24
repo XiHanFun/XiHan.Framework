@@ -127,7 +127,7 @@ public sealed class WorkflowEngineHost : IAsyncDisposable
         var context = App.CreateContext(scope.ServiceProvider, CancellationToken.None);
         if (tenantId is not null)
         {
-            context.SetTenant(new TenantContext(tenantId));
+            context.SetTenant(new TenantContext { Id = tenantId });
         }
 
         if (readOnly)

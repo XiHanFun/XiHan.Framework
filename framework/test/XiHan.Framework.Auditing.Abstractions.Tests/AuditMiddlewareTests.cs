@@ -87,14 +87,14 @@ public sealed class AuditMiddlewareTests
         // 认证后的主体与解析后的租户在安全上下文里：Baggage 没有也记得到（HTTP + JWT 的路径没有中间件写这两个 Baggage）
         await host.InvokeAsync(static context =>
         {
-            context.SetSecurity(new SecurityContext(new Principal("alice", "jwt"), new TenantContext("acme")));
+            context.SetSecurity(new SecurityContext { Principal = new Principal("alice", "jwt"), Tenant = new TenantContext { Id = "acme" } });
             context.SetAuditAction("manual.touch");
             return ValueTask.CompletedTask;
         });
         // 安全上下文优先于 Baggage
         await host.InvokeAsync(static context =>
         {
-            context.SetSecurity(new SecurityContext(new Principal("bob", "jwt"), new TenantContext("globex")));
+            context.SetSecurity(new SecurityContext { Principal = new Principal("bob", "jwt"), Tenant = new TenantContext { Id = "globex" } });
             context.SetAuditAction("manual.touch");
             return ValueTask.CompletedTask;
         }, baggage: _alice);

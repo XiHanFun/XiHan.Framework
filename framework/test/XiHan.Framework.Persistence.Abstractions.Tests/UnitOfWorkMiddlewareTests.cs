@@ -144,7 +144,7 @@ public sealed class UnitOfWorkMiddlewareTests
     public async Task TenantFromSecurityContext_IsPassedToBegin()
     {
         var (context, unitOfWork) = Arrange();
-        context.SetTenant(new TenantContext("acme"));
+        context.SetTenant(new TenantContext { Id = "acme" });
 
         await new UnitOfWorkMiddleware().InvokeAsync(context, static _ => ValueTask.CompletedTask);
 

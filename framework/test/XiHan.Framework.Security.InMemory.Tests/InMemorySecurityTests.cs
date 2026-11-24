@@ -89,26 +89,26 @@ public sealed class InMemorySecurityTests
         Assert.Equal(0, principals.Count);
 
         var grants = new InMemoryPermissionGrantStore(new InMemorySecurityOptions { MaxGrants = 2 });
-        Assert.True((await grants.GrantAsync(new PermissionGrant(GrantSubject.ForRole("r"), "a"), CancellationToken.None)).IsSuccess);
-        Assert.True((await grants.GrantAsync(new PermissionGrant(GrantSubject.ForRole("r"), "a"), CancellationToken.None)).IsSuccess);
-        Assert.True((await grants.GrantAsync(new PermissionGrant(GrantSubject.ForRole("r"), "b", "acme"), CancellationToken.None)).IsSuccess);
-        Assert.Equal(SecurityErrors.CapacityExceeded, (await grants.GrantAsync(new PermissionGrant(GrantSubject.ForRole("r"), "c"), CancellationToken.None)).Error?.Code);
+        Assert.True((await grants.GrantAsync(new PermissionGrant { Subject = GrantSubject.ForRole("r"), Permission = "a" }, CancellationToken.None)).IsSuccess);
+        Assert.True((await grants.GrantAsync(new PermissionGrant { Subject = GrantSubject.ForRole("r"), Permission = "a" }, CancellationToken.None)).IsSuccess);
+        Assert.True((await grants.GrantAsync(new PermissionGrant { Subject = GrantSubject.ForRole("r"), Permission = "b", TenantId = "acme" }, CancellationToken.None)).IsSuccess);
+        Assert.Equal(SecurityErrors.CapacityExceeded, (await grants.GrantAsync(new PermissionGrant { Subject = GrantSubject.ForRole("r"), Permission = "c" }, CancellationToken.None)).Error?.Code);
         Assert.Equal(2, grants.Count);
-        Assert.True((await grants.RevokeAsync(new PermissionGrant(GrantSubject.ForRole("r"), "b", "acme"), CancellationToken.None)).IsSuccess);
-        Assert.Equal(SecurityErrors.GrantNotFound, (await grants.RevokeAsync(new PermissionGrant(GrantSubject.ForRole("r"), "b", "acme"), CancellationToken.None)).Error?.Code);
-        Assert.True((await grants.GrantAsync(new PermissionGrant(GrantSubject.ForRole("r"), "c"), CancellationToken.None)).IsSuccess);
+        Assert.True((await grants.RevokeAsync(new PermissionGrant { Subject = GrantSubject.ForRole("r"), Permission = "b", TenantId = "acme" }, CancellationToken.None)).IsSuccess);
+        Assert.Equal(SecurityErrors.GrantNotFound, (await grants.RevokeAsync(new PermissionGrant { Subject = GrantSubject.ForRole("r"), Permission = "b", TenantId = "acme" }, CancellationToken.None)).Error?.Code);
+        Assert.True((await grants.GrantAsync(new PermissionGrant { Subject = GrantSubject.ForRole("r"), Permission = "c" }, CancellationToken.None)).IsSuccess);
     }
 
     [Fact]
     public async Task GrantStore_StaysBounded_InSubjectsAsWellAsGrants()
     {
         var grants = new InMemoryPermissionGrantStore(new InMemorySecurityOptions { MaxGrants = 1 });
-        Assert.True((await grants.GrantAsync(new PermissionGrant(GrantSubject.ForUser("u0"), "a"), CancellationToken.None)).IsSuccess);
+        Assert.True((await grants.GrantAsync(new PermissionGrant { Subject = GrantSubject.ForUser("u0"), Permission = "a" }, CancellationToken.None)).IsSuccess);
 
         // 满了以后新主体的授予被拒绝，授予表里也不多出这个主体的键
         for (var i = 1; i <= 50; i++)
         {
-            Assert.Equal(SecurityErrors.CapacityExceeded, (await grants.GrantAsync(new PermissionGrant(GrantSubject.ForUser($"u{i}"), "a", "acme"), CancellationToken.None)).Error?.Code);
+            Assert.Equal(SecurityErrors.CapacityExceeded, (await grants.GrantAsync(new PermissionGrant { Subject = GrantSubject.ForUser($"u{i}"), Permission = "a", TenantId = "acme" }, CancellationToken.None)).Error?.Code);
         }
 
         Assert.Equal(1, grants.Count);
@@ -116,16 +116,16 @@ public sealed class InMemorySecurityTests
         Assert.Empty((await grants.GetGrantsAsync(GrantSubject.ForUser("u1"), "acme", CancellationToken.None)).ValueOrThrow());
 
         // 撤销主体的最后一条授予连同它的键一起移除，重复撤销返回不存在
-        Assert.True((await grants.RevokeAsync(new PermissionGrant(GrantSubject.ForUser("u0"), "a"), CancellationToken.None)).IsSuccess);
+        Assert.True((await grants.RevokeAsync(new PermissionGrant { Subject = GrantSubject.ForUser("u0"), Permission = "a" }, CancellationToken.None)).IsSuccess);
         Assert.Equal(0, grants.Count);
         Assert.Equal(0, grants.SubjectCount);
-        Assert.Equal(SecurityErrors.GrantNotFound, (await grants.RevokeAsync(new PermissionGrant(GrantSubject.ForUser("u0"), "a"), CancellationToken.None)).Error?.Code);
+        Assert.Equal(SecurityErrors.GrantNotFound, (await grants.RevokeAsync(new PermissionGrant { Subject = GrantSubject.ForUser("u0"), Permission = "a" }, CancellationToken.None)).Error?.Code);
         Assert.Empty((await grants.GetGrantsAsync(GrantSubject.ForUser("u0"), null, CancellationToken.None)).ValueOrThrow());
 
         // 不同主体反复授予再撤销，授予表不随次数增长
         for (var i = 0; i < 50; i++)
         {
-            var grant = new PermissionGrant(GrantSubject.ForUser($"s{i}"), "a", "acme");
+            var grant = new PermissionGrant { Subject = GrantSubject.ForUser($"s{i}"), Permission = "a", TenantId = "acme" };
             Assert.True((await grants.GrantAsync(grant, CancellationToken.None)).IsSuccess);
             Assert.Equal(1, grants.SubjectCount);
             Assert.True((await grants.RevokeAsync(grant, CancellationToken.None)).IsSuccess);
@@ -135,9 +135,9 @@ public sealed class InMemorySecurityTests
 
         // 同一主体还有别的授予时只撤掉那一条，键保留
         var wide = new InMemoryPermissionGrantStore(new InMemorySecurityOptions { MaxGrants = 3 });
-        Assert.True((await wide.GrantAsync(new PermissionGrant(GrantSubject.ForRole("r"), "a"), CancellationToken.None)).IsSuccess);
-        Assert.True((await wide.GrantAsync(new PermissionGrant(GrantSubject.ForRole("r"), "b"), CancellationToken.None)).IsSuccess);
-        Assert.True((await wide.RevokeAsync(new PermissionGrant(GrantSubject.ForRole("r"), "a"), CancellationToken.None)).IsSuccess);
+        Assert.True((await wide.GrantAsync(new PermissionGrant { Subject = GrantSubject.ForRole("r"), Permission = "a" }, CancellationToken.None)).IsSuccess);
+        Assert.True((await wide.GrantAsync(new PermissionGrant { Subject = GrantSubject.ForRole("r"), Permission = "b" }, CancellationToken.None)).IsSuccess);
+        Assert.True((await wide.RevokeAsync(new PermissionGrant { Subject = GrantSubject.ForRole("r"), Permission = "a" }, CancellationToken.None)).IsSuccess);
         Assert.Equal(1, wide.SubjectCount);
         Assert.Equal(["b"], (await wide.GetGrantsAsync(GrantSubject.ForRole("r"), null, CancellationToken.None)).ValueOrThrow());
     }

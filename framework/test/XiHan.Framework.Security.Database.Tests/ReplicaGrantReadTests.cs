@@ -54,7 +54,7 @@ public sealed class ReplicaGrantReadTests
     {
         var granted = await host.InvokeAsync(async context =>
         {
-            var results = await context.Services.GetRequiredService<PermissionGrantRecordStore>().GrantAsync([new PermissionGrant(subject, "orders.write")], context.CancellationToken);
+            var results = await context.Services.GetRequiredService<PermissionGrantRecordStore>().GrantAsync([new PermissionGrant { Subject = subject, Permission = "orders.write" }], context.CancellationToken);
             Assert.All(results, static r => Assert.True(r.IsSuccess));
         });
         granted.ThrowIfFailure();

@@ -94,12 +94,12 @@ public sealed class TenantResolutionMiddleware(MultiTenancyOptions options) : IP
             }
 
             // 以存储里的记录为准，显示名随之带入安全上下文
-            tenant = new TenantContext(info.Id) { DisplayName = info.DisplayName };
+            tenant = new TenantContext { Id = info.Id, DisplayName = info.DisplayName };
         }
         else
         {
             // 关闭存储校验：只保证格式合法，没有显示名
-            tenant = new TenantContext(tenantId);
+            tenant = new TenantContext { Id = tenantId };
         }
 
         context.SetTenant(tenant);

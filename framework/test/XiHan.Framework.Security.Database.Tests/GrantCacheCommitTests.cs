@@ -29,12 +29,12 @@ public sealed class GrantCacheCommitTests
     {
         await using var host = await TestHost.StartAsync(static b => b.UseFeature<InMemoryPersistenceFeature>().UseFeature<InMemoryLocalizationFeature>().UseFeature<InMemoryCachingFeature>().UseFeature<DatabaseSecurityFeature>());
         var store = host.Services.GetRequiredService<IPermissionGrantStore>();
-        (await host.InvokeAsync(static async context => await context.Services.GetRequiredService<PermissionGrantRecordStore>().GrantAsync([new PermissionGrant(_editor, "orders.write")], context.CancellationToken))).ThrowIfFailure();
+        (await host.InvokeAsync(static async context => await context.Services.GetRequiredService<PermissionGrantRecordStore>().GrantAsync([new PermissionGrant { Subject = _editor, Permission = "orders.write" }], context.CancellationToken))).ThrowIfFailure();
         Assert.Equal(["orders.write"], (await store.GetGrantsAsync(_editor, null, CancellationToken.None)).ValueOrThrow());
 
         (await host.InvokeAsync(async context =>
         {
-            (await context.Services.GetRequiredService<PermissionGrantRecordStore>().RevokeAsync([new PermissionGrant(_editor, "orders.write")], context.CancellationToken)).Single().ThrowIfFailure();
+            (await context.Services.GetRequiredService<PermissionGrantRecordStore>().RevokeAsync([new PermissionGrant { Subject = _editor, Permission = "orders.write" }], context.CancellationToken)).Single().ThrowIfFailure();
 
             // 撤销还没提交：并发的判定读到旧行，写回缓存
             Assert.Equal(["orders.write"], (await store.GetGrantsAsync(_editor, null, CancellationToken.None)).ValueOrThrow());
@@ -53,7 +53,7 @@ public sealed class GrantCacheCommitTests
 
         (await host.InvokeAsync(async context =>
         {
-            (await context.Services.GetRequiredService<PermissionGrantRecordStore>().GrantAsync([new PermissionGrant(_editor, "orders.write")], context.CancellationToken)).Single().ThrowIfFailure();
+            (await context.Services.GetRequiredService<PermissionGrantRecordStore>().GrantAsync([new PermissionGrant { Subject = _editor, Permission = "orders.write" }], context.CancellationToken)).Single().ThrowIfFailure();
             Assert.Empty((await store.GetGrantsAsync(_editor, null, CancellationToken.None)).ValueOrThrow());
         })).ThrowIfFailure();
 

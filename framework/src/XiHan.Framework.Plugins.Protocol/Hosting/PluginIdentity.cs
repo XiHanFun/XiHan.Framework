@@ -35,7 +35,7 @@ internal static class PluginIdentity
     public static InvocationContext CreateContext(IServiceProvider scopedServices, InvocationMetadata? metadata, string manifestId, DateTimeOffset? notAfter, CancellationToken cancellationToken)
     {
         var context = PluginMetadata.CreateContext(scopedServices, metadata, manifestId, cancellationToken, notAfter);
-        context.SetSecurity(new SecurityContext(new Principal(manifestId, Scheme), null));
+        context.SetSecurity(new SecurityContext { Principal = new Principal(manifestId, Scheme) });
         return context;
     }
 }

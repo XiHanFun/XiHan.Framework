@@ -20,11 +20,10 @@ XiHan.Framework.Security.Abstractions.Authorization.AuthorizationMiddleware.Auth
 XiHan.Framework.Security.Abstractions.Authorization.AuthorizationMiddleware.InvokeAsync(XiHan.Framework.Primitives.InvocationContext! context, XiHan.Framework.Kernel.Pipeline.PipelineStep! nextStep) -> System.Threading.Tasks.ValueTask
 XiHan.Framework.Security.Abstractions.Authorization.AuthorizationRequirement
 XiHan.Framework.Security.Abstractions.Authorization.AuthorizationRequirement.<Clone>$() -> XiHan.Framework.Security.Abstractions.Authorization.AuthorizationRequirement!
-XiHan.Framework.Security.Abstractions.Authorization.AuthorizationRequirement.AuthorizationRequirement(string! Policy, XiHan.Framework.Kernel.Security.ResourceName? Resource) -> void
-XiHan.Framework.Security.Abstractions.Authorization.AuthorizationRequirement.AuthorizationRequirement(string! policy) -> void
-XiHan.Framework.Security.Abstractions.Authorization.AuthorizationRequirement.Deconstruct(out string! Policy, out XiHan.Framework.Kernel.Security.ResourceName? Resource) -> void
+XiHan.Framework.Security.Abstractions.Authorization.AuthorizationRequirement.AuthorizationRequirement() -> void
 XiHan.Framework.Security.Abstractions.Authorization.AuthorizationRequirement.Equals(XiHan.Framework.Security.Abstractions.Authorization.AuthorizationRequirement? other) -> bool
 XiHan.Framework.Security.Abstractions.Authorization.AuthorizationRequirement.Policy.get -> string!
+XiHan.Framework.Security.Abstractions.Authorization.AuthorizationRequirement.Policy.init -> void
 XiHan.Framework.Security.Abstractions.Authorization.AuthorizationRequirement.Resource.get -> XiHan.Framework.Kernel.Security.ResourceName?
 XiHan.Framework.Security.Abstractions.Authorization.AuthorizationRequirement.Resource.init -> void
 XiHan.Framework.Security.Abstractions.Authorization.PermissionPolicy
@@ -291,13 +290,14 @@ XiHan.Framework.Security.Abstractions.Permissions.PermissionChecker.PermissionCh
 XiHan.Framework.Security.Abstractions.Permissions.PermissionChecker.PermissionChecker(XiHan.Framework.Security.Abstractions.Permissions.IPermissionGrantStore! store, XiHan.Framework.Security.Abstractions.SecurityOptions! options, System.Collections.Generic.IEnumerable<XiHan.Framework.Security.Abstractions.Permissions.IPermissionFilter!>? filters, System.Collections.Generic.IEnumerable<XiHan.Framework.Security.Abstractions.Permissions.IPermissionGrantSource!>? sources) -> void
 XiHan.Framework.Security.Abstractions.Permissions.PermissionGrant
 XiHan.Framework.Security.Abstractions.Permissions.PermissionGrant.<Clone>$() -> XiHan.Framework.Security.Abstractions.Permissions.PermissionGrant!
-XiHan.Framework.Security.Abstractions.Permissions.PermissionGrant.Deconstruct(out XiHan.Framework.Security.Abstractions.Permissions.GrantSubject Subject, out string! Permission, out string? TenantId) -> void
 XiHan.Framework.Security.Abstractions.Permissions.PermissionGrant.Equals(XiHan.Framework.Security.Abstractions.Permissions.PermissionGrant? other) -> bool
 XiHan.Framework.Security.Abstractions.Permissions.PermissionGrant.Permission.get -> string!
-XiHan.Framework.Security.Abstractions.Permissions.PermissionGrant.PermissionGrant(XiHan.Framework.Security.Abstractions.Permissions.GrantSubject Subject, string! Permission, string? TenantId) -> void
-XiHan.Framework.Security.Abstractions.Permissions.PermissionGrant.PermissionGrant(XiHan.Framework.Security.Abstractions.Permissions.GrantSubject subject, string! permission) -> void
+XiHan.Framework.Security.Abstractions.Permissions.PermissionGrant.Permission.init -> void
+XiHan.Framework.Security.Abstractions.Permissions.PermissionGrant.PermissionGrant() -> void
 XiHan.Framework.Security.Abstractions.Permissions.PermissionGrant.Subject.get -> XiHan.Framework.Security.Abstractions.Permissions.GrantSubject
+XiHan.Framework.Security.Abstractions.Permissions.PermissionGrant.Subject.init -> void
 XiHan.Framework.Security.Abstractions.Permissions.PermissionGrant.TenantId.get -> string?
+XiHan.Framework.Security.Abstractions.Permissions.PermissionGrant.TenantId.init -> void
 XiHan.Framework.Security.Abstractions.Permissions.PermissionGrantAdministrationExtensions
 XiHan.Framework.Security.Abstractions.Permissions.PermissionGrantPage
 XiHan.Framework.Security.Abstractions.Permissions.PermissionGrantPage.<Clone>$() -> XiHan.Framework.Security.Abstractions.Permissions.PermissionGrantPage!

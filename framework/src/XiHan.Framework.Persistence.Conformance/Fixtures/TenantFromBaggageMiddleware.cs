@@ -21,7 +21,7 @@ public sealed class TenantFromBaggageMiddleware : IPipelineMiddleware
         // 没有租户 Baggage 时不写安全上下文，调用以"无租户"进入 Transaction 阶段，用例据此验证租户缺失的行为
         if (context.TryGetBaggage(BaggageKeys.Tenant, out var tenantId))
         {
-            context.SetTenant(new TenantContext(tenantId));
+            context.SetTenant(new TenantContext { Id = tenantId });
         }
 
         return nextStep(context);

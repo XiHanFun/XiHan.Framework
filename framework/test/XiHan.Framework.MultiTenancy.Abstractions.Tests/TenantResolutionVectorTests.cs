@@ -94,7 +94,7 @@ public sealed class TenantResolutionVectorTests
 
         var context = TestInvocationContext.Create(services, baggage: vector.Baggage is null ? null : new Dictionary<string, string>(StringComparer.Ordinal) { [BaggageKeys.Tenant] = vector.Baggage });
         var claims = vector.Claims.Select(value => KeyValuePair.Create(options.TenantClaim, value)).ToList();
-        context.SetSecurity(new SecurityContext(vector.Authenticated ? new Principal("u1", "test") { Claims = claims } : Principal.Anonymous with { Claims = claims }, null));
+        context.SetSecurity(new SecurityContext { Principal = vector.Authenticated ? new Principal("u1", "test") { Claims = claims } : Principal.Anonymous with { Claims = claims } });
         if (vector.PlatformCall)
         {
             context.MarkPlatformCall();

@@ -102,7 +102,7 @@ public sealed class AuthenticationTests
 
         var good = SecurityHosts.Context(services);
         good.SetCredential(new AuthenticationCredential("BEARER", "good"));
-        good.SetTenant(new TenantContext("acme"));
+        good.SetTenant(new TenantContext { Id = "acme" });
         var reachedGood = new bool[1];
         await new AuthenticationMiddleware(new SecurityOptions()).InvokeAsync(good, Handler(reachedGood));
         Assert.True(reachedGood[0]);
