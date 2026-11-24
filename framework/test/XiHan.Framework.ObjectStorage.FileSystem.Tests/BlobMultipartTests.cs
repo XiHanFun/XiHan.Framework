@@ -2,15 +2,16 @@
 // See the LICENSE file in the project root for full license text.
 
 using XiHan.Framework.ObjectStorage.Abstractions;
+using XiHan.Framework.ObjectStorage.Abstractions.Keys;
 using XiHan.Framework.ObjectStorage.Abstractions.Multipart;
 
 namespace XiHan.Framework.ObjectStorage.FileSystem.Tests;
 
 /// <summary>
-/// 完成清单本身的校验由抽象包给出，各 Provider 共用同一个函数
+/// 完成清单与批量放弃的集合本身的校验由抽象包给出，各 Provider 共用同一个函数
 /// </summary>
 /// <remarks>
-/// 原先文件系统与 S3 各写一遍：S3 那份不查空项，清单里有 <see langword="null"/> 时抛的是 <see cref="NullReferenceException"/>
+/// 完成清单原先文件系统与 S3 各写一遍：S3 那份不查空项，清单里有 <see langword="null"/> 时抛的是 <see cref="NullReferenceException"/>。批量放弃的集合（ADR-0266）同样只在一处核对
 /// </remarks>
 public sealed class BlobMultipartTests
 {
@@ -50,6 +51,29 @@ public sealed class BlobMultipartTests
         Assert.Throws<ArgumentException>(static () => BlobMultipart.ValidateParts([Part(1), null!]));
         Assert.Throws<ArgumentNullException>(static () => BlobMultipart.ValidateParts(null!));
     }
+
+    [Fact]
+    public void ValidateUploads_AcceptsAnyListWithoutNull_IncludingTheEmptyOneAndRepeats()
+    {
+        var upload = Upload("a");
+
+        BlobMultipart.ValidateUploads([]);
+        BlobMultipart.ValidateUploads([upload]);
+        BlobMultipart.ValidateUploads([upload, Upload("b"), upload]);
+    }
+
+    [Fact]
+    public void ValidateUploads_ThrowsOnANullUpload_WhereverItIs()
+    {
+        Assert.Throws<ArgumentException>(static () => BlobMultipart.ValidateUploads([null!]));
+        Assert.Throws<ArgumentException>(static () => BlobMultipart.ValidateUploads([Upload("a"), null!]));
+        Assert.Throws<ArgumentNullException>(static () => BlobMultipart.ValidateUploads(null!));
+    }
+
+    /// <summary>
+    /// 只有键有意义的上传句柄
+    /// </summary>
+    private static BlobMultipartUpload Upload(string key) => new(new ContainerName("uploads"), new BlobKey(key), "0123456789abcdef0123456789abcdef") { Overwrite = true };
 
     /// <summary>
     /// 只有编号有意义的分片

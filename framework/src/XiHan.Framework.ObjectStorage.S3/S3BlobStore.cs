@@ -615,22 +615,19 @@ public sealed partial class S3BlobStore : IBlobStore, IBlobMultipartStore, IBlob
     }
 
     /// <inheritdoc />
-    public async ValueTask<Result> AbortAsync(BlobMultipartUpload upload, CancellationToken cancellationToken)
+    public async ValueTask<IReadOnlyList<Result>> AbortAsync(IReadOnlyList<BlobMultipartUpload> uploads, CancellationToken cancellationToken)
     {
-        ArgumentNullException.ThrowIfNull(upload);
-        try
+        BlobMultipart.ValidateUploads(uploads);
+        var results = new List<Result>(uploads.Count);
+        foreach (var upload in uploads)
         {
-            await _client.AbortMultipartUploadAsync(new AbortMultipartUploadRequest { BucketName = upload.Container.Value, Key = upload.Key.Value, UploadId = upload.UploadId }, cancellationToken).ConfigureAwait(false);
-            return Result.Success();
+            // S3 没有批量放弃的接口，逐项请求。每一项之前检查取消，请求途中的取消由 SDK 抛出：
+            // 已放弃的不恢复，放弃是幂等的（不存在也成功），调用方整批重试即可
+            cancellationToken.ThrowIfCancellationRequested();
+            results.Add(await AbortOneAsync(upload, cancellationToken).ConfigureAwait(false));
         }
-        catch (AmazonS3Exception exception) when (IsNoSuchUpload(exception) || IsNotFound(exception))
-        {
-            return Result.Success();
-        }
-        catch (Exception exception) when (IsStoreFailure(exception, cancellationToken))
-        {
-            return Unavailable(exception);
-        }
+
+        return results;
     }
 
     /// <inheritdoc />
@@ -821,6 +818,29 @@ public sealed partial class S3BlobStore : IBlobStore, IBlobMultipartStore, IBlob
             {
                 await buffered.DisposeAsync().ConfigureAwait(false);
             }
+        }
+    }
+
+    /// <summary>
+    /// 放弃一个上传
+    /// </summary>
+    /// <remarks>
+    /// 上传或桶不存在也成功；其余服务端与网络错误返回 <see cref="ObjectStorageErrors.StoreUnavailable"/>，调用方的取消照常抛出
+    /// </remarks>
+    private async ValueTask<Result> AbortOneAsync(BlobMultipartUpload upload, CancellationToken cancellationToken)
+    {
+        try
+        {
+            await _client.AbortMultipartUploadAsync(new AbortMultipartUploadRequest { BucketName = upload.Container.Value, Key = upload.Key.Value, UploadId = upload.UploadId }, cancellationToken).ConfigureAwait(false);
+            return Result.Success();
+        }
+        catch (AmazonS3Exception exception) when (IsNoSuchUpload(exception) || IsNotFound(exception))
+        {
+            return Result.Success();
+        }
+        catch (Exception exception) when (IsStoreFailure(exception, cancellationToken))
+        {
+            return Unavailable(exception);
         }
     }
 

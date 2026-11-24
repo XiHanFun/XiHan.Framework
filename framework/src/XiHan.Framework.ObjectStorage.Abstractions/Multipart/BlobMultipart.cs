@@ -60,4 +60,24 @@ public static class BlobMultipart
 
         return Result.Success();
     }
+
+    /// <summary>
+    /// 校验批量放弃的上传集合本身：不含 <see langword="null"/>
+    /// </summary>
+    /// <remarks>
+    /// 只看集合，不碰存储：各 Provider 在放弃任何上传之前先调用它，集合里有 <see langword="null"/> 时在哪个存储上都是动手之前抛出同一个异常，不会放弃了前几个才发现。空集合合法
+    /// </remarks>
+    /// <param name="uploads">要放弃的上传</param>
+    /// <exception cref="ArgumentException">集合里有 <see langword="null"/></exception>
+    public static void ValidateUploads(IReadOnlyList<BlobMultipartUpload> uploads)
+    {
+        ArgumentNullException.ThrowIfNull(uploads);
+        for (var index = 0; index < uploads.Count; index++)
+        {
+            if (uploads[index] is null)
+            {
+                throw new ArgumentException("The upload list must not contain null.", nameof(uploads));
+            }
+        }
+    }
 }

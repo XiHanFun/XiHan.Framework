@@ -314,10 +314,19 @@ public sealed partial class FileSystemBlobStore : IBlobStore, IBlobMultipartStor
     }
 
     /// <inheritdoc />
-    public ValueTask<Result> AbortAsync(BlobMultipartUpload upload, CancellationToken cancellationToken)
+    public ValueTask<IReadOnlyList<Result>> AbortAsync(IReadOnlyList<BlobMultipartUpload> uploads, CancellationToken cancellationToken)
     {
+        BlobMultipart.ValidateUploads(uploads);
         EnsureInitialized();
-        return ValueTask.FromResult(_multipart.Abort(upload));
+        var results = new List<Result>(uploads.Count);
+        foreach (var upload in uploads)
+        {
+            // 每一项之前检查取消：已放弃的不恢复，放弃是幂等的，调用方整批重试即可
+            cancellationToken.ThrowIfCancellationRequested();
+            results.Add(_multipart.Abort(upload));
+        }
+
+        return ValueTask.FromResult<IReadOnlyList<Result>>(results);
     }
 
     /// <summary>

@@ -462,6 +462,54 @@ public abstract class BlobStoreConformance
     }
 
     /// <summary>
+    /// 用例 14：批量放弃逐项返回结果，与入参等长同序
+    /// </summary>
+    /// <remarks>
+    /// 一次调用放弃多个上传：逐项成功，放弃后这些上传都不存在，没在入参里的上传原样保留；同一批里重复的上传与已经放弃过的上传同样成功（放弃是幂等的）。空集合返回空列表；集合里有 <see langword="null"/> 在放弃任何上传之前抛出；已取消的令牌抛出 <see cref="OperationCanceledException"/>，上传原样保留（ADR-0266）。用例结束时发起的上传都已放弃，反复运行不在共享存储里累积。存储不支持分片时跳过
+    /// </remarks>
+    [Fact]
+    public async Task Multipart_AbortsInBatch_ReportingEachUpload()
+    {
+        var (_, multipart) = await CreateMultipartStoreAsync().ConfigureAwait(false);
+        var first = (await multipart.StartAsync(Container, Key("multipart/batch-a.bin"), BlobPutOptions.Default, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow();
+        var second = (await multipart.StartAsync(Container, Key("multipart/batch-b.bin"), BlobPutOptions.Default, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow();
+        var kept = (await multipart.StartAsync(Container, Key("multipart/batch-kept.bin"), BlobPutOptions.Default, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow();
+        try
+        {
+            Assert.True((await multipart.UploadPartAsync(first, 1, Bytes("staged"), CancellationToken.None).ConfigureAwait(false)).IsSuccess);
+            Assert.Empty(await multipart.AbortAsync([], CancellationToken.None).ConfigureAwait(false));
+
+            // 集合里有 null 是编程错误：排在它前面的上传也不放弃
+            await Assert.ThrowsAnyAsync<ArgumentException>(async () => await multipart.AbortAsync([first, null!], CancellationToken.None).ConfigureAwait(false)).ConfigureAwait(false);
+            Assert.True((await multipart.ListPartsAsync(first, CancellationToken.None).ConfigureAwait(false)).IsSuccess);
+
+            using var cancelled = new CancellationTokenSource();
+            await cancelled.CancelAsync().ConfigureAwait(false);
+            await Assert.ThrowsAnyAsync<OperationCanceledException>(async () => await multipart.AbortAsync([first, second], cancelled.Token).ConfigureAwait(false)).ConfigureAwait(false);
+            Assert.True((await multipart.ListPartsAsync(first, CancellationToken.None).ConfigureAwait(false)).IsSuccess);
+            Assert.True((await multipart.ListPartsAsync(second, CancellationToken.None).ConfigureAwait(false)).IsSuccess);
+
+            // 重复的那一项落在已经放弃的上传上，同样成功
+            var aborted = await multipart.AbortAsync([first, second, first], CancellationToken.None).ConfigureAwait(false);
+            Assert.Equal(3, aborted.Count);
+            Assert.All(aborted, static result => Assert.True(result.IsSuccess, result.Error?.ToString()));
+            Assert.Equal(ObjectStorageErrors.UploadNotFound, (await multipart.ListPartsAsync(first, CancellationToken.None).ConfigureAwait(false)).Error?.Code);
+            Assert.Equal(ObjectStorageErrors.UploadNotFound, (await multipart.ListPartsAsync(second, CancellationToken.None).ConfigureAwait(false)).Error?.Code);
+            Assert.True((await multipart.ListPartsAsync(kept, CancellationToken.None).ConfigureAwait(false)).IsSuccess);
+
+            // 已经放弃过的与还在的混在一批里，互不影响
+            var again = await multipart.AbortAsync([second, kept], CancellationToken.None).ConfigureAwait(false);
+            Assert.Equal(2, again.Count);
+            Assert.All(again, static result => Assert.True(result.IsSuccess, result.Error?.ToString()));
+            Assert.Equal(ObjectStorageErrors.UploadNotFound, (await multipart.ListPartsAsync(kept, CancellationToken.None).ConfigureAwait(false)).Error?.Code);
+        }
+        finally
+        {
+            await multipart.AbortAsync([first, second, kept], CancellationToken.None).ConfigureAwait(false);
+        }
+    }
+
+    /// <summary>
     /// 被测存储与其分片上传
     /// </summary>
     /// <remarks>
