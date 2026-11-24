@@ -7,7 +7,7 @@
 ## 主要特性
 
 * 读写、覆盖、删除、不存在才写、比较删
-* 绝对与滑动过期，键区分大小写，大值
+* 绝对与滑动过期，键区分大小写，大值，UTF-8 编码后恰好 512 字节的多字节键
 * 基于存储的分布式锁互斥与到期
 
 ## 如何使用
@@ -29,7 +29,7 @@ public sealed class RedisCacheStoreConformanceTests : CacheStoreConformance
 }
 ```
 
-过期用例按真实时间等待，`ExpirationGrace` 可按提供程序调整。
+过期用例按真实时间等待，`ExpirationGrace` 可按提供程序调整。夹具用加前缀的包装隔离各用例时覆写 `KeyPrefixBytes`（前缀占的 UTF-8 字节数），最长键的用例据此让出这些字节。
 
 ## 主要类型
 

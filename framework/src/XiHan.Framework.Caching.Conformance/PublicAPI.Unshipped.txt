@@ -6,6 +6,7 @@ XiHan.Framework.Caching.Conformance.CacheStoreConformance.DistributedLock_Extend
 XiHan.Framework.Caching.Conformance.CacheStoreConformance.DistributedLock_IsExclusive_ReleasableAndExpiring() -> System.Threading.Tasks.Task!
 XiHan.Framework.Caching.Conformance.CacheStoreConformance.Inspector_ListLimitOutOfRange_IsAValidationResult() -> System.Threading.Tasks.Task!
 XiHan.Framework.Caching.Conformance.CacheStoreConformance.Inspector_ListsInspectsAndRemovesByPrefix() -> System.Threading.Tasks.Task!
+XiHan.Framework.Caching.Conformance.CacheStoreConformance.Keys_AtMaxUtf8Bytes_RoundTrip() -> System.Threading.Tasks.Task!
 XiHan.Framework.Caching.Conformance.CacheStoreConformance.LargeValue_RoundTrips() -> System.Threading.Tasks.Task!
 XiHan.Framework.Caching.Conformance.CacheStoreConformance.RemoveMany_ReportsPerKey() -> System.Threading.Tasks.Task!
 XiHan.Framework.Caching.Conformance.CacheStoreConformance.Remove_ReportsExistence() -> System.Threading.Tasks.Task!
@@ -24,4 +25,5 @@ static XiHan.Framework.Caching.Conformance.CacheStoreConformance.Bytes(string! t
 static XiHan.Framework.Caching.Conformance.CacheStoreConformance.Key() -> XiHan.Framework.Caching.Abstractions.Stores.CacheKey
 static XiHan.Framework.Caching.Conformance.CacheStoreConformance.Text(XiHan.Framework.Primitives.Maybe<System.ReadOnlyMemory<byte>> value) -> string!
 virtual XiHan.Framework.Caching.Conformance.CacheStoreConformance.ExpirationGrace.get -> System.TimeSpan
+virtual XiHan.Framework.Caching.Conformance.CacheStoreConformance.KeyPrefixBytes.get -> int
 virtual XiHan.Framework.Caching.Conformance.CacheStoreConformance.SupportsRefresh.get -> bool

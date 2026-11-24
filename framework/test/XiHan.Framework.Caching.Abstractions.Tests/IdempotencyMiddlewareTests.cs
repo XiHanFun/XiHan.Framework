@@ -193,6 +193,26 @@ public sealed class IdempotencyMiddlewareTests
     }
 
     [Fact]
+    public async Task ScopedKey_IsLimitedByUtf8Bytes()
+    {
+        // 匿名、无租户时作用域键是 idem:-:-: 加幂等键，前缀 9 字节：幂等键最多 503 字节
+        var fits = string.Concat(Enumerable.Repeat("键", 167)) + "kk";
+        var over = string.Concat(Enumerable.Repeat("键", 168));
+        Assert.Equal((503, 504), (Encoding.UTF8.GetByteCount(fits), Encoding.UTF8.GetByteCount(over)));
+
+        var accepted = Context(fits);
+        await _middleware.InvokeAsync(accepted, Handler);
+        Assert.Equal(1, _executions);
+        Assert.NotNull(_store["idem:-:-:" + fits]);
+
+        // 168 个码元远没到 512，UTF-8 编码后拼出 513 字节：按校验错误拒绝，不执行处理器
+        var rejected = Context(over);
+        await _middleware.InvokeAsync(rejected, Handler);
+        Assert.Equal(1, _executions);
+        Assert.Equal(CachingErrors.InvalidKey, rejected.FindOutcome().ValueOrThrow().Error?.Code);
+    }
+
+    [Fact]
     public void IdempotencyRecord_RoundTripsOutcomes()
     {
         Assert.True(IdempotencyRecord.From(Result.Success()).ToResult().IsSuccess);

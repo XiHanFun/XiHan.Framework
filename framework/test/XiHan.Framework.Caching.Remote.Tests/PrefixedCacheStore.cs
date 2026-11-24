@@ -12,9 +12,17 @@ namespace XiHan.Framework.Caching.Remote.Tests;
 internal sealed class PrefixedCacheStore(ICacheStore inner) : ICacheStore
 {
     /// <summary>
+    /// 前缀占的 UTF-8 字节数：8 个十六进制字符加冒号
+    /// </summary>
+    /// <remarks>
+    /// 一致性套件的最长键用例按它让出字节，加上前缀后恰好到上限
+    /// </remarks>
+    public const int PrefixBytes = 9;
+
+    /// <summary>
     /// 本实例的键前缀
     /// </summary>
-    private readonly string _prefix = Guid.NewGuid().ToString("N")[..8] + ":";
+    private readonly string _prefix = Guid.NewGuid().ToString("N")[..(PrefixBytes - 1)] + ":";
 
     /// <inheritdoc />
     public ValueTask<Maybe<ReadOnlyMemory<byte>>> GetAsync(CacheKey key, CancellationToken cancellationToken) => inner.GetAsync(Prefix(key), cancellationToken);

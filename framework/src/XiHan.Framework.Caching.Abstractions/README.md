@@ -54,7 +54,7 @@ await prices.InvalidateAsync([tenantId], ct);
 
 * `ICache`、`ISharedCache`：类型化缓存门面
 * `ICacheStore`：字节级存储，提供程序实现它
-* `CacheKey`、`CacheEntryOptions`：键与过期选项
+* `CacheKey`、`CacheEntryOptions`：键（非空、无空白与控制字符、UTF-8 编码后不超过 `CacheKey.MaxBytes` 即 512 字节）与过期选项
 * `IDistributedLock`、`LockHandle`：分布式锁
 * `ICacheSerializer`、`JsonCacheSerializer`、`CacheSerializerRegistration`、`CacheTypeInfoSource`：共享缓存的值序列化与组件类型的登记
 * `GenerationCache<T>`、`GenerationCacheKey`、`GenerationCacheEntry<T>`：按范围失效的缓存区

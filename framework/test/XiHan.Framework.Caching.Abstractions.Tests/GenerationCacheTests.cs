@@ -1,6 +1,8 @@
 // Copyright (c) XiHanFun Contributors. Licensed under the MIT License.
 // See the LICENSE file in the project root for full license text.
 
+using System.Security.Cryptography;
+using System.Text;
 using System.Text.Json;
 using Microsoft.Extensions.Logging.Abstractions;
 using XiHan.Framework.Caching.Abstractions.Caches;
@@ -192,10 +194,57 @@ public sealed class GenerationCacheTests
     }
 
     [Fact]
+    public async Task ScopesAndEntries_AreMeasuredInUtf8Bytes_SoComposedKeysFit()
+    {
+        // 区名、范围、条目都取上限以内最长的多字节文本：44 个码元、128 字节
+        var widest = string.Concat(Enumerable.Repeat("键", 42)) + "kk";
+        // 只多一个字节：43 个码元、129 字节
+        var over = string.Concat(Enumerable.Repeat("键", 43));
+        // 码元数恰好 128、384 字节：按码元数算可以直接写进键，拼出的键是 912 字节
+        var wide = string.Concat(Enumerable.Repeat("键", 128));
+        Assert.Equal((128, 129, 384), (Encoding.UTF8.GetByteCount(widest), Encoding.UTF8.GetByteCount(over), Encoding.UTF8.GetByteCount(wide)));
+        var region = new GenerationCache<string[]>(_cache, widest, TimeSpan.FromSeconds(30), NullLogger.Instance);
+        _source[Key(widest, widest)] = ["1"];
+        _source[Key(over, over)] = ["2"];
+        _source[Key(wide, wide)] = ["3"];
+        GenerationCacheKey[] keys = [Key(widest, widest), Key(over, over), Key(wide, wide)];
+
+        // 任何一个拼出的键超过 512 字节，CacheKey 的构造就会抛出
+        Assert.Equal(["1", "2", "3"], (await region.GetOrLoadManyAsync(keys, LoadAsync, CancellationToken.None)).ValueOrThrow().Select(static v => v[0]));
+        Assert.Equal(["1", "2", "3"], (await region.GetOrLoadManyAsync(keys, LoadAsync, CancellationToken.None)).ValueOrThrow().Select(static v => v[0]));
+        Assert.Single(_loads);
+
+        // 128 字节以内的直接写进键；长度前缀仍是码元数（44）
+        var literal = $"{widest}:entry:44.{widest}:44.{widest}";
+        Assert.Equal(398, Encoding.UTF8.GetByteCount(literal));
+        Assert.NotNull(_store[literal]);
+        Assert.NotNull(_store[$"{widest}:gen:44.{widest}"]);
+
+        // 最长的条目键：区名、范围、条目都是 128 个 ASCII 字符，长度前缀 3 位，128 + 8 + 132 × 2 = 400 字节
+        var ascii = new string('a', 128);
+        _source[Key(ascii, ascii)] = ["4"];
+        var asciiRegion = new GenerationCache<string[]>(_cache, ascii, TimeSpan.FromSeconds(30), NullLogger.Instance);
+        Assert.Equal("4", (await asciiRegion.GetOrLoadManyAsync([Key(ascii, ascii)], LoadAsync, CancellationToken.None)).ValueOrThrow()[0][0]);
+        var longest = $"{ascii}:entry:128.{ascii}:128.{ascii}";
+        Assert.Equal(400, longest.Length);
+        Assert.NotNull(_store[longest]);
+
+        // 超过 128 字节的换成摘要，原文不出现在任何键里
+        Assert.DoesNotContain(_store.Operations, op => op.Contains(over, StringComparison.Ordinal));
+        var digest = "#" + Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(over)));
+        Assert.NotNull(_store[$"{widest}:entry:{digest}:{digest}"]);
+    }
+
+    [Fact]
     public void Constructor_RejectsInvalidRegionAndTimeToLive()
     {
         Assert.Throws<ArgumentException>(() => new GenerationCache<string[]>(_cache, "has space", TimeSpan.FromSeconds(1), NullLogger.Instance));
-        Assert.Throws<ArgumentException>(() => new GenerationCache<string[]>(_cache, new string('r', GenerationCache<string[]>.MaxRegionLength + 1), TimeSpan.FromSeconds(1), NullLogger.Instance));
+        Assert.Throws<ArgumentException>(() => new GenerationCache<string[]>(_cache, new string('r', GenerationCache<string[]>.MaxRegionBytes + 1), TimeSpan.FromSeconds(1), NullLogger.Instance));
+        Assert.Equal(TimeSpan.FromSeconds(1), new GenerationCache<string[]>(_cache, new string('r', GenerationCache<string[]>.MaxRegionBytes), TimeSpan.FromSeconds(1), NullLogger.Instance).TimeToLive);
+        // 区名的上限按 UTF-8 字节计：43 个 3 字节字符只有 43 个码元，却有 129 字节
+        var thrown = Assert.Throws<ArgumentException>(() => new GenerationCache<string[]>(_cache, string.Concat(Enumerable.Repeat("区", 43)), TimeSpan.FromSeconds(1), NullLogger.Instance));
+        Assert.Contains("at most 128 bytes in UTF-8", thrown.Message, StringComparison.Ordinal);
+        Assert.Equal(TimeSpan.FromSeconds(1), new GenerationCache<string[]>(_cache, string.Concat(Enumerable.Repeat("区", 42)) + "kk", TimeSpan.FromSeconds(1), NullLogger.Instance).TimeToLive);
         Assert.Throws<ArgumentOutOfRangeException>(() => new GenerationCache<string[]>(_cache, "ok", TimeSpan.Zero, NullLogger.Instance));
         Assert.Equal(TimeSpan.MaxValue / 2, new GenerationCache<string[]>(_cache, "ok", TimeSpan.MaxValue / 2, NullLogger.Instance).TimeToLive);
         Assert.Throws<InvalidOperationException>(static () => default(GenerationCacheKey).Scope);

@@ -24,17 +24,17 @@ public sealed class GenerationCache<T>
     where T : notnull
 {
     /// <summary>
-    /// 区名的最大长度
+    /// 区名 UTF-8 编码后的最大字节数
     /// </summary>
     /// <remarks>
-    /// 留出后缀与两个编码段的余量，拼出的键不超过 <see cref="CacheKey.MaxLength"/>
+    /// 留出后缀与两个编码段的余量，拼出的键不超过 <see cref="CacheKey.MaxBytes"/>：区名 128、分隔与后缀 8、两段各至多 132（长度前缀 3 位、点号、文本 128），共 400 字节
     /// </remarks>
-    public const int MaxRegionLength = 128;
+    public const int MaxRegionBytes = 128;
 
     /// <summary>
-    /// 键里直接写出的范围或条目文本的最大长度，更长的换成摘要
+    /// 键里直接写出的范围或条目文本 UTF-8 编码后的最大字节数，更长的换成摘要
     /// </summary>
-    private const int MaxLiteralLength = 128;
+    private const int MaxLiteralBytes = 128;
 
     /// <summary>
     /// 代数的存活时间是条目存活时间的倍数
@@ -91,15 +91,15 @@ public sealed class GenerationCache<T>
     /// 创建
     /// </summary>
     /// <param name="cache">底层缓存，通常是容器里的 <see cref="ICache"/></param>
-    /// <param name="region">区名，所有键的前缀，须是合法的缓存键文本且不超过 <see cref="MaxRegionLength"/></param>
+    /// <param name="region">区名，所有键的前缀，须是合法的缓存键文本且 UTF-8 编码后不超过 <see cref="MaxRegionBytes"/> 字节</param>
     /// <param name="timeToLive">条目的存活时间：失效通知丢失或缓存后端故障时，旧值最多留这么久</param>
     /// <param name="logger">记录缓存后端故障</param>
     public GenerationCache(ICache cache, string region, TimeSpan timeToLive, ILogger logger)
     {
         ArgumentNullException.ThrowIfNull(region);
-        if (region.Length > MaxRegionLength || !CacheKey.IsValid(region))
+        if (!CacheKey.IsValid(region) || Encoding.UTF8.GetByteCount(region) > MaxRegionBytes)
         {
-            throw new ArgumentException($"The region '{region}' must be a valid cache key of at most {MaxRegionLength} characters.", nameof(region));
+            throw new ArgumentException($"The region '{region}' must be a valid cache key of at most {MaxRegionBytes} bytes in UTF-8.", nameof(region));
         }
 
         if (timeToLive <= TimeSpan.Zero)
@@ -323,11 +323,12 @@ public sealed class GenerationCache<T>
     /// 把任意文本编成键的一段
     /// </summary>
     /// <remarks>
-    /// 能直接写进键的写成 <c>&lt;长度&gt;.&lt;文本&gt;</c>，长度前缀让 <c>a:b</c> 与 <c>a</c>、<c>b</c> 拼出的键不同；含空白、控制字符或过长的写成 <c>#&lt;SHA-256 十六进制&gt;</c>，以 <c>#</c> 开头与前者不会相同
+    /// 能直接写进键的写成 <c>&lt;长度&gt;.&lt;文本&gt;</c>，长度前缀（<see cref="string.Length"/>）让 <c>a:b</c> 与 <c>a</c>、<c>b</c> 拼出的键不同；含空白、控制字符或 UTF-8 编码后超过 <see cref="MaxLiteralBytes"/> 字节的写成 <c>#&lt;SHA-256 十六进制&gt;</c>，以 <c>#</c> 开头与前者不会相同
     /// </remarks>
     private static string Encode(string text)
     {
-        if (text.Length <= MaxLiteralLength && (text.Length == 0 || CacheKey.IsValid(text)))
+        // 余量按字节留：字符数不超过上限但含多字节字符的文本，直接写进去会让拼出的键超过上限
+        if (text.Length == 0 || (text.Length <= MaxLiteralBytes && CacheKey.IsValid(text) && Encoding.UTF8.GetByteCount(text) <= MaxLiteralBytes))
         {
             return text.Length.ToString(CultureInfo.InvariantCulture) + "." + text;
         }

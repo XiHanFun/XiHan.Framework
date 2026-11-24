@@ -51,9 +51,81 @@ public sealed class CacheContractTests
     [Fact]
     public void CacheKey_RejectsOverlongAndNull()
     {
-        Assert.False(CacheKey.IsValid(new string('k', CacheKey.MaxLength + 1)));
-        Assert.True(CacheKey.IsValid(new string('k', CacheKey.MaxLength)));
+        Assert.False(CacheKey.IsValid(new string('k', CacheKey.MaxBytes + 1)));
+        Assert.True(CacheKey.IsValid(new string('k', CacheKey.MaxBytes)));
         Assert.Throws<ArgumentNullException>(static () => new CacheKey(null!));
+    }
+
+    // 上限是 UTF-8 字节数，不是 string.Length（ADR-0274）：每行是「重复的字符 × 次数 + 尾巴」，注释里是码元数与字节数
+    [Theory]
+    [InlineData("k", 512, "", true)] // 512 码元、512 字节
+    [InlineData("k", 513, "", false)] // 513 码元、513 字节
+    [InlineData("é", 256, "", true)] // 2 字节字符：256 码元、512 字节
+    [InlineData("é", 256, "k", false)] // 257 码元、513 字节
+    [InlineData("键", 170, "", true)] // 3 字节字符：170 码元、510 字节，短到不用数字节的最长形态
+    [InlineData("键", 170, "kk", true)] // 172 码元、512 字节
+    [InlineData("键", 171, "", false)] // 171 码元、513 字节
+    [InlineData("键", 170, "kkk", false)] // 173 码元、513 字节
+    [InlineData("😀", 128, "", true)] // 4 字节字符（代理对）：256 码元、512 字节
+    [InlineData("😀", 128, "k", false)] // 257 码元、513 字节
+    [InlineData("键", 512, "", false)] // 码元数恰好 512、1536 字节：按 string.Length 算是合法的
+    public void CacheKey_LimitsLengthByUtf8Bytes(string unit, int repeat, string tail, bool valid)
+    {
+        var value = string.Concat(Enumerable.Repeat(unit, repeat)) + tail;
+        Assert.Equal(valid, Encoding.UTF8.GetByteCount(value) <= CacheKey.MaxBytes);
+
+        Assert.Equal(valid, CacheKey.IsValid(value));
+        // 前缀与键同一个上限
+        Assert.Equal(valid, CacheKey.IsValidPrefix(value));
+        if (valid)
+        {
+            Assert.Equal(value, new CacheKey(value).Value);
+            Assert.Equal(value, CacheKey.Validate(value));
+        }
+        else
+        {
+            var thrown = Assert.Throws<ArgumentException>(() => new CacheKey(value));
+            Assert.Contains("at most 512 bytes long in UTF-8", thrown.Message, StringComparison.Ordinal);
+        }
+    }
+
+    [Fact]
+    public void KeyPrefixes_AreLimitedByUtf8Bytes()
+    {
+        var fits = string.Concat(Enumerable.Repeat("键", 170)) + "kk";
+        var over = string.Concat(Enumerable.Repeat("键", 171));
+        Assert.Equal((512, 513), (Encoding.UTF8.GetByteCount(fits), Encoding.UTF8.GetByteCount(over)));
+
+        Assert.True(new CacheKeyQuery { Prefix = fits }.Validate(CacheKeyQuery.Revision).IsSuccess);
+        Assert.True(CacheKeyQuery.ValidateRemovalPrefix(fits).IsSuccess);
+        Assert.Equal(fits, CacheChange.ForPrefix(fits).Prefix);
+
+        // 码元数（171）远没到 512，字节数超了：列键与按前缀删除都以校验错误返回，不抛出
+        var listing = new CacheKeyQuery { Prefix = over }.Validate(CacheKeyQuery.Revision);
+        Assert.Equal(CachingErrors.PrefixInvalid, listing.Error?.Code);
+        Assert.Equal(CachingErrors.PrefixInvalid, CacheKeyQuery.ValidateRemovalPrefix(over).Error?.Code);
+        Assert.Throws<ArgumentException>(() => CacheChange.ForPrefix(over));
+
+        // 空前缀仍是「全部」
+        Assert.True(CacheKey.IsValidPrefix(string.Empty));
+        Assert.True(new CacheKeyQuery().Validate(CacheKeyQuery.Revision).IsSuccess);
+    }
+
+    [Fact]
+    public async Task ComposedKeys_AreLimitedByUtf8Bytes()
+    {
+        var store = new FakeCacheStore();
+        var locks = new StoreDistributedLock(store);
+
+        // 锁条目的键是 lock: 加资源名：资源名 507 字节时恰好 512 字节
+        var resource = new CacheKey(string.Concat(Enumerable.Repeat("键", 169)));
+        Assert.Equal(507, Encoding.UTF8.GetByteCount(resource.Value));
+        var handle = (await locks.TryAcquireAsync(resource, TimeSpan.FromSeconds(30), CancellationToken.None)).ValueOrThrow();
+        Assert.True(await handle.ReleaseAsync(CancellationToken.None));
+
+        // 508 字节的资源名拼出 513 字节：与原先一样在拼键处抛出，只是现在按字节判
+        var overlong = new CacheKey(resource.Value + "k");
+        await Assert.ThrowsAsync<ArgumentException>(async () => await locks.TryAcquireAsync(overlong, TimeSpan.FromSeconds(30), CancellationToken.None));
     }
 
     [Fact]

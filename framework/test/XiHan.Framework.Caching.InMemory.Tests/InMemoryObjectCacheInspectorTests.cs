@@ -112,6 +112,13 @@ public sealed class InMemoryObjectCacheInspectorTests
         Assert.True((await _store.GetAsync(new CacheKey("access:lock"), CancellationToken.None)).HasValue);
         Assert.Equal(0, (await _cache.RemoveByPrefixAsync("access:", CancellationToken.None)).ValueOrThrow());
         Assert.Equal(CachingErrors.PrefixInvalid, (await _cache.RemoveByPrefixAsync(string.Empty, CancellationToken.None)).Error?.Code);
+
+        // 前缀的上限按 UTF-8 字节计：171 个 3 字节字符只有 171 个码元，却有 513 字节
+        var overlong = string.Concat(Enumerable.Repeat("键", 171));
+        Assert.Equal(CachingErrors.PrefixInvalid, (await _cache.RemoveByPrefixAsync(overlong, CancellationToken.None)).Error?.Code);
+        Assert.Equal(CachingErrors.PrefixInvalid, (await _cache.ListKeysAsync(new CacheKeyQuery { Prefix = overlong }, CancellationToken.None)).Error?.Code);
+        Assert.Equal(CachingErrors.PrefixInvalid, (await _store.RemoveByPrefixAsync(overlong, CancellationToken.None)).Error?.Code);
+        Assert.Equal(CachingErrors.PrefixInvalid, (await _store.ListKeysAsync(new CacheKeyQuery { Prefix = overlong }, CancellationToken.None)).Error?.Code);
     }
 
     /// <summary>

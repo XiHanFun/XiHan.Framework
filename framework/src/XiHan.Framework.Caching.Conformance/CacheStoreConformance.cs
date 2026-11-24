@@ -33,6 +33,14 @@ public abstract class CacheStoreConformance
     protected virtual bool SupportsRefresh => true;
 
     /// <summary>
+    /// 被测存储外面的包装给每个键加的前缀占的 UTF-8 字节数
+    /// </summary>
+    /// <remarks>
+    /// 默认 0。夹具用加前缀的包装隔离各用例（共用一个后端）时覆写它：最长键的用例让出这些字节，到达后端的键恰好 <see cref="CacheKey.MaxBytes"/> 字节
+    /// </remarks>
+    protected virtual int KeyPrefixBytes => 0;
+
+    /// <summary>
     /// 创建被测存储
     /// </summary>
     /// <remarks>
@@ -208,6 +216,59 @@ public abstract class CacheStoreConformance
         var hit = await store.GetAsync(key, CancellationToken.None).ConfigureAwait(false);
         Assert.True(hit.HasValue);
         Assert.True(payload.AsSpan().SequenceEqual(hit.ValueOrThrow().Span));
+    }
+
+    /// <summary>
+    /// 用例：含多字节字符、UTF-8 编码后恰好 <see cref="CacheKey.MaxBytes"/> 字节的键完整往返
+    /// </summary>
+    /// <remarks>
+    /// 键的上限按 UTF-8 字节计（ADR-0274）。两个只差最后一个字节的最长键是两个条目，存储不得截断或折叠键；夹具给键加前缀时按 <see cref="KeyPrefixBytes"/> 让出字节。实现了 <see cref="ICacheStoreInspector"/> 的存储按含多字节字符的前缀列出并删除它们
+    /// </remarks>
+    [Fact]
+    public async Task Keys_AtMaxUtf8Bytes_RoundTrip()
+    {
+        var store = CreateStore();
+        // 随机段之后用 3 字节字符填到上限，留最后一个字节区分两个键
+        var prefix = $"conformance:{Guid.NewGuid():N}:键值:";
+        var room = CacheKey.MaxBytes - KeyPrefixBytes - Encoding.UTF8.GetByteCount(prefix) - 1;
+        var filler = string.Concat(Enumerable.Repeat("键", room / 3)) + new string('k', room % 3);
+        var first = new CacheKey(prefix + filler + "a");
+        var second = new CacheKey(prefix + filler + "b");
+        Assert.Equal(CacheKey.MaxBytes - KeyPrefixBytes, Encoding.UTF8.GetByteCount(first.Value));
+        Assert.True(first.Value.Length < CacheKey.MaxBytes, "The key should contain multi-byte characters.");
+
+        await store.SetManyAsync([new CacheEntry(first, Bytes("one"), CacheEntryOptions.Default), new CacheEntry(second, Bytes("two"), CacheEntryOptions.Default)], CancellationToken.None).ConfigureAwait(false);
+
+        Assert.Equal("one", Text(await store.GetAsync(first, CancellationToken.None).ConfigureAwait(false)));
+        Assert.Equal(["one", "two"], (await store.GetManyAsync([first, second], CancellationToken.None).ConfigureAwait(false)).Select(Text));
+        Assert.False(await store.TryAddAsync(first, Bytes("again"), CacheEntryOptions.Default, CancellationToken.None).ConfigureAwait(false));
+        Assert.True(await store.TryRemoveAsync(first, Bytes("one"), CancellationToken.None).ConfigureAwait(false));
+        Assert.False((await store.GetAsync(first, CancellationToken.None).ConfigureAwait(false)).HasValue);
+        Assert.Equal("two", Text(await store.GetAsync(second, CancellationToken.None).ConfigureAwait(false)));
+
+        if (store is ICacheStoreInspector inspector)
+        {
+            // 走到续页为空：按页扫描的存储（Redis 的 SCAN）第一页可以是空的
+            var listed = new HashSet<CacheKey>();
+            string? continuation = null;
+            var pages = 0;
+            do
+            {
+                var page = (await inspector.ListKeysAsync(new CacheKeyQuery { Prefix = prefix + filler, ContinuationToken = continuation }, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow();
+                listed.UnionWith(page.Items);
+                continuation = page.ContinuationToken;
+                Assert.True(++pages <= 1000, "Listing should reach the last page.");
+            }
+            while (continuation is not null);
+            Assert.Equal([second], listed);
+            Assert.Equal(1, (await inspector.RemoveByPrefixAsync(prefix, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow());
+        }
+        else
+        {
+            Assert.True(await store.RemoveAsync(second, CancellationToken.None).ConfigureAwait(false));
+        }
+
+        Assert.False((await store.GetAsync(second, CancellationToken.None).ConfigureAwait(false)).HasValue);
     }
 
     /// <summary>

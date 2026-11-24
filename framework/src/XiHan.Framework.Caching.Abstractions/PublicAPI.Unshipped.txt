@@ -189,7 +189,7 @@ XiHan.Framework.Caching.Abstractions.Stores.ICacheStoreInspector.ListKeysAsync(X
 XiHan.Framework.Caching.Abstractions.Stores.ICacheStoreInspector.RemoveByPrefixAsync(string! prefix, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<long>>
 abstract XiHan.Framework.Caching.Abstractions.Locking.LockHandle.ExtendCoreAsync(System.TimeSpan timeToLive, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<bool>
 abstract XiHan.Framework.Caching.Abstractions.Locking.LockHandle.ReleaseCoreAsync(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<bool>
-const XiHan.Framework.Caching.Abstractions.Caches.GenerationCache<T>.MaxRegionLength = 128 -> int
+const XiHan.Framework.Caching.Abstractions.Caches.GenerationCache<T>.MaxRegionBytes = 128 -> int
 const XiHan.Framework.Caching.Abstractions.CachingCapabilities.Distributed = "caching.distributed" -> string!
 const XiHan.Framework.Caching.Abstractions.CachingCapabilities.Local = "caching.local" -> string!
 const XiHan.Framework.Caching.Abstractions.CachingCapabilities.Version = 1 -> int
@@ -214,7 +214,7 @@ const XiHan.Framework.Caching.Abstractions.CachingMessages.LockHeld = "caching.l
 const XiHan.Framework.Caching.Abstractions.CachingMessages.PrefixInvalid = "caching.inspector.prefix_invalid" -> string!
 const XiHan.Framework.Caching.Abstractions.CachingMessages.PrefixRequired = "caching.inspector.prefix_required" -> string!
 const XiHan.Framework.Caching.Abstractions.Idempotency.IdempotencyOptions.ConfigurationSection = "XiHan:Caching:Idempotency" -> string!
-const XiHan.Framework.Caching.Abstractions.Stores.CacheKey.MaxLength = 512 -> int
+const XiHan.Framework.Caching.Abstractions.Stores.CacheKey.MaxBytes = 512 -> int
 const XiHan.Framework.Caching.Abstractions.Stores.CacheKeyQuery.DefaultPageSize = 100 -> int
 const XiHan.Framework.Caching.Abstractions.Stores.CacheKeyQuery.MaxPageSize = 1000 -> int
 const XiHan.Framework.Caching.Abstractions.Stores.CacheKeyQuery.Revision = 1 -> int

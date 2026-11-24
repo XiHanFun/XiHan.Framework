@@ -45,7 +45,7 @@ public sealed record CacheKeyQuery
     /// 键的前缀
     /// </summary>
     /// <remarks>
-    /// 空为全部；与键同文法（无空白与控制字符，不超过 <see cref="CacheKey.MaxLength"/>），区分大小写。不合法由 <see cref="Validate"/> 报告
+    /// 空为全部；与键同文法（无空白与控制字符，UTF-8 编码后不超过 <see cref="CacheKey.MaxBytes"/> 字节），区分大小写。不合法由 <see cref="Validate"/> 报告
     /// </remarks>
     public string Prefix
     {
@@ -118,5 +118,5 @@ public sealed record CacheKeyQuery
     /// 前缀不合法的错误
     /// </summary>
     private static Error PrefixInvalid(string prefix)
-        => Error.Validation(CachingErrors.PrefixInvalid, CachingMessages.PrefixInvalid, MessageArguments.Of(("prefix", prefix), ("max", CacheKey.MaxLength)));
+        => Error.Validation(CachingErrors.PrefixInvalid, CachingMessages.PrefixInvalid, MessageArguments.Of(("prefix", prefix), ("max", CacheKey.MaxBytes)));
 }

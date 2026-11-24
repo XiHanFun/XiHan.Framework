@@ -20,6 +20,11 @@ public sealed class RemoteCacheStoreConformanceTests(RemoteHostFixture fixture) 
     protected override TimeSpan ExpirationGrace => TimeSpan.FromMilliseconds(500);
 
     /// <summary>
+    /// 包装加的键前缀占的字节数
+    /// </summary>
+    protected override int KeyPrefixBytes => PrefixedCacheStore.PrefixBytes;
+
+    /// <summary>
     /// 共用宿主里的远程存储，按用例加随机键前缀
     /// </summary>
     protected override ICacheStore CreateStore() => new PrefixedCacheStore(fixture.Store);

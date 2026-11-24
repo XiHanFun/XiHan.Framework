@@ -79,7 +79,7 @@ public static class CachingMessages
     /// 键前缀不合文法
     /// </summary>
     /// <remarks>
-    /// 参数：<c>prefix</c>（给出的前缀）、<c>max</c>（最大长度）。与 <see cref="CachingErrors.PrefixInvalid"/> 搭配
+    /// 参数：<c>prefix</c>（给出的前缀）、<c>max</c>（UTF-8 编码后的最大字节数）。与 <see cref="CachingErrors.PrefixInvalid"/> 搭配
     /// </remarks>
     public const string PrefixInvalid = "caching.inspector.prefix_invalid";
 
