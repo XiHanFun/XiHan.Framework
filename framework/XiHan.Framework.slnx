@@ -144,6 +144,7 @@
     <Project Path="test/XiHan.Framework.Protocols.Grpc.Tests/XiHan.Framework.Protocols.Grpc.Tests.csproj" />
     <Project Path="test/XiHan.Framework.Protocols.CloudEvents.Tests/XiHan.Framework.Protocols.CloudEvents.Tests.csproj" />
     <Project Path="test/XiHan.Framework.Hosting.CommandLine.Tests/XiHan.Framework.Hosting.CommandLine.Tests.csproj" />
+    <Project Path="test/XiHan.Framework.ObjectStorage.Abstractions.Tests/XiHan.Framework.ObjectStorage.Abstractions.Tests.csproj" />
     <Project Path="test/XiHan.Framework.ObjectStorage.FileSystem.Tests/XiHan.Framework.ObjectStorage.FileSystem.Tests.csproj" />
     <Project Path="test/XiHan.Framework.ObjectStorage.S3.Tests/XiHan.Framework.ObjectStorage.S3.Tests.csproj" />
     <Project Path="test/XiHan.Framework.Scheduling.Abstractions.Tests/XiHan.Framework.Scheduling.Abstractions.Tests.csproj" />
