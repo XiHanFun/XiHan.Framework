@@ -396,6 +396,38 @@ public sealed class HttpProtocolTests
     }
 
     [Fact]
+    public void OpenApi_MarksDeprecatedOperations_WithTheStandardField()
+    {
+        var registry = new OperationRegistry(new PermissionRegistry());
+        // 五个级别各一个：只有 Deprecated 带标准的 deprecated，Internal 不进文档
+        registry.Add(Describe(new OperationContract("orders.create") { Expose = Expose.Http, Stability = Stability.Deprecated })).ThrowIfFailure();
+        registry.Add(Describe(new OperationContract("orders.get") { Expose = Expose.Http })).ThrowIfFailure();
+        registry.Add(Describe(new OperationContract("orders.list") { Expose = Expose.Http, Stability = Stability.Preview })).ThrowIfFailure();
+        registry.Add(Describe(new OperationContract("orders.delete") { Expose = Expose.Http, Stability = Stability.Experimental })).ThrowIfFailure();
+        registry.Add(Describe(new OperationContract("orders.audit") { Expose = Expose.Http, Stability = Stability.Internal })).ThrowIfFailure();
+
+        using var document = JsonDocument.Parse(OpenApiDocumentBuilder.Build(registry, new HttpProtocolOptions(), permissions: null, "Orders", "1.0"));
+        var paths = document.RootElement.GetProperty("paths");
+
+        // 弃用的操作：标准字段是 JSON 布尔 true，稳定性扩展照旧
+        var deprecated = paths.GetProperty("/orders").GetProperty("post");
+        Assert.Equal(JsonValueKind.True, deprecated.GetProperty("deprecated").ValueKind);
+        Assert.Equal("Deprecated", deprecated.GetProperty("x-xihan-stability").GetString());
+
+        // 其余级别不写这个字段（缺省即 false），不写成 false
+        var stable = paths.GetProperty("/orders/{id}").GetProperty("get");
+        Assert.False(stable.TryGetProperty("deprecated", out _));
+        Assert.False(stable.TryGetProperty("x-xihan-stability", out _));
+        var preview = paths.GetProperty("/orders").GetProperty("get");
+        Assert.False(preview.TryGetProperty("deprecated", out _));
+        Assert.Equal("Preview", preview.GetProperty("x-xihan-stability").GetString());
+        var experimental = paths.GetProperty("/orders/{id}").GetProperty("delete");
+        Assert.False(experimental.TryGetProperty("deprecated", out _));
+        Assert.Equal("Experimental", experimental.GetProperty("x-xihan-stability").GetString());
+        Assert.False(paths.TryGetProperty("/orders/{id}:audit", out _));
+    }
+
+    [Fact]
     public async Task RoutePrefix_AppliesToEveryOperation()
     {
         var (app, client, _) = await StartAsync(("XiHan:Protocols:Http:RoutePrefix", "/api"));

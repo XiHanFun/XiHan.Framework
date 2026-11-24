@@ -8,7 +8,7 @@
 
 * `orders.create` → `POST /orders`、`orders.get` → `GET /orders/{id}` 等路由推导，可显式覆盖
 * 路由值、请求体与查询串合并成一个请求载荷
-* `/openapi.json`：带权限与策略扩展、按区域本地化、支持分组文档
+* `/openapi.json`：带权限与策略扩展、按区域本地化、支持分组文档；`Stability.Deprecated` 的操作带标准的 `deprecated: true`
 
 ## 如何使用
 

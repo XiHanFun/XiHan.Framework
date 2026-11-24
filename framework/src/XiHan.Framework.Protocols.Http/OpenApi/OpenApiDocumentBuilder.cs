@@ -287,7 +287,7 @@ public static partial class OpenApiDocumentBuilder
     /// 写一个操作对象
     /// </summary>
     /// <remarks>
-    /// 操作 ID、标签、摘要、稳定性与授权要求的扩展字段、安全要求、路径与查询参数、请求体、响应
+    /// 操作 ID、标签、摘要、弃用标记、稳定性与授权要求的扩展字段、安全要求、路径与查询参数、请求体、响应
     /// </remarks>
     private static void WriteOperation(Utf8JsonWriter writer, OperationDescriptor descriptor, HttpRoute route, BuildContext context)
     {
@@ -303,6 +303,12 @@ public static partial class OpenApiDocumentBuilder
         if (Join(context.Text(OperationKey(descriptor.Id, ".description")), AuthorizationText(descriptor.Contract.Permission, descriptor.Contract.Policy, context)) is { } description)
         {
             writer.WriteString("description", description);
+        }
+
+        // 弃用另写标准字段：文档界面与客户端生成器只认 deprecated，不认下面的扩展字段；不弃用时不写（缺省即 false）
+        if (descriptor.Contract.Stability == Stability.Deprecated)
+        {
+            writer.WriteBoolean("deprecated", true);
         }
 
         if (descriptor.Contract.Stability != Stability.Stable)
