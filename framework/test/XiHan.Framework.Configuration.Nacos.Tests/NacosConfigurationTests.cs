@@ -112,6 +112,60 @@ public sealed class NacosConfigurationTests
         Assert.Throws<FormatException>(static () => NacosDocumentParser.Parse("=value", NacosConfigFormat.Properties));
     }
 
+    [Theory]
+    [InlineData(NacosConfigFormat.Json, """{"Name":"a","Name":"b"}""", "Name")]
+    [InlineData(NacosConfigFormat.Json, """{"Name":"a","name":"b"}""", "name")]
+    [InlineData(NacosConfigFormat.Json, """{"A":{"B":1},"a:b":2}""", "a:b")]
+    [InlineData(NacosConfigFormat.Properties, "name=a\nname=b\n", "name")]
+    [InlineData(NacosConfigFormat.Properties, "a.b=1\nA.B:2\n", "A:B")]
+    public void Parser_RejectsAKeyThatAppearsTwice_InsteadOfKeepingTheLastOne(NacosConfigFormat format, string content, string key)
+    {
+        // 规范 RFC-0014「Nacos Provider」的「文档格式」（ADR-0286）：展平后的键不区分大小写，同一个键出现两次时文档不合法。以前悄悄取后一个，前一处改了不生效也看不出原因
+        var exception = Assert.Throws<FormatException>(() => NacosDocumentParser.Parse(content, format));
+        Assert.Contains($"'{key}'", exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Parser_KeepsKeysThatOnlyShareAParent()
+    {
+        // 重复按展平后的键判断：上一层只差大小写、叶子不同的不算重复，值与对象同名的展平成两个键
+        var nested = NacosDocumentParser.Parse("""{"a":{"b":"1"},"A":{"c":"2"}}""", NacosConfigFormat.Json);
+        Assert.Equal(("1", "2"), (nested["a:b"], nested["a:c"]));
+        var mixed = NacosDocumentParser.Parse("""{"a":"1","a":{"b":"2"}}""", NacosConfigFormat.Json);
+        Assert.Equal(("1", "2"), (mixed["a"], mixed["a:b"]));
+    }
+
+    [Theory]
+    [InlineData("""{"a":"\ud800"}""")]
+    [InlineData("""{"\udc00":1}""")]
+    public void Parser_RejectsALoneSurrogateEscape_AsAnInvalidDocument(string content)
+    {
+        // 落单的代理项转义要到取文本时才被发现，那时抛的是 InvalidOperationException；以前它不被当成格式错误，会从客户端漏出去、被算成远端不可达
+        Assert.Throws<FormatException>(() => NacosDocumentParser.Parse(content, NacosConfigFormat.Json));
+    }
+
+    [Fact]
+    public async Task Fetch_ADocumentWithAnEmptyKey_IsAValidationError_NotAnException()
+    {
+        // JSON 顶层的成员名是空串时展平出空的键。以前它留到构造文档时才被发现，ArgumentException 从 FetchAsync 漏出去
+        Assert.Throws<FormatException>(static () => NacosDocumentParser.Parse("""{"":"root"}""", NacosConfigFormat.Json));
+
+        using var handler = new NacosStubHandler { Content = """{"":"root","Name":"orders"}""" };
+        using var http = new HttpClient(handler, disposeHandler: false);
+        using var client = new NacosConfigurationClient(new NacosOptions { ServerAddresses = ["http://nacos.test:8848"] }, http, TimeProvider.System);
+        var fetched = await client.FetchAsync("orders", null, CancellationToken.None);
+        Assert.Equal(ConfigurationErrors.DocumentInvalid, fetched.Error?.Code);
+    }
+
+    [Fact]
+    public void Parser_ReportsAnEmptyKeyByLineNumber_WithoutTheValue()
+    {
+        // 原因会进错误的详情与日志：键为空的那一行分隔符之后是配置的值，只报行号
+        var exception = Assert.Throws<FormatException>(static () => NacosDocumentParser.Parse("a=1\n# note\n = hunter2\n", NacosConfigFormat.Properties));
+        Assert.Contains("Line 3", exception.Message, StringComparison.Ordinal);
+        Assert.DoesNotContain("hunter2", exception.Message, StringComparison.Ordinal);
+    }
+
     [Fact]
     public async Task Fetch_InvalidDocument_IsValidationError_AndPropertiesFormatWorks()
     {

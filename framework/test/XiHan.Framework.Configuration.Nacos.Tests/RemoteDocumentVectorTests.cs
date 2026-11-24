@@ -10,7 +10,7 @@ namespace XiHan.Framework.Configuration.Nacos.Tests;
 /// 回放 <c>remote-documents.json</c>：远程配置文档的展平与 Nacos 的内容版本
 /// </summary>
 /// <remarks>
-/// <c>configuration/remote-documents.json</c>（RFC-0014「远程配置」与「Nacos Provider」，ADR-0277）。展平经内部的 <see cref="NacosDocumentParser"/> 回放；版本的算法在客户端里是私有的，经 <see cref="NacosConfigurationClient"/> 取一份不带 <c>Content-MD5</c> 头的响应走到它（HTTP 桩，不连真实的 Nacos），再拿这个版本去监听，桩按 Nacos 的约定逐字比较
+/// <c>configuration/remote-documents.json</c>（RFC-0014「远程配置」与「Nacos Provider」的「文档格式」，ADR-0277、ADR-0286）。展平经内部的 <see cref="NacosDocumentParser"/> 回放；版本的算法在客户端里是私有的，经 <see cref="NacosConfigurationClient"/> 取一份不带 <c>Content-MD5</c> 头的响应走到它（HTTP 桩，不连真实的 Nacos），再拿这个版本去监听，桩按 Nacos 的约定逐字比较
 /// </remarks>
 public sealed class RemoteDocumentVectorTests
 {
@@ -43,11 +43,18 @@ public sealed class RemoteDocumentVectorTests
         var failures = new List<string>();
         foreach (var vector in _vectors.Cases)
         {
-            var actual = Describe(NacosDocumentParser.Parse(vector.Content, Enum.Parse<NacosConfigFormat>(vector.Format)));
+            var values = NacosDocumentParser.Parse(vector.Content, Enum.Parse<NacosConfigFormat>(vector.Format));
+            var actual = Describe(values);
             var expected = Describe(vector.Values);
             if (actual != expected)
             {
                 failures.Add($"{vector.Name}: flattened to [{actual}], the vector has [{expected}]");
+            }
+
+            // 向量里的键照文档里写的大小写给出：上面按序数逐字比较过；这里再核对读出来的键不区分大小写
+            if (vector.Values.Keys.Any(key => !values.ContainsKey(key.ToUpperInvariant()) || !values.ContainsKey(key.ToLowerInvariant())))
+            {
+                failures.Add($"{vector.Name}: the flattened keys are case-sensitive");
             }
         }
 
@@ -144,7 +151,31 @@ public sealed class RemoteDocumentVectorTests
         Assert.Contains(properties, static vector => vector.Values.Keys.Any(static key => key.Contains(':', StringComparison.Ordinal)));
         Assert.Contains(properties, static vector => vector.Content.Split('\n').Any(static line => line.StartsWith('#')) && vector.Content.Split('\n').Any(static line => line.StartsWith('!')));
         Assert.Contains(properties, static vector => vector.Values.Values.Any(static value => value is not null && value.Contains('=', StringComparison.Ordinal)));
+
+        // JSON 的文本形式与宽松之处（ADR-0286）：布尔、带小数点或指数的数字、注释、尾逗号、正好到上限的嵌套
+        Assert.Contains(json, static vector => vector.Values.ContainsValue("True") && vector.Values.ContainsValue("False"));
+        Assert.Contains(json, static vector => vector.Values.Values.Any(static value => value is not null && value.Contains('.') && value.All(static c => char.IsAsciiDigit(c) || c is '.' or '-')) && vector.Values.Values.Any(static value => value is not null && value.Contains('e')));
+        Assert.Contains(json, static vector => vector.Content.Contains("//", StringComparison.Ordinal) && vector.Content.Contains("/*", StringComparison.Ordinal));
+        Assert.Contains(json, static vector => vector.Content.Contains(",]", StringComparison.Ordinal) && vector.Content.Contains(",}", StringComparison.Ordinal));
+        Assert.Contains(json, static vector => vector.Values.Keys.Any(static key => key.Split(':').Length == MaxDepth));
+
+        // Properties：冒号作分隔符、两侧的空白（含 ASCII 以外的）、没有分隔符的行
+        Assert.Contains(properties, static vector => !vector.Content.Contains('=') && vector.Values.Count > 0 && vector.Values.Values.All(static value => value is { Length: > 0 }));
+        Assert.Contains(properties, static vector => vector.Content.Contains('\u00a0') && vector.Values.All(static value => value.Key == value.Key.Trim() && value.Value == value.Value?.Trim()));
+        Assert.Contains(properties, static vector => vector.Values.Count > 0 && vector.Values.Values.All(static value => value is { Length: 0 }) && !vector.Content.Contains('=') && !vector.Content.Contains(':'));
+
+        // 不合法的：两种格式里重复的键（含只差大小写的）、顶层不是对象、嵌套只多一层
+        Assert.Contains(_vectors.Invalid, static vector => vector.Format == nameof(NacosConfigFormat.Json) && vector.Content == """{"a":1,"a":2}""");
+        Assert.Contains(_vectors.Invalid, static vector => vector.Format == nameof(NacosConfigFormat.Json) && vector.Content.Contains("\"Name\"", StringComparison.Ordinal) && vector.Content.Contains("\"name\"", StringComparison.Ordinal));
+        Assert.Contains(_vectors.Invalid, static vector => vector.Format == nameof(NacosConfigFormat.Properties) && vector.Content.Split('\n').Where(static line => line.Length > 0).Distinct(StringComparer.OrdinalIgnoreCase).Count() < vector.Content.Split('\n').Count(static line => line.Length > 0) + 1 && vector.Content.Contains("A.B", StringComparison.Ordinal));
+        Assert.Contains(_vectors.Invalid, static vector => vector.Format == nameof(NacosConfigFormat.Json) && vector.Content.StartsWith('['));
+        Assert.Contains(_vectors.Invalid, static vector => vector.Format == nameof(NacosConfigFormat.Json) && vector.Content.Count(static c => c == '{') == MaxDepth + 1);
     }
+
+    /// <summary>
+    /// JSON 文档里对象与数组最多嵌套的层数
+    /// </summary>
+    private const int MaxDepth = 64;
 
     /// <summary>
     /// 指向 HTTP 桩、按给定格式解析的选项

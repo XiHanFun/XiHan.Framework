@@ -7,7 +7,8 @@
 ## 主要特性
 
 * 长轮询感知变化，整份配置替换并触发重载
-* 支持 `Json` 与 `Properties` 格式
+* 支持 `Json` 与 `Properties` 格式：`Json` 的读法与 `appsettings.json` 相同（照收注释与尾逗号，布尔读成 `True` / `False`），`Properties` 每行 `a.b=c` 或 `a.b:c`、键里的点换成 `:`
+* 配置键不区分大小写：一份文档里同一个键出现两次（含只差大小写的）时整份文档不合法（`CONFIGURATION_VALIDATION_001`），不取其中任何一个
 * 支持用户名密码登录与多个服务地址按序尝试
 * 地址与凭据可来自资源绑定 `nacos`
 
