@@ -10,6 +10,9 @@ namespace XiHan.Framework.Persistence.Abstractions.UnitOfWork;
 /// </summary>
 /// <remarks>
 /// 作用域生命周期；Transaction 阶段的中间件开启它，按结果提交或回滚。仓储只在活动的工作单元内工作，否则抛出携带 <see cref="PersistenceErrors.NoActiveUnitOfWork"/> 的 <see cref="FrameworkException"/>。状态机：NotStarted → Active → Committed | RolledBack；违反顺序抛出携带 <see cref="PersistenceErrors.InvalidUnitOfWorkState"/> 的 <see cref="FrameworkException"/>
+/// <para>
+/// 开始、提交与回滚返回 <see cref="ValueTask"/> / <see cref="ValueTask{TResult}"/>（ADR-0265）：一个返回值只能消费一次，直接等待即可；要与别的任务组合或等待多次时，在调用点先 <c>AsTask()</c>
+/// </para>
 /// </remarks>
 [ApiLevel(Stability.Stable, "5.0")]
 public interface IUnitOfWork
@@ -50,7 +53,7 @@ public interface IUnitOfWork
     /// <remarks>
     /// 只能调用一次
     /// </remarks>
-    Task BeginAsync(UnitOfWorkOptions options, CancellationToken cancellationToken);
+    ValueTask BeginAsync(UnitOfWorkOptions options, CancellationToken cancellationToken);
 
     /// <summary>
     /// 提交
@@ -58,10 +61,10 @@ public interface IUnitOfWork
     /// <remarks>
     /// 并发冲突以 <see cref="PersistenceErrors.Concurrency"/> 返回，标识重复以 <see cref="PersistenceErrors.Duplicate"/> 返回，都不抛异常。两个工作单元先后新增同一标识时后到者失败：内存实现在提交时发现；关系型 Provider 在写入时由主键约束发现，仓储返回标识重复后本工作单元的提交只回滚并返回同一错误
     /// </remarks>
-    Task<Result> CommitAsync(CancellationToken cancellationToken);
+    ValueTask<Result> CommitAsync(CancellationToken cancellationToken);
 
     /// <summary>
     /// 回滚
     /// </summary>
-    Task RollbackAsync(CancellationToken cancellationToken);
+    ValueTask RollbackAsync(CancellationToken cancellationToken);
 }

@@ -32,29 +32,29 @@ XiHan.Framework.Testing.LogCaptureEntry.LogCaptureEntry() -> void
 XiHan.Framework.Testing.LogCaptureEntry.Message.get -> string!
 XiHan.Framework.Testing.LogCaptureEntry.Message.init -> void
 XiHan.Framework.Testing.ScriptedRepository<TEntity, TKey>
-XiHan.Framework.Testing.ScriptedRepository<TEntity, TKey>.AddAsync(TEntity! entity, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<XiHan.Framework.Primitives.Result>!
-XiHan.Framework.Testing.ScriptedRepository<TEntity, TKey>.AddRangeAsync(System.Collections.Generic.IReadOnlyList<TEntity!>! entities, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<XiHan.Framework.Primitives.Result>!>!
-XiHan.Framework.Testing.ScriptedRepository<TEntity, TKey>.CountAsync(XiHan.Framework.Persistence.Abstractions.Queries.EntityQuery<TEntity!>! query, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<long>!
+XiHan.Framework.Testing.ScriptedRepository<TEntity, TKey>.AddAsync(TEntity! entity, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result>
+XiHan.Framework.Testing.ScriptedRepository<TEntity, TKey>.AddRangeAsync(System.Collections.Generic.IReadOnlyList<TEntity!>! entities, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<System.Collections.Generic.IReadOnlyList<XiHan.Framework.Primitives.Result>!>
+XiHan.Framework.Testing.ScriptedRepository<TEntity, TKey>.CountAsync(XiHan.Framework.Persistence.Abstractions.Queries.EntityQuery<TEntity!>! query, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<long>
 XiHan.Framework.Testing.ScriptedRepository<TEntity, TKey>.Failure.get -> System.Exception?
 XiHan.Framework.Testing.ScriptedRepository<TEntity, TKey>.Failure.init -> void
 XiHan.Framework.Testing.ScriptedRepository<TEntity, TKey>.FindAsync(TKey id, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Maybe<TEntity!>>
-XiHan.Framework.Testing.ScriptedRepository<TEntity, TKey>.FindManyAsync(System.Collections.Generic.IReadOnlyList<TKey>! ids, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<TEntity!>!>!
+XiHan.Framework.Testing.ScriptedRepository<TEntity, TKey>.FindManyAsync(System.Collections.Generic.IReadOnlyList<TKey>! ids, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<System.Collections.Generic.IReadOnlyList<TEntity!>!>
 XiHan.Framework.Testing.ScriptedRepository<TEntity, TKey>.Found.get -> TEntity?
 XiHan.Framework.Testing.ScriptedRepository<TEntity, TKey>.Found.init -> void
-XiHan.Framework.Testing.ScriptedRepository<TEntity, TKey>.ListAsync(XiHan.Framework.Persistence.Abstractions.Queries.EntityQuery<TEntity!>! query, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<TEntity!>!>!
-XiHan.Framework.Testing.ScriptedRepository<TEntity, TKey>.RemoveAsync(TEntity! entity, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<XiHan.Framework.Primitives.Result>!
-XiHan.Framework.Testing.ScriptedRepository<TEntity, TKey>.RemoveRangeAsync(System.Collections.Generic.IReadOnlyList<TEntity!>! entities, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<XiHan.Framework.Primitives.Result>!>!
+XiHan.Framework.Testing.ScriptedRepository<TEntity, TKey>.ListAsync(XiHan.Framework.Persistence.Abstractions.Queries.EntityQuery<TEntity!>! query, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<System.Collections.Generic.IReadOnlyList<TEntity!>!>
+XiHan.Framework.Testing.ScriptedRepository<TEntity, TKey>.RemoveAsync(TEntity! entity, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result>
+XiHan.Framework.Testing.ScriptedRepository<TEntity, TKey>.RemoveRangeAsync(System.Collections.Generic.IReadOnlyList<TEntity!>! entities, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<System.Collections.Generic.IReadOnlyList<XiHan.Framework.Primitives.Result>!>
 XiHan.Framework.Testing.ScriptedRepository<TEntity, TKey>.ScriptedRepository() -> void
-XiHan.Framework.Testing.ScriptedRepository<TEntity, TKey>.UpdateAsync(TEntity! entity, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<XiHan.Framework.Primitives.Result>!
-XiHan.Framework.Testing.ScriptedRepository<TEntity, TKey>.UpdateRangeAsync(System.Collections.Generic.IReadOnlyList<TEntity!>! entities, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<XiHan.Framework.Primitives.Result>!>!
+XiHan.Framework.Testing.ScriptedRepository<TEntity, TKey>.UpdateAsync(TEntity! entity, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result>
+XiHan.Framework.Testing.ScriptedRepository<TEntity, TKey>.UpdateRangeAsync(System.Collections.Generic.IReadOnlyList<TEntity!>! entities, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<System.Collections.Generic.IReadOnlyList<XiHan.Framework.Primitives.Result>!>
 XiHan.Framework.Testing.ScriptedRepository<TEntity, TKey>.WriteResult.get -> XiHan.Framework.Primitives.Result
 XiHan.Framework.Testing.ScriptedRepository<TEntity, TKey>.WriteResult.init -> void
 XiHan.Framework.Testing.ScriptedUnitOfWork
-XiHan.Framework.Testing.ScriptedUnitOfWork.BeginAsync(XiHan.Framework.Persistence.Abstractions.UnitOfWork.UnitOfWorkOptions! options, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
+XiHan.Framework.Testing.ScriptedUnitOfWork.BeginAsync(XiHan.Framework.Persistence.Abstractions.UnitOfWork.UnitOfWorkOptions! options, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask
 XiHan.Framework.Testing.ScriptedUnitOfWork.BeginFailure.get -> System.Exception?
 XiHan.Framework.Testing.ScriptedUnitOfWork.BeginFailure.init -> void
 XiHan.Framework.Testing.ScriptedUnitOfWork.Calls.get -> System.Collections.Generic.List<string!>!
-XiHan.Framework.Testing.ScriptedUnitOfWork.CommitAsync(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<XiHan.Framework.Primitives.Result>!
+XiHan.Framework.Testing.ScriptedUnitOfWork.CommitAsync(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result>
 XiHan.Framework.Testing.ScriptedUnitOfWork.CommitFailure.get -> System.Exception?
 XiHan.Framework.Testing.ScriptedUnitOfWork.CommitFailure.init -> void
 XiHan.Framework.Testing.ScriptedUnitOfWork.CommitResult.get -> XiHan.Framework.Primitives.Result
@@ -65,7 +65,7 @@ XiHan.Framework.Testing.ScriptedUnitOfWork.DisposeFailure.init -> void
 XiHan.Framework.Testing.ScriptedUnitOfWork.DomainEvents.get -> XiHan.Framework.Persistence.Abstractions.UnitOfWork.DomainEventTracker!
 XiHan.Framework.Testing.ScriptedUnitOfWork.HasTransaction.get -> bool
 XiHan.Framework.Testing.ScriptedUnitOfWork.Options.get -> XiHan.Framework.Persistence.Abstractions.UnitOfWork.UnitOfWorkOptions!
-XiHan.Framework.Testing.ScriptedUnitOfWork.RollbackAsync(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
+XiHan.Framework.Testing.ScriptedUnitOfWork.RollbackAsync(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask
 XiHan.Framework.Testing.ScriptedUnitOfWork.RollbackFailure.get -> System.Exception?
 XiHan.Framework.Testing.ScriptedUnitOfWork.RollbackFailure.init -> void
 XiHan.Framework.Testing.ScriptedUnitOfWork.ScriptedUnitOfWork() -> void

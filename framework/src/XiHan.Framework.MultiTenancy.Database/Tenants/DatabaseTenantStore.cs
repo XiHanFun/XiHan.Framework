@@ -94,7 +94,7 @@ public sealed class DatabaseTenantStore : ITenantStore
         var source = EntityQuery.All<TenantRecord>();
         var filtered = query.EnabledOnly ? source.Where(new Specification<TenantRecord>(static r => r.IsEnabled)) : source;
         var page = filtered.OrderBy(static r => r.Id).Page(skip, query.PageSize);
-        var read = await _catalog.ReadAsync((repository, ct) => new ValueTask<IReadOnlyList<TenantRecord>>(repository.ListAsync(page, ct)), cancellationToken).ConfigureAwait(false);
+        var read = await _catalog.ReadAsync((repository, ct) => repository.ListAsync(page, ct), cancellationToken).ConfigureAwait(false);
         if (!read.TryGetValue(out var records))
         {
             return read.Error!;
@@ -141,7 +141,7 @@ public sealed class DatabaseTenantStore : ITenantStore
     private async ValueTask<Result<IReadOnlyList<TenantCacheValue>>> LoadAsync(IReadOnlyList<GenerationCacheKey> missing, CancellationToken cancellationToken)
     {
         string[] ids = [.. missing.Select(static key => key.Scope)];
-        var read = await _catalog.ReadAsync((repository, ct) => new ValueTask<IReadOnlyList<TenantRecord>>(repository.FindManyAsync(ids, ct)), cancellationToken).ConfigureAwait(false);
+        var read = await _catalog.ReadAsync((repository, ct) => repository.FindManyAsync(ids, ct), cancellationToken).ConfigureAwait(false);
         // 失败不进缓存：存储恢复后下一次解析立即重新查库，而不是在存活时间内一直报不可达
         if (!read.TryGetValue(out var records))
         {

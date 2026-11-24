@@ -29,7 +29,7 @@ builder.AddXiHan(x => x.UseStandardProfile());
 
 public sealed class OrderCatalog(IRepository<Order, Guid> orders)
 {
-    public Task<IReadOnlyList<Order>> LargestAsync(int minAmount, CancellationToken ct)
+    public ValueTask<IReadOnlyList<Order>> LargestAsync(int minAmount, CancellationToken ct)
         => orders.ListAsync(
             EntityQuery.All<Order>()
                 .Where(Specification.Of<Order>(o => o.Amount >= minAmount))
@@ -38,6 +38,8 @@ public sealed class OrderCatalog(IRepository<Order, Guid> orders)
             ct);
 }
 ```
+
+仓储与工作单元的异步方法都返回 `ValueTask`，直接 `await` 即可。一个返回值只能消费一次：要交给只收 `Task` 的接口（`Task.WhenAll`、`Func<Task>` 参数）、存起来稍后再等或等待多次时，在调用点先 `.AsTask()`。
 
 后台循环、单例存储与健康探针不在调用里，没有 Transaction 阶段替它们开工作单元，用 `UnitOfWorkScope` 在新作用域里开：返回成功即提交，返回失败或抛出即回滚。
 

@@ -203,7 +203,7 @@ internal static class RecordQueries
     /// <remarks>
     /// 与别的写入者撞上的项把标识放进 <paramref name="retry"/>、错误放进 <paramref name="races"/>；返回第一个非竞争的失败，没有为 <see langword="null"/>
     /// </remarks>
-    private static async ValueTask<Error?> WriteAsync<TEntity>(Func<IReadOnlyList<TEntity>, CancellationToken, Task<IReadOnlyList<Result>>> write, List<TEntity> rows, List<string> retry, List<Error> races, CancellationToken cancellationToken)
+    private static async ValueTask<Error?> WriteAsync<TEntity>(Func<IReadOnlyList<TEntity>, CancellationToken, ValueTask<IReadOnlyList<Result>>> write, List<TEntity> rows, List<string> retry, List<Error> races, CancellationToken cancellationToken)
         where TEntity : class, IEntity<string>
     {
         foreach (var chunk in rows.Chunk(EntityQuery.DefaultMaxTake))

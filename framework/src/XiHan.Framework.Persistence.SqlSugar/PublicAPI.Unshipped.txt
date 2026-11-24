@@ -59,16 +59,16 @@ XiHan.Framework.Persistence.SqlSugar.SqlSugarReplicaOptions.HealthCheckInterval.
 XiHan.Framework.Persistence.SqlSugar.SqlSugarReplicaOptions.HealthCheckInterval.init -> void
 XiHan.Framework.Persistence.SqlSugar.SqlSugarReplicaOptions.SqlSugarReplicaOptions() -> void
 XiHan.Framework.Persistence.SqlSugar.SqlSugarUnitOfWork
-XiHan.Framework.Persistence.SqlSugar.SqlSugarUnitOfWork.BeginAsync(XiHan.Framework.Persistence.Abstractions.UnitOfWork.UnitOfWorkOptions! options, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
+XiHan.Framework.Persistence.SqlSugar.SqlSugarUnitOfWork.BeginAsync(XiHan.Framework.Persistence.Abstractions.UnitOfWork.UnitOfWorkOptions! options, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask
 XiHan.Framework.Persistence.SqlSugar.SqlSugarUnitOfWork.Client.get -> SqlSugar.ISqlSugarClient!
-XiHan.Framework.Persistence.SqlSugar.SqlSugarUnitOfWork.CommitAsync(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<XiHan.Framework.Primitives.Result>!
+XiHan.Framework.Persistence.SqlSugar.SqlSugarUnitOfWork.CommitAsync(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result>
 XiHan.Framework.Persistence.SqlSugar.SqlSugarUnitOfWork.ConnectionFor(System.Type! entityType) -> SqlSugar.ISqlSugarClient!
 XiHan.Framework.Persistence.SqlSugar.SqlSugarUnitOfWork.DisposeAsync() -> System.Threading.Tasks.ValueTask
 XiHan.Framework.Persistence.SqlSugar.SqlSugarUnitOfWork.DomainEvents.get -> XiHan.Framework.Persistence.Abstractions.UnitOfWork.DomainEventTracker!
 XiHan.Framework.Persistence.SqlSugar.SqlSugarUnitOfWork.EnsureTransactionAsync(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask
 XiHan.Framework.Persistence.SqlSugar.SqlSugarUnitOfWork.HasTransaction.get -> bool
 XiHan.Framework.Persistence.SqlSugar.SqlSugarUnitOfWork.Options.get -> XiHan.Framework.Persistence.Abstractions.UnitOfWork.UnitOfWorkOptions!
-XiHan.Framework.Persistence.SqlSugar.SqlSugarUnitOfWork.RollbackAsync(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
+XiHan.Framework.Persistence.SqlSugar.SqlSugarUnitOfWork.RollbackAsync(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask
 XiHan.Framework.Persistence.SqlSugar.SqlSugarUnitOfWork.SqlSugarUnitOfWork(SqlSugar.ISqlSugarClient! client, XiHan.Framework.Persistence.SqlSugar.IEntityConnectionSelector! selector) -> void
 XiHan.Framework.Persistence.SqlSugar.SqlSugarUnitOfWork.State.get -> XiHan.Framework.Persistence.Abstractions.UnitOfWork.UnitOfWorkState
 const XiHan.Framework.Persistence.SqlSugar.SqlSugarConnections.Default = "default" -> string!

@@ -69,7 +69,7 @@ internal sealed class EntityFrameworkCoreRepository<TEntity, TKey>(EntityFramewo
     }
 
     /// <inheritdoc />
-    public async Task<IReadOnlyList<TEntity>> FindManyAsync(IReadOnlyList<TKey> ids, CancellationToken cancellationToken)
+    public async ValueTask<IReadOnlyList<TEntity>> FindManyAsync(IReadOnlyList<TKey> ids, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(ids);
         _ = Context;
@@ -93,7 +93,7 @@ internal sealed class EntityFrameworkCoreRepository<TEntity, TKey>(EntityFramewo
     }
 
     /// <inheritdoc />
-    public async Task<IReadOnlyList<TEntity>> ListAsync(EntityQuery<TEntity> query, CancellationToken cancellationToken)
+    public async ValueTask<IReadOnlyList<TEntity>> ListAsync(EntityQuery<TEntity> query, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(query);
         // 用到了本实现不认识的条件即失败：不读不认识的条件，也不给出放宽了的结果（ADR-0228）
@@ -112,16 +112,16 @@ internal sealed class EntityFrameworkCoreRepository<TEntity, TKey>(EntityFramewo
     }
 
     /// <inheritdoc />
-    public Task<long> CountAsync(EntityQuery<TEntity> query, CancellationToken cancellationToken)
+    public ValueTask<long> CountAsync(EntityQuery<TEntity> query, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(query);
         // 用到了本实现不认识的条件即失败：不读不认识的条件，也不给出放宽了的结果（ADR-0228）
         query.Validate(EntityQuery<TEntity>.Revision).ThrowIfFailure();
-        return Filtered(query).LongCountAsync(cancellationToken);
+        return new ValueTask<long>(Filtered(query).LongCountAsync(cancellationToken));
     }
 
     /// <inheritdoc />
-    public async Task<Result> AddAsync(TEntity entity, CancellationToken cancellationToken)
+    public async ValueTask<Result> AddAsync(TEntity entity, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(entity);
         if (await PrepareWriteAsync(cancellationToken).ConfigureAwait(false) is { } rejected)
@@ -153,7 +153,7 @@ internal sealed class EntityFrameworkCoreRepository<TEntity, TKey>(EntityFramewo
     }
 
     /// <inheritdoc />
-    public async Task<IReadOnlyList<Result>> AddRangeAsync(IReadOnlyList<TEntity> entities, CancellationToken cancellationToken)
+    public async ValueTask<IReadOnlyList<Result>> AddRangeAsync(IReadOnlyList<TEntity> entities, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(entities);
         _ = Context;
@@ -215,7 +215,7 @@ internal sealed class EntityFrameworkCoreRepository<TEntity, TKey>(EntityFramewo
     }
 
     /// <inheritdoc />
-    public async Task<Result> UpdateAsync(TEntity entity, CancellationToken cancellationToken)
+    public async ValueTask<Result> UpdateAsync(TEntity entity, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(entity);
         if (await PrepareWriteAsync(cancellationToken).ConfigureAwait(false) is { } rejected)
@@ -251,7 +251,7 @@ internal sealed class EntityFrameworkCoreRepository<TEntity, TKey>(EntityFramewo
     }
 
     /// <inheritdoc />
-    public async Task<IReadOnlyList<Result>> UpdateRangeAsync(IReadOnlyList<TEntity> entities, CancellationToken cancellationToken)
+    public async ValueTask<IReadOnlyList<Result>> UpdateRangeAsync(IReadOnlyList<TEntity> entities, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(entities);
         _ = Context;
@@ -314,7 +314,7 @@ internal sealed class EntityFrameworkCoreRepository<TEntity, TKey>(EntityFramewo
     }
 
     /// <inheritdoc />
-    public async Task<Result> RemoveAsync(TEntity entity, CancellationToken cancellationToken)
+    public async ValueTask<Result> RemoveAsync(TEntity entity, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(entity);
         if (await PrepareWriteAsync(cancellationToken).ConfigureAwait(false) is { } rejected)
@@ -345,7 +345,7 @@ internal sealed class EntityFrameworkCoreRepository<TEntity, TKey>(EntityFramewo
     }
 
     /// <inheritdoc />
-    public async Task<IReadOnlyList<Result>> RemoveRangeAsync(IReadOnlyList<TEntity> entities, CancellationToken cancellationToken)
+    public async ValueTask<IReadOnlyList<Result>> RemoveRangeAsync(IReadOnlyList<TEntity> entities, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(entities);
         _ = Context;

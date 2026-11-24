@@ -146,7 +146,7 @@ public sealed class CatalogInvocationTests : IDisposable
     /// </summary>
     private ValueTask<Result<IReadOnlyList<TenantRecord>>> ReadAsync(IServiceProvider root, CancellationToken cancellationToken)
         => new CatalogInvocation(root, _logs.CreateLogger(nameof(CatalogInvocation)))
-            .ReadAsync((repository, ct) => new ValueTask<IReadOnlyList<TenantRecord>>(repository.FindManyAsync(["acme"], ct)), cancellationToken);
+            .ReadAsync((repository, ct) => repository.FindManyAsync(["acme"], ct), cancellationToken);
 
     /// <summary>
     /// 只装了工作单元与仓储替身的容器

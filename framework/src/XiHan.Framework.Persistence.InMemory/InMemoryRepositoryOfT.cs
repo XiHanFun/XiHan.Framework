@@ -47,7 +47,7 @@ internal sealed class InMemoryRepository<TEntity, TKey>(InMemoryStore store, InM
     }
 
     /// <inheritdoc />
-    public Task<IReadOnlyList<TEntity>> FindManyAsync(IReadOnlyList<TKey> ids, CancellationToken cancellationToken)
+    public ValueTask<IReadOnlyList<TEntity>> FindManyAsync(IReadOnlyList<TKey> ids, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(ids);
         var changes = Active.Changes<TEntity, TKey>();
@@ -63,11 +63,11 @@ internal sealed class InMemoryRepository<TEntity, TKey>(InMemoryStore store, InM
             }
         }
 
-        return Task.FromResult<IReadOnlyList<TEntity>>(found);
+        return ValueTask.FromResult<IReadOnlyList<TEntity>>(found);
     }
 
     /// <inheritdoc />
-    public Task<IReadOnlyList<TEntity>> ListAsync(EntityQuery<TEntity> query, CancellationToken cancellationToken)
+    public ValueTask<IReadOnlyList<TEntity>> ListAsync(EntityQuery<TEntity> query, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(query);
         // 用到了本实现不认识的条件即失败：不读不认识的条件，也不给出放宽了的结果（ADR-0228）
@@ -83,35 +83,35 @@ internal sealed class InMemoryRepository<TEntity, TKey>(InMemoryStore store, InM
         }
 
         // 过滤、排序、分页都在表与覆盖层自己的对象上做，只复制最终交出的那一页
-        return Task.FromResult<IReadOnlyList<TEntity>>(items.Skip(query.Skip).Take(query.Take).Select(EntityCopy.Of).ToList());
+        return ValueTask.FromResult<IReadOnlyList<TEntity>>(items.Skip(query.Skip).Take(query.Take).Select(EntityCopy.Of).ToList());
     }
 
     /// <inheritdoc />
-    public Task<long> CountAsync(EntityQuery<TEntity> query, CancellationToken cancellationToken)
+    public ValueTask<long> CountAsync(EntityQuery<TEntity> query, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(query);
         // 用到了本实现不认识的条件即失败：不读不认识的条件，也不给出放宽了的结果（ADR-0228）
         query.Validate(EntityQuery<TEntity>.Revision).ThrowIfFailure();
-        return Task.FromResult(Visible(query).LongCount());
+        return ValueTask.FromResult(Visible(query).LongCount());
     }
 
     /// <inheritdoc />
-    public Task<Result> AddAsync(TEntity entity, CancellationToken cancellationToken)
+    public ValueTask<Result> AddAsync(TEntity entity, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(entity);
         var changes = Active.Changes<TEntity, TKey>();
-        return Task.FromResult(PrepareWrite() is { } rejected ? rejected : Add(changes, entity, _timeProvider.GetUtcNow()));
+        return ValueTask.FromResult(PrepareWrite() is { } rejected ? rejected : Add(changes, entity, _timeProvider.GetUtcNow()));
     }
 
     /// <inheritdoc />
-    public Task<IReadOnlyList<Result>> AddRangeAsync(IReadOnlyList<TEntity> entities, CancellationToken cancellationToken)
+    public ValueTask<IReadOnlyList<Result>> AddRangeAsync(IReadOnlyList<TEntity> entities, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(entities);
         var changes = Active.Changes<TEntity, TKey>();
         cancellationToken.ThrowIfCancellationRequested();
         if (entities.Count > 0 && PrepareWrite() is { } rejected)
         {
-            return Task.FromResult<IReadOnlyList<Result>>(Repeat(rejected, entities.Count));
+            return ValueTask.FromResult<IReadOnlyList<Result>>(Repeat(rejected, entities.Count));
         }
 
         var now = _timeProvider.GetUtcNow();
@@ -123,26 +123,26 @@ internal sealed class InMemoryRepository<TEntity, TKey>(InMemoryStore store, InM
             results[index] = Add(changes, entities[index], now);
         }
 
-        return Task.FromResult<IReadOnlyList<Result>>(results);
+        return ValueTask.FromResult<IReadOnlyList<Result>>(results);
     }
 
     /// <inheritdoc />
-    public Task<Result> UpdateAsync(TEntity entity, CancellationToken cancellationToken)
+    public ValueTask<Result> UpdateAsync(TEntity entity, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(entity);
         var changes = Active.Changes<TEntity, TKey>();
-        return Task.FromResult(PrepareWrite() is { } rejected ? rejected : Update(changes, entity, _timeProvider.GetUtcNow()));
+        return ValueTask.FromResult(PrepareWrite() is { } rejected ? rejected : Update(changes, entity, _timeProvider.GetUtcNow()));
     }
 
     /// <inheritdoc />
-    public Task<IReadOnlyList<Result>> UpdateRangeAsync(IReadOnlyList<TEntity> entities, CancellationToken cancellationToken)
+    public ValueTask<IReadOnlyList<Result>> UpdateRangeAsync(IReadOnlyList<TEntity> entities, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(entities);
         var changes = Active.Changes<TEntity, TKey>();
         cancellationToken.ThrowIfCancellationRequested();
         if (entities.Count > 0 && PrepareWrite() is { } rejected)
         {
-            return Task.FromResult<IReadOnlyList<Result>>(Repeat(rejected, entities.Count));
+            return ValueTask.FromResult<IReadOnlyList<Result>>(Repeat(rejected, entities.Count));
         }
 
         var now = _timeProvider.GetUtcNow();
@@ -153,26 +153,26 @@ internal sealed class InMemoryRepository<TEntity, TKey>(InMemoryStore store, InM
             results[index] = Update(changes, entities[index], now);
         }
 
-        return Task.FromResult<IReadOnlyList<Result>>(results);
+        return ValueTask.FromResult<IReadOnlyList<Result>>(results);
     }
 
     /// <inheritdoc />
-    public Task<Result> RemoveAsync(TEntity entity, CancellationToken cancellationToken)
+    public ValueTask<Result> RemoveAsync(TEntity entity, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(entity);
         var changes = Active.Changes<TEntity, TKey>();
-        return Task.FromResult(PrepareWrite() is { } rejected ? rejected : Remove(changes, entity, _timeProvider.GetUtcNow()));
+        return ValueTask.FromResult(PrepareWrite() is { } rejected ? rejected : Remove(changes, entity, _timeProvider.GetUtcNow()));
     }
 
     /// <inheritdoc />
-    public Task<IReadOnlyList<Result>> RemoveRangeAsync(IReadOnlyList<TEntity> entities, CancellationToken cancellationToken)
+    public ValueTask<IReadOnlyList<Result>> RemoveRangeAsync(IReadOnlyList<TEntity> entities, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(entities);
         var changes = Active.Changes<TEntity, TKey>();
         cancellationToken.ThrowIfCancellationRequested();
         if (entities.Count > 0 && PrepareWrite() is { } rejected)
         {
-            return Task.FromResult<IReadOnlyList<Result>>(Repeat(rejected, entities.Count));
+            return ValueTask.FromResult<IReadOnlyList<Result>>(Repeat(rejected, entities.Count));
         }
 
         var now = _timeProvider.GetUtcNow();
@@ -184,7 +184,7 @@ internal sealed class InMemoryRepository<TEntity, TKey>(InMemoryStore store, InM
             results[index] = Remove(changes, entities[index], now);
         }
 
-        return Task.FromResult<IReadOnlyList<Result>>(results);
+        return ValueTask.FromResult<IReadOnlyList<Result>>(results);
     }
 
     /// <summary>

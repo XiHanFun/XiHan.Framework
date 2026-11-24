@@ -116,7 +116,7 @@ public sealed class SqlSugarNamedConnectionTests : IDisposable
 
         // 绑定的连接不在客户端里：开始时就是装配错误
         await using var other = host.Services.CreateAsyncScope();
-        var missing = await Assert.ThrowsAsync<FrameworkException>(() => other.ServiceProvider.GetRequiredService<IUnitOfWork>().BeginAsync(new UnitOfWorkOptions { Connection = "archive" }, CancellationToken.None));
+        var missing = await Assert.ThrowsAsync<FrameworkException>(async () => await other.ServiceProvider.GetRequiredService<IUnitOfWork>().BeginAsync(new UnitOfWorkOptions { Connection = "archive" }, CancellationToken.None));
         Assert.Equal(PersistenceErrors.UnknownConnection, missing.Code);
         Assert.Throws<ArgumentException>(static () => new UnitOfWorkOptions { Connection = " " });
     }

@@ -44,31 +44,31 @@ public sealed class ScriptedRepository<TEntity, TKey> : IRepository<TEntity, TKe
         => ValueTask.FromResult(Rows(cancellationToken) is [var row] ? Maybe.Some(row) : Maybe.None<TEntity>());
 
     /// <inheritdoc />
-    public Task<IReadOnlyList<TEntity>> FindManyAsync(IReadOnlyList<TKey> ids, CancellationToken cancellationToken) => Task.FromResult(Rows(cancellationToken));
+    public ValueTask<IReadOnlyList<TEntity>> FindManyAsync(IReadOnlyList<TKey> ids, CancellationToken cancellationToken) => ValueTask.FromResult(Rows(cancellationToken));
 
     /// <inheritdoc />
-    public Task<IReadOnlyList<TEntity>> ListAsync(EntityQuery<TEntity> query, CancellationToken cancellationToken) => Task.FromResult(Rows(cancellationToken));
+    public ValueTask<IReadOnlyList<TEntity>> ListAsync(EntityQuery<TEntity> query, CancellationToken cancellationToken) => ValueTask.FromResult(Rows(cancellationToken));
 
     /// <inheritdoc />
-    public Task<long> CountAsync(EntityQuery<TEntity> query, CancellationToken cancellationToken) => Task.FromResult<long>(Rows(cancellationToken).Count);
+    public ValueTask<long> CountAsync(EntityQuery<TEntity> query, CancellationToken cancellationToken) => ValueTask.FromResult<long>(Rows(cancellationToken).Count);
 
     /// <inheritdoc />
-    public Task<Result> AddAsync(TEntity entity, CancellationToken cancellationToken) => Task.FromResult(Write(cancellationToken));
+    public ValueTask<Result> AddAsync(TEntity entity, CancellationToken cancellationToken) => ValueTask.FromResult(Write(cancellationToken));
 
     /// <inheritdoc />
-    public Task<IReadOnlyList<Result>> AddRangeAsync(IReadOnlyList<TEntity> entities, CancellationToken cancellationToken) => Task.FromResult(Write(entities, cancellationToken));
+    public ValueTask<IReadOnlyList<Result>> AddRangeAsync(IReadOnlyList<TEntity> entities, CancellationToken cancellationToken) => ValueTask.FromResult(Write(entities, cancellationToken));
 
     /// <inheritdoc />
-    public Task<Result> UpdateAsync(TEntity entity, CancellationToken cancellationToken) => Task.FromResult(Write(cancellationToken));
+    public ValueTask<Result> UpdateAsync(TEntity entity, CancellationToken cancellationToken) => ValueTask.FromResult(Write(cancellationToken));
 
     /// <inheritdoc />
-    public Task<IReadOnlyList<Result>> UpdateRangeAsync(IReadOnlyList<TEntity> entities, CancellationToken cancellationToken) => Task.FromResult(Write(entities, cancellationToken));
+    public ValueTask<IReadOnlyList<Result>> UpdateRangeAsync(IReadOnlyList<TEntity> entities, CancellationToken cancellationToken) => ValueTask.FromResult(Write(entities, cancellationToken));
 
     /// <inheritdoc />
-    public Task<Result> RemoveAsync(TEntity entity, CancellationToken cancellationToken) => Task.FromResult(Write(cancellationToken));
+    public ValueTask<Result> RemoveAsync(TEntity entity, CancellationToken cancellationToken) => ValueTask.FromResult(Write(cancellationToken));
 
     /// <inheritdoc />
-    public Task<IReadOnlyList<Result>> RemoveRangeAsync(IReadOnlyList<TEntity> entities, CancellationToken cancellationToken) => Task.FromResult(Write(entities, cancellationToken));
+    public ValueTask<IReadOnlyList<Result>> RemoveRangeAsync(IReadOnlyList<TEntity> entities, CancellationToken cancellationToken) => ValueTask.FromResult(Write(entities, cancellationToken));
 
     /// <summary>
     /// 读到的行

@@ -151,7 +151,7 @@ public sealed class PostgresStandardConformingStringsTests : IDisposable
     /// <remarks>
     /// 返回逐项结果；有失败项时调用以第一个失败结束
     /// </remarks>
-    private static async Task<IReadOnlyList<Result>> RunAsync(TestHost host, Func<IRepository<TextKeyRecord, string>, CancellationToken, Task<IReadOnlyList<Result>>> action)
+    private static async Task<IReadOnlyList<Result>> RunAsync(TestHost host, Func<IRepository<TextKeyRecord, string>, CancellationToken, ValueTask<IReadOnlyList<Result>>> action)
     {
         IReadOnlyList<Result> results = [];
         (await host.InvokeAsync(async context =>

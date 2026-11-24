@@ -147,7 +147,7 @@ public sealed class GrantInvocationTests : IDisposable
     /// </summary>
     private Task<Result<IReadOnlyList<PermissionGrantRecord>>> ReadAsync(IServiceProvider root, CancellationToken cancellationToken)
         => new GrantInvocation(root, _logs.CreateLogger(nameof(GrantInvocation)))
-            .ReadAsync((repository, ct) => repository.ListAsync(EntityQuery.All<PermissionGrantRecord>().OrderBy(static r => r.Id).Page(0, 10), ct), cancellationToken);
+            .ReadAsync((repository, ct) => repository.ListAsync(EntityQuery.All<PermissionGrantRecord>().OrderBy(static r => r.Id).Page(0, 10), ct).AsTask(), cancellationToken);
 
     /// <summary>
     /// 只装了工作单元与仓储替身的容器

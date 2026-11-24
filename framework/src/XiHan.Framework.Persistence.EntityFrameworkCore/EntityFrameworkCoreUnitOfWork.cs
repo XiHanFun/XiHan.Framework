@@ -135,7 +135,7 @@ public sealed class EntityFrameworkCoreUnitOfWork : IUnitOfWork, IAsyncDisposabl
     public DomainEventTracker DomainEvents { get; } = new();
 
     /// <inheritdoc />
-    public Task BeginAsync(UnitOfWorkOptions options, CancellationToken cancellationToken)
+    public ValueTask BeginAsync(UnitOfWorkOptions options, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(options);
         if (State != UnitOfWorkState.NotStarted)
@@ -172,7 +172,7 @@ public sealed class EntityFrameworkCoreUnitOfWork : IUnitOfWork, IAsyncDisposabl
         }
 
         Activate(options);
-        return Task.CompletedTask;
+        return ValueTask.CompletedTask;
     }
 
     /// <summary>
@@ -181,7 +181,7 @@ public sealed class EntityFrameworkCoreUnitOfWork : IUnitOfWork, IAsyncDisposabl
     /// <remarks>
     /// 范围与默认连接相同：没有登记到命名连接的实体。核对通过的分片只查一次（<see cref="ShardTimestampChecks"/>）
     /// </remarks>
-    private async Task BeginOnShardAsync(UnitOfWorkOptions options, BindingValue shard, CancellationToken cancellationToken)
+    private async ValueTask BeginOnShardAsync(UnitOfWorkOptions options, BindingValue shard, CancellationToken cancellationToken)
     {
         await _shards.VerifyAsync(Context, shard, type => _registrations.ConnectionOf(type) is null, cancellationToken).ConfigureAwait(false);
         Activate(options);
@@ -224,7 +224,7 @@ public sealed class EntityFrameworkCoreUnitOfWork : IUnitOfWork, IAsyncDisposabl
     }
 
     /// <inheritdoc />
-    public async Task<Result> CommitAsync(CancellationToken cancellationToken)
+    public async ValueTask<Result> CommitAsync(CancellationToken cancellationToken)
     {
         if (State != UnitOfWorkState.Active)
         {
@@ -274,7 +274,7 @@ public sealed class EntityFrameworkCoreUnitOfWork : IUnitOfWork, IAsyncDisposabl
     }
 
     /// <inheritdoc />
-    public async Task RollbackAsync(CancellationToken cancellationToken)
+    public async ValueTask RollbackAsync(CancellationToken cancellationToken)
     {
         // 回滚成功即释放并摘下事务，HasTransaction 随之为假；回滚抛出时事务留给作用域释放时处理
         if (_transaction is { } transaction)

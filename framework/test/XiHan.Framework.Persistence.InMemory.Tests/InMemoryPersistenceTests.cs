@@ -101,7 +101,7 @@ public sealed class InMemoryPersistenceTests
         Assert.Equal(PersistenceErrors.NotSupported, registered.Code);
 
         var (_, unitOfWork, _) = Arrange();
-        var begun = await Assert.ThrowsAsync<FrameworkException>(() => unitOfWork.BeginAsync(new UnitOfWorkOptions { Connection = "leases" }, CancellationToken.None));
+        var begun = await Assert.ThrowsAsync<FrameworkException>(async () => await unitOfWork.BeginAsync(new UnitOfWorkOptions { Connection = "leases" }, CancellationToken.None));
         Assert.Equal(PersistenceErrors.NotSupported, begun.Code);
         Assert.Equal(UnitOfWorkState.NotStarted, unitOfWork.State);
     }
@@ -173,16 +173,16 @@ public sealed class InMemoryPersistenceTests
         var (_, unitOfWork, _) = Arrange();
         Assert.Equal(UnitOfWorkState.NotStarted, unitOfWork.State);
 
-        var early = await Assert.ThrowsAsync<FrameworkException>(() => unitOfWork.CommitAsync(CancellationToken.None));
+        var early = await Assert.ThrowsAsync<FrameworkException>(async () => await unitOfWork.CommitAsync(CancellationToken.None));
         Assert.Equal(PersistenceErrors.InvalidUnitOfWorkState, early.Code);
 
         await unitOfWork.BeginAsync(new UnitOfWorkOptions { TenantId = "acme" }, CancellationToken.None);
         Assert.Equal("acme", unitOfWork.TenantId);
-        await Assert.ThrowsAsync<FrameworkException>(() => unitOfWork.BeginAsync(UnitOfWorkOptions.Default, CancellationToken.None));
+        await Assert.ThrowsAsync<FrameworkException>(async () => await unitOfWork.BeginAsync(UnitOfWorkOptions.Default, CancellationToken.None));
 
         await unitOfWork.RollbackAsync(CancellationToken.None);
         Assert.Equal(UnitOfWorkState.RolledBack, unitOfWork.State);
-        await Assert.ThrowsAsync<FrameworkException>(() => unitOfWork.CommitAsync(CancellationToken.None));
+        await Assert.ThrowsAsync<FrameworkException>(async () => await unitOfWork.CommitAsync(CancellationToken.None));
     }
 
     [Fact]
@@ -193,13 +193,13 @@ public sealed class InMemoryPersistenceTests
 
         var thrown = await Assert.ThrowsAsync<FrameworkException>(async () => await repository.FindAsync(widget.Id, CancellationToken.None));
         Assert.Equal(PersistenceErrors.NoActiveUnitOfWork, thrown.Code);
-        await Assert.ThrowsAsync<FrameworkException>(() => repository.AddAsync(widget, CancellationToken.None));
-        await Assert.ThrowsAsync<FrameworkException>(() => repository.ListAsync(EntityQuery.All<Widget>(), CancellationToken.None));
+        await Assert.ThrowsAsync<FrameworkException>(async () => await repository.AddAsync(widget, CancellationToken.None));
+        await Assert.ThrowsAsync<FrameworkException>(async () => await repository.ListAsync(EntityQuery.All<Widget>(), CancellationToken.None));
 
         // 提交之后工作单元不再活动，仓储同样拒绝
         await unitOfWork.BeginAsync(UnitOfWorkOptions.Default, CancellationToken.None);
         await unitOfWork.CommitAsync(CancellationToken.None);
-        await Assert.ThrowsAsync<FrameworkException>(() => repository.AddAsync(widget, CancellationToken.None));
+        await Assert.ThrowsAsync<FrameworkException>(async () => await repository.AddAsync(widget, CancellationToken.None));
     }
 
     [Fact]

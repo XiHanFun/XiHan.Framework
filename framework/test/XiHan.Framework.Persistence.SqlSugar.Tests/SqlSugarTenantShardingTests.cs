@@ -54,7 +54,7 @@ public sealed class SqlSugarTenantShardingTests : IDisposable
             Assert.True((await scope.ServiceProvider.GetRequiredService<TenantShardScope>().BindTenantAsync("acme", CancellationToken.None)).ValueOrThrow().HasValue);
             var unitOfWork = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
 
-            var exception = await Assert.ThrowsAsync<FrameworkException>(() => unitOfWork.BeginAsync(UnitOfWorkOptions.Default with { TenantId = tenant }, CancellationToken.None));
+            var exception = await Assert.ThrowsAsync<FrameworkException>(async () => await unitOfWork.BeginAsync(UnitOfWorkOptions.Default with { TenantId = tenant }, CancellationToken.None));
             Assert.Equal(PersistenceErrors.ShardTenantMismatch, exception.Code);
             Assert.Equal(UnitOfWorkState.NotStarted, unitOfWork.State);
         }
@@ -174,6 +174,6 @@ public sealed class SqlSugarTenantShardingTests : IDisposable
     /// <summary>
     /// 以给定租户（经 Baggage 自报）走完整管道执行 <paramref name="action"/>，其返回值作为调用结果
     /// </summary>
-    private static async Task<Result> InvokeAsync(TestHost host, string tenant, Func<InvocationContext, Task<Result>> action)
+    private static async Task<Result> InvokeAsync(TestHost host, string tenant, Func<InvocationContext, ValueTask<Result>> action)
         => await host.InvokeAsync(async context => context.SetOutcome(await action(context)), baggage: new Dictionary<string, string> { [BaggageKeys.Tenant] = tenant });
 }

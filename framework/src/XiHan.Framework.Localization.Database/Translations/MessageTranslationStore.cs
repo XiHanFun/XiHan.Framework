@@ -189,7 +189,7 @@ public sealed partial class MessageTranslationStore : IAsyncDisposable, IDisposa
     /// <remarks>
     /// <paramref name="take"/> 超过上限时构造查询抛出携带 <c>PERSISTENCE_VALIDATION_005</c> 的异常，调用里由 Transaction 阶段转为同码的校验结果
     /// </remarks>
-    public Task<IReadOnlyList<MessageTranslation>> ListAsync(string? locale, int skip, int take, CancellationToken cancellationToken)
+    public ValueTask<IReadOnlyList<MessageTranslation>> ListAsync(string? locale, int skip, int take, CancellationToken cancellationToken)
     {
         var query = EntityQuery.All<MessageTranslation>().OrderBy(static t => t.Key).OrderBy(static t => t.Locale).Page(skip, take);
         if (locale is not null)

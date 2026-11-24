@@ -17,13 +17,13 @@ internal sealed class ConformanceScripts
     /// <summary>
     /// 待执行的脚本，按键索引
     /// </summary>
-    private readonly ConcurrentDictionary<string, Func<InvocationContext, Task<Result>>> _scripts = new(StringComparer.Ordinal);
+    private readonly ConcurrentDictionary<string, Func<InvocationContext, ValueTask<Result>>> _scripts = new(StringComparer.Ordinal);
 
     /// <summary>
     /// 登记脚本
     /// </summary>
     /// <returns>作为请求交给操作的键</returns>
-    public string Add(Func<InvocationContext, Task<Result>> script)
+    public string Add(Func<InvocationContext, ValueTask<Result>> script)
     {
         ArgumentNullException.ThrowIfNull(script);
         var key = Guid.NewGuid().ToString("N");

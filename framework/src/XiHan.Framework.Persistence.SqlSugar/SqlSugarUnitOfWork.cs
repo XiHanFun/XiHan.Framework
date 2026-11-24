@@ -122,7 +122,7 @@ public sealed class SqlSugarUnitOfWork : IUnitOfWork, IAsyncDisposable
     }
 
     /// <inheritdoc />
-    public Task BeginAsync(UnitOfWorkOptions options, CancellationToken cancellationToken)
+    public ValueTask BeginAsync(UnitOfWorkOptions options, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(options);
         if (State != UnitOfWorkState.NotStarted)
@@ -154,7 +154,7 @@ public sealed class SqlSugarUnitOfWork : IUnitOfWork, IAsyncDisposable
             PinToPrimary(_bound);
         }
 
-        return Task.CompletedTask;
+        return ValueTask.CompletedTask;
     }
 
     /// <summary>
@@ -197,7 +197,7 @@ public sealed class SqlSugarUnitOfWork : IUnitOfWork, IAsyncDisposable
     }
 
     /// <inheritdoc />
-    public async Task<Result> CommitAsync(CancellationToken cancellationToken)
+    public async ValueTask<Result> CommitAsync(CancellationToken cancellationToken)
     {
         if (State != UnitOfWorkState.Active)
         {
@@ -231,7 +231,7 @@ public sealed class SqlSugarUnitOfWork : IUnitOfWork, IAsyncDisposable
     }
 
     /// <inheritdoc />
-    public async Task RollbackAsync(CancellationToken cancellationToken)
+    public async ValueTask RollbackAsync(CancellationToken cancellationToken)
     {
         if (HasTransaction)
         {

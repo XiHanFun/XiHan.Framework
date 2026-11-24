@@ -54,28 +54,28 @@ public sealed class UnitOfWorkMiddlewareTests
         public DomainEventTracker DomainEvents { get; } = new();
 
         /// <inheritdoc />
-        public Task BeginAsync(UnitOfWorkOptions options, CancellationToken cancellationToken)
+        public ValueTask BeginAsync(UnitOfWorkOptions options, CancellationToken cancellationToken)
         {
             Calls.Add("begin");
             State = UnitOfWorkState.Active;
             Options = options;
-            return Task.CompletedTask;
+            return ValueTask.CompletedTask;
         }
 
         /// <inheritdoc />
-        public Task<Result> CommitAsync(CancellationToken cancellationToken)
+        public ValueTask<Result> CommitAsync(CancellationToken cancellationToken)
         {
             Calls.Add("commit");
             State = CommitResult.IsSuccess ? UnitOfWorkState.Committed : UnitOfWorkState.RolledBack;
-            return Task.FromResult(CommitResult);
+            return ValueTask.FromResult(CommitResult);
         }
 
         /// <inheritdoc />
-        public Task RollbackAsync(CancellationToken cancellationToken)
+        public ValueTask RollbackAsync(CancellationToken cancellationToken)
         {
             Calls.Add("rollback");
             State = UnitOfWorkState.RolledBack;
-            return Task.CompletedTask;
+            return ValueTask.CompletedTask;
         }
     }
 

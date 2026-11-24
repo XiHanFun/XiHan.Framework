@@ -25,31 +25,31 @@ internal sealed class ThrowingAuditRepository : IRepository<AuditRecord, Guid>
     public ValueTask<Maybe<AuditRecord>> FindAsync(Guid id, CancellationToken cancellationToken) => throw Offline();
 
     /// <inheritdoc />
-    public Task<IReadOnlyList<AuditRecord>> FindManyAsync(IReadOnlyList<Guid> ids, CancellationToken cancellationToken) => throw Offline();
+    public ValueTask<IReadOnlyList<AuditRecord>> FindManyAsync(IReadOnlyList<Guid> ids, CancellationToken cancellationToken) => throw Offline();
 
     /// <inheritdoc />
-    public Task<IReadOnlyList<AuditRecord>> ListAsync(EntityQuery<AuditRecord> query, CancellationToken cancellationToken) => throw Offline();
+    public ValueTask<IReadOnlyList<AuditRecord>> ListAsync(EntityQuery<AuditRecord> query, CancellationToken cancellationToken) => throw Offline();
 
     /// <inheritdoc />
-    public Task<long> CountAsync(EntityQuery<AuditRecord> query, CancellationToken cancellationToken) => throw Offline();
+    public ValueTask<long> CountAsync(EntityQuery<AuditRecord> query, CancellationToken cancellationToken) => throw Offline();
 
     /// <inheritdoc />
-    public Task<Result> AddAsync(AuditRecord entity, CancellationToken cancellationToken) => throw Offline();
+    public ValueTask<Result> AddAsync(AuditRecord entity, CancellationToken cancellationToken) => throw Offline();
 
     /// <inheritdoc />
-    public Task<IReadOnlyList<Result>> AddRangeAsync(IReadOnlyList<AuditRecord> entities, CancellationToken cancellationToken) => throw Offline();
+    public ValueTask<IReadOnlyList<Result>> AddRangeAsync(IReadOnlyList<AuditRecord> entities, CancellationToken cancellationToken) => throw Offline();
 
     /// <inheritdoc />
-    public Task<Result> UpdateAsync(AuditRecord entity, CancellationToken cancellationToken) => throw Offline();
+    public ValueTask<Result> UpdateAsync(AuditRecord entity, CancellationToken cancellationToken) => throw Offline();
 
     /// <inheritdoc />
-    public Task<IReadOnlyList<Result>> UpdateRangeAsync(IReadOnlyList<AuditRecord> entities, CancellationToken cancellationToken) => throw Offline();
+    public ValueTask<IReadOnlyList<Result>> UpdateRangeAsync(IReadOnlyList<AuditRecord> entities, CancellationToken cancellationToken) => throw Offline();
 
     /// <inheritdoc />
-    public Task<Result> RemoveAsync(AuditRecord entity, CancellationToken cancellationToken) => throw Offline();
+    public ValueTask<Result> RemoveAsync(AuditRecord entity, CancellationToken cancellationToken) => throw Offline();
 
     /// <inheritdoc />
-    public Task<IReadOnlyList<Result>> RemoveRangeAsync(IReadOnlyList<AuditRecord> entities, CancellationToken cancellationToken) => throw Offline();
+    public ValueTask<IReadOnlyList<Result>> RemoveRangeAsync(IReadOnlyList<AuditRecord> entities, CancellationToken cancellationToken) => throw Offline();
 
     /// <summary>
     /// 存储不可用的异常

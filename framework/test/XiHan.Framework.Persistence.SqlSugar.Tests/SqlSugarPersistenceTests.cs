@@ -326,16 +326,16 @@ public sealed class SqlSugarPersistenceTests : IDisposable
         await using var scope = host.Services.CreateAsyncScope();
         var unitOfWork = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
 
-        var early = await Assert.ThrowsAsync<FrameworkException>(() => unitOfWork.CommitAsync(CancellationToken.None));
+        var early = await Assert.ThrowsAsync<FrameworkException>(async () => await unitOfWork.CommitAsync(CancellationToken.None));
         Assert.Equal(PersistenceErrors.InvalidUnitOfWorkState, early.Code);
 
         await unitOfWork.BeginAsync(new UnitOfWorkOptions { TenantId = "acme" }, CancellationToken.None);
         Assert.Equal("acme", unitOfWork.Options.TenantId);
-        await Assert.ThrowsAsync<FrameworkException>(() => unitOfWork.BeginAsync(UnitOfWorkOptions.Default, CancellationToken.None));
+        await Assert.ThrowsAsync<FrameworkException>(async () => await unitOfWork.BeginAsync(UnitOfWorkOptions.Default, CancellationToken.None));
 
         await unitOfWork.RollbackAsync(CancellationToken.None);
         Assert.Equal(UnitOfWorkState.RolledBack, unitOfWork.State);
-        await Assert.ThrowsAsync<FrameworkException>(() => unitOfWork.CommitAsync(CancellationToken.None));
+        await Assert.ThrowsAsync<FrameworkException>(async () => await unitOfWork.CommitAsync(CancellationToken.None));
     }
 
     [Fact]
@@ -393,6 +393,6 @@ public sealed class SqlSugarPersistenceTests : IDisposable
     /// <summary>
     /// 在一次完整管道调用内执行 <paramref name="action"/>，其返回值作为调用结果
     /// </summary>
-    private static async Task<Result> RunAsync(TestHost host, Func<InvocationContext, Task<Result>> action)
+    private static async Task<Result> RunAsync(TestHost host, Func<InvocationContext, ValueTask<Result>> action)
         => await host.InvokeAsync(async context => context.SetOutcome(await action(context)));
 }

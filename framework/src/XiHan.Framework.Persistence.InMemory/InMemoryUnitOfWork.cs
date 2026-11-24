@@ -63,7 +63,7 @@ internal sealed class InMemoryUnitOfWork(InMemoryStore store) : IUnitOfWork
     public DomainEventTracker DomainEvents { get; } = new();
 
     /// <inheritdoc />
-    public Task BeginAsync(UnitOfWorkOptions options, CancellationToken cancellationToken)
+    public ValueTask BeginAsync(UnitOfWorkOptions options, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(options);
         if (State != UnitOfWorkState.NotStarted)
@@ -79,14 +79,14 @@ internal sealed class InMemoryUnitOfWork(InMemoryStore store) : IUnitOfWork
 
         Options = options;
         State = UnitOfWorkState.Active;
-        return Task.CompletedTask;
+        return ValueTask.CompletedTask;
     }
 
     /// <inheritdoc />
     /// <remarks>
     /// 校验失败（标识重复、并发冲突、容量已满）时任何一张表都不改，工作单元记为回滚，失败作为结果返回
     /// </remarks>
-    public Task<Result> CommitAsync(CancellationToken cancellationToken)
+    public ValueTask<Result> CommitAsync(CancellationToken cancellationToken)
     {
         if (State != UnitOfWorkState.Active)
         {
@@ -99,24 +99,24 @@ internal sealed class InMemoryUnitOfWork(InMemoryStore store) : IUnitOfWork
             _pending.Clear();
             HasTransaction = false;
             State = UnitOfWorkState.RolledBack;
-            return Task.FromResult<Result>(failure);
+            return ValueTask.FromResult<Result>(failure);
         }
 
         var committed = Commit();
         _pending.Clear();
         HasTransaction = false;
         State = committed.IsSuccess ? UnitOfWorkState.Committed : UnitOfWorkState.RolledBack;
-        return Task.FromResult(committed);
+        return ValueTask.FromResult(committed);
     }
 
     /// <inheritdoc />
-    public Task RollbackAsync(CancellationToken cancellationToken)
+    public ValueTask RollbackAsync(CancellationToken cancellationToken)
     {
         // 回滚只需丢弃覆盖层；表从未被未提交的变更触碰过
         _pending.Clear();
         HasTransaction = false;
         State = UnitOfWorkState.RolledBack;
-        return Task.CompletedTask;
+        return ValueTask.CompletedTask;
     }
 
     /// <summary>

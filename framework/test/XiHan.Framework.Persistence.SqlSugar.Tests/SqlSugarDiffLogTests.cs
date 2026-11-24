@@ -257,6 +257,6 @@ public sealed class SqlSugarDiffLogTests : IDisposable
     /// <summary>
     /// 在一次完整管道调用内执行 <paramref name="action"/>，其返回值作为调用结果
     /// </summary>
-    private static async Task<Result> RunAsync(TestHost host, Func<InvocationContext, Task<Result>> action)
+    private static async Task<Result> RunAsync(TestHost host, Func<InvocationContext, ValueTask<Result>> action)
         => await host.InvokeAsync(async context => context.SetOutcome(await action(context)));
 }

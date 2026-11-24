@@ -623,7 +623,7 @@ public abstract class RepositoryConformance
         var repository = scope.ServiceProvider.GetRequiredService<IRepository<ConformanceOrder, Guid>>();
 
         var read = await Assert.ThrowsAsync<FrameworkException>(async () => await repository.FindAsync(Guid.CreateVersion7(), CancellationToken.None).ConfigureAwait(false)).ConfigureAwait(false);
-        var write = await Assert.ThrowsAsync<FrameworkException>(() => repository.AddAsync(new ConformanceOrder { Id = Guid.CreateVersion7() }, CancellationToken.None)).ConfigureAwait(false);
+        var write = await Assert.ThrowsAsync<FrameworkException>(async () => await repository.AddAsync(new ConformanceOrder { Id = Guid.CreateVersion7() }, CancellationToken.None).ConfigureAwait(false)).ConfigureAwait(false);
 
         Assert.Equal(PersistenceErrors.NoActiveUnitOfWork, read.Code);
         Assert.Equal(PersistenceErrors.NoActiveUnitOfWork, write.Code);
@@ -813,8 +813,8 @@ public abstract class RepositoryConformance
         // 直接从作用域解析仓储而不经过管道：工作单元从未开始
         await using var scope = host.Services.CreateAsyncScope();
         var detached = scope.ServiceProvider.GetRequiredService<IRepository<ConformanceOrder, Guid>>();
-        var read = await Assert.ThrowsAsync<FrameworkException>(() => detached.FindManyAsync([Guid.CreateVersion7()], CancellationToken.None)).ConfigureAwait(false);
-        var write = await Assert.ThrowsAsync<FrameworkException>(() => detached.AddRangeAsync([new ConformanceOrder { Id = Guid.CreateVersion7() }], CancellationToken.None)).ConfigureAwait(false);
+        var read = await Assert.ThrowsAsync<FrameworkException>(async () => await detached.FindManyAsync([Guid.CreateVersion7()], CancellationToken.None).ConfigureAwait(false)).ConfigureAwait(false);
+        var write = await Assert.ThrowsAsync<FrameworkException>(async () => await detached.AddRangeAsync([new ConformanceOrder { Id = Guid.CreateVersion7() }], CancellationToken.None).ConfigureAwait(false)).ConfigureAwait(false);
         Assert.Equal(PersistenceErrors.NoActiveUnitOfWork, read.Code);
         Assert.Equal(PersistenceErrors.NoActiveUnitOfWork, write.Code);
     }
@@ -854,7 +854,7 @@ public abstract class RepositoryConformance
     /// <remarks>
     /// <paramref name="tenantId"/> 经 Baggage 进入 Tenant 阶段
     /// </remarks>
-    protected static async Task<Result> RunAsync(TestHost host, Func<InvocationContext, Task<Result>> action, string? tenantId = null)
+    protected static async Task<Result> RunAsync(TestHost host, Func<InvocationContext, ValueTask<Result>> action, string? tenantId = null)
     {
         ArgumentNullException.ThrowIfNull(host);
         ArgumentNullException.ThrowIfNull(action);
@@ -1245,7 +1245,7 @@ public abstract class RepositoryConformance
             var key = scripts.Add(_ =>
             {
                 ran = true;
-                return Task.FromResult(Result.Success());
+                return ValueTask.FromResult(Result.Success());
             });
             nested = await context.Services.GetRequiredService<IOperationInvoker>().InvokeAsync<ConformanceScriptRequest, ConformanceScriptResponse>(call, ReadScriptOperation.Id, new ConformanceScriptRequest(key)).ConfigureAwait(false);
             return await Repository<ConformanceOrder, Guid>(context).AddAsync(new ConformanceOrder { Id = id, Name = "outer" }, context.CancellationToken).ConfigureAwait(false);
@@ -1605,7 +1605,7 @@ public abstract class RepositoryConformance
     /// <remarks>
     /// <paramref name="operationId"/> 选只读的 <see cref="ReadScriptOperation"/> 或可写的 <see cref="WriteScriptOperation"/>
     /// </remarks>
-    private static async Task<Result> InvokeScriptAsync(TestHost host, string operationId, Func<InvocationContext, Task<Result>> script)
+    private static async Task<Result> InvokeScriptAsync(TestHost host, string operationId, Func<InvocationContext, ValueTask<Result>> script)
     {
         var key = host.Services.GetRequiredService<ConformanceScripts>().Add(script);
         var result = await host.InvokeOperationAsync<ConformanceScriptRequest, ConformanceScriptResponse>(operationId, new ConformanceScriptRequest(key)).ConfigureAwait(false);
