@@ -9,7 +9,7 @@ namespace XiHan.Framework.Plugins.Wasm.Runtime;
 /// <summary>
 /// 宿主侧所有 Wasm 插件共享的环境：引擎、选项、配置、时钟与附着后的宿主容器
 /// </summary>
-internal sealed class WasmHostContext(Engine engine, WasmPluginOptions options, IConfiguration configuration, TimeProvider clock, int primitives, string defaultLocale, string application, string workRoot)
+internal sealed class WasmHostContext(Engine engine, WasmPluginOptions options, IConfiguration configuration, string? serviceBindingRoot, TimeProvider clock, int primitives, string defaultLocale, string application, string workRoot)
 {
     /// <summary>
     /// wasmtime 引擎（已启用 epoch 中断，由宿主的计时器递增）
@@ -25,6 +25,14 @@ internal sealed class WasmHostContext(Engine engine, WasmPluginOptions options, 
     /// 宿主配置（插件配置节与绑定从中读取）
     /// </summary>
     public IConfiguration Configuration { get; } = configuration;
+
+    /// <summary>
+    /// 应用指定的 Service Binding 根目录
+    /// </summary>
+    /// <remarks>
+    /// 绑定按它与 <see cref="Configuration"/> 解析，与内核同一套来源（ADR-0268）；<see langword="null"/> 时取环境变量
+    /// </remarks>
+    public string? ServiceBindingRoot { get; } = serviceBindingRoot;
 
     /// <summary>
     /// 时钟

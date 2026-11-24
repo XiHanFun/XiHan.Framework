@@ -561,7 +561,16 @@ internal sealed partial class WasmPluginRuntime : IPluginRuntime, IPluginCarrier
             }
 
             var instance = _instance!;
-            var configured = await StepAsync<ConfigureResponse>(instance, "xihan_configure", BuildConfigure(), static r => r.Status, "configure", cancellationToken).ConfigureAwait(false);
+            // 请求在调用之前组装：绑定读不出来（挂载的目录读失败）与配置这一步失败同样处理，丢弃实例、记为 Failed，下一次调用或退避重建时再试
+            var request = BuildConfigure();
+            if (!request.TryGetValue(out var configure))
+            {
+                await DropInstanceAsync().ConfigureAwait(false);
+                _lifecycle.Fail(request.Error!);
+                return request.Error!;
+            }
+
+            var configured = await StepAsync<ConfigureResponse>(instance, "xihan_configure", configure, static r => r.Status, "configure", cancellationToken).ConfigureAwait(false);
             if (configured.IsFailure)
             {
                 return configured;
@@ -988,8 +997,8 @@ internal sealed partial class WasmPluginRuntime : IPluginRuntime, IPluginCarrier
     /// <remarks>
     /// 配置节 JSON、已授予权限（含已映射的文件系统权限）、清单声明的绑定与工作目录。工作目录在实例化时已经准备好，这里只给出路径
     /// </remarks>
-    private ConfigureRequest BuildConfigure()
-        => PluginConfigureRequests.Build(Manifest, _host.Configuration, Path.Combine(_host.WorkRoot, Manifest.Id));
+    private Result<ConfigureRequest> BuildConfigure()
+        => PluginConfigureRequests.Build(Manifest, _host.Configuration, _host.ServiceBindingRoot, Path.Combine(_host.WorkRoot, Manifest.Id), Logger);
 
     /// <summary>
     /// WASI 配置：协议约定的环境变量、按权限预开放目录

@@ -17,6 +17,7 @@ namespace XiHan.Framework.Plugins.OutOfProcess.Runtime;
 /// <param name="WorkRoot">插件工作目录的根</param>
 /// <param name="Options">选项</param>
 /// <param name="Configuration">宿主配置（插件配置节与绑定从中读取）</param>
+/// <param name="ServiceBindingRoot">应用指定的 Service Binding 根目录，绑定按它与配置解析（与内核同一套来源，ADR-0268）；<see langword="null"/> 时取环境变量</param>
 /// <param name="Clock">时钟</param>
 /// <param name="Sessions">会话登记表</param>
 /// <param name="StopGrace">停止宽限</param>
@@ -28,6 +29,7 @@ internal sealed record PluginHostContext(
     string WorkRoot,
     OutOfProcessPluginOptions Options,
     IConfiguration Configuration,
+    string? ServiceBindingRoot,
     TimeProvider Clock,
     PluginSessions Sessions,
     TimeSpan StopGrace)

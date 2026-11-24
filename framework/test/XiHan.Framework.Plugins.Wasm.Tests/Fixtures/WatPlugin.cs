@@ -191,6 +191,18 @@ internal sealed class WatPlugin : IDisposable
     public static WatPlugin Custom(string imports, string body, int pages = Pages, string fields = "")
         => Create("invoke", new JsonObject { ["operation"] = "pings.create", ["payload"] = Convert.ToBase64String("{}"u8) }, [], null, customImports: imports, customBody: body, pages: pages, fields: fields);
 
+    /// <summary>
+    /// 生成一个声明了一个绑定、并在 <c>xihan_configure</c> 里核对它的插件
+    /// </summary>
+    /// <remarks>
+    /// 清单的 <c>bindings</c> 是这一个绑定；<c>Configure</c> 请求的字节里找得到 <paramref name="expected"/> 才回成功，否则回失败、插件停在 Failed。用来核对宿主下发给插件的绑定（ADR-0268）；导出的其余部分与 <see cref="Invoking"/> 相同
+    /// </remarks>
+    /// <param name="name">绑定名</param>
+    /// <param name="type">清单声明的资源类型</param>
+    /// <param name="expected">请求里必须出现的文本（取绑定的主值；不含 JSON 要转义的字符）</param>
+    public static WatPlugin ExpectingBinding(string name, string type, string expected)
+        => Create("invoke", new JsonObject { ["operation"] = "pings.create", ["payload"] = Convert.ToBase64String("{}"u8) }, [], null, bindings: new JsonArray(new JsonObject { ["name"] = name, ["type"] = type }), configureExpects: expected);
+
     /// <inheritdoc />
     public void Dispose()
     {
@@ -221,7 +233,9 @@ internal sealed class WatPlugin : IDisposable
         string? customBody = null,
         int pages = Pages,
         string fields = "",
-        IReadOnlyDictionary<string, string>? middlewareBaggage = null)
+        IReadOnlyDictionary<string, string>? middlewareBaggage = null,
+        JsonArray? bindings = null,
+        string? configureExpects = null)
     {
         var contributes = new JsonObject { ["operations"] = new JsonArray(operation) };
         if (pipeline is not null)
@@ -234,7 +248,7 @@ internal sealed class WatPlugin : IDisposable
             contributes["permissions"] = new JsonArray(declaredPermissions.Select(static p => (JsonNode)p).ToArray());
         }
 
-        var manifest = new JsonObject
+        var manifestJson = new JsonObject
         {
             ["id"] = pluginId,
             ["package"] = "WatPlugin",
@@ -247,7 +261,13 @@ internal sealed class WatPlugin : IDisposable
             ["permissions"] = new JsonArray(permissions.Select(static p => (JsonNode)p).ToArray()),
             ["activation"] = new JsonArray("onStartup"),
             ["entry"] = "plugin.wat",
-        }.ToJsonString();
+        };
+        if (bindings is not null)
+        {
+            manifestJson["bindings"] = bindings;
+        }
+
+        var manifest = manifestJson.ToJsonString();
         var handshake = new JsonObject
         {
             ["protocolVersion"] = 1,
@@ -284,6 +304,8 @@ internal sealed class WatPlugin : IDisposable
         }
 
         var continueData = Place(continueJson.ToJsonString());
+        var failedData = Place("""{"status":{"ok":false}}""");
+        var expectedData = Place(configureExpects ?? string.Empty);
         if (offset >= HeapStart)
         {
             throw new InvalidOperationException("The data segments overflow into the heap.");
@@ -300,6 +322,10 @@ internal sealed class WatPlugin : IDisposable
         var middleware = pipeline is null
             ? string.Empty
             : $"(func (export \"xihan_middleware\") (param i32 i32) (result i64) (call $pack (i32.const {continueData.Offset}) (i32.const {continueData.Length})))";
+        // 核对绑定的插件：请求里找得到期望的文本才回成功
+        var configure = configureExpects is null
+            ? ok
+            : $"(if (result i64) (call $contains (local.get 0) (local.get 1) (i32.const {expectedData.Offset}) (i32.const {expectedData.Length})) (then {ok}) (else (call $pack (i32.const {failedData.Offset}) (i32.const {failedData.Length}))))";
         var module = $$"""
             (module
               (import "xihan" "{{import}}" (func $callback (param i32 i32) (result i64)))
@@ -319,7 +345,23 @@ internal sealed class WatPlugin : IDisposable
                 (local.get $pointer))
               (func (export "xihan_free") (param i32 i32))
               (func (export "xihan_handshake") (param i32 i32) (result i64) (call $pack (i32.const {{handshakeData.Offset}}) (i32.const {{handshakeData.Length}})))
-              (func (export "xihan_configure") (param i32 i32) (result i64) (call $pack (i32.const {{okData.Offset}}) (i32.const {{okData.Length}})))
+              (func $contains (param $hay i32) (param $hayLength i32) (param $needle i32) (param $needleLength i32) (result i32) (local $i i32) (local $j i32)
+                (block $absent
+                  (loop $next
+                    (br_if $absent (i32.gt_u (i32.add (local.get $i) (local.get $needleLength)) (local.get $hayLength)))
+                    (local.set $j (i32.const 0))
+                    (block $differs
+                      (loop $same
+                        (if (i32.eq (local.get $j) (local.get $needleLength)) (then (return (i32.const 1))))
+                        (br_if $differs (i32.ne
+                          (i32.load8_u (i32.add (i32.add (local.get $hay) (local.get $i)) (local.get $j)))
+                          (i32.load8_u (i32.add (local.get $needle) (local.get $j)))))
+                        (local.set $j (i32.add (local.get $j) (i32.const 1)))
+                        (br $same)))
+                    (local.set $i (i32.add (local.get $i) (i32.const 1)))
+                    (br $next)))
+                (i32.const 0))
+              (func (export "xihan_configure") (param i32 i32) (result i64) {{configure}})
               (func (export "xihan_start") (param i32 i32) (result i64) (call $pack (i32.const {{okData.Offset}}) (i32.const {{okData.Length}})))
               (func (export "xihan_stop") (param i32 i32) (result i64) (call $pack (i32.const {{okData.Offset}}) (i32.const {{okData.Length}})))
               (func (export "xihan_health") (param i32 i32) (result i64) (call $pack (i32.const {{healthData.Offset}}) (i32.const {{healthData.Length}})))

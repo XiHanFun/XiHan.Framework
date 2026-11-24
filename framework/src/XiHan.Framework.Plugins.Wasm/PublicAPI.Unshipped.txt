@@ -6,7 +6,7 @@ XiHan.Framework.Plugins.Wasm.WasmPluginHost.FindStatus(string! manifestId) -> Xi
 XiHan.Framework.Plugins.Wasm.WasmPluginHost.LoadAsync(XiHan.Framework.Kernel.Plugins.PluginSource! source, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<XiHan.Framework.Primitives.Result<XiHan.Framework.Kernel.Plugins.PluginStatus!>>!
 XiHan.Framework.Plugins.Wasm.WasmPluginHost.Plugins.get -> System.Collections.Generic.IReadOnlyList<XiHan.Framework.Kernel.Plugins.PluginStatus!>!
 XiHan.Framework.Plugins.Wasm.WasmPluginHost.UnloadAsync(string! manifestId, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<XiHan.Framework.Primitives.Result>!
-XiHan.Framework.Plugins.Wasm.WasmPluginHost.WasmPluginHost(XiHan.Framework.Plugins.Wasm.WasmPluginOptions! options, Microsoft.Extensions.Configuration.IConfiguration! configuration, System.TimeProvider! clock, Microsoft.Extensions.Logging.ILoggerFactory! loggerFactory, string! defaultLocale = "en-US") -> void
+XiHan.Framework.Plugins.Wasm.WasmPluginHost.WasmPluginHost(XiHan.Framework.Plugins.Wasm.WasmPluginOptions! options, Microsoft.Extensions.Configuration.IConfiguration! configuration, System.TimeProvider! clock, Microsoft.Extensions.Logging.ILoggerFactory! loggerFactory, string! defaultLocale = "en-US", string? serviceBindingRoot = null) -> void
 XiHan.Framework.Plugins.Wasm.WasmPluginOptions
 XiHan.Framework.Plugins.Wasm.WasmPluginOptions.<Clone>$() -> XiHan.Framework.Plugins.Wasm.WasmPluginOptions!
 XiHan.Framework.Plugins.Wasm.WasmPluginOptions.CallTimeout.get -> System.TimeSpan

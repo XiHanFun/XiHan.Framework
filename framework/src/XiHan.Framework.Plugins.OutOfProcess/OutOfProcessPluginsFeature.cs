@@ -59,7 +59,8 @@ public sealed class OutOfProcessPluginsFeature : IHostedFeature
         var kernel = KernelOptions.FromConfiguration(context.Configuration);
         var localization = LocalizationOptions.FromConfiguration(context.Configuration);
         // 容器尚未构建：先用空日志，附着时换成宿主的日志工厂
-        var host = new OutOfProcessPluginHost(options, context.Configuration, TimeProvider.System, NullLoggerFactory.Instance, kernel.StopTimeout, localization.DefaultLocale);
+        // 绑定根目录取应用的那一个：下发给插件的绑定与内核按同一套来源解析（ADR-0268）
+        var host = new OutOfProcessPluginHost(options, context.Configuration, TimeProvider.System, NullLoggerFactory.Instance, kernel.StopTimeout, localization.DefaultLocale, context.ServiceBindingRoot);
         host.UseRegistry(context.Operations);
         _host = host;
 

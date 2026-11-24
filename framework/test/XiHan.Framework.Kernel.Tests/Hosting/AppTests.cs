@@ -244,6 +244,58 @@ public sealed class AppTests
     }
 
     [Fact]
+    public void Build_HandsTheServiceBindingRootToFeatures_SoTheyCanResolveTheSameSourcesAgain()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "xihan-bindings-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(Path.Combine(root, "db"));
+        try
+        {
+            File.WriteAllText(Path.Combine(root, "db", "uri"), "postgres://mounted/app");
+            FeatureContext? seen = null;
+            var feature = new RecordingFeature(Manifests.Create("xihan.persistence.inmemory", bindings: [new Binding("db", "connection:relational")]), [])
+            {
+                OnConfigure = context => seen = context,
+            };
+
+            var (provider, _) = Hosts.BuildApp(b => b.UseServiceBindingRoot(root).UseFeature(feature), Hosts.Configuration(("XiHan:Bindings:cache", "localhost:6379")));
+            using var _ = provider;
+
+            // 装配时解析好的一份来自应用指定的根目录
+            Assert.NotNull(seen);
+            Assert.Equal(root, seen.ServiceBindingRoot);
+            Assert.Equal("postgres://mounted/app", seen.GetBinding("db").Value);
+
+            // 根目录与配置交给解析器，得到的就是内核解析的那一套；之后挂载的内容变了，再解析看得到，装配时的那一份不变
+            File.WriteAllText(Path.Combine(root, "db", "uri"), "postgres://rotated/app");
+            var again = BindingResolver.Resolve(seen.Configuration, seen.ServiceBindingRoot);
+            Assert.Equal(["cache", "db"], again.Keys.Order(StringComparer.Ordinal));
+            Assert.Equal("postgres://rotated/app", again["db"].Value);
+            Assert.Equal("postgres://mounted/app", seen.Bindings["db"].Value);
+        }
+        finally
+        {
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void Build_WithoutACustomServiceBindingRoot_LeavesItNull()
+    {
+        FeatureContext? seen = null;
+        var feature = new RecordingFeature(Manifests.Create("xihan.persistence.inmemory"), [])
+        {
+            OnConfigure = context => seen = context,
+        };
+
+        var (provider, _) = Hosts.BuildApp(b => b.UseFeature(feature));
+        using var _ = provider;
+
+        // null 即「没有指定」：解析器这时取环境变量 SERVICE_BINDING_ROOT
+        Assert.NotNull(seen);
+        Assert.Null(seen.ServiceBindingRoot);
+    }
+
+    [Fact]
     public void Build_BindingTypeMismatch_Fails()
     {
         var feature = new RecordingFeature(Manifests.Create("xihan.persistence.inmemory", bindings: [new Binding("db", "connection:relational")]), []);

@@ -41,6 +41,7 @@ await builder.Build().RunAsync();
 * `AppBuilder`、`App`：装配入口与运行中的应用
 * `KernelOptions`、`StartupBannerOptions`：内核选项与启动 Banner 的选项
 * `IFeature`、`IHostedFeature`、`FeatureContext`：特性与它的装配入口
+* `BindingResolver`、`BindingValue`：资源绑定的解析与结果；`FeatureContext.Bindings` 是装配时解析好的一份，`FeatureContext.ServiceBindingRoot` 是应用指定的绑定根目录，装配之后还要按同样的来源解析时用它
 * `PipelineBuilder`、`IPipelineMiddleware`、`PipelineStage`：执行管道
 * `OperationAttribute`、`IOperation<TRequest, TResponse>`、`IOperationInvoker`：操作契约与调用
 * `SecurityContext`、`Principal`、`PermissionRegistry`：安全上下文与权限登记

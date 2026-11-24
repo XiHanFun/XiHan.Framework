@@ -123,6 +123,51 @@ public sealed class OutOfProcessPluginHostTests
         Assert.Null(status.ProcessId);
     }
 
+    /// <summary>
+    /// 清单声明的绑定要运营方授予才交给插件，绑定从哪个来源解析出来都一样
+    /// </summary>
+    /// <remarks>
+    /// ADR-0177、ADR-0268：下发给插件的绑定与内核同源解析之后，挂载目录里的绑定也在可下发之列，把关的仍只有 <c>binding:&lt;名&gt;</c> 的授予
+    /// </remarks>
+    [Fact]
+    public async Task Binding_DeclaredButNotGranted_RejectsThePluginAtDiscovery()
+    {
+        var root = Directory.CreateTempSubdirectory("xihan-plugin-bindings-");
+        try
+        {
+            Directory.CreateDirectory(Path.Combine(root.FullName, "db"));
+            await File.WriteAllTextAsync(Path.Combine(root.FullName, "db", "uri"), "postgres://mounted/app");
+            using var bound = new PluginCopy(EchoPluginHost.Directory);
+            bound.EditManifest(static manifest => manifest.Replace("\"entry\": \"EchoPlugin\"", "\"bindings\": [ { \"name\": \"db\", \"type\": \"connection:relational\" } ],\n  \"entry\": \"EchoPlugin\"", StringComparison.Ordinal));
+
+            // 授予了权限与配置节，唯独没有 binding:db：目录里有这个绑定也不下发，插件在发现时被拒、不启动进程
+            await using var denied = await EchoPluginHost.StartAsync(b => b.UseServiceBindingRoot(root.FullName), directory: bound.Directory);
+
+            var status = EchoPluginHost.PluginHost(denied).FindStatus(EchoPluginHost.PluginId).ValueOrThrow();
+            Assert.Equal(LifecycleState.Failed, status.Status.State);
+            Assert.Equal(PluginErrors.PermissionDenied, status.Status.Error?.Code);
+            Assert.Contains("binding:db", status.Status.Error?.Message, StringComparison.Ordinal);
+            Assert.Null(status.ProcessId);
+        }
+        finally
+        {
+            root.Delete(recursive: true);
+        }
+    }
+
+    [Fact]
+    public async Task Feature_HandsTheAppsServiceBindingRootToTheHost()
+    {
+        // 应用指定了绑定根目录时，宿主解析下发给插件的绑定必须用同一个根，否则会退回环境变量、读到另一套绑定（ADR-0268）
+        var root = Path.Combine(Path.GetTempPath(), "xihan-plugin-bindings-" + Guid.NewGuid().ToString("N"));
+        await using var custom = await TestHost.StartAsync(b => b.UseServiceBindingRoot(root).UseFeature<OutOfProcessPluginsFeature>());
+        Assert.Equal(root, EchoPluginHost.PluginHost(custom).ServiceBindingRoot);
+
+        // 没有指定时是 null：与内核一样取环境变量 SERVICE_BINDING_ROOT
+        await using var defaults = await TestHost.StartAsync(static b => b.UseFeature<OutOfProcessPluginsFeature>());
+        Assert.Null(EchoPluginHost.PluginHost(defaults).ServiceBindingRoot);
+    }
+
     [Fact]
     public async Task Discovery_KeepsRejectedPluginsAsFailed_ReportsHealth_AndLogsThem()
     {

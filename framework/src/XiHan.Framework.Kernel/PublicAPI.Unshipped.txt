@@ -121,6 +121,7 @@ XiHan.Framework.Kernel.Hosting.FeatureContext.Node.get -> XiHan.Framework.Kernel
 XiHan.Framework.Kernel.Hosting.FeatureContext.Operations.get -> XiHan.Framework.Kernel.Operations.OperationRegistry!
 XiHan.Framework.Kernel.Hosting.FeatureContext.Permissions.get -> XiHan.Framework.Kernel.Security.PermissionRegistry!
 XiHan.Framework.Kernel.Hosting.FeatureContext.Pipeline.get -> XiHan.Framework.Kernel.Pipeline.PipelineBuilder!
+XiHan.Framework.Kernel.Hosting.FeatureContext.ServiceBindingRoot.get -> string?
 XiHan.Framework.Kernel.Hosting.FeatureContext.Services.get -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
 XiHan.Framework.Kernel.Hosting.FeatureStatus
 XiHan.Framework.Kernel.Hosting.FeatureStatus.<Clone>$() -> XiHan.Framework.Kernel.Hosting.FeatureStatus!

@@ -37,6 +37,7 @@ public sealed class FeatureContext
     /// <param name="configuration">宿主配置</param>
     /// <param name="pipeline">应用的管道构建器</param>
     /// <param name="bindings">宿主解析出的全部绑定</param>
+    /// <param name="serviceBindingRoot">应用指定的 Service Binding 根目录；没有指定时为 <see langword="null"/></param>
     /// <param name="permissions">权限注册表</param>
     /// <param name="operations">应用级操作登记表</param>
     /// <param name="startupChecks">全部特性共用的启动核对列表，<see cref="AddStartupCheck"/> 往里追加</param>
@@ -46,6 +47,7 @@ public sealed class FeatureContext
         IConfiguration configuration,
         PipelineBuilder pipeline,
         IReadOnlyDictionary<string, BindingValue> bindings,
+        string? serviceBindingRoot,
         PermissionRegistry permissions,
         OperationRegistry operations,
         List<(string OwnerId, Action<IServiceProvider> Check)> startupChecks)
@@ -55,6 +57,7 @@ public sealed class FeatureContext
         Configuration = configuration;
         Pipeline = pipeline;
         Bindings = bindings;
+        ServiceBindingRoot = serviceBindingRoot;
         Permissions = permissions;
         Operations = operations;
         _startupChecks = startupChecks;
@@ -88,7 +91,18 @@ public sealed class FeatureContext
     /// <summary>
     /// 宿主解析出的全部绑定
     /// </summary>
+    /// <remarks>
+    /// 装配时解析一次，此后不变；要在装配之后按同样的来源再解析见 <see cref="ServiceBindingRoot"/>
+    /// </remarks>
     public IReadOnlyDictionary<string, BindingValue> Bindings { get; }
+
+    /// <summary>
+    /// 应用指定的 Service Binding 根目录
+    /// </summary>
+    /// <remarks>
+    /// <see cref="AppBuilder.UseServiceBindingRoot"/> 给出的值；没有指定时为 <see langword="null"/>，这时根目录取环境变量 <c>SERVICE_BINDING_ROOT</c>。把它与 <see cref="Configuration"/> 交给 <see cref="BindingResolver.Resolve(IConfiguration, string?)"/>，就是内核解析 <see cref="Bindings"/> 的同一套来源：在装配之后还要解析绑定的特性（如插件宿主在配置每个插件时）用它，自定义的根目录才不会被环境变量顶掉（ADR-0268）
+    /// </remarks>
+    public string? ServiceBindingRoot { get; }
 
     /// <summary>
     /// 权限注册表

@@ -105,7 +105,8 @@ public sealed partial class OutOfProcessPluginHost : IPluginHost, IHealthContrib
     /// <param name="loggerFactory">日志工厂</param>
     /// <param name="stopGrace">停止宽限（通常取内核的停止超时）</param>
     /// <param name="defaultLocale">宿主默认区域</param>
-    public OutOfProcessPluginHost(OutOfProcessPluginOptions options, IConfiguration configuration, TimeProvider clock, ILoggerFactory loggerFactory, TimeSpan stopGrace, string defaultLocale = "en-US")
+    /// <param name="serviceBindingRoot">Service Binding 根目录：下发给插件的绑定按它与 <paramref name="configuration"/> 解析，与内核解析绑定的来源相同（ADR-0268）。经 <see cref="OutOfProcessPluginsFeature"/> 装配时取应用的 <see cref="FeatureContext.ServiceBindingRoot"/>；<see langword="null"/> 时取环境变量 <c>SERVICE_BINDING_ROOT</c></param>
+    public OutOfProcessPluginHost(OutOfProcessPluginOptions options, IConfiguration configuration, TimeProvider clock, ILoggerFactory loggerFactory, TimeSpan stopGrace, string defaultLocale = "en-US", string? serviceBindingRoot = null)
     {
         _options = options ?? throw new ArgumentNullException(nameof(options));
         ArgumentNullException.ThrowIfNull(configuration);
@@ -124,6 +125,7 @@ public sealed partial class OutOfProcessPluginHost : IPluginHost, IHealthContrib
             options.ResolveWorkDirectory(),
             options,
             configuration,
+            serviceBindingRoot,
             clock,
             _sessions,
             options.StopGrace ?? stopGrace);
@@ -151,6 +153,14 @@ public sealed partial class OutOfProcessPluginHost : IPluginHost, IHealthContrib
         ArgumentNullException.ThrowIfNull(manifestId);
         return _roster.TryFind(manifestId, out var runtime) ? runtime.Describe() : Maybe.None<OutOfProcessPluginStatus>();
     }
+
+    /// <summary>
+    /// 解析绑定所用的 Service Binding 根目录
+    /// </summary>
+    /// <remarks>
+    /// 构造时给出的值，<see langword="null"/> 即取环境变量；测试据此核对特性把应用的根目录交了过来（ADR-0268）
+    /// </remarks>
+    internal string? ServiceBindingRoot => _context.ServiceBindingRoot;
 
     /// <summary>
     /// 指定代理操作的登记表

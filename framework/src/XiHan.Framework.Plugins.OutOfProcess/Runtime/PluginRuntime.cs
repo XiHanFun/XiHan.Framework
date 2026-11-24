@@ -443,7 +443,16 @@ internal sealed partial class PluginRuntime : IPluginRuntime, IPluginCarrier, ID
             }
 
             var process = _process!;
-            var configured = await StepAsync(process, "configure", () => process.Client.ConfigureAsync(BuildConfigure(), deadline: DateTime.UtcNow + _host.Options.StartTimeout, cancellationToken: cancellationToken).ResponseAsync, static r => r.Status, cancellationToken).ConfigureAwait(false);
+            // 请求在发出之前组装：绑定读不出来（挂载的目录读失败）与配置这一步失败同样处理，丢弃进程、记为 Failed，由重启策略再试
+            var request = BuildConfigure();
+            if (!request.TryGetValue(out var configure))
+            {
+                await DiscardAsync(process).ConfigureAwait(false);
+                _lifecycle.Fail(request.Error!);
+                return request.Error!;
+            }
+
+            var configured = await StepAsync(process, "configure", () => process.Client.ConfigureAsync(configure, deadline: DateTime.UtcNow + _host.Options.StartTimeout, cancellationToken: cancellationToken).ResponseAsync, static r => r.Status, cancellationToken).ConfigureAwait(false);
             if (configured.IsFailure)
             {
                 return configured;
@@ -824,8 +833,8 @@ internal sealed partial class PluginRuntime : IPluginRuntime, IPluginCarrier, ID
     /// <remarks>
     /// 缺省的工作目录根要先核对是私有的，子目录只给本用户（ADR-0207）
     /// </remarks>
-    private ConfigureRequest BuildConfigure()
-        => PluginConfigureRequests.Build(Manifest, _host.Configuration, PluginWorkDirectories.Prepare(_host.WorkRoot, Manifest.Id, _host.Options.WorkDirectory is null));
+    private Result<ConfigureRequest> BuildConfigure()
+        => PluginConfigureRequests.Build(Manifest, _host.Configuration, _host.ServiceBindingRoot, PluginWorkDirectories.Prepare(_host.WorkRoot, Manifest.Id, _host.Options.WorkDirectory is null), Logger);
 
     /// <summary>
     /// 某阶段超时

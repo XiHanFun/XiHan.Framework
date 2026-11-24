@@ -150,7 +150,7 @@ public sealed class CallbackEndpointTests
     {
         var configuration = new ConfigurationBuilder().Build();
         var options = OutOfProcessPluginOptions.FromConfiguration(configuration);
-        var context = new PluginHostContext(endpoints, 1, "en-US", "tests", Path.GetTempPath(), options, configuration, TimeProvider.System, sessions, TimeSpan.FromSeconds(5));
+        var context = new PluginHostContext(endpoints, 1, "en-US", "tests", Path.GetTempPath(), options, configuration, null, TimeProvider.System, sessions, TimeSpan.FromSeconds(5));
         return new PluginRuntime(TestManifests.Create("xihan.test.callbacks"), Path.GetTempPath(), string.Empty, new PluginPermissions([]), context, NullLogger.Instance);
     }
 }

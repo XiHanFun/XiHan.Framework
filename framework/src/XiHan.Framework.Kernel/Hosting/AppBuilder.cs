@@ -134,6 +134,9 @@ public sealed class AppBuilder
     /// <summary>
     /// 覆盖 Service Binding 根目录（默认读环境变量 <c>SERVICE_BINDING_ROOT</c>）
     /// </summary>
+    /// <remarks>
+    /// 特性经 <see cref="FeatureContext.ServiceBindingRoot"/> 拿到同一个值：装配之后还要解析绑定的特性（插件宿主）据此与内核用同一个根（ADR-0268）
+    /// </remarks>
     public AppBuilder UseServiceBindingRoot(string? directory)
     {
         EnsureNotBuilt();
@@ -233,7 +236,7 @@ public sealed class AppBuilder
             {
                 if (feature is IShadowAwareFeature shadowAware)
                 {
-                    shadowAware.ConfigureShadowed(new FeatureContext(node, Services, Configuration, Pipeline, bindings, permissions, operations, startupChecks));
+                    shadowAware.ConfigureShadowed(new FeatureContext(node, Services, Configuration, Pipeline, bindings, _serviceBindingRoot, permissions, operations, startupChecks));
                 }
 
                 continue;
@@ -254,7 +257,7 @@ public sealed class AppBuilder
                 }
             }
 
-            feature.Configure(new FeatureContext(node, Services, Configuration, Pipeline, bindings, permissions, operations, startupChecks));
+            feature.Configure(new FeatureContext(node, Services, Configuration, Pipeline, bindings, _serviceBindingRoot, permissions, operations, startupChecks));
             runtimes.Add(new FeatureRuntime(node, feature));
         }
 

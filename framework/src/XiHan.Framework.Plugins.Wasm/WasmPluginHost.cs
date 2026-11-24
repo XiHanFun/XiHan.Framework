@@ -100,8 +100,9 @@ public sealed partial class WasmPluginHost : IPluginHost, IHealthContributor, IA
     /// <param name="clock">时钟</param>
     /// <param name="loggerFactory">日志工厂</param>
     /// <param name="defaultLocale">宿主默认区域</param>
+    /// <param name="serviceBindingRoot">Service Binding 根目录：下发给插件的绑定按它与 <paramref name="configuration"/> 解析，与内核解析绑定的来源相同（ADR-0268）。经 <see cref="WasmPluginsFeature"/> 装配时取应用的 <see cref="FeatureContext.ServiceBindingRoot"/>；<see langword="null"/> 时取环境变量 <c>SERVICE_BINDING_ROOT</c></param>
     /// <exception cref="FrameworkException">宿主进程强制用户态影子栈（CET），Wasm 陷阱会终止进程；宿主可执行项目须设置 <c>CETCompat=false</c></exception>
-    public WasmPluginHost(WasmPluginOptions options, IConfiguration configuration, TimeProvider clock, ILoggerFactory loggerFactory, string defaultLocale = "en-US")
+    public WasmPluginHost(WasmPluginOptions options, IConfiguration configuration, TimeProvider clock, ILoggerFactory loggerFactory, string defaultLocale = "en-US", string? serviceBindingRoot = null)
     {
         _options = options ?? throw new ArgumentNullException(nameof(options));
         ArgumentNullException.ThrowIfNull(configuration);
@@ -116,6 +117,7 @@ public sealed partial class WasmPluginHost : IPluginHost, IHealthContributor, IA
             engine,
             options,
             configuration,
+            serviceBindingRoot,
             clock,
             int.Parse(FrameworkInfo.SpecVersion, System.Globalization.CultureInfo.InvariantCulture),
             defaultLocale,
