@@ -887,8 +887,11 @@ public sealed partial class S3BlobStore : IBlobStore, IBlobMultipartStore, IBlob
     /// <summary>
     /// 该异常是存储故障（服务端错误、网络错误、SDK 超时）而不是调用方取消
     /// </summary>
+    /// <remarks>
+    /// 单次请求超过 <see cref="S3ObjectStorageOptions.RequestTimeout"/> 时 SDK 抛出的是 <see cref="TimeoutException"/>（内层才是取消），与调用方有没有取消无关（ADR-0281）
+    /// </remarks>
     private static bool IsStoreFailure(Exception exception, CancellationToken cancellationToken)
-        => exception is AmazonServiceException or AmazonClientException or HttpRequestException or IOException
+        => exception is AmazonServiceException or AmazonClientException or HttpRequestException or IOException or TimeoutException
             || (exception is OperationCanceledException && !cancellationToken.IsCancellationRequested);
 
     /// <summary>

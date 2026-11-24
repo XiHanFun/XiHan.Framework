@@ -97,7 +97,7 @@ internal static class S3ConditionalWriteProbe
             // 服务明说没有实现这个请求（或其中的条件头）：同样保证不了不覆盖
             return Unsupported(bucket, operation);
         }
-        catch (Exception exception) when (!cancellationToken.IsCancellationRequested && exception is AmazonServiceException or AmazonClientException or HttpRequestException or IOException or OperationCanceledException)
+        catch (Exception exception) when (!cancellationToken.IsCancellationRequested && exception is AmazonServiceException or AmazonClientException or HttpRequestException or IOException or TimeoutException or OperationCanceledException)
         {
             // 调用方没有取消：取消只可能来自探测超时
             string reason;
@@ -180,7 +180,7 @@ internal static class S3ConditionalWriteProbe
             {
                 await client.AbortMultipartUploadAsync(new AbortMultipartUploadRequest { BucketName = bucket, Key = ProbeKey, UploadId = uploadId }, CancellationToken.None).ConfigureAwait(false);
             }
-            catch (Exception exception) when (exception is AmazonServiceException or AmazonClientException or HttpRequestException or IOException or OperationCanceledException)
+            catch (Exception exception) when (exception is AmazonServiceException or AmazonClientException or HttpRequestException or IOException or TimeoutException or OperationCanceledException)
             {
                 // 尽力而为：未完成的上传留给桶的生命周期规则清理
             }

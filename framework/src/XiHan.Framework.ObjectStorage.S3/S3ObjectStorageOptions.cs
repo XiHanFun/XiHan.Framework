@@ -1,6 +1,7 @@
 // Copyright (c) XiHanFun Contributors. Licensed under the MIT License.
 // See the LICENSE file in the project root for full license text.
 
+using System.Globalization;
 using System.Text;
 using Microsoft.Extensions.Configuration;
 using XiHan.Framework.Kernel.Hosting;
@@ -12,7 +13,8 @@ namespace XiHan.Framework.ObjectStorage.S3;
 /// S3 对象存储选项
 /// </summary>
 /// <remarks>
-/// 从配置节 <c>XiHan:ObjectStorage:S3</c> 显式读取：<c>ServiceUrl</c>、<c>Region</c>、<c>AccessKey</c>、<c>SecretKey</c>、<c>ForcePathStyle</c>、<c>EnsureBuckets</c>、<c>HealthBucket</c>、<c>ConditionalWrites</c>、<c>HealthProbeIntervalSeconds</c>；绑定 <c>objectstorage</c> 存在时其主值与属性（<c>region</c>、<c>accessKey</c>、<c>secretKey</c>、<c>forcePathStyle</c>）逐项覆盖配置，空白的不算给出（RFC-0016「资源绑定与配置节」）。命名实例（Provider <c>s3</c>）的设置用同样的键（不含 <c>HealthProbeIntervalSeconds</c>）
+/// <para>从配置节 <c>XiHan:ObjectStorage:S3</c> 显式读取：<c>ServiceUrl</c>、<c>Region</c>、<c>AccessKey</c>、<c>SecretKey</c>、<c>SessionToken</c>、<c>ForcePathStyle</c>、<c>EnsureBuckets</c>、<c>HealthBucket</c>、<c>ConditionalWrites</c>、<c>HealthProbeIntervalSeconds</c>，以及客户端的设置 <c>RequestTimeoutSeconds</c>、<c>MaxAttempts</c>、<c>ProxyHost</c>、<c>ProxyPort</c>、<c>ProxyUserName</c>、<c>ProxyPassword</c>（ADR-0281）；绑定 <c>objectstorage</c> 存在时其主值与属性（<c>region</c>、<c>accessKey</c>、<c>secretKey</c>、<c>sessionToken</c>、<c>forcePathStyle</c>）逐项覆盖配置，空白的不算给出（RFC-0016「资源绑定与配置节」）。命名实例（Provider <c>s3</c>）的设置用同样的键（不含 <c>HealthProbeIntervalSeconds</c>）。</para>
+/// <para>成组的设置必须给全：会话令牌要有两项密钥，代理的主机与端口、用户名与口令各自成对，用户名与口令只能跟着代理给。<see cref="FromConfiguration(IConfiguration)"/> 与 <see cref="FromSettings"/> 读完即核对，只给了一部分抛出 <see cref="ArgumentException"/>；消息里只写键名，不带令牌、主机、用户名与口令的值。</para>
 /// </remarks>
 [ApiLevel(Stability.Stable, "5.0")]
 public sealed record S3ObjectStorageOptions
@@ -62,6 +64,14 @@ public sealed record S3ObjectStorageOptions
     public string? SecretKey { get; init; }
 
     /// <summary>
+    /// 临时凭据的会话令牌
+    /// </summary>
+    /// <remarks>
+    /// 必须与 <see cref="AccessKey"/>、<see cref="SecretKey"/> 同时给出：只有令牌没有密钥时不退回凭据链，读取选项时抛出。是凭据，打印选项时遮蔽（ADR-0281）
+    /// </remarks>
+    public string? SessionToken { get; init; }
+
+    /// <summary>
     /// 桶名放在路径而不是主机名里
     /// </summary>
     /// <remarks>
@@ -106,12 +116,103 @@ public sealed record S3ObjectStorageOptions
     } = TimeSpan.FromSeconds(15);
 
     /// <summary>
+    /// 请求超时的上限：24 小时
+    /// </summary>
+    public static readonly TimeSpan MaxRequestTimeout = TimeSpan.FromHours(24);
+
+    /// <summary>
+    /// 尝试次数的上限
+    /// </summary>
+    public const int MaxAttemptsLimit = 10;
+
+    /// <summary>
+    /// 单次 HTTP 请求的超时
+    /// </summary>
+    /// <remarks>
+    /// 每次尝试各算各的，交给 SDK 作底层 <see cref="HttpClient.Timeout"/>；正的时长，不超过 <see cref="MaxRequestTimeout"/>。为 <see langword="null"/>（缺省）时不另设时限，沿用 SDK 对 S3 的缺省（约 24.8 天）。超时与其余网络错误一样映射为 <c>OBJECTSTORAGE_UNAVAILABLE_001</c>（ADR-0281）
+    /// </remarks>
+    public TimeSpan? RequestTimeout
+    {
+        get => field;
+        init => field = value is null || (value > TimeSpan.Zero && value <= MaxRequestTimeout)
+            ? value
+            : throw new ArgumentOutOfRangeException(nameof(value), value, $"The request timeout must be positive and at most {MaxRequestTimeout.TotalSeconds.ToString(CultureInfo.InvariantCulture)} seconds.");
+    }
+
+    /// <summary>
+    /// 一次操作最多发出的请求数，含首次
+    /// </summary>
+    /// <remarks>
+    /// 1 到 <see cref="MaxAttemptsLimit"/>，1 即不重试。为 <see langword="null"/>（缺省）时沿用 SDK 的缺省（标准重试模式，共 3 次；ADR-0281）
+    /// </remarks>
+    public int? MaxAttempts
+    {
+        get => field;
+        init => field = value is null or (>= 1 and <= MaxAttemptsLimit)
+            ? value
+            : throw new ArgumentOutOfRangeException(nameof(value), value, $"The maximum number of attempts must be between 1 and {MaxAttemptsLimit.ToString(CultureInfo.InvariantCulture)}.");
+    }
+
+    /// <summary>
+    /// HTTP 代理的主机
+    /// </summary>
+    /// <remarks>
+    /// 主机名或 IP 字面量，不带协议、端口、路径与用户信息；必须与 <see cref="ProxyPort"/> 同时给出。不合法时抛出的消息不带原值：写错成带用户信息的地址时口令不会进日志（ADR-0281）
+    /// </remarks>
+    public string? ProxyHost
+    {
+        get => field;
+        init => field = value is null || IsProxyHost(value)
+            ? value
+            : throw new ArgumentException("The proxy host must be a host name or an IP address literal, without a scheme, port, path or user information.", nameof(value));
+    }
+
+    /// <summary>
+    /// HTTP 代理的端口
+    /// </summary>
+    /// <remarks>
+    /// 1 到 65535；必须与 <see cref="ProxyHost"/> 同时给出
+    /// </remarks>
+    public int? ProxyPort
+    {
+        get => field;
+        init => field = value is null or (>= 1 and <= MaxPort)
+            ? value
+            : throw new ArgumentOutOfRangeException(nameof(value), value, $"The proxy port must be between 1 and {MaxPort.ToString(CultureInfo.InvariantCulture)}.");
+    }
+
+    /// <summary>
+    /// 代理的用户名
+    /// </summary>
+    /// <remarks>
+    /// 可选；必须与 <see cref="ProxyPassword"/> 同时给出，且只能跟着代理给。是登录凭据的身份那一半，打印选项时遮蔽（RFC-0014 规则 2）
+    /// </remarks>
+    public string? ProxyUserName { get; init; }
+
+    /// <summary>
+    /// 代理的口令
+    /// </summary>
+    /// <remarks>
+    /// 可选；必须与 <see cref="ProxyUserName"/> 同时给出。是凭据，打印选项时遮蔽
+    /// </remarks>
+    public string? ProxyPassword { get; init; }
+
+    /// <summary>
+    /// 端口号的上限
+    /// </summary>
+    private const int MaxPort = 65535;
+
+    /// <summary>
     /// 命名实例的设置键
     /// </summary>
     /// <remarks>
     /// 探测间隔由注册表统一（<c>XiHan:ObjectStorage:StoreHealthProbeIntervalSeconds</c>），不在其中
     /// </remarks>
-    private static readonly string[] _settingKeys = ["ServiceUrl", "Region", "AccessKey", "SecretKey", "ForcePathStyle", "EnsureBuckets", "HealthBucket", "ConditionalWrites"];
+    private static readonly string[] _settingKeys =
+    [
+        "ServiceUrl", "Region", "AccessKey", "SecretKey", "SessionToken", "ForcePathStyle", "EnsureBuckets", "HealthBucket", "ConditionalWrites",
+        "RequestTimeoutSeconds", "MaxAttempts", "ProxyHost", "ProxyPort", "ProxyUserName", "ProxyPassword",
+    ];
 
     /// <summary>
     /// 从配置读取，再用绑定（若有）覆盖
@@ -157,13 +258,19 @@ public sealed record S3ObjectStorageOptions
                 options = options with { SecretKey = secretKey };
             }
 
+            if (BoundText(value, "sessionToken") is { } sessionToken)
+            {
+                options = options with { SessionToken = sessionToken };
+            }
+
             if (BoundText(value, "forcePathStyle") is { } boundPathStyle)
             {
                 options = options with { ForcePathStyle = ParseBoolean(boundPathStyle, "The binding property forcePathStyle") };
             }
         }
 
-        return options;
+        // 绑定覆盖之后再核对成组的设置：令牌与密钥可以一半来自绑定、一半来自配置节
+        return options.RequireComplete(ConfigurationSection + ":");
     }
 
     /// <summary>
@@ -190,7 +297,39 @@ public sealed record S3ObjectStorageOptions
             throw new ArgumentException($"Unknown S3 setting '{unknown}'; the known settings are {string.Join(", ", _settingKeys)}.", nameof(settings));
         }
 
-        return Parse(name => lookup.TryGetValue(name, out var value) ? value : null, string.Empty);
+        return Parse(name => lookup.TryGetValue(name, out var value) ? value : null, string.Empty).RequireComplete(string.Empty);
+    }
+
+    /// <summary>
+    /// 核对成组的设置都给全了
+    /// </summary>
+    /// <remarks>
+    /// 会话令牌要有两项密钥；代理的主机与端口成对，用户名与口令成对且只能跟着代理给。只给一部分时照着用，要么悄悄退回凭据链、要么悄悄不走代理，所以一律拒绝。消息只写键名（<paramref name="prefix"/> 是键的前缀），不带任何值
+    /// </remarks>
+    /// <exception cref="ArgumentException">成组的设置只给了一部分</exception>
+    internal S3ObjectStorageOptions RequireComplete(string prefix)
+    {
+        if (SessionToken is not null && (AccessKey is null || SecretKey is null))
+        {
+            throw new ArgumentException($"'{prefix}SessionToken' requires both '{prefix}AccessKey' and '{prefix}SecretKey'.");
+        }
+
+        if ((ProxyHost is null) != (ProxyPort is null))
+        {
+            throw new ArgumentException($"'{prefix}ProxyHost' and '{prefix}ProxyPort' must be set together.");
+        }
+
+        if ((ProxyUserName is null) != (ProxyPassword is null))
+        {
+            throw new ArgumentException($"'{prefix}ProxyUserName' and '{prefix}ProxyPassword' must be set together.");
+        }
+
+        if (ProxyUserName is not null && ProxyHost is null)
+        {
+            throw new ArgumentException($"'{prefix}ProxyUserName' and '{prefix}ProxyPassword' require '{prefix}ProxyHost' and '{prefix}ProxyPort'.");
+        }
+
+        return this;
     }
 
     /// <summary>
@@ -206,7 +345,10 @@ public sealed record S3ObjectStorageOptions
             ServiceUrl = Text(read, "ServiceUrl"),
             AccessKey = Text(read, "AccessKey"),
             SecretKey = Text(read, "SecretKey"),
+            SessionToken = Text(read, "SessionToken"),
             HealthBucket = Text(read, "HealthBucket"),
+            ProxyUserName = Text(read, "ProxyUserName"),
+            ProxyPassword = Text(read, "ProxyPassword"),
         };
         if (Text(read, "Region") is { } region)
         {
@@ -226,6 +368,29 @@ public sealed record S3ObjectStorageOptions
         if (read("ConditionalWrites") is { } conditional)
         {
             options = options with { ConditionalWrites = ParseBoolean(conditional, prefix + "ConditionalWrites") };
+        }
+
+        if (read("RequestTimeoutSeconds") is { } timeout)
+        {
+            options = options with { RequestTimeout = ParseSeconds(timeout, prefix + "RequestTimeoutSeconds", MaxRequestTimeout) };
+        }
+
+        if (read("MaxAttempts") is { } attempts)
+        {
+            options = options with { MaxAttempts = ParseInt32(attempts, prefix + "MaxAttempts", 1, MaxAttemptsLimit) };
+        }
+
+        if (Text(read, "ProxyHost") is { } proxyHost)
+        {
+            // 先判再赋值，报错带键名而不带原值：主机写成带用户信息的地址时口令不能出现在消息里
+            options = IsProxyHost(proxyHost)
+                ? options with { ProxyHost = proxyHost }
+                : throw new ArgumentException($"'{prefix}ProxyHost' must be a host name or an IP address literal, without a scheme, port, path or user information.");
+        }
+
+        if (read("ProxyPort") is { } proxyPort)
+        {
+            options = options with { ProxyPort = ParseInt32(proxyPort, prefix + "ProxyPort", 1, MaxPort) };
         }
 
         return options;
@@ -250,10 +415,55 @@ public sealed record S3ObjectStorageOptions
         => bool.TryParse(text, out var value) ? value : throw new ArgumentException($"{name} must be 'true' or 'false', but was '{text}'.");
 
     /// <summary>
+    /// 是否是代理主机的合法写法
+    /// </summary>
+    /// <remarks>
+    /// 主机名或 IP 字面量：带协议、端口、路径、用户信息或空白的都不是。带区域标识的 IPv6 地址（<c>fe80::1%eth0</c>）也不收：拼成代理地址时区域会被悄悄丢掉，连到的不是写的那个地址
+    /// </remarks>
+    private static bool IsProxyHost(string value)
+        => Uri.CheckHostName(value) is (UriHostNameType.Dns or UriHostNameType.IPv4 or UriHostNameType.IPv6) && !value.Contains('%', StringComparison.Ordinal);
+
+    /// <summary>
+    /// 解析落在区间内的整数
+    /// </summary>
+    /// <remarks>
+    /// 按不变文化；不是整数或不在区间内时抛出，<paramref name="name"/> 是报错用的全名。用到它的键都不是机密，原值照写
+    /// </remarks>
+    private static int ParseInt32(string text, string name, int minimum, int maximum)
+        => int.TryParse(text, NumberStyles.Integer, CultureInfo.InvariantCulture, out var value) && value >= minimum && value <= maximum
+            ? value
+            : throw new ArgumentException($"'{name}' must be an integer between {minimum.ToString(CultureInfo.InvariantCulture)} and {maximum.ToString(CultureInfo.InvariantCulture)}, but was '{text}'.");
+
+    /// <summary>
+    /// 解析以秒计、不超过上限的正时长
+    /// </summary>
+    /// <remarks>
+    /// 按不变文化，可带小数；不是有限的正数、不足 100 纳秒或超过 <paramref name="maximum"/> 时抛出，<paramref name="name"/> 是报错用的全名
+    /// </remarks>
+    private static TimeSpan ParseSeconds(string text, string name, TimeSpan maximum)
+    {
+        // 先判范围再换算：TimeSpan.FromSeconds 对装不下的数抛 OverflowException，消息里没有键名
+        if (double.TryParse(text, NumberStyles.Float, CultureInfo.InvariantCulture, out var seconds)
+            && double.IsFinite(seconds)
+            && seconds > 0
+            && seconds <= maximum.TotalSeconds)
+        {
+            var value = TimeSpan.FromSeconds(seconds);
+            // 不足 1 个计时周期（100 纳秒）的正数会被舍成零，零不是合法的超时
+            if (value > TimeSpan.Zero)
+            {
+                return value;
+            }
+        }
+
+        throw new ArgumentException($"'{name}' must be a positive number of seconds not greater than {maximum.TotalSeconds.ToString(CultureInfo.InvariantCulture)}, but was '{text}'.");
+    }
+
+    /// <summary>
     /// 打印成员，凭据以 <see cref="Redaction.Mask"/> 代替
     /// </summary>
     /// <remarks>
-    /// 记录的 <c>ToString()</c> 经它输出：对象可能整个进日志与异常消息，访问密钥 ID 与访问密钥都不能明文出现（RFC-0014「选项里的凭据」，ADR-0089）。其余成员同编译器生成的写法；新加属性时在这里一并补上，架构测试 <c>CredentialRedactionTests</c> 会核对
+    /// 记录的 <c>ToString()</c> 经它输出：对象可能整个进日志与异常消息，访问密钥 ID、访问密钥、会话令牌与代理的用户名、口令都不能明文出现（RFC-0014「选项里的凭据」，ADR-0089、ADR-0281）。其余成员同编译器生成的写法；新加属性时在这里一并补上，架构测试 <c>CredentialRedactionTests</c> 会核对
     /// </remarks>
     private bool PrintMembers(StringBuilder builder)
     {
@@ -262,11 +472,18 @@ public sealed record S3ObjectStorageOptions
             .Append(", Region = ").Append(Region)
             .Append(", AccessKey = ").Append(Redaction.Redact(AccessKey))
             .Append(", SecretKey = ").Append(Redaction.Redact(SecretKey))
+            .Append(", SessionToken = ").Append(Redaction.Redact(SessionToken))
             .Append(", ForcePathStyle = ").Append(ForcePathStyle)
             .Append(", EnsureBuckets = ").Append(EnsureBuckets)
             .Append(", HealthBucket = ").Append(HealthBucket)
             .Append(", ConditionalWrites = ").Append(ConditionalWrites)
-            .Append(", HealthProbeInterval = ").Append(HealthProbeInterval);
+            .Append(", HealthProbeInterval = ").Append(HealthProbeInterval)
+            .Append(", RequestTimeout = ").Append(RequestTimeout)
+            .Append(", MaxAttempts = ").Append(MaxAttempts)
+            .Append(", ProxyHost = ").Append(ProxyHost)
+            .Append(", ProxyPort = ").Append(ProxyPort)
+            .Append(", ProxyUserName = ").Append(Redaction.Redact(ProxyUserName))
+            .Append(", ProxyPassword = ").Append(Redaction.Redact(ProxyPassword));
         return true;
     }
 }

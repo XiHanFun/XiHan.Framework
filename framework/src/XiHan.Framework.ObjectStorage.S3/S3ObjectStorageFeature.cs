@@ -1,6 +1,7 @@
 // Copyright (c) XiHanFun Contributors. Licensed under the MIT License.
 // See the LICENSE file in the project root for full license text.
 
+using System.Net;
 using Amazon;
 using Amazon.Runtime;
 using Amazon.S3;
@@ -25,7 +26,7 @@ namespace XiHan.Framework.ObjectStorage.S3;
 /// S3 对象存储的能力包入口
 /// </summary>
 /// <remarks>
-/// 显式 Provider，提供 <c>objectstorage.blob@1</c>、<c>objectstorage.multipart@1</c> 与 <c>objectstorage.presign@1</c>（原生分片与预签名，客户端直连存储）。客户端由本特性按选项创建（应用已注册 <see cref="IAmazonS3"/> 时沿用），停止时释放。启动时探一次服务是否认条件写入（<see cref="S3ObjectStorageOptions.ConditionalWrites"/>，与健康项的首次探测并行，ADR-0089、ADR-0090、ADR-0093）：探明不认、被拒绝或探测桶不存在都启动失败；只有连不上照常启动，在后台按退避重试，探明之前不覆盖写入返回 <c>OBJECTSTORAGE_UNAVAILABLE_004</c>。健康项 <see cref="HealthName"/> 按 <see cref="S3ObjectStorageOptions.HealthProbeInterval"/> 周期对 <see cref="S3ObjectStorageOptions.HealthBucket"/> HEAD（没配时列桶），并即时并入条件写入的状态（数据 <c>conditionalWrites</c>；连不上 Degraded，不认以及启动之后才被拒绝或缺桶 Failed）。被要求提供分片上传或预签名时必须同时被选为 <c>objectstorage.blob</c>（缺省的三个契约落在同一存储上，<see cref="BlobStoreSelection"/>）。命名实例的 Provider <see cref="S3BlobStoreProvider"/>（名 <c>s3</c>）总是登记：能力全部被别的存储顶替，或没被选为 <c>objectstorage.blob</c> 而其余能力都只是兜底选出时，只登记它（被顶替时经 <see cref="ConfigureShadowed"/>），不建缺省客户端、不探测
+/// 显式 Provider，提供 <c>objectstorage.blob@1</c>、<c>objectstorage.multipart@1</c> 与 <c>objectstorage.presign@1</c>（原生分片与预签名，客户端直连存储）。客户端由本特性按选项创建（含会话令牌、请求超时、尝试次数与代理，ADR-0281；应用已注册 <see cref="IAmazonS3"/> 时沿用它，这几项不作用于它），停止时释放。启动时探一次服务是否认条件写入（<see cref="S3ObjectStorageOptions.ConditionalWrites"/>，与健康项的首次探测并行，ADR-0089、ADR-0090、ADR-0093）：探明不认、被拒绝或探测桶不存在都启动失败；只有连不上照常启动，在后台按退避重试，探明之前不覆盖写入返回 <c>OBJECTSTORAGE_UNAVAILABLE_004</c>。健康项 <see cref="HealthName"/> 按 <see cref="S3ObjectStorageOptions.HealthProbeInterval"/> 周期对 <see cref="S3ObjectStorageOptions.HealthBucket"/> HEAD（没配时列桶），并即时并入条件写入的状态（数据 <c>conditionalWrites</c>；连不上 Degraded，不认以及启动之后才被拒绝或缺桶 Failed）。被要求提供分片上传或预签名时必须同时被选为 <c>objectstorage.blob</c>（缺省的三个契约落在同一存储上，<see cref="BlobStoreSelection"/>）。命名实例的 Provider <see cref="S3BlobStoreProvider"/>（名 <c>s3</c>）总是登记：能力全部被别的存储顶替，或没被选为 <c>objectstorage.blob</c> 而其余能力都只是兜底选出时，只登记它（被顶替时经 <see cref="ConfigureShadowed"/>），不建缺省客户端、不探测
 /// </remarks>
 [ApiLevel(Stability.Stable, "5.0")]
 public sealed class S3ObjectStorageFeature : IHostedFeature, IShadowAwareFeature
@@ -34,7 +35,7 @@ public sealed class S3ObjectStorageFeature : IHostedFeature, IShadowAwareFeature
     /// 连接绑定名
     /// </summary>
     /// <remarks>
-    /// <c>objectstorage</c>，类型 <c>blob</c>（RFC-0016 的绑定类型词表），可选。主值是服务端点，属性 <c>region</c>、<c>accessKey</c>、<c>secretKey</c>、<c>forcePathStyle</c>
+    /// <c>objectstorage</c>，类型 <c>blob</c>（RFC-0016 的绑定类型词表），可选。主值是服务端点，属性 <c>region</c>、<c>accessKey</c>、<c>secretKey</c>、<c>sessionToken</c>、<c>forcePathStyle</c>
     /// </remarks>
     public const string ConnectionBinding = "objectstorage";
 
@@ -114,7 +115,7 @@ public sealed class S3ObjectStorageFeature : IHostedFeature, IShadowAwareFeature
         // 条件写入要在启动时探测，探测要有桶：没配就是装配错误，不等到启动再发现
         S3ConditionalWriteProbe.RequireBucket(options, S3ObjectStorageOptions.ConfigurationSection + ":");
         context.Services.AddSingleton(options);
-        // 应用自己注册的客户端优先（自定义凭据链、代理、重试策略）
+        // 应用自己注册的客户端优先（自定义凭据链等选项表达不了的）；这时选项里的会话令牌、超时、尝试次数与代理对它不起作用
         context.Services.TryAddSingleton<IAmazonS3>(_ => CreateClient(options));
         _providesMultipart = context.Node.IsSelectedFor(ObjectStorageCapabilities.Multipart);
         // 条件写入的状态是缺省实例与健康项共用的单例；提供分片上传时探测也核对分片的条件完成
@@ -196,8 +197,8 @@ public sealed class S3ObjectStorageFeature : IHostedFeature, IShadowAwareFeature
     /// 按选项创建客户端
     /// </summary>
     /// <remarks>
-    /// 有端点时指向兼容服务并只在服务端要求时计算 / 校验校验和（多数兼容服务不支持分块尾部校验和），没有端点时按区域访问 Amazon S3；没有密钥时走 SDK 默认凭据链
-    /// 缺省实例用它，端点是运维配的，不过出站地址策略（ADR-0117）
+    /// 有端点时指向兼容服务并只在服务端要求时计算 / 校验校验和（多数兼容服务不支持分块尾部校验和），没有端点时按区域访问 Amazon S3；没有密钥时走 SDK 默认凭据链，带会话令牌时是临时凭据；超时、尝试次数与代理只在选项里给了才设（ADR-0281）
+    /// 缺省实例用它，端点与代理都是运维配的，不过出站地址策略（ADR-0117）
     /// </remarks>
     internal static AmazonS3Client CreateClient(S3ObjectStorageOptions options) => CreateClient(options, null);
 
@@ -209,7 +210,20 @@ public sealed class S3ObjectStorageFeature : IHostedFeature, IShadowAwareFeature
     /// </remarks>
     internal static AmazonS3Client CreateClient(S3ObjectStorageOptions options, HttpClientFactory? httpClients)
     {
+        var config = CreateClientConfig(options, httpClients);
+        return CreateCredentials(options) is { } credentials ? new AmazonS3Client(credentials, config) : new AmazonS3Client(config);
+    }
+
+    /// <summary>
+    /// 按选项得出客户端的配置
+    /// </summary>
+    /// <remarks>
+    /// 端点或区域、路径风格，以及超时、尝试次数与代理（ADR-0281）。后三样只在选项里给了才写进配置：没给时一个字段都不碰，建出的客户端与没有这些选项时相同。选项是手工构造的也在这里核对成组的设置
+    /// </remarks>
+    internal static AmazonS3Config CreateClientConfig(S3ObjectStorageOptions options, HttpClientFactory? httpClients)
+    {
         ArgumentNullException.ThrowIfNull(options);
+        options.RequireComplete(string.Empty);
         var config = new AmazonS3Config { ForcePathStyle = options.ForcePathStyle, HttpClientFactory = httpClients };
         if (options.ServiceUrl is { } url)
         {
@@ -223,9 +237,49 @@ public sealed class S3ObjectStorageFeature : IHostedFeature, IShadowAwareFeature
             config.RegionEndpoint = RegionEndpoint.GetBySystemName(options.Region);
         }
 
-        return options.AccessKey is { } accessKey && options.SecretKey is { } secretKey
-            ? new AmazonS3Client(new BasicAWSCredentials(accessKey, secretKey), config)
-            : new AmazonS3Client(config);
+        if (options.RequestTimeout is { } timeout)
+        {
+            config.Timeout = timeout;
+        }
+
+        if (options.MaxAttempts is { } attempts)
+        {
+            // SDK 记的是首次之外的重试次数
+            config.MaxErrorRetry = attempts - 1;
+        }
+
+        if (options.ProxyHost is { } host && options.ProxyPort is { } port)
+        {
+            // SDK 把主机与端口直接拼成地址，IPv6 字面量要带方括号
+            config.ProxyHost = host.Contains(':', StringComparison.Ordinal) && !host.StartsWith('[') ? $"[{host}]" : host;
+            config.ProxyPort = port;
+            if (options.ProxyUserName is { } userName && options.ProxyPassword is { } password)
+            {
+                config.ProxyCredentials = new NetworkCredential(userName, password);
+            }
+        }
+
+        return config;
+    }
+
+    /// <summary>
+    /// 按选项得出客户端的凭据
+    /// </summary>
+    /// <remarks>
+    /// 带会话令牌的是临时凭据（ADR-0281）；两项密钥都没有时为 <see langword="null"/>，客户端走 SDK 的默认凭据链。只有令牌没有密钥在读取选项时已经拒绝
+    /// </remarks>
+    internal static AWSCredentials? CreateCredentials(S3ObjectStorageOptions options)
+    {
+        ArgumentNullException.ThrowIfNull(options);
+        options.RequireComplete(string.Empty);
+        if (options.AccessKey is not { } accessKey || options.SecretKey is not { } secretKey)
+        {
+            return null;
+        }
+
+        return options.SessionToken is { } sessionToken
+            ? new SessionAWSCredentials(accessKey, secretKey, sessionToken)
+            : new BasicAWSCredentials(accessKey, secretKey);
     }
 
     /// <summary>

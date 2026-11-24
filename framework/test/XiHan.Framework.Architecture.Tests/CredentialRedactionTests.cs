@@ -168,8 +168,8 @@ public sealed partial class CredentialRedactionTests
     /// 用户名属性名的正则
     /// </summary>
     /// <remarks>
-    /// <c>User</c>、<c>UserName</c>、<c>Username</c>：与凭据同在一个记录里时是登录凭据的身份那一半，一同遮蔽（RFC-0014 规则 2，ADR-0090）
+    /// <c>User</c>、<c>UserName</c>、<c>Username</c>：与凭据同在一个记录里时是登录凭据的身份那一半，一同遮蔽（RFC-0014 规则 2，ADR-0090）；代理的 <c>ProxyUserName</c> 与代理口令是另一对登录凭据，同此（ADR-0281）
     /// </remarks>
-    [GeneratedRegex("^(User|UserName|Username)$")]
+    [GeneratedRegex("^(User|UserName|Username|ProxyUserName)$")]
     private static partial Regex UserName();
 }

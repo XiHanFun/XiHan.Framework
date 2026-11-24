@@ -42,18 +42,33 @@ XiHan.Framework.ObjectStorage.S3.S3ObjectStorageOptions.HealthBucket.get -> stri
 XiHan.Framework.ObjectStorage.S3.S3ObjectStorageOptions.HealthBucket.init -> void
 XiHan.Framework.ObjectStorage.S3.S3ObjectStorageOptions.HealthProbeInterval.get -> System.TimeSpan
 XiHan.Framework.ObjectStorage.S3.S3ObjectStorageOptions.HealthProbeInterval.init -> void
+XiHan.Framework.ObjectStorage.S3.S3ObjectStorageOptions.MaxAttempts.get -> int?
+XiHan.Framework.ObjectStorage.S3.S3ObjectStorageOptions.MaxAttempts.init -> void
+XiHan.Framework.ObjectStorage.S3.S3ObjectStorageOptions.ProxyHost.get -> string?
+XiHan.Framework.ObjectStorage.S3.S3ObjectStorageOptions.ProxyHost.init -> void
+XiHan.Framework.ObjectStorage.S3.S3ObjectStorageOptions.ProxyPassword.get -> string?
+XiHan.Framework.ObjectStorage.S3.S3ObjectStorageOptions.ProxyPassword.init -> void
+XiHan.Framework.ObjectStorage.S3.S3ObjectStorageOptions.ProxyPort.get -> int?
+XiHan.Framework.ObjectStorage.S3.S3ObjectStorageOptions.ProxyPort.init -> void
+XiHan.Framework.ObjectStorage.S3.S3ObjectStorageOptions.ProxyUserName.get -> string?
+XiHan.Framework.ObjectStorage.S3.S3ObjectStorageOptions.ProxyUserName.init -> void
 XiHan.Framework.ObjectStorage.S3.S3ObjectStorageOptions.Region.get -> string!
 XiHan.Framework.ObjectStorage.S3.S3ObjectStorageOptions.Region.init -> void
+XiHan.Framework.ObjectStorage.S3.S3ObjectStorageOptions.RequestTimeout.get -> System.TimeSpan?
+XiHan.Framework.ObjectStorage.S3.S3ObjectStorageOptions.RequestTimeout.init -> void
 XiHan.Framework.ObjectStorage.S3.S3ObjectStorageOptions.S3ObjectStorageOptions() -> void
 XiHan.Framework.ObjectStorage.S3.S3ObjectStorageOptions.SecretKey.get -> string?
 XiHan.Framework.ObjectStorage.S3.S3ObjectStorageOptions.SecretKey.init -> void
 XiHan.Framework.ObjectStorage.S3.S3ObjectStorageOptions.ServiceUrl.get -> string?
 XiHan.Framework.ObjectStorage.S3.S3ObjectStorageOptions.ServiceUrl.init -> void
+XiHan.Framework.ObjectStorage.S3.S3ObjectStorageOptions.SessionToken.get -> string?
+XiHan.Framework.ObjectStorage.S3.S3ObjectStorageOptions.SessionToken.init -> void
 const XiHan.Framework.ObjectStorage.S3.S3BlobStoreProvider.AmbientCredentialsKey = "XiHan:ObjectStorage:S3:NamedInstancesUseAmbientCredentials" -> string!
 const XiHan.Framework.ObjectStorage.S3.S3BlobStoreProvider.ProviderName = "s3" -> string!
 const XiHan.Framework.ObjectStorage.S3.S3ObjectStorageFeature.ConnectionBinding = "objectstorage" -> string!
 const XiHan.Framework.ObjectStorage.S3.S3ObjectStorageFeature.HealthName = "objectstorage.s3.connection" -> string!
 const XiHan.Framework.ObjectStorage.S3.S3ObjectStorageOptions.ConfigurationSection = "XiHan:ObjectStorage:S3" -> string!
+const XiHan.Framework.ObjectStorage.S3.S3ObjectStorageOptions.MaxAttemptsLimit = 10 -> int
 override XiHan.Framework.ObjectStorage.S3.S3ObjectStorageOptions.Equals(object? obj) -> bool
 override XiHan.Framework.ObjectStorage.S3.S3ObjectStorageOptions.GetHashCode() -> int
 override XiHan.Framework.ObjectStorage.S3.S3ObjectStorageOptions.ToString() -> string!
@@ -62,3 +77,4 @@ static XiHan.Framework.ObjectStorage.S3.S3ObjectStorageOptions.FromConfiguration
 static XiHan.Framework.ObjectStorage.S3.S3ObjectStorageOptions.FromSettings(System.Collections.Generic.IReadOnlyDictionary<string!, string!>! settings) -> XiHan.Framework.ObjectStorage.S3.S3ObjectStorageOptions!
 static XiHan.Framework.ObjectStorage.S3.S3ObjectStorageOptions.operator !=(XiHan.Framework.ObjectStorage.S3.S3ObjectStorageOptions? left, XiHan.Framework.ObjectStorage.S3.S3ObjectStorageOptions? right) -> bool
 static XiHan.Framework.ObjectStorage.S3.S3ObjectStorageOptions.operator ==(XiHan.Framework.ObjectStorage.S3.S3ObjectStorageOptions? left, XiHan.Framework.ObjectStorage.S3.S3ObjectStorageOptions? right) -> bool
+static readonly XiHan.Framework.ObjectStorage.S3.S3ObjectStorageOptions.MaxRequestTimeout -> System.TimeSpan
