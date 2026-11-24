@@ -3,6 +3,7 @@
 
 using System.Globalization;
 using System.Text.Json;
+using XiHan.Framework.Testing;
 
 namespace XiHan.Framework.Primitives.Tests.Messages;
 
@@ -17,7 +18,7 @@ public sealed class MessageTemplateVectorTests
     /// <summary>
     /// 向量文件的内容
     /// </summary>
-    private static readonly TemplateVectors _vectors = ConformanceVectors.Load<TemplateVectors>("message-templates.json");
+    private static readonly TemplateVectors _vectors = SpecVectors.Read<TemplateVectors>("primitives", "message-templates.json");
 
     [Fact]
     public void IsValidKey_MatchesConformanceVectors()
@@ -113,7 +114,7 @@ public sealed class MessageTemplateVectorTests
     /// <remarks>
     /// <see cref="Strict"/> 为 <see langword="null"/> 表示严格格式化失败；<see cref="Locale"/> 为空时按不变文化
     /// </remarks>
-    private sealed record FormatVector(string Name, string Template, JsonElement Arguments, string? Locale, string Lenient, string? Strict);
+    private sealed record FormatVector(string Name, string Template, JsonElement Arguments, string Lenient, string? Strict, string? Locale = null);
 
     /// <summary>
     /// 一次 Describe

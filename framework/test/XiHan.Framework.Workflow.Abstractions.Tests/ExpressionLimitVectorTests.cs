@@ -3,6 +3,7 @@
 
 using System.Text.Json.Nodes;
 using XiHan.Framework.Primitives;
+using XiHan.Framework.Testing;
 using XiHan.Framework.Workflow.Abstractions.Expressions;
 using XiHan.Framework.Workflow.Abstractions.Values;
 
@@ -24,7 +25,7 @@ public sealed class ExpressionLimitVectorTests
     /// <summary>
     /// 向量文件的内容
     /// </summary>
-    private static readonly LimitVectors _vectors = ConformanceVectors.Load<LimitVectors>("expression-limits.json");
+    private static readonly LimitVectors _vectors = SpecVectors.Read<LimitVectors>("workflow", "expression-limits.json");
 
     /// <summary>
     /// 求值时的实例变量：文件里的变量加上几个很长的字符串
@@ -243,7 +244,7 @@ public sealed class ExpressionLimitVectorTests
         var covered = new SortedSet<string>(StringComparer.Ordinal);
         foreach (var file in _files)
         {
-            Collect(JsonNode.Parse(File.ReadAllText(Path.Combine(ConformanceVectors.Directory, file))), covered);
+            Collect(JsonNode.Parse(File.ReadAllText(SpecVectors.PathOf("workflow", file))), covered);
         }
 
         // 上限文件里的长度、嵌套、拼接与渲染用例不写消息键：不通过的那些各对应一个键

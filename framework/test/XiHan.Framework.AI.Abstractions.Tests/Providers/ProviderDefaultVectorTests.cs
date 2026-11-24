@@ -3,6 +3,7 @@
 
 using Microsoft.Extensions.Configuration;
 using XiHan.Framework.AI.Abstractions.Providers;
+using XiHan.Framework.Testing;
 
 namespace XiHan.Framework.AI.Abstractions.Tests.Providers;
 
@@ -17,7 +18,7 @@ public sealed class ProviderDefaultVectorTests
     /// <summary>
     /// 向量文件的内容
     /// </summary>
-    private static readonly ProviderDefaultVectors _vectors = ConformanceVectors.Load<ProviderDefaultVectors>("provider-defaults.json");
+    private static readonly ProviderDefaultVectors _vectors = SpecVectors.Read<ProviderDefaultVectors>("ai", "provider-defaults.json");
 
     [Fact]
     public void TheCodeAndTheMessageKeys_AreTheOnesInTheVectors()

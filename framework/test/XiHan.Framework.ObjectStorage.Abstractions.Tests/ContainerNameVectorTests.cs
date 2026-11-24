@@ -2,6 +2,7 @@
 // See the LICENSE file in the project root for full license text.
 
 using XiHan.Framework.ObjectStorage.Abstractions.Keys;
+using XiHan.Framework.Testing;
 
 namespace XiHan.Framework.ObjectStorage.Abstractions.Tests;
 
@@ -16,7 +17,7 @@ public sealed class ContainerNameVectorTests
     /// <summary>
     /// 向量文件的内容
     /// </summary>
-    private static readonly ContainerNameVectors _vectors = ConformanceVectors.Load<ContainerNameVectors>("container-names.json");
+    private static readonly ContainerNameVectors _vectors = SpecVectors.Read<ContainerNameVectors>("objectstorage", "container-names.json");
 
     [Fact]
     public void IsValid_AcceptsTheValidNames()

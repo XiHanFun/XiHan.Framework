@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.Text;
 using System.Text.Json;
 using Microsoft.Extensions.DependencyInjection;
+using XiHan.Framework.Kernel.Diagnostics;
 using XiHan.Framework.Kernel.Hosting;
 using XiHan.Framework.Kernel.Operations;
 using XiHan.Framework.Messaging.Abstractions.Envelopes;
@@ -43,7 +44,7 @@ public sealed class WasmPluginTracingTests
     [Fact]
     public async Task Invoke_IsRecordedUnderTheInvocationSpan_AndThePluginReceivesItAsItsParent()
     {
-        using var recorder = new SpanRecorder();
+        using var recorder = new SpanCapture([FrameworkDiagnostics.SourceName]);
         await using var host = await EchoWasmPluginHost.StartAsync(static b => b.UseFeature(new StubFeature(TestManifests.Create("xihan.app.traces"))
         {
             OnConfigure = static ctx => ctx.AddOperation<TraceOperation, PingRequest, PingResponse>(new OperationContract("traces.read"), PingJsonContext.Default.PingRequest, PingJsonContext.Default.PingResponse),
@@ -80,7 +81,7 @@ public sealed class WasmPluginTracingTests
     [Fact]
     public async Task EventDelivery_IsRecordedUnderTheDeliveryInvocation_WithoutAnOperationTag()
     {
-        using var recorder = new SpanRecorder();
+        using var recorder = new SpanCapture([FrameworkDiagnostics.SourceName]);
         await using var host = await EchoWasmPluginHost.StartAsync(static b => b.UseFeature<InMemoryMessagingFeature>());
         await using var scope = host.Services.CreateAsyncScope();
         var publisher = scope.ServiceProvider.GetRequiredService<IMessagePublisher>();

@@ -1,6 +1,8 @@
 // Copyright (c) XiHanFun Contributors. Licensed under the MIT License.
 // See the LICENSE file in the project root for full license text.
 
+using XiHan.Framework.Testing;
+
 namespace XiHan.Framework.Primitives.Tests.Invocation;
 
 /// <summary>
@@ -11,7 +13,7 @@ public sealed class TraceParentVectorTests
     /// <summary>
     /// 向量文件的内容
     /// </summary>
-    private static readonly TraceVectors _vectors = ConformanceVectors.Load<TraceVectors>("trace-context.json");
+    private static readonly TraceVectors _vectors = SpecVectors.Read<TraceVectors>("primitives", "trace-context.json");
 
     [Fact]
     public void TryParse_AcceptsTheValidTexts()

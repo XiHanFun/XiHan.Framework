@@ -3,6 +3,7 @@
 
 using XiHan.Framework.MultiTenancy.Abstractions.Sharding;
 using XiHan.Framework.MultiTenancy.Abstractions.Tenants;
+using XiHan.Framework.Testing;
 
 namespace XiHan.Framework.MultiTenancy.Abstractions.Tests;
 
@@ -22,7 +23,7 @@ public sealed class TenantIdVectorTests
     /// <summary>
     /// 向量文件的内容
     /// </summary>
-    private static readonly TenantIdVectors _vectors = ConformanceVectors.Load<TenantIdVectors>("tenant-ids.json");
+    private static readonly TenantIdVectors _vectors = SpecVectors.Read<TenantIdVectors>("multitenancy", "tenant-ids.json");
 
     [Fact]
     public void MaxLength_IsTheOneInTheVectors()

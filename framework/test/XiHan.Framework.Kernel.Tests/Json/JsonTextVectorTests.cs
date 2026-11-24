@@ -5,6 +5,7 @@ using System.Text;
 using System.Text.Json;
 using XiHan.Framework.Kernel.Operations;
 using XiHan.Framework.Kernel.Tests.Fixtures;
+using XiHan.Framework.Testing;
 
 namespace XiHan.Framework.Kernel.Tests.Json;
 
@@ -19,7 +20,7 @@ public sealed class JsonTextVectorTests
     /// <summary>
     /// 向量文件的内容
     /// </summary>
-    private static readonly JsonTextVectors _vectors = SpecVectors.Load<JsonTextVectors>("primitives/json-text.json");
+    private static readonly JsonTextVectors _vectors = SpecVectors.Read<JsonTextVectors>("primitives", "json-text.json");
 
     /// <summary>
     /// 请求是任意 JSON 的描述
@@ -61,5 +62,5 @@ public sealed class JsonTextVectorTests
     /// <summary>
     /// 一条样例：原文或十六进制字节、期望与重复成员的路径
     /// </summary>
-    private sealed record JsonTextCase(string Name, string? Text, string? Hex, string Expect, string? Path);
+    private sealed record JsonTextCase(string Name, string Expect, string? Text = null, string? Hex = null, string? Path = null);
 }

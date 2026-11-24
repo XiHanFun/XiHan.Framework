@@ -1,8 +1,8 @@
 // Copyright (c) XiHanFun Contributors. Licensed under the MIT License.
 // See the LICENSE file in the project root for full license text.
 
-using System.Text.Json;
 using XiHan.Framework.Configuration.Abstractions.Secrets;
+using XiHan.Framework.Testing;
 
 namespace XiHan.Framework.Configuration.Abstractions.Tests;
 
@@ -15,17 +15,9 @@ namespace XiHan.Framework.Configuration.Abstractions.Tests;
 public sealed class SecretNameVectorTests
 {
     /// <summary>
-    /// 向量文件的反序列化选项
-    /// </summary>
-    /// <remarks>
-    /// Web 默认（camelCase、不区分大小写）；对象模型里没有缺省值的构造参数必须出现在文件里，向量改了字段名时读取就失败，不会悄悄读成空
-    /// </remarks>
-    private static readonly JsonSerializerOptions _options = new(JsonSerializerDefaults.Web) { RespectRequiredConstructorParameters = true };
-
-    /// <summary>
     /// 向量文件的内容
     /// </summary>
-    private static readonly SecretNameVectors _vectors = Load();
+    private static readonly SecretNameVectors _vectors = SpecVectors.Read<SecretNameVectors>("configuration", "secret-names.json");
 
     [Fact]
     public void MaxLength_IsTheOneInTheVectors()
@@ -77,32 +69,6 @@ public sealed class SecretNameVectorTests
     /// <param name="name">名字</param>
     private static bool InAlphabet(string name)
         => name.Length is >= 1 and <= SecretName.MaxLength && char.IsAsciiLetterOrDigit(name[0]) && name.All(static c => char.IsAsciiLetterOrDigit(c) || c is '.' or '_' or '/' or '-');
-
-    /// <summary>
-    /// 读向量文件
-    /// </summary>
-    private static SecretNameVectors Load()
-    {
-        var path = Path.Combine(LocateRoot(), "spec", "conformance", "vectors", "configuration", "secret-names.json");
-        using var stream = File.OpenRead(path);
-        return JsonSerializer.Deserialize<SecretNameVectors>(stream, _options) ?? throw new InvalidOperationException($"Vector file '{path}' is empty.");
-    }
-
-    /// <summary>
-    /// 从测试输出目录向上查找框架工作区根（以 <c>XiHan.Framework.slnx</c> 为标记）
-    /// </summary>
-    private static string LocateRoot()
-    {
-        for (var directory = new DirectoryInfo(AppContext.BaseDirectory); directory is not null; directory = directory.Parent)
-        {
-            if (File.Exists(Path.Combine(directory.FullName, "XiHan.Framework.slnx")))
-            {
-                return directory.FullName;
-            }
-        }
-
-        throw new InvalidOperationException("The framework workspace root (the directory of 'XiHan.Framework.slnx') was not found above the test output directory.");
-    }
 
     /// <summary>
     /// 向量文件的对象模型

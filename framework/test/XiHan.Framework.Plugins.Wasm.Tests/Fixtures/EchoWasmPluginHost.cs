@@ -26,12 +26,7 @@ internal static class EchoWasmPluginHost
     /// <summary>
     /// 示例插件目录（含清单与 echo.wasm）
     /// </summary>
-    public static string Directory { get; } = Path.Combine(LocateRoot(), "samples", "EchoWasmPlugin", "plugin");
-
-    /// <summary>
-    /// 规范的向量目录
-    /// </summary>
-    public static string VectorsDirectory { get; } = Path.Combine(LocateRoot(), "spec", "conformance", "vectors", "plugin");
+    public static string Directory { get; } = Path.Combine(FrameworkWorkspace.Root, "samples", "EchoWasmPlugin", "plugin");
 
     /// <summary>
     /// 宿主配置：插件目录、授予的权限、短健康轮询与细 epoch 粒度
@@ -98,24 +93,5 @@ internal static class EchoWasmPluginHost
         }
 
         return condition();
-    }
-
-    /// <summary>
-    /// 向上找到含解决方案文件的目录
-    /// </summary>
-    private static string LocateRoot()
-    {
-        var directory = new DirectoryInfo(AppContext.BaseDirectory);
-        while (directory is not null)
-        {
-            if (File.Exists(Path.Combine(directory.FullName, "XiHan.Framework.slnx")))
-            {
-                return directory.FullName;
-            }
-
-            directory = directory.Parent;
-        }
-
-        throw new InvalidOperationException("The solution root was not found.");
     }
 }

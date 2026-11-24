@@ -38,25 +38,24 @@ public sealed class WebAuthnVectorTests
     private const string Origin = "https://example.com";
 
     /// <summary>
-    /// 向量文件的序列化选项：camelCase、缩进、不写空值
+    /// 重新生成时写出向量文件的选项：camelCase、缩进、不写空值
     /// </summary>
+    /// <remarks>
+    /// 读取经 <see cref="SpecVectors"/>，是严格的：空值不写出，所以对象模型里可空的成员都带缺省值
+    /// </remarks>
     private static readonly JsonSerializerOptions _json = new(JsonSerializerDefaults.Web) { WriteIndented = true, DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull };
-
-    /// <summary>
-    /// 向量文件的路径
-    /// </summary>
-    private static string VectorPath => Path.Combine(LocateRoot(), "spec", "conformance", "vectors", "security", "webauthn.json");
 
     [Fact]
     public void Vectors_ReplayAgainstTheReferenceImplementation()
     {
         if (Environment.GetEnvironmentVariable(UpdateVariable) == "1")
         {
-            Directory.CreateDirectory(Path.GetDirectoryName(VectorPath)!);
-            File.WriteAllText(VectorPath, JsonSerializer.Serialize(Generate(), _json) + "\n");
+            var path = SpecVectors.PathOf("security", "webauthn.json");
+            Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+            File.WriteAllText(path, JsonSerializer.Serialize(Generate(), _json) + "\n");
         }
 
-        var file = JsonSerializer.Deserialize<VectorFile>(File.ReadAllText(VectorPath), _json)!;
+        var file = SpecVectors.Read<VectorFile>("security", "webauthn.json");
         var ceremonies = new WebAuthnCeremonies(new WebAuthnOptions
         {
             RelyingPartyId = file.RelyingParty.Id,
@@ -169,7 +168,7 @@ public sealed class WebAuthnVectorTests
         {
             var challenge = Challenge();
             authenticator.SignCount = signCount;
-            authentication.Add(new AuthenticationVector(name, challenge, credential, null, authenticator.Authenticate(tamper(Ceremony(challenge) with { UserHandle = handle })), expected, error));
+            authentication.Add(new AuthenticationVector(name, challenge, credential, authenticator.Authenticate(tamper(Ceremony(challenge) with { UserHandle = handle })), null, expected, error));
         }
 
         Authenticated("es256-uncounted", es256, stored, 0, static c => c, new ExpectedAssertion(0, true, true), null);
@@ -190,11 +189,11 @@ public sealed class WebAuthnVectorTests
         es256.SignCount = 0;
         var victim = Base64Url.EncodeToString(Encoding.UTF8.GetBytes("user-0003"));
         var ownedChallenge = Challenge();
-        authentication.Add(new AuthenticationVector("credential-of-another-user", ownedChallenge, stored, victim, es256.Authenticate(Ceremony(ownedChallenge)), null, new ExpectedError(SecurityErrors.WebAuthnVerificationFailed, "user_handle", null)));
+        authentication.Add(new AuthenticationVector("credential-of-another-user", ownedChallenge, stored, es256.Authenticate(Ceremony(ownedChallenge)), victim, null, new ExpectedError(SecurityErrors.WebAuthnVerificationFailed, "user_handle", null)));
         var identifiedChallenge = Challenge();
-        authentication.Add(new AuthenticationVector("identified-user-without-handle", identifiedChallenge, stored, handle, es256.Authenticate(Ceremony(identifiedChallenge)), new ExpectedAssertion(0, true, true), null));
+        authentication.Add(new AuthenticationVector("identified-user-without-handle", identifiedChallenge, stored, es256.Authenticate(Ceremony(identifiedChallenge)), handle, new ExpectedAssertion(0, true, true), null));
         var usernamelessChallenge = Challenge();
-        authentication.Add(new AuthenticationVector("usernameless-without-handle", usernamelessChallenge, stored, null, es256.Authenticate(Ceremony(usernamelessChallenge)), null, new ExpectedError(SecurityErrors.WebAuthnVerificationFailed, "user_handle", null)));
+        authentication.Add(new AuthenticationVector("usernameless-without-handle", usernamelessChallenge, stored, es256.Authenticate(Ceremony(usernamelessChallenge)), null, null, new ExpectedError(SecurityErrors.WebAuthnVerificationFailed, "user_handle", null)));
 
         return new VectorFile(new VectorRelyingParty(RelyingPartyId, [Origin], "required"), registration, authentication);
     }
@@ -306,25 +305,6 @@ public sealed class WebAuthnVectorTests
     }
 
     /// <summary>
-    /// 从测试输出目录向上找框架工作区根（以 <c>XiHan.Framework.slnx</c> 为标记）
-    /// </summary>
-    private static string LocateRoot()
-    {
-        var directory = new DirectoryInfo(AppContext.BaseDirectory);
-        while (directory is not null)
-        {
-            if (File.Exists(Path.Combine(directory.FullName, "XiHan.Framework.slnx")))
-            {
-                return directory.FullName;
-            }
-
-            directory = directory.Parent;
-        }
-
-        throw new InvalidOperationException("Could not locate 'XiHan.Framework.slnx'.");
-    }
-
-    /// <summary>
     /// 向量文件
     /// </summary>
     /// <param name="RelyingParty">依赖方</param>
@@ -348,7 +328,7 @@ public sealed class WebAuthnVectorTests
     /// <param name="Response">浏览器交回的响应</param>
     /// <param name="Expected">成功时的凭据</param>
     /// <param name="Error">失败时的错误</param>
-    private sealed record RegistrationVector(string Name, string Challenge, WebAuthnRegistrationResponse Response, ExpectedRegistration? Expected, ExpectedError? Error);
+    private sealed record RegistrationVector(string Name, string Challenge, WebAuthnRegistrationResponse Response, ExpectedRegistration? Expected = null, ExpectedError? Error = null);
 
     /// <summary>
     /// 一条认证样例
@@ -356,11 +336,21 @@ public sealed class WebAuthnVectorTests
     /// <param name="Name">名称</param>
     /// <param name="Challenge">依赖方保存的挑战</param>
     /// <param name="Credential">存储的凭据</param>
-    /// <param name="ExpectedUserHandle">登录前已认出的用户；免用户名的流程为空（ADR-0179）</param>
     /// <param name="Response">浏览器交回的响应</param>
+    /// <param name="ExpectedUserHandle">登录前已认出的用户；免用户名的流程为空（ADR-0179）</param>
     /// <param name="Expected">成功时的结果</param>
     /// <param name="Error">失败时的错误</param>
-    private sealed record AuthenticationVector(string Name, string Challenge, WebAuthnStoredCredential Credential, string? ExpectedUserHandle, WebAuthnAuthenticationResponse Response, ExpectedAssertion? Expected, ExpectedError? Error);
+    /// <remarks>
+    /// 写出时省略空值、读取又是严格的，可空的成员就得带缺省值，参数只能排在响应之后；成员的写出次序由 <see cref="JsonPropertyOrderAttribute"/> 定，期望用户照旧写在响应之前
+    /// </remarks>
+    private sealed record AuthenticationVector(
+        string Name,
+        string Challenge,
+        WebAuthnStoredCredential Credential,
+        [property: JsonPropertyOrder(1)] WebAuthnAuthenticationResponse Response,
+        string? ExpectedUserHandle = null,
+        [property: JsonPropertyOrder(1)] ExpectedAssertion? Expected = null,
+        [property: JsonPropertyOrder(1)] ExpectedError? Error = null);
 
     /// <summary>
     /// 注册成功时的期望
@@ -389,5 +379,5 @@ public sealed class WebAuthnVectorTests
     /// <param name="Code">错误码</param>
     /// <param name="Reason">参数 <c>reason</c></param>
     /// <param name="Algorithm">参数 <c>algorithm</c></param>
-    private sealed record ExpectedError(string Code, string? Reason, long? Algorithm);
+    private sealed record ExpectedError(string Code, string? Reason = null, long? Algorithm = null);
 }

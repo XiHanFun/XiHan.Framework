@@ -1,7 +1,6 @@
 // Copyright (c) XiHanFun Contributors. Licensed under the MIT License.
 // See the LICENSE file in the project root for full license text.
 
-using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Net;
 using Microsoft.AspNetCore.Builder;
@@ -18,7 +17,7 @@ namespace XiHan.Framework.Hosting.AspNetCore.Tests;
 /// HTTP 载体的追踪标志与请求 Activity
 /// </summary>
 /// <remarks>
-/// <c>traceparent</c> 的采样标志与 ASP.NET Core 请求 Activity（RFC-0003 规则 7）。监听内核与 ASP.NET Core 的源，按 OpenTelemetry 的 ParentBased 规则采样（有父级随父级，根一律采样），在 Activity 开始时记下，按 trace-id 找本用例的 Activity
+/// <c>traceparent</c> 的采样标志与 ASP.NET Core 请求 Activity（RFC-0003 规则 7）。<see cref="SpanCapture"/> 监听内核与 ASP.NET Core 的源，按它缺省的 ParentBased 规则采样（有父级随父级，根一律采样），从开始的 Activity 里按 trace-id 找本用例的
 /// </remarks>
 public sealed class HttpTracingTests
 {
@@ -52,24 +51,6 @@ public sealed class HttpTracingTests
     }
 
     /// <summary>
-    /// 开始监听，开始的 Activity 记进 <paramref name="started"/>
-    /// </summary>
-    private static ActivityListener Listen(ConcurrentQueue<Activity> started)
-    {
-        var listener = new ActivityListener
-        {
-            ShouldListenTo = static source => source.Name is FrameworkDiagnostics.SourceName or AspNetCoreSource,
-            Sample = static (ref ActivityCreationOptions<ActivityContext> options) =>
-                options.Parent.TraceId == default || (options.Parent.TraceFlags & ActivityTraceFlags.Recorded) != 0
-                    ? ActivitySamplingResult.AllDataAndRecorded
-                    : ActivitySamplingResult.None,
-            ActivityStarted = started.Enqueue,
-        };
-        ActivitySource.AddActivityListener(listener);
-        return listener;
-    }
-
-    /// <summary>
     /// 用 TestServer 启动只装配捕获中间件的应用
     /// </summary>
     private static async Task<(WebApplication App, HttpClient Client, Captured Captured)> StartAsync()
@@ -92,8 +73,7 @@ public sealed class HttpTracingTests
     [Fact]
     public async Task Traceparent_KeepsItsFlags_AndAnUnsampledUpstreamStaysUnsampled()
     {
-        var started = new ConcurrentQueue<Activity>();
-        using var listener = Listen(started);
+        using var spans = new SpanCapture([FrameworkDiagnostics.SourceName, AspNetCoreSource]);
         var (app, client, captured) = await StartAsync();
         await using var _ = app;
 
@@ -111,7 +91,7 @@ public sealed class HttpTracingTests
         Assert.Equal(unsampledTrace, captured.Context!.TraceId);
         Assert.Equal("00f067aa0ba902b7", captured.Context.SpanId);
         Assert.Equal(ActivityTraceFlags.None, captured.Context.TraceFlags);
-        Assert.DoesNotContain(started, a => a.OperationName == "xihan.invoke" && a.TraceId.ToHexString() == unsampledTrace && a.Recorded);
+        Assert.DoesNotContain(spans.Started, a => a.OperationName == "xihan.invoke" && a.TraceId.ToHexString() == unsampledTrace && a.Recorded);
 
         // 上游采样（-01）：xihan.invoke 在同一条链路上采样
         using (var sampled = new HttpRequestMessage(HttpMethod.Get, "/ok"))
@@ -121,14 +101,13 @@ public sealed class HttpTracingTests
         }
 
         Assert.Equal(ActivityTraceFlags.Recorded, captured.Context.TraceFlags);
-        Assert.Contains(started, a => a.OperationName == "xihan.invoke" && a.TraceId.ToHexString() == sampledTrace && a.Recorded);
+        Assert.Contains(spans.Started, a => a.OperationName == "xihan.invoke" && a.TraceId.ToHexString() == sampledTrace && a.Recorded);
     }
 
     [Fact]
     public async Task WithoutTraceparent_TheInvocationJoinsTheAspNetCoreRequestActivity()
     {
-        var started = new ConcurrentQueue<Activity>();
-        using var listener = Listen(started);
+        using var spans = new SpanCapture([FrameworkDiagnostics.SourceName, AspNetCoreSource]);
         var (app, client, captured) = await StartAsync();
         await using var _ = app;
 
@@ -136,10 +115,10 @@ public sealed class HttpTracingTests
 
         // 调用上下文的 trace-id 就是 ASP.NET Core 请求 Activity 的，xihan.invoke 是它的子 Span，不再另起一条链路
         var traceId = captured.Context!.TraceId;
-        var request = Assert.Single(started, a => a.Source.Name == AspNetCoreSource && a.TraceId.ToHexString() == traceId);
+        var request = Assert.Single(spans.Started, a => a.Source.Name == AspNetCoreSource && a.TraceId.ToHexString() == traceId);
         Assert.Equal(request.SpanId.ToHexString(), captured.Context.SpanId);
         Assert.Equal(ActivityTraceFlags.Recorded, captured.Context.TraceFlags);
-        var invoke = Assert.Single(started, a => a.OperationName == "xihan.invoke" && a.TraceId.ToHexString() == traceId);
+        var invoke = Assert.Single(spans.Started, a => a.OperationName == "xihan.invoke" && a.TraceId.ToHexString() == traceId);
         Assert.Equal(request.SpanId, invoke.ParentSpanId);
         Assert.True(invoke.Recorded);
     }

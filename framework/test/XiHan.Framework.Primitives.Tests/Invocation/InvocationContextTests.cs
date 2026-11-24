@@ -1,6 +1,9 @@
 // Copyright (c) XiHanFun Contributors. Licensed under the MIT License.
 // See the LICENSE file in the project root for full license text.
 
+using System.Text.Json;
+using XiHan.Framework.Testing;
+
 namespace XiHan.Framework.Primitives.Tests.Invocation;
 
 /// <summary>
@@ -24,7 +27,11 @@ public sealed class InvocationContextTests
     /// <summary>
     /// <c>baggage-keys.json</c> 向量：格式合法、格式非法与已登记的键
     /// </summary>
-    private sealed record BaggageVectors(string[] WellFormed, string[] IllFormed, string[] Registered);
+    /// <param name="WellFormed">格式合法的键</param>
+    /// <param name="IllFormed">格式非法的键</param>
+    /// <param name="Registered">已登记的键</param>
+    /// <param name="Values">值能否进入调用上下文，由 <see cref="BaggageValueVectorTests"/> 回放</param>
+    private sealed record BaggageVectors(string[] WellFormed, string[] IllFormed, string[] Registered, JsonElement Values);
 
     /// <summary>
     /// 不提供任何服务的提供器，满足上下文的必填成员
@@ -60,7 +67,7 @@ public sealed class InvocationContextTests
     [Fact]
     public void BaggageKeys_MatchConformanceVectors()
     {
-        var vectors = ConformanceVectors.Load<BaggageVectors>("baggage-keys.json");
+        var vectors = SpecVectors.Read<BaggageVectors>("primitives", "baggage-keys.json");
 
         Assert.All(vectors.WellFormed, static key => Assert.True(BaggageKeys.IsWellFormed(key), key));
         Assert.All(vectors.IllFormed, static key => Assert.False(BaggageKeys.IsWellFormed(key), key));

@@ -9,6 +9,7 @@ using XiHan.Framework.Messaging.Abstractions.Envelopes;
 using XiHan.Framework.Messaging.Abstractions.Handlers;
 using XiHan.Framework.Messaging.Abstractions.Publishing;
 using XiHan.Framework.Primitives;
+using XiHan.Framework.Testing;
 
 namespace XiHan.Framework.Messaging.Abstractions.Tests;
 
@@ -36,9 +37,9 @@ public sealed class TraceParentPublishingTests : IDisposable
     private readonly ActivitySource _source = new($"xihan.tests.traceparent.{Guid.NewGuid():N}");
 
     /// <summary>
-    /// 只监听 <see cref="_source"/> 的监听器，采样结果由 <see cref="_sampling"/> 决定
+    /// 只监听 <see cref="_source"/> 的收集器，采样结果由 <see cref="_sampling"/> 决定
     /// </summary>
-    private readonly ActivityListener _listener;
+    private readonly SpanCapture _spans;
 
     /// <summary>
     /// 监听器给出的采样结果
@@ -46,22 +47,15 @@ public sealed class TraceParentPublishingTests : IDisposable
     private ActivitySamplingResult _sampling = ActivitySamplingResult.AllDataAndRecorded;
 
     /// <summary>
-    /// 登记只监听本测试来源的监听器
+    /// 开始只监听本测试来源
     /// </summary>
     public TraceParentPublishingTests()
-    {
-        _listener = new ActivityListener
-        {
-            ShouldListenTo = source => ReferenceEquals(source, _source),
-            Sample = (ref ActivityCreationOptions<ActivityContext> _) => _sampling,
-        };
-        ActivitySource.AddActivityListener(_listener);
-    }
+        => _spans = new SpanCapture([_source.Name]) { Sampler = (ref ActivityCreationOptions<ActivityContext> _) => _sampling };
 
     /// <inheritdoc />
     public void Dispose()
     {
-        _listener.Dispose();
+        _spans.Dispose();
         _source.Dispose();
     }
 

@@ -2,6 +2,7 @@
 // See the LICENSE file in the project root for full license text.
 
 using XiHan.Framework.ObjectStorage.Abstractions.Multipart;
+using XiHan.Framework.Testing;
 
 namespace XiHan.Framework.ObjectStorage.Abstractions.Tests;
 
@@ -16,7 +17,7 @@ public sealed class MultipartPartVectorTests
     /// <summary>
     /// 向量文件的内容
     /// </summary>
-    private static readonly MultipartPartVectors _vectors = ConformanceVectors.Load<MultipartPartVectors>("multipart-parts.json");
+    private static readonly MultipartPartVectors _vectors = SpecVectors.Read<MultipartPartVectors>("objectstorage", "multipart-parts.json");
 
     [Fact]
     public void TheLimitsAndTheCode_AreTheOnesInTheVectors()

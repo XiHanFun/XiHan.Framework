@@ -2,6 +2,7 @@
 // See the LICENSE file in the project root for full license text.
 
 using XiHan.Framework.ObjectStorage.Abstractions.Stores;
+using XiHan.Framework.Testing;
 
 namespace XiHan.Framework.ObjectStorage.Abstractions.Tests;
 
@@ -16,7 +17,7 @@ public sealed class BlobStoreDefinitionVectorTests
     /// <summary>
     /// 向量文件的内容
     /// </summary>
-    private static readonly StoreDefinitionVectors _vectors = ConformanceVectors.Load<StoreDefinitionVectors>("store-definitions.json");
+    private static readonly StoreDefinitionVectors _vectors = SpecVectors.Read<StoreDefinitionVectors>("objectstorage", "store-definitions.json");
 
     [Fact]
     public void IsValidName_AcceptsTheValidNames()

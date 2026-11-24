@@ -7,6 +7,7 @@ using XiHan.Framework.Kernel.Diagnostics;
 using XiHan.Framework.Kernel.Hosting;
 using XiHan.Framework.Kernel.Tests.Fixtures;
 using XiHan.Framework.Primitives;
+using XiHan.Framework.Testing;
 
 namespace XiHan.Framework.Kernel.Tests.Diagnostics;
 
@@ -48,20 +49,14 @@ public sealed class ObserveTracingTests
     /// <remarks>
     /// 有父级时随父级的采样位，没有父级时按 <paramref name="keepRoots"/>
     /// </remarks>
-    private static ActivityListener Listen(bool keepRoots)
+    private static SpanCapture Listen(bool keepRoots) => new([FrameworkDiagnostics.SourceName, HostSourceName])
     {
-        var listener = new ActivityListener
+        Sampler = (ref ActivityCreationOptions<ActivityContext> options) =>
         {
-            ShouldListenTo = static source => source.Name is FrameworkDiagnostics.SourceName or HostSourceName,
-            Sample = (ref ActivityCreationOptions<ActivityContext> options) =>
-            {
-                var sampled = options.Parent.TraceId == default ? keepRoots : (options.Parent.TraceFlags & ActivityTraceFlags.Recorded) != 0;
-                return sampled ? ActivitySamplingResult.AllDataAndRecorded : ActivitySamplingResult.None;
-            },
-        };
-        ActivitySource.AddActivityListener(listener);
-        return listener;
-    }
+            var sampled = options.Parent.TraceId == default ? keepRoots : (options.Parent.TraceFlags & ActivityTraceFlags.Recorded) != 0;
+            return sampled ? ActivitySamplingResult.AllDataAndRecorded : ActivitySamplingResult.None;
+        },
+    };
 
     /// <summary>
     /// 启动只有内核的应用

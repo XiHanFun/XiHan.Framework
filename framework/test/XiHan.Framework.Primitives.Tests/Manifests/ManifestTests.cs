@@ -2,6 +2,7 @@
 // See the LICENSE file in the project root for full license text.
 
 using XiHan.Framework.Primitives.Manifests;
+using XiHan.Framework.Testing;
 
 namespace XiHan.Framework.Primitives.Tests.Manifests;
 
@@ -46,7 +47,7 @@ public sealed class ManifestTests
     [Fact]
     public void CapabilityRequirement_Parse_MatchesConformanceVectors()
     {
-        var vectors = ConformanceVectors.Load<RequirementVectors>("capability-requirements.json");
+        var vectors = SpecVectors.Read<RequirementVectors>("primitives", "capability-requirements.json");
 
         foreach (var expected in vectors.Valid)
         {

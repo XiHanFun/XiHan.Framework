@@ -18,7 +18,7 @@ public sealed class LocaleNegotiationVectorTests
     /// <summary>
     /// 向量文件的内容
     /// </summary>
-    private static readonly NegotiationVectors _vectors = ConformanceVectors.Load<NegotiationVectors>("locale-negotiation.json");
+    private static readonly NegotiationVectors _vectors = SpecVectors.Read<NegotiationVectors>("localization", "locale-negotiation.json");
 
     [Fact]
     public void Negotiate_PicksTheLocaleOfEveryCase()

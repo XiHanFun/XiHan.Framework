@@ -3,6 +3,7 @@
 
 using XiHan.Framework.ObjectStorage.Abstractions.Blobs;
 using XiHan.Framework.ObjectStorage.Abstractions.Signing;
+using XiHan.Framework.Testing;
 
 namespace XiHan.Framework.ObjectStorage.Abstractions.Tests;
 
@@ -17,7 +18,7 @@ public sealed class BlobContentTypeVectorTests
     /// <summary>
     /// 向量文件的内容
     /// </summary>
-    private static readonly ContentTypeVectors _vectors = ConformanceVectors.Load<ContentTypeVectors>("blob-content-types.json");
+    private static readonly ContentTypeVectors _vectors = SpecVectors.Read<ContentTypeVectors>("objectstorage", "blob-content-types.json");
 
     [Fact]
     public void TheLimitAndTheDefault_AreTheOnesInTheVectors()

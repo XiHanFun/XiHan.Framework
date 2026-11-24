@@ -1,6 +1,8 @@
 // Copyright (c) XiHanFun Contributors. Licensed under the MIT License.
 // See the LICENSE file in the project root for full license text.
 
+using XiHan.Framework.Testing;
+
 namespace XiHan.Framework.Workflow.Abstractions.Tests;
 
 /// <summary>
@@ -14,7 +16,7 @@ public sealed class WorkflowKeywordVectorTests
     /// <summary>
     /// 向量文件的内容
     /// </summary>
-    private static readonly KeywordVectors _vectors = ConformanceVectors.Load<KeywordVectors>("keyword-matching.json");
+    private static readonly KeywordVectors _vectors = SpecVectors.Read<KeywordVectors>("workflow", "keyword-matching.json");
 
     [Fact]
     public void FieldSeparator_IsTheOneInTheVectors()

@@ -1,6 +1,7 @@
 // Copyright (c) XiHanFun Contributors. Licensed under the MIT License.
 // See the LICENSE file in the project root for full license text.
 
+using XiHan.Framework.Testing;
 using XiHan.Framework.Workflow.Abstractions.Definitions;
 using XiHan.Framework.Workflow.Abstractions.Instances;
 
@@ -17,7 +18,7 @@ public sealed class WorkflowStatusOrderVectorTests
     /// <summary>
     /// 向量文件的内容
     /// </summary>
-    private static readonly StatusOrderVectors _vectors = ConformanceVectors.Load<StatusOrderVectors>("status-order.json");
+    private static readonly StatusOrderVectors _vectors = SpecVectors.Read<StatusOrderVectors>("workflow", "status-order.json");
 
     [Fact]
     public void DefinitionStatuses_SortInTheOrderOfTheVectors()

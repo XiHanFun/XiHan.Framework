@@ -3,6 +3,7 @@
 
 using System.Text;
 using XiHan.Framework.ObjectStorage.Abstractions.Signing;
+using XiHan.Framework.Testing;
 
 namespace XiHan.Framework.ObjectStorage.Abstractions.Tests;
 
@@ -17,7 +18,7 @@ public sealed class DownloadFileNameVectorTests
     /// <summary>
     /// 向量文件的内容
     /// </summary>
-    private static readonly DownloadFileNameVectors _vectors = ConformanceVectors.Load<DownloadFileNameVectors>("download-file-names.json");
+    private static readonly DownloadFileNameVectors _vectors = SpecVectors.Read<DownloadFileNameVectors>("objectstorage", "download-file-names.json");
 
     [Fact]
     public void MaxBytes_IsTheOneInTheVectors()

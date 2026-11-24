@@ -12,7 +12,6 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using XiHan.Framework.Kernel;
 using XiHan.Framework.Kernel.Hosting;
-using XiHan.Framework.Plugins.OutOfProcess.Tests.Fixtures;
 using XiHan.Framework.Plugins.Protocol;
 using XiHan.Framework.Plugins.Protocol.Handshake;
 using XiHan.Framework.Plugins.Protocol.Hosting;
@@ -36,7 +35,7 @@ public sealed class ProtocolVectorTests
     [Fact]
     public void HandshakeLines_FollowTheVectors()
     {
-        using var document = JsonDocument.Parse(File.ReadAllText(Path.Combine(EchoPluginHost.VectorsDirectory, "handshake-lines.json")));
+        using var document = JsonDocument.Parse(File.ReadAllText(SpecVectors.PathOf("plugin", "handshake-lines.json")));
         foreach (var valid in document.RootElement.GetProperty("valid").EnumerateArray())
         {
             var line = valid.GetProperty("line").GetString();
@@ -55,7 +54,7 @@ public sealed class ProtocolVectorTests
     [Fact]
     public void ProtocolVersions_FollowTheVectors()
     {
-        using var document = JsonDocument.Parse(File.ReadAllText(Path.Combine(EchoPluginHost.VectorsDirectory, "protocol-versions.json")));
+        using var document = JsonDocument.Parse(File.ReadAllText(SpecVectors.PathOf("plugin", "protocol-versions.json")));
         foreach (var @case in document.RootElement.GetProperty("cases").EnumerateArray())
         {
             var host = @case.GetProperty("host").EnumerateArray().Select(static v => v.GetUInt32());
@@ -99,7 +98,7 @@ public sealed class ProtocolVectorTests
     [Fact]
     public void HostAddresses_FollowTheVectors()
     {
-        using var document = JsonDocument.Parse(File.ReadAllText(Path.Combine(EchoPluginHost.VectorsDirectory, "host-addresses.json")));
+        using var document = JsonDocument.Parse(File.ReadAllText(SpecVectors.PathOf("plugin", "host-addresses.json")));
         foreach (var valid in document.RootElement.GetProperty("valid").EnumerateArray())
         {
             var value = valid.GetProperty("value").GetString();
@@ -144,7 +143,7 @@ public sealed class ProtocolVectorTests
     [Fact]
     public void Deadlines_FollowTheVectors()
     {
-        using var document = JsonDocument.Parse(File.ReadAllText(Path.Combine(EchoPluginHost.VectorsDirectory, "deadlines.json")));
+        using var document = JsonDocument.Parse(File.ReadAllText(SpecVectors.PathOf("plugin", "deadlines.json")));
         // 文法本身由原语 DeadlineText 回放（原语层的测试）；这里走插件协议自己的读写点：元数据的 deadline 怎样成为生效的截止时间、上下文的截止时间怎样写进元数据
         var invalidTexts = document.RootElement.GetProperty("invalid").EnumerateArray().Select(static text => text.GetString()).ToList();
         Assert.NotEmpty(invalidTexts);
@@ -194,7 +193,7 @@ public sealed class ProtocolVectorTests
     [Fact]
     public void PluginMessages_MatchTheConstantsAndTheEnglishCatalog()
     {
-        using var document = JsonDocument.Parse(File.ReadAllText(Path.Combine(EchoPluginHost.VectorsDirectory, "plugin-messages.json")));
+        using var document = JsonDocument.Parse(File.ReadAllText(SpecVectors.PathOf("plugin", "plugin-messages.json")));
         var keys = Constants(typeof(PluginMessages)).ToHashSet(StringComparer.Ordinal);
         var codes = Constants(typeof(PluginErrors)).Append(KernelErrors.UnknownOperation).ToHashSet(StringComparer.Ordinal);
         var failures = new List<string>();
@@ -233,7 +232,7 @@ public sealed class ProtocolVectorTests
     [Fact]
     public void PluginMessages_FixedReasons_AreWhatTheHostWrites()
     {
-        using var document = JsonDocument.Parse(File.ReadAllText(Path.Combine(EchoPluginHost.VectorsDirectory, "plugin-messages.json")));
+        using var document = JsonDocument.Parse(File.ReadAllText(SpecVectors.PathOf("plugin", "plugin-messages.json")));
         var reasons = document.RootElement.GetProperty("reasons").EnumerateArray().Select(static r => r.GetProperty("reason").GetString()!).ToHashSet(StringComparer.Ordinal);
 
         // 宿主读插件写来的错误时写出的三种 reason（invocation.md §3）
@@ -253,7 +252,7 @@ public sealed class ProtocolVectorTests
     [Fact]
     public void ErrorReading_FollowsTheVectors()
     {
-        using var document = JsonDocument.Parse(File.ReadAllText(Path.Combine(EchoPluginHost.VectorsDirectory, "error-reading.json")));
+        using var document = JsonDocument.Parse(File.ReadAllText(SpecVectors.PathOf("plugin", "error-reading.json")));
         var pluginId = document.RootElement.GetProperty("pluginId").GetString()!;
         foreach (var @case in document.RootElement.GetProperty("cases").EnumerateArray())
         {
@@ -274,7 +273,7 @@ public sealed class ProtocolVectorTests
     [Fact]
     public void BindingProperties_NamesAndLimits_FollowTheVectors()
     {
-        using var document = JsonDocument.Parse(File.ReadAllText(Path.Combine(EchoPluginHost.VectorsDirectory, "binding-properties.json")));
+        using var document = JsonDocument.Parse(File.ReadAllText(SpecVectors.PathOf("plugin", "binding-properties.json")));
         var limits = document.RootElement.GetProperty("limits");
         Assert.Equal(PluginBindingProperties.MaxCount, limits.GetProperty("maxProperties").GetInt32());
         Assert.Equal(PluginBindingProperties.MaxNameLength, limits.GetProperty("maxNameLength").GetInt32());
@@ -295,7 +294,7 @@ public sealed class ProtocolVectorTests
     [Fact]
     public void BindingProperties_Delivery_FollowsTheVectors()
     {
-        using var document = JsonDocument.Parse(File.ReadAllText(Path.Combine(EchoPluginHost.VectorsDirectory, "binding-properties.json")));
+        using var document = JsonDocument.Parse(File.ReadAllText(SpecVectors.PathOf("plugin", "binding-properties.json")));
         var pluginId = document.RootElement.GetProperty("pluginId").GetString()!;
         var missingRoot = Path.Combine(Path.GetTempPath(), "xihan-no-bindings-" + Guid.NewGuid().ToString("N"));
         foreach (var @case in document.RootElement.GetProperty("delivery").EnumerateArray())
@@ -363,7 +362,7 @@ public sealed class ProtocolVectorTests
     [Fact]
     public void BindingProperties_Reading_IsWhatTheHostWrites()
     {
-        using var document = JsonDocument.Parse(File.ReadAllText(Path.Combine(EchoPluginHost.VectorsDirectory, "binding-properties.json")));
+        using var document = JsonDocument.Parse(File.ReadAllText(SpecVectors.PathOf("plugin", "binding-properties.json")));
         foreach (var @case in document.RootElement.GetProperty("reading").EnumerateArray())
         {
             var name = @case.GetProperty("name").GetString()!;
@@ -398,7 +397,7 @@ public sealed class ProtocolVectorTests
     [Fact]
     public void BindingProperties_FixedReasons_AreWhatTheHostWrites()
     {
-        using var document = JsonDocument.Parse(File.ReadAllText(Path.Combine(EchoPluginHost.VectorsDirectory, "plugin-messages.json")));
+        using var document = JsonDocument.Parse(File.ReadAllText(SpecVectors.PathOf("plugin", "plugin-messages.json")));
         var reasons = document.RootElement.GetProperty("reasons").EnumerateArray()
             .Where(static r => r.GetProperty("key").GetString() == PluginMessages.ProcessFailed && r.GetProperty("phase").GetString() == "configure")
             .Select(static r => r.GetProperty("reason").GetString()!.Replace("{binding}", "db", StringComparison.Ordinal))

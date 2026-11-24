@@ -2,6 +2,7 @@
 // See the LICENSE file in the project root for full license text.
 
 using XiHan.Framework.Localization.Abstractions.Locales;
+using XiHan.Framework.Testing;
 
 namespace XiHan.Framework.Localization.Abstractions.Tests;
 
@@ -16,7 +17,7 @@ public sealed class LocaleNameVectorTests
     /// <summary>
     /// 向量文件的内容
     /// </summary>
-    private static readonly LocaleNameVectors _vectors = ConformanceVectors.Load<LocaleNameVectors>("locale-names.json");
+    private static readonly LocaleNameVectors _vectors = SpecVectors.Read<LocaleNameVectors>("localization", "locale-names.json");
 
     [Fact]
     public void MaxLength_IsTheOneInTheVectors()

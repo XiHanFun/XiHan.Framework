@@ -43,7 +43,7 @@ public sealed class AuditEventSelectionVectorTests
     /// <summary>
     /// 向量文件的内容
     /// </summary>
-    private static readonly SelectionVectors _vectors = ConformanceVectors.Load<SelectionVectors>("event-selection.json");
+    private static readonly SelectionVectors _vectors = SpecVectors.Read<SelectionVectors>("auditing", "event-selection.json");
 
     [Fact]
     public void Defaults_AreTheOnesInTheVectors()

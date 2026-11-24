@@ -7,6 +7,7 @@ using System.Text.RegularExpressions;
 using System.Xml.Linq;
 using XiHan.Framework.Cli.Knowledge;
 using XiHan.Framework.Kernel.Hosting;
+using XiHan.Framework.Testing;
 
 namespace XiHan.Framework.Cli.Tests.Knowledge;
 
@@ -36,14 +37,14 @@ internal static partial class CatalogBuilder
     /// <summary>
     /// 索引文件路径
     /// </summary>
-    public static string CatalogPath => Path.Combine(TestWorkspace.FrameworkRoot, "src", CliPackage, "Knowledge", "catalog.json");
+    public static string CatalogPath => Path.Combine(FrameworkWorkspace.Root, "src", CliPackage, "Knowledge", "catalog.json");
 
     /// <summary>
     /// 生成
     /// </summary>
     public static CatalogDocument Build()
     {
-        var root = TestWorkspace.FrameworkRoot;
+        var root = FrameworkWorkspace.Root;
         var versions = XDocument.Load(Path.Combine(root, "Directory.Packages.props"))
             .Descendants("PackageVersion")
             .ToDictionary(static e => (string)e.Attribute("Include")!, static e => (string)e.Attribute("Version")!, StringComparer.Ordinal);

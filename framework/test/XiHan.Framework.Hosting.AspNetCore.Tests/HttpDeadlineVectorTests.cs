@@ -2,11 +2,11 @@
 // See the LICENSE file in the project root for full license text.
 
 using System.Globalization;
-using System.Text.Json;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Primitives;
 using XiHan.Framework.Hosting.AspNetCore.Endpoints;
+using XiHan.Framework.Testing;
 
 namespace XiHan.Framework.Hosting.AspNetCore.Tests;
 
@@ -21,7 +21,7 @@ public sealed class HttpDeadlineVectorTests
     /// <summary>
     /// 向量文件的内容
     /// </summary>
-    private static readonly DeadlineVectors _vectors = Load();
+    private static readonly DeadlineVectors _vectors = SpecVectors.Read<DeadlineVectors>("context", "http-deadline.json");
 
     [Fact]
     public void CreateContext_ReadsTheDeadlineOfEveryCase()
@@ -104,35 +104,6 @@ public sealed class HttpDeadlineVectorTests
     /// </summary>
     private static string Describe(DateTimeOffset? deadline)
         => deadline?.ToString("O", CultureInfo.InvariantCulture) ?? "none";
-
-    /// <summary>
-    /// 读向量文件
-    /// </summary>
-    private static DeadlineVectors Load()
-    {
-        var path = Path.Combine(LocateRoot(), "spec", "conformance", "vectors", "context", "http-deadline.json");
-        using var stream = File.OpenRead(path);
-        return JsonSerializer.Deserialize<DeadlineVectors>(stream, JsonSerializerOptions.Web) ?? throw new InvalidOperationException($"Vector file '{path}' is empty.");
-    }
-
-    /// <summary>
-    /// 从测试输出目录向上查找框架工作区根（以 <c>XiHan.Framework.slnx</c> 为标记）
-    /// </summary>
-    private static string LocateRoot()
-    {
-        var directory = new DirectoryInfo(AppContext.BaseDirectory);
-        while (directory is not null)
-        {
-            if (File.Exists(Path.Combine(directory.FullName, "XiHan.Framework.slnx")))
-            {
-                return directory.FullName;
-            }
-
-            directory = directory.Parent;
-        }
-
-        throw new InvalidOperationException("Could not locate 'XiHan.Framework.slnx'.");
-    }
 
     /// <summary>
     /// 停在一个时刻的时钟：<c>grpc-timeout</c> 相对它换算

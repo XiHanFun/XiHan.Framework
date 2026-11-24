@@ -7,6 +7,7 @@ using System.Text.Json;
 using XiHan.Framework.Kernel.Json;
 using XiHan.Framework.Kernel.Tests.Fixtures;
 using XiHan.Framework.Primitives;
+using XiHan.Framework.Testing;
 
 namespace XiHan.Framework.Kernel.Tests.Json;
 
@@ -22,7 +23,7 @@ public sealed class WireEncodingVectorTests
     /// <summary>
     /// 向量文件的内容
     /// </summary>
-    private static readonly WireEncodingVectors _vectors = SpecVectors.Load<WireEncodingVectors>("primitives/wire-encoding.json");
+    private static readonly WireEncodingVectors _vectors = SpecVectors.Read<WireEncodingVectors>("primitives", "wire-encoding.json");
 
     [Fact]
     public void Results_FollowTheWireEncodingVectors()
@@ -205,10 +206,10 @@ public sealed class WireEncodingVectorTests
     /// <summary>
     /// 一条样例：结果的种类（错误没有）、原文与再写出时的规范形式
     /// </summary>
-    private sealed record WireCase(string Name, string? Kind, JsonElement Json, JsonElement? Canonical);
+    private sealed record WireCase(string Name, JsonElement Json, string? Kind = null, JsonElement? Canonical = null);
 
     /// <summary>
     /// 一条有重复成员的样例：目标、结果的种类与原文
     /// </summary>
-    private sealed record DuplicateCase(string Name, string Target, string? Kind, string Text);
+    private sealed record DuplicateCase(string Name, string Target, string Text, string? Kind = null);
 }

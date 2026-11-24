@@ -8,7 +8,7 @@ using Wasmtime;
 using XiHan.Framework.Plugins.Protocol;
 using XiHan.Framework.Plugins.Wasm.Instances;
 using XiHan.Framework.Plugins.Wasm.Runtime;
-using XiHan.Framework.Plugins.Wasm.Tests.Fixtures;
+using XiHan.Framework.Testing;
 
 namespace XiHan.Framework.Plugins.Wasm.Tests;
 
@@ -28,7 +28,7 @@ public sealed class WasmExportVectorTests : IDisposable
     /// <summary>
     /// 向量文件
     /// </summary>
-    private static readonly JsonDocument _vectors = JsonDocument.Parse(File.ReadAllText(Path.Combine(EchoWasmPluginHost.VectorsDirectory, "wasm-exports.json")));
+    private static readonly JsonDocument _vectors = JsonDocument.Parse(File.ReadAllText(SpecVectors.PathOf("plugin", "wasm-exports.json")));
 
     /// <summary>
     /// 编译模块用的引擎

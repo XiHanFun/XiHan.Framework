@@ -3,6 +3,7 @@
 
 using XiHan.Framework.ObjectStorage.Abstractions.Blobs;
 using XiHan.Framework.Primitives;
+using XiHan.Framework.Testing;
 
 namespace XiHan.Framework.ObjectStorage.Abstractions.Tests;
 
@@ -17,7 +18,7 @@ public sealed class BlobRangeVectorTests
     /// <summary>
     /// 向量文件的内容
     /// </summary>
-    private static readonly BlobRangeVectors _vectors = ConformanceVectors.Load<BlobRangeVectors>("blob-ranges.json");
+    private static readonly BlobRangeVectors _vectors = SpecVectors.Read<BlobRangeVectors>("objectstorage", "blob-ranges.json");
 
     [Fact]
     public void Code_IsTheRangeNotSatisfiableError()

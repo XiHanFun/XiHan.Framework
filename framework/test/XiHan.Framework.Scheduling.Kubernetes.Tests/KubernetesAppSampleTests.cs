@@ -4,6 +4,7 @@
 using Microsoft.Extensions.Configuration;
 using XiHan.Framework.Scheduling.Abstractions.Schedulers;
 using XiHan.Framework.Scheduling.InMemory;
+using XiHan.Framework.Testing;
 
 namespace XiHan.Framework.Scheduling.Kubernetes.Tests;
 
@@ -18,7 +19,7 @@ public sealed class KubernetesAppSampleTests
     [Fact]
     public void Appsettings_SetsPollIntervalAndLeaseTimeToLive_OnTheEngine()
     {
-        var configuration = new ConfigurationBuilder().AddJsonFile(Path.Combine(FindFrameworkRoot(), "samples", "KubernetesApp", "appsettings.json"), optional: false, reloadOnChange: false).Build();
+        var configuration = new ConfigurationBuilder().AddJsonFile(Path.Combine(FrameworkWorkspace.Root, "samples", "KubernetesApp", "appsettings.json"), optional: false, reloadOnChange: false).Build();
 
         var options = SchedulerOptions.FromConfiguration(configuration);
 
@@ -26,19 +27,5 @@ public sealed class KubernetesAppSampleTests
         Assert.Equal(TimeSpan.FromSeconds(15), options.LeaseTimeToLive);
         Assert.Equal(TimeSpan.FromSeconds(1), options.PollInterval);
         Assert.Empty(configuration.GetSection(InMemorySchedulingOptions.ConfigurationSection).GetChildren());
-    }
-
-    /// <summary>
-    /// 从测试输出目录向上找 <c>framework/</c>（含解决方案文件的目录）
-    /// </summary>
-    private static string FindFrameworkRoot()
-    {
-        var directory = new DirectoryInfo(AppContext.BaseDirectory);
-        while (directory is not null && !File.Exists(Path.Combine(directory.FullName, "XiHan.Framework.slnx")))
-        {
-            directory = directory.Parent;
-        }
-
-        return directory?.FullName ?? throw new InvalidOperationException("The framework/ workspace root was not found above the test output directory.");
     }
 }

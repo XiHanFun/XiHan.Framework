@@ -2,8 +2,8 @@
 // See the LICENSE file in the project root for full license text.
 
 using System.Text;
-using System.Text.Json;
 using XiHan.Framework.Caching.Abstractions.Stores;
+using XiHan.Framework.Testing;
 
 namespace XiHan.Framework.Caching.Abstractions.Tests;
 
@@ -16,14 +16,9 @@ namespace XiHan.Framework.Caching.Abstractions.Tests;
 public sealed class CacheKeyVectorTests
 {
     /// <summary>
-    /// 向量文件的反序列化选项：Web 默认（camelCase、不区分大小写）
-    /// </summary>
-    private static readonly JsonSerializerOptions _options = new(JsonSerializerDefaults.Web);
-
-    /// <summary>
     /// 向量文件的内容
     /// </summary>
-    private static readonly CacheKeyVectors _vectors = Load();
+    private static readonly CacheKeyVectors _vectors = SpecVectors.Read<CacheKeyVectors>("caching", "cache-keys.json");
 
     [Fact]
     public void MaxBytes_IsTheOneInTheVectors()
@@ -81,32 +76,6 @@ public sealed class CacheKeyVectorTests
         Assert.Contains(_vectors.Keys.Invalid, key => key.Utf8Bytes == _vectors.MaxBytes + 1);
         Assert.Contains(_vectors.Keys.Invalid, key => key.Utf8Bytes > _vectors.MaxBytes && key.Utf16Units <= _vectors.MaxBytes);
         Assert.Contains(_vectors.Prefixes.Invalid, prefix => prefix.Utf8Bytes > _vectors.MaxBytes && prefix.Utf16Units <= _vectors.MaxBytes);
-    }
-
-    /// <summary>
-    /// 读向量文件
-    /// </summary>
-    private static CacheKeyVectors Load()
-    {
-        var path = Path.Combine(LocateRoot(), "spec", "conformance", "vectors", "caching", "cache-keys.json");
-        using var stream = File.OpenRead(path);
-        return JsonSerializer.Deserialize<CacheKeyVectors>(stream, _options) ?? throw new InvalidOperationException($"Vector file '{path}' is empty.");
-    }
-
-    /// <summary>
-    /// 从测试输出目录向上查找框架工作区根（以 <c>XiHan.Framework.slnx</c> 为标记）
-    /// </summary>
-    private static string LocateRoot()
-    {
-        for (var directory = new DirectoryInfo(AppContext.BaseDirectory); directory is not null; directory = directory.Parent)
-        {
-            if (File.Exists(Path.Combine(directory.FullName, "XiHan.Framework.slnx")))
-            {
-                return directory.FullName;
-            }
-        }
-
-        throw new InvalidOperationException("The framework workspace root (the directory of 'XiHan.Framework.slnx') was not found above the test output directory.");
     }
 
     /// <summary>

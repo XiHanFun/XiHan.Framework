@@ -3,6 +3,7 @@
 
 using System.Text;
 using System.Text.Json;
+using XiHan.Framework.Testing;
 
 namespace XiHan.Framework.Observability.Host.Tests;
 
@@ -15,17 +16,9 @@ namespace XiHan.Framework.Observability.Host.Tests;
 public sealed class LinuxHostReadingVectorTests
 {
     /// <summary>
-    /// 向量文件的反序列化选项
-    /// </summary>
-    /// <remarks>
-    /// Web 默认（camelCase、不区分大小写）；对象模型里没有缺省值的构造参数必须出现在文件里，向量改了字段名时读取就失败，不会悄悄读成空
-    /// </remarks>
-    private static readonly JsonSerializerOptions _options = new(JsonSerializerDefaults.Web) { RespectRequiredConstructorParameters = true };
-
-    /// <summary>
     /// 向量文件里 <c>linux</c> 一节的内容
     /// </summary>
-    private static readonly LinuxVectors _vectors = Load();
+    private static readonly LinuxVectors _vectors = SpecVectors.Read<HostUsageDocument>("observability", "host-usage.json").Linux;
 
     [Fact]
     public void ReadCpuTimes_GivesTheIdleAndTotalOfEveryCase()
@@ -225,37 +218,19 @@ public sealed class LinuxHostReadingVectorTests
         => times is { } value ? $"idle {value.Idle} of {value.Total}" : "nothing";
 
     /// <summary>
-    /// 读向量文件
+    /// 向量文件的对象模型
     /// </summary>
-    private static LinuxVectors Load()
-    {
-        var path = Path.Combine(LocateRoot(), "spec", "conformance", "vectors", "observability", "host-usage.json");
-        using var stream = File.OpenRead(path);
-        var document = JsonSerializer.Deserialize<HostUsageDocument>(stream, _options) ?? throw new InvalidOperationException($"Vector file '{path}' is empty.");
-        return document.Linux;
-    }
-
-    /// <summary>
-    /// 从测试输出目录向上查找框架工作区根（以 <c>XiHan.Framework.slnx</c> 为标记）
-    /// </summary>
-    private static string LocateRoot()
-    {
-        for (var directory = new DirectoryInfo(AppContext.BaseDirectory); directory is not null; directory = directory.Parent)
-        {
-            if (File.Exists(Path.Combine(directory.FullName, "XiHan.Framework.slnx")))
-            {
-                return directory.FullName;
-            }
-        }
-
-        throw new InvalidOperationException("The framework workspace root (the directory of 'XiHan.Framework.slnx') was not found above the test output directory.");
-    }
-
-    /// <summary>
-    /// 向量文件里这个类回放的部分
-    /// </summary>
+    /// <remarks>
+    /// 这个类只回放 <c>linux</c> 一节，其余各节由 <see cref="HostUsageVectorTests"/> 按各自的模型回放，这里原样留着
+    /// </remarks>
+    /// <param name="SampleInterval">采样间隔的缺省值与取值范围</param>
+    /// <param name="Cpu">系统 CPU 使用率的用例</param>
+    /// <param name="Process">进程 CPU 使用率的用例</param>
+    /// <param name="Network">网卡速率的用例</param>
+    /// <param name="Memory">内存的已用与使用率的用例</param>
+    /// <param name="Disks">磁盘的已用与使用率的用例</param>
     /// <param name="Linux">Linux 上各项的取法</param>
-    private sealed record HostUsageDocument(LinuxVectors Linux);
+    private sealed record HostUsageDocument(JsonElement SampleInterval, JsonElement Cpu, JsonElement Process, JsonElement Network, JsonElement Memory, JsonElement Disks, LinuxVectors Linux);
 
     /// <summary>
     /// <c>linux</c> 一节的对象模型

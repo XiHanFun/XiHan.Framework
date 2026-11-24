@@ -5,6 +5,7 @@
 
   <ItemGroup>
     <ProjectReference Include="../../src/XiHan.Framework.Workflow.Abstractions/XiHan.Framework.Workflow.Abstractions.csproj" />
+    <ProjectReference Include="../../src/XiHan.Framework.Testing/XiHan.Framework.Testing.csproj" />
   </ItemGroup>
 
   <ItemGroup>

@@ -5,6 +5,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging.Abstractions;
 using XiHan.Framework.Kernel.Plugins;
 using XiHan.Framework.Primitives;
+using XiHan.Framework.Testing;
 
 namespace XiHan.Framework.Plugins.InProcess.Tests;
 
@@ -34,8 +35,7 @@ public sealed class InProcessPluginHostTests
             // 测试输出在 .../bin/<Configuration>/net10.0/，示例插件在 samples/SamplePlugin/bin/<Configuration>/net10.0/
             var output = new DirectoryInfo(AppContext.BaseDirectory.TrimEnd(Path.DirectorySeparatorChar));
             var configuration = output.Parent!.Name;
-            var root = LocateRoot(output);
-            return Path.Combine(root, "samples", "SamplePlugin", "bin", configuration, "net10.0");
+            return Path.Combine(FrameworkWorkspace.Root, "samples", "SamplePlugin", "bin", configuration, "net10.0");
         }
     }
 
@@ -198,24 +198,5 @@ public sealed class InProcessPluginHostTests
         {
             CopyTree(child, Path.Combine(target, Path.GetFileName(child)));
         }
-    }
-
-    /// <summary>
-    /// 从测试输出目录向上查找 <c>XiHan.Framework.slnx</c> 所在目录，即 <c>framework/</c> 目录
-    /// </summary>
-    private static string LocateRoot(DirectoryInfo start)
-    {
-        var directory = start;
-        while (directory is not null)
-        {
-            if (File.Exists(Path.Combine(directory.FullName, "XiHan.Framework.slnx")))
-            {
-                return directory.FullName;
-            }
-
-            directory = directory.Parent;
-        }
-
-        throw new InvalidOperationException("Could not locate 'XiHan.Framework.slnx' in any parent directory of the test output.");
     }
 }

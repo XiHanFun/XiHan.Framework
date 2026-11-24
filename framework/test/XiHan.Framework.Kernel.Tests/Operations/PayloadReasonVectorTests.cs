@@ -4,6 +4,7 @@
 using System.Text;
 using XiHan.Framework.Kernel.Operations;
 using XiHan.Framework.Kernel.Tests.Fixtures;
+using XiHan.Framework.Testing;
 
 namespace XiHan.Framework.Kernel.Tests.Operations;
 
@@ -18,7 +19,7 @@ public sealed class PayloadReasonVectorTests
     /// <summary>
     /// 向量文件的内容
     /// </summary>
-    private static readonly PayloadVectors _vectors = SpecVectors.Load<PayloadVectors>("operations/payload-reasons.json");
+    private static readonly PayloadVectors _vectors = SpecVectors.Read<PayloadVectors>("operations", "payload-reasons.json");
 
     /// <summary>
     /// 向量里的三个请求类型对应的描述
@@ -34,6 +35,8 @@ public sealed class PayloadReasonVectorTests
     public void DecodeRequest_ReportsTheVectorPath()
     {
         Assert.NotEmpty(_vectors.Cases);
+        // 向量说明了几个请求类型，这里就有几个对应的描述
+        Assert.Equal(_vectors.Requests.Keys.Order(StringComparer.Ordinal), _descriptors.Keys.Order(StringComparer.Ordinal));
         var failures = new List<string>();
         foreach (var vector in _vectors.Cases)
         {
@@ -61,7 +64,9 @@ public sealed class PayloadReasonVectorTests
     /// <summary>
     /// 向量文件的对象模型
     /// </summary>
-    private sealed record PayloadVectors(PayloadCase[] Cases);
+    /// <param name="Requests">请求类型的名字到给各语言看的声明说明</param>
+    /// <param name="Cases">解码的用例</param>
+    private sealed record PayloadVectors(Dictionary<string, string> Requests, PayloadCase[] Cases);
 
     /// <summary>
     /// 一次解码：载荷原文与期望的 reason，<see langword="null"/> 表示解码成功

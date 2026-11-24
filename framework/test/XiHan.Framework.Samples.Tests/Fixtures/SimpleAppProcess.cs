@@ -6,6 +6,7 @@ using System.Globalization;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
+using XiHan.Framework.Testing;
 
 namespace XiHan.Framework.Samples.Tests.Fixtures;
 
@@ -150,13 +151,7 @@ public sealed class SimpleAppProcess : IAsyncLifetime
     {
         var testOutput = new DirectoryInfo(AppContext.BaseDirectory);
         var configuration = testOutput.Parent?.Name ?? throw new InvalidOperationException("The test output directory has no configuration segment.");
-        var directory = testOutput;
-        while (directory is not null && !File.Exists(Path.Combine(directory.FullName, "XiHan.Framework.slnx")))
-        {
-            directory = directory.Parent;
-        }
-
-        return Path.Combine(directory?.FullName ?? throw new InvalidOperationException("The framework workspace could not be located."), "samples", "SimpleApp", "bin", configuration, testOutput.Name);
+        return Path.Combine(FrameworkWorkspace.Root, "samples", "SimpleApp", "bin", configuration, testOutput.Name);
     }
 
     /// <summary>

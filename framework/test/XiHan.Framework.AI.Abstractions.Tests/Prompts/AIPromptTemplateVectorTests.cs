@@ -2,6 +2,7 @@
 // See the LICENSE file in the project root for full license text.
 
 using XiHan.Framework.AI.Abstractions.Prompts;
+using XiHan.Framework.Testing;
 
 namespace XiHan.Framework.AI.Abstractions.Tests.Prompts;
 
@@ -21,7 +22,7 @@ public sealed class AIPromptTemplateVectorTests
     /// <summary>
     /// 向量文件的内容
     /// </summary>
-    private static readonly PromptVectors _vectors = ConformanceVectors.Load<PromptVectors>("prompt-templates.json");
+    private static readonly PromptVectors _vectors = SpecVectors.Read<PromptVectors>("ai", "prompt-templates.json");
 
     [Fact]
     public void Render_GivesTheTextOfEveryCase()

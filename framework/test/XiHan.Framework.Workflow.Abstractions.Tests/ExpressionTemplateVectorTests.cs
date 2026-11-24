@@ -2,6 +2,7 @@
 // See the LICENSE file in the project root for full license text.
 
 using System.Text.Json.Nodes;
+using XiHan.Framework.Testing;
 
 namespace XiHan.Framework.Workflow.Abstractions.Tests;
 
@@ -16,7 +17,7 @@ public sealed class ExpressionTemplateVectorTests
     /// <summary>
     /// 向量文件的内容
     /// </summary>
-    private static readonly TemplateVectors _vectors = ConformanceVectors.Load<TemplateVectors>("expression-templates.json");
+    private static readonly TemplateVectors _vectors = SpecVectors.Read<TemplateVectors>("workflow", "expression-templates.json");
 
     [Fact]
     public void Renders_ProduceTheTextInTheVectors()

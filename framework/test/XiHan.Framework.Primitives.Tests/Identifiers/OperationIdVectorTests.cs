@@ -1,6 +1,8 @@
 // Copyright (c) XiHanFun Contributors. Licensed under the MIT License.
 // See the LICENSE file in the project root for full license text.
 
+using XiHan.Framework.Testing;
+
 namespace XiHan.Framework.Primitives.Tests.Identifiers;
 
 /// <summary>
@@ -14,7 +16,7 @@ public sealed class OperationIdVectorTests
     /// <summary>
     /// 向量文件的内容
     /// </summary>
-    private static readonly OperationIdVectors _vectors = ConformanceVectors.Load<OperationIdVectors>("operation-ids.json");
+    private static readonly OperationIdVectors _vectors = SpecVectors.Read<OperationIdVectors>("primitives", "operation-ids.json");
 
     [Fact]
     public void MaxLength_IsTheOneInTheVectors()

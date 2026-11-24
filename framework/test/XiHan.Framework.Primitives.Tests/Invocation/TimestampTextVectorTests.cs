@@ -2,6 +2,8 @@
 // See the LICENSE file in the project root for full license text.
 
 using System.Globalization;
+using System.Text.Json;
+using XiHan.Framework.Testing;
 
 namespace XiHan.Framework.Primitives.Tests.Invocation;
 
@@ -16,7 +18,7 @@ public sealed class TimestampTextVectorTests
     /// <summary>
     /// 向量文件的内容
     /// </summary>
-    private static readonly TimestampVectors _vectors = ConformanceVectors.Load<TimestampVectors>("plugin", "deadlines.json");
+    private static readonly TimestampVectors _vectors = SpecVectors.Read<TimestampVectors>("plugin", "deadlines.json");
 
     [Fact]
     public void TryParse_ReadsTheValidTexts_AsUtcInstants()
@@ -100,7 +102,9 @@ public sealed class TimestampTextVectorTests
     /// </summary>
     /// <param name="Valid">合法的文本与读出的时刻</param>
     /// <param name="Invalid">不合法的文本</param>
-    private sealed record TimestampVectors(TimestampSample[] Valid, string[] Invalid);
+    /// <param name="Effective">与 gRPC 截止时间取较早者，由插件宿主的 <c>ProtocolVectorTests</c> 回放</param>
+    /// <param name="Written">时刻与写出的文本，由 <see cref="DeadlineTextVectorTests"/> 回放</param>
+    private sealed record TimestampVectors(TimestampSample[] Valid, string[] Invalid, JsonElement Effective, TimestampSample[] Written);
 
     /// <summary>
     /// 一段文本与它对应的时刻

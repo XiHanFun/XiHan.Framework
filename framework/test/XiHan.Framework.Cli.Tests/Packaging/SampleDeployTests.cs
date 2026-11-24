@@ -2,6 +2,7 @@
 // See the LICENSE file in the project root for full license text.
 
 using XiHan.Framework.Cli.Packaging;
+using XiHan.Framework.Testing;
 
 namespace XiHan.Framework.Cli.Tests.Packaging;
 
@@ -13,7 +14,7 @@ public sealed class SampleDeployTests
     [Fact]
     public void KubernetesSample_CommittedDeployFolder_MatchesItsManifest()
     {
-        var framework = TestWorkspace.FrameworkRoot;
+        var framework = FrameworkWorkspace.Root;
         var sample = Path.Combine(framework, "samples", "KubernetesApp");
         var manifest = AppManifestReader.Read(Path.Combine(sample, "xihan.app.json")).ValueOrThrow();
         var outputDirectory = Path.Combine(sample, "deploy");

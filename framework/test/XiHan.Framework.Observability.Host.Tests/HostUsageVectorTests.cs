@@ -7,6 +7,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Time.Testing;
 using XiHan.Framework.Observability.Abstractions;
+using XiHan.Framework.Testing;
 
 namespace XiHan.Framework.Observability.Host.Tests;
 
@@ -26,7 +27,7 @@ public sealed class HostUsageVectorTests
     /// <summary>
     /// 向量文件的内容
     /// </summary>
-    private static readonly HostUsageVectors _vectors = Load();
+    private static readonly HostUsageVectors _vectors = SpecVectors.Read<HostUsageVectors>("observability", "host-usage.json");
 
     [Fact]
     public void SampleInterval_HasTheDefaultAndTheRangeOfTheVectors()
@@ -264,32 +265,6 @@ public sealed class HostUsageVectorTests
         => value?.ToString(CultureInfo.InvariantCulture) ?? "null";
 
     /// <summary>
-    /// 读向量文件
-    /// </summary>
-    private static HostUsageVectors Load()
-    {
-        var path = Path.Combine(LocateRoot(), "spec", "conformance", "vectors", "observability", "host-usage.json");
-        using var stream = File.OpenRead(path);
-        return JsonSerializer.Deserialize<HostUsageVectors>(stream, JsonSerializerOptions.Web) ?? throw new InvalidOperationException($"Vector file '{path}' is empty.");
-    }
-
-    /// <summary>
-    /// 从测试输出目录向上查找框架工作区根（以 <c>XiHan.Framework.slnx</c> 为标记）
-    /// </summary>
-    private static string LocateRoot()
-    {
-        for (var directory = new DirectoryInfo(AppContext.BaseDirectory); directory is not null; directory = directory.Parent)
-        {
-            if (File.Exists(Path.Combine(directory.FullName, "XiHan.Framework.slnx")))
-            {
-                return directory.FullName;
-            }
-        }
-
-        throw new InvalidOperationException("The framework workspace root (the directory of 'XiHan.Framework.slnx') was not found above the test output directory.");
-    }
-
-    /// <summary>
     /// 向量文件的对象模型
     /// </summary>
     /// <param name="SampleInterval">采样间隔的缺省值与取值范围</param>
@@ -298,7 +273,8 @@ public sealed class HostUsageVectorTests
     /// <param name="Network">网卡速率的用例</param>
     /// <param name="Memory">内存的已用与使用率的用例</param>
     /// <param name="Disks">磁盘的已用与使用率的用例</param>
-    private sealed record HostUsageVectors(SampleIntervalCases SampleInterval, CpuCase[] Cpu, ProcessCase[] Process, NetworkCase[] Network, MemoryCase[] Memory, DiskCase[] Disks);
+    /// <param name="Linux">Linux 上各项的取法，由 <see cref="LinuxHostReadingVectorTests"/> 回放</param>
+    private sealed record HostUsageVectors(SampleIntervalCases SampleInterval, CpuCase[] Cpu, ProcessCase[] Process, NetworkCase[] Network, MemoryCase[] Memory, DiskCase[] Disks, JsonElement Linux);
 
     /// <summary>
     /// 采样间隔的用例

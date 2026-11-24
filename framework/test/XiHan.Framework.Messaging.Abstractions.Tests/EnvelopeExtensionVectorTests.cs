@@ -27,7 +27,7 @@ public sealed class EnvelopeExtensionVectorTests
     /// <summary>
     /// 向量文件的内容
     /// </summary>
-    private static readonly ExtensionVectors _vectors = ConformanceVectors.Load<ExtensionVectors>("envelope-extensions.json");
+    private static readonly ExtensionVectors _vectors = SpecVectors.Read<ExtensionVectors>("messaging", "envelope-extensions.json");
 
     [Fact]
     public void IsValidName_AcceptsTheValidNames()

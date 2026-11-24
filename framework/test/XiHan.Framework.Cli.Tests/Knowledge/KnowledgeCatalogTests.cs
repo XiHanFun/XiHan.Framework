@@ -6,6 +6,7 @@ using System.Text.Json;
 using XiHan.Framework.Cli.Knowledge;
 using XiHan.Framework.Cli.Packaging;
 using XiHan.Framework.Kernel.Hosting;
+using XiHan.Framework.Testing;
 
 namespace XiHan.Framework.Cli.Tests.Knowledge;
 
@@ -45,7 +46,7 @@ public sealed class KnowledgeCatalogTests
     public void Catalog_CoversEveryPackageAndFeature()
     {
         var knowledge = FrameworkKnowledge.Load();
-        var projects = Directory.GetDirectories(Path.Combine(TestWorkspace.FrameworkRoot, "src")).Where(static d => File.Exists(Path.Combine(d, Path.GetFileName(d) + ".csproj"))).Select(Path.GetFileName).Order(StringComparer.Ordinal);
+        var projects = Directory.GetDirectories(Path.Combine(FrameworkWorkspace.Root, "src")).Where(static d => File.Exists(Path.Combine(d, Path.GetFileName(d) + ".csproj"))).Select(Path.GetFileName).Order(StringComparer.Ordinal);
 
         Assert.Equal(projects, knowledge.Packages.Select(static p => p.Id));
         Assert.Contains(knowledge.Features, static f => f.Type == "XiHan.Framework.Messaging.Kafka.KafkaMessagingFeature" && f.Provides.SequenceEqual(["messaging.queue@1", "messaging.stream@1"]));

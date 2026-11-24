@@ -3,6 +3,7 @@
 
 using System.Text.Json;
 using XiHan.Framework.ObjectStorage.FileSystem;
+using XiHan.Framework.Testing;
 
 namespace XiHan.Framework.ObjectStorage.S3.Tests;
 
@@ -18,33 +19,19 @@ public sealed class BlobStoreProviderNameVectorTests
     public void TheBuiltInProviderNames_AreTheOnesInTheVectors()
     {
         string[] builtIn = [FileSystemBlobStoreProvider.ProviderName, S3BlobStoreProvider.ProviderName];
+        var vectors = SpecVectors.Read<StoreDefinitionVectors>("objectstorage", "store-definitions.json");
 
-        Assert.Equal(LoadProviders().Order(StringComparer.Ordinal), builtIn.Order(StringComparer.Ordinal));
+        Assert.Equal(vectors.Providers.Order(StringComparer.Ordinal), builtIn.Order(StringComparer.Ordinal));
     }
 
     /// <summary>
-    /// 读向量文件里的 <c>providers</c>
+    /// 向量文件的对象模型
     /// </summary>
-    private static List<string> LoadProviders()
-    {
-        var path = Path.Combine(LocateRoot(), "spec", "conformance", "vectors", "objectstorage", "store-definitions.json");
-        using var document = JsonDocument.Parse(File.ReadAllText(path));
-        return [.. document.RootElement.GetProperty("providers").EnumerateArray().Select(name => name.GetString() ?? throw new InvalidOperationException($"Vector file '{path}' lists a provider name that is not a string."))];
-    }
-
-    /// <summary>
-    /// 从测试输出目录向上查找框架工作区根（以 <c>XiHan.Framework.slnx</c> 为标记）
-    /// </summary>
-    private static string LocateRoot()
-    {
-        for (var directory = new DirectoryInfo(AppContext.BaseDirectory); directory is not null; directory = directory.Parent)
-        {
-            if (File.Exists(Path.Combine(directory.FullName, "XiHan.Framework.slnx")))
-            {
-                return directory.FullName;
-            }
-        }
-
-        throw new InvalidOperationException("The framework workspace root (the directory of 'XiHan.Framework.slnx') was not found above the test output directory.");
-    }
+    /// <remarks>
+    /// 这个类只回放 <c>providers</c>，其余两项由 <c>BlobStoreDefinitionVectorTests</c> 按它的模型回放，这里原样留着
+    /// </remarks>
+    /// <param name="Names">实例名的用例</param>
+    /// <param name="Providers">内置的 Provider 名</param>
+    /// <param name="Same">两个定义是不是同一个定义的用例</param>
+    private sealed record StoreDefinitionVectors(JsonElement Names, string[] Providers, JsonElement Same);
 }

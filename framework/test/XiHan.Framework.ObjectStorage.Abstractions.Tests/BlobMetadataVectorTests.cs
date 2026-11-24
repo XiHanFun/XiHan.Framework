@@ -3,6 +3,7 @@
 
 using System.Text;
 using XiHan.Framework.ObjectStorage.Abstractions.Blobs;
+using XiHan.Framework.Testing;
 
 namespace XiHan.Framework.ObjectStorage.Abstractions.Tests;
 
@@ -17,7 +18,7 @@ public sealed class BlobMetadataVectorTests
     /// <summary>
     /// 向量文件的内容
     /// </summary>
-    private static readonly BlobMetadataVectors _vectors = ConformanceVectors.Load<BlobMetadataVectors>("blob-metadata.json");
+    private static readonly BlobMetadataVectors _vectors = SpecVectors.Read<BlobMetadataVectors>("objectstorage", "blob-metadata.json");
 
     [Fact]
     public void MaxBytes_IsTheOneInTheVectors()

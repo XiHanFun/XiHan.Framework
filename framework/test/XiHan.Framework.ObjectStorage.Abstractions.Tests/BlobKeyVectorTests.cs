@@ -4,6 +4,7 @@
 using System.Text;
 using XiHan.Framework.ObjectStorage.Abstractions.Keys;
 using XiHan.Framework.ObjectStorage.Abstractions.Listing;
+using XiHan.Framework.Testing;
 
 namespace XiHan.Framework.ObjectStorage.Abstractions.Tests;
 
@@ -18,7 +19,7 @@ public sealed class BlobKeyVectorTests
     /// <summary>
     /// 向量文件的内容
     /// </summary>
-    private static readonly BlobKeyVectors _vectors = ConformanceVectors.Load<BlobKeyVectors>("blob-keys.json");
+    private static readonly BlobKeyVectors _vectors = SpecVectors.Read<BlobKeyVectors>("objectstorage", "blob-keys.json");
 
     [Fact]
     public void TheConstants_AreTheOnesInTheVectors()

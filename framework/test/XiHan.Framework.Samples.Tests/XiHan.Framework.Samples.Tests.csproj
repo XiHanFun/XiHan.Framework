@@ -7,4 +7,8 @@
     <!-- 只保证构建顺序：测试以独立进程启动示例，不引用它的程序集 -->
     <ProjectReference Include="../../samples/SimpleApp/SimpleApp.csproj" ReferenceOutputAssembly="false" />
   </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../../src/XiHan.Framework.Testing/XiHan.Framework.Testing.csproj" />
+  </ItemGroup>
 </Project>

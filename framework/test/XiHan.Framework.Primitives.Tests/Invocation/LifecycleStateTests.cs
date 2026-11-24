@@ -1,6 +1,8 @@
 // Copyright (c) XiHanFun Contributors. Licensed under the MIT License.
 // See the LICENSE file in the project root for full license text.
 
+using XiHan.Framework.Testing;
+
 namespace XiHan.Framework.Primitives.Tests.Invocation;
 
 /// <summary>
@@ -16,7 +18,7 @@ public sealed class LifecycleStateTests
     [Fact]
     public void CanTransitionTo_MatchesConformanceVectorsExactly()
     {
-        var vectors = ConformanceVectors.Load<TransitionVectors>("lifecycle-transitions.json");
+        var vectors = SpecVectors.Read<TransitionVectors>("primitives", "lifecycle-transitions.json");
         var allowed = vectors.Allowed
             .Select(static pair => (Enum.Parse<LifecycleState>(pair[0]), Enum.Parse<LifecycleState>(pair[1])))
             .ToHashSet();

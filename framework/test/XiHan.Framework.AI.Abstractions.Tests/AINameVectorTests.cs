@@ -5,6 +5,7 @@ using Microsoft.Extensions.Configuration;
 using XiHan.Framework.AI.Abstractions.Knowledge;
 using XiHan.Framework.AI.Abstractions.Prompts;
 using XiHan.Framework.AI.Abstractions.Providers;
+using XiHan.Framework.Testing;
 
 namespace XiHan.Framework.AI.Abstractions.Tests;
 
@@ -19,7 +20,7 @@ public sealed class AINameVectorTests
     /// <summary>
     /// 向量文件的内容
     /// </summary>
-    private static readonly NameVectors _vectors = ConformanceVectors.Load<NameVectors>("ai-names.json");
+    private static readonly NameVectors _vectors = SpecVectors.Read<NameVectors>("ai", "ai-names.json");
 
     [Fact]
     public void MaxNameLength_IsTheOneInTheVectors()

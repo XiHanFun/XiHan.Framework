@@ -9,6 +9,7 @@ using XiHan.Framework.Kernel.Hosting;
 using XiHan.Framework.Kernel.Operations;
 using XiHan.Framework.Kernel.Tests.Fixtures;
 using XiHan.Framework.Primitives;
+using XiHan.Framework.Testing;
 
 namespace XiHan.Framework.Kernel.Tests.Diagnostics;
 
@@ -41,26 +42,27 @@ public sealed class ObserveTelemetryTests
     {
         var (provider, _) = await StartAsync("telemetry.created");
         using var disposing = provider;
-        using var recorder = new TelemetryRecorder();
-        recorder.Attach();
+        using var spans = new SpanCapture([FrameworkDiagnostics.SourceName]);
+        using var metrics = new MetricCapture([FrameworkDiagnostics.SourceName]);
+        metrics.RestrictToCurrentFlow();
         await using var scope = provider.CreateAsyncScope();
         var context = Sampled(scope.ServiceProvider);
 
         var response = await Invoker(provider).InvokeAsync(context, Request("telemetry.created", """{"text":"hi"}"""));
 
         Assert.True(response.Outcome.IsSuccess, response.Outcome.ToString());
-        var span = Assert.Single(recorder.Spans(context.TraceId));
+        var span = Assert.Single(spans.Spans(context.TraceId));
         Assert.Equal(("xihan.invoke", ActivityKind.Internal, ActivityStatusCode.Unset), (span.OperationName, span.Kind, span.Status));
         Assert.Equal("telemetry.created", span.GetTagItem("xihan.operation"));
         Assert.Equal("success", span.GetTagItem("xihan.outcome"));
         // 操作 ID 在创建时就带上：采样器按它决定要不要这条 Span
-        Assert.True(recorder.SamplerSaw("xihan.invoke", "xihan.operation", "telemetry.created"));
+        Assert.Contains(spans.SamplingRequests, request => request.TraceId == context.TraceId && request.Name == "xihan.invoke" && request.Tags.Contains(new("xihan.operation", "telemetry.created")));
 
         var expected = new Dictionary<string, object?> { ["xihan.operation"] = "telemetry.created", ["xihan.outcome"] = "success" };
-        var counted = Assert.Single(recorder.Measurements, static m => m.Instrument == Invocations);
+        var counted = Assert.Single(metrics.Entries, static m => m.Instrument == Invocations);
         Assert.Equal(1, counted.Value);
         Assert.Equal(expected, counted.Tags);
-        var timed = Assert.Single(recorder.Measurements, static m => m.Instrument == Duration);
+        var timed = Assert.Single(metrics.Entries, static m => m.Instrument == Duration);
         Assert.True(timed.Value >= 0);
         Assert.Equal(expected, timed.Tags);
     }
@@ -70,15 +72,16 @@ public sealed class ObserveTelemetryTests
     {
         var (provider, _) = await StartAsync("telemetry.failed");
         using var disposing = provider;
-        using var recorder = new TelemetryRecorder();
-        recorder.Attach();
+        using var spans = new SpanCapture([FrameworkDiagnostics.SourceName]);
+        using var metrics = new MetricCapture([FrameworkDiagnostics.SourceName]);
+        metrics.RestrictToCurrentFlow();
         await using var scope = provider.CreateAsyncScope();
 
         // 操作返回失败：状态是 Error，说明是错误码
         var rejected = Sampled(scope.ServiceProvider);
         var failure = await Invoker(provider).InvokeAsync(rejected, Request("telemetry.failed", """{"text":""}"""));
         Assert.Equal("ECHOES_VALIDATION_001", failure.Outcome.Error?.Code);
-        var span = Assert.Single(recorder.Spans(rejected.TraceId));
+        var span = Assert.Single(spans.Spans(rejected.TraceId));
         Assert.Equal((ActivityStatusCode.Error, "ECHOES_VALIDATION_001"), (span.Status, span.StatusDescription));
         Assert.Equal(("telemetry.failed", "failure"), (span.GetTagItem("xihan.operation"), span.GetTagItem("xihan.outcome")));
 
@@ -86,13 +89,13 @@ public sealed class ObserveTelemetryTests
         var crashed = Sampled(scope.ServiceProvider);
         var unexpected = await Invoker(provider).InvokeAsync(crashed, Request("telemetry.failed", """{"text":"throw"}"""));
         Assert.Equal(KernelErrors.Unexpected, unexpected.Outcome.Error?.Code);
-        var thrown = Assert.Single(recorder.Spans(crashed.TraceId));
+        var thrown = Assert.Single(spans.Spans(crashed.TraceId));
         Assert.Equal((ActivityStatusCode.Error, KernelErrors.Unexpected), (thrown.Status, thrown.StatusDescription));
 
         var expected = new Dictionary<string, object?> { ["xihan.operation"] = "telemetry.failed", ["xihan.outcome"] = "failure" };
-        Assert.All(recorder.Measurements, m => Assert.Equal(expected, m.Tags));
-        Assert.Equal(2, recorder.Measurements.Count(static m => m.Instrument == Invocations));
-        Assert.Equal(2, recorder.Measurements.Count(static m => m.Instrument == Duration));
+        Assert.All(metrics.Entries, m => Assert.Equal(expected, m.Tags));
+        Assert.Equal(2, metrics.Entries.Count(static m => m.Instrument == Invocations));
+        Assert.Equal(2, metrics.Entries.Count(static m => m.Instrument == Duration));
     }
 
     [Fact]
@@ -101,19 +104,20 @@ public sealed class ObserveTelemetryTests
         // 消息处理器、作业与直接交给 App.InvokeAsync 的处理器都没有操作描述：不带标签，也不拿占位值顶替
         var (provider, app) = await StartAsync("telemetry.unused");
         using var disposing = provider;
-        using var recorder = new TelemetryRecorder();
-        recorder.Attach();
+        using var spans = new SpanCapture([FrameworkDiagnostics.SourceName]);
+        using var metrics = new MetricCapture([FrameworkDiagnostics.SourceName]);
+        metrics.RestrictToCurrentFlow();
         await using var scope = provider.CreateAsyncScope();
         var context = Sampled(scope.ServiceProvider);
 
         var result = await app.InvokeAsync(context, static _ => ValueTask.CompletedTask);
 
         Assert.True(result.IsSuccess, result.ToString());
-        var span = Assert.Single(recorder.Spans(context.TraceId));
+        var span = Assert.Single(spans.Spans(context.TraceId));
         Assert.Equal(["xihan.outcome"], span.TagObjects.Select(static tag => tag.Key));
-        Assert.False(recorder.SamplerSaw("xihan.invoke", "xihan.operation", "telemetry.unused"));
-        Assert.Equal(2, recorder.Measurements.Count);
-        Assert.All(recorder.Measurements, static m => Assert.Equal(["xihan.outcome"], m.Tags.Keys));
+        Assert.DoesNotContain(spans.SamplingRequests, static request => request.Name == "xihan.invoke" && request.Tags.Contains(new("xihan.operation", "telemetry.unused")));
+        Assert.Equal(2, metrics.Entries.Count);
+        Assert.All(metrics.Entries, static m => Assert.Equal(["xihan.outcome"], m.Tags.Keys));
     }
 
     [Fact]
@@ -122,16 +126,17 @@ public sealed class ObserveTelemetryTests
         // 请求点名的操作不在登记表里：调用器直接返回未知操作，不进管道。请求里的文本因此到不了 Span 与指标
         var (provider, _) = await StartAsync("telemetry.known");
         using var disposing = provider;
-        using var recorder = new TelemetryRecorder();
-        recorder.Attach();
+        using var spans = new SpanCapture([FrameworkDiagnostics.SourceName]);
+        using var metrics = new MetricCapture([FrameworkDiagnostics.SourceName]);
+        metrics.RestrictToCurrentFlow();
         await using var scope = provider.CreateAsyncScope();
         var context = Sampled(scope.ServiceProvider);
 
         var response = await Invoker(provider).InvokeAsync(context, Request("telemetry.made-up-by-the-caller", "{}"));
 
         Assert.Equal(KernelErrors.UnknownOperation, response.Outcome.Error?.Code);
-        Assert.Empty(recorder.Spans(context.TraceId));
-        Assert.Empty(recorder.Measurements);
+        Assert.Empty(spans.Spans(context.TraceId));
+        Assert.Empty(metrics.Entries);
     }
 
     [Fact]
@@ -140,8 +145,9 @@ public sealed class ObserveTelemetryTests
         // 处理器在同一个上下文上再调一个操作：调用器把里层的描述放进同一个上下文。外层的操作维度在进入时取，不随之改变
         var (provider, app) = await StartAsync("telemetry.inner");
         using var disposing = provider;
-        using var recorder = new TelemetryRecorder();
-        recorder.Attach();
+        using var spans = new SpanCapture([FrameworkDiagnostics.SourceName]);
+        using var metrics = new MetricCapture([FrameworkDiagnostics.SourceName]);
+        metrics.RestrictToCurrentFlow();
         await using var scope = provider.CreateAsyncScope();
         var context = Sampled(scope.ServiceProvider);
         var invoker = Invoker(provider);
@@ -154,12 +160,12 @@ public sealed class ObserveTelemetryTests
 
         Assert.True(result.IsSuccess, result.ToString());
         // 里层先结束：它带操作 ID，是外层的子 Span；外层没有操作 ID
-        var spans = recorder.Spans(context.TraceId);
-        Assert.Equal(2, spans.Count);
-        Assert.Equal("telemetry.inner", spans[0].GetTagItem("xihan.operation"));
-        Assert.Equal(spans[1].SpanId, spans[0].ParentSpanId);
-        Assert.Null(spans[1].GetTagItem("xihan.operation"));
-        var counts = recorder.Measurements.Where(static m => m.Instrument == Invocations).ToList();
+        var stopped = spans.Spans(context.TraceId);
+        Assert.Equal(2, stopped.Count);
+        Assert.Equal("telemetry.inner", stopped[0].GetTagItem("xihan.operation"));
+        Assert.Equal(stopped[1].SpanId, stopped[0].ParentSpanId);
+        Assert.Null(stopped[1].GetTagItem("xihan.operation"));
+        var counts = metrics.Entries.Where(static m => m.Instrument == Invocations).ToList();
         Assert.Equal(2, counts.Count);
         Assert.Equal("telemetry.inner", counts[0].Tags["xihan.operation"]);
         Assert.False(counts[1].Tags.ContainsKey("xihan.operation"));
@@ -171,16 +177,17 @@ public sealed class ObserveTelemetryTests
         // 上游不采样：没有 Span，指标照记，操作维度照带（指标不随采样丢）
         var (provider, _) = await StartAsync("telemetry.unsampled");
         using var disposing = provider;
-        using var recorder = new TelemetryRecorder();
-        recorder.Attach();
+        using var spans = new SpanCapture([FrameworkDiagnostics.SourceName]);
+        using var metrics = new MetricCapture([FrameworkDiagnostics.SourceName]);
+        metrics.RestrictToCurrentFlow();
         await using var scope = provider.CreateAsyncScope();
         var context = App.CreateContext(scope.ServiceProvider, new InvocationContextOptions { TraceId = ActivityTraceId.CreateRandom().ToHexString(), SpanId = UpstreamSpan, TraceFlags = ActivityTraceFlags.None }, CancellationToken.None);
 
         var response = await Invoker(provider).InvokeAsync(context, Request("telemetry.unsampled", """{"text":"hi"}"""));
 
         Assert.True(response.Outcome.IsSuccess, response.Outcome.ToString());
-        Assert.Empty(recorder.Spans(context.TraceId));
-        var counted = Assert.Single(recorder.Measurements, static m => m.Instrument == Invocations);
+        Assert.Empty(spans.Spans(context.TraceId));
+        var counted = Assert.Single(metrics.Entries, static m => m.Instrument == Invocations);
         Assert.Equal("telemetry.unsampled", counted.Tags["xihan.operation"]);
     }
 

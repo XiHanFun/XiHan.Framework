@@ -24,7 +24,7 @@ internal static class CacheGoPluginHost
     /// <summary>
     /// 示例源码目录 samples/CacheGoPlugin
     /// </summary>
-    public static string SourceDirectory { get; } = Path.Combine(LocateRoot(), "samples", "CacheGoPlugin");
+    public static string SourceDirectory { get; } = Path.Combine(FrameworkWorkspace.Root, "samples", "CacheGoPlugin");
 
     /// <summary>
     /// 构建产物目录：可执行文件与清单
@@ -128,24 +128,5 @@ internal static class CacheGoPluginHost
 
         File.Copy(Path.Combine(SourceDirectory, "xihan.manifest.json"), Path.Combine(Directory, "xihan.manifest.json"), overwrite: true);
         return null;
-    }
-
-    /// <summary>
-    /// 向上找到含解决方案文件的目录
-    /// </summary>
-    private static string LocateRoot()
-    {
-        var directory = new DirectoryInfo(AppContext.BaseDirectory);
-        while (directory is not null)
-        {
-            if (File.Exists(Path.Combine(directory.FullName, "XiHan.Framework.slnx")))
-            {
-                return directory.FullName;
-            }
-
-            directory = directory.Parent;
-        }
-
-        throw new InvalidOperationException("The solution root was not found.");
     }
 }

@@ -20,7 +20,7 @@ public sealed class KnowledgeChunkVectorTests
     /// <summary>
     /// 向量文件的内容
     /// </summary>
-    private static readonly KnowledgeVectors _vectors = ConformanceVectors.Load<KnowledgeVectors>("knowledge-chunks.json");
+    private static readonly KnowledgeVectors _vectors = SpecVectors.Read<KnowledgeVectors>("ai", "knowledge-chunks.json");
 
     [Fact]
     public void Defaults_AndLimits_AreTheOnesInTheVectors()

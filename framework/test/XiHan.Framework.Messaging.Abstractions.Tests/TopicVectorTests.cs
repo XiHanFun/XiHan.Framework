@@ -4,6 +4,7 @@
 using XiHan.Framework.Messaging.Abstractions.Envelopes;
 using XiHan.Framework.Messaging.Abstractions.Publishing;
 using XiHan.Framework.Primitives;
+using XiHan.Framework.Testing;
 
 namespace XiHan.Framework.Messaging.Abstractions.Tests;
 
@@ -18,7 +19,7 @@ public sealed class TopicVectorTests
     /// <summary>
     /// 向量文件的内容
     /// </summary>
-    private static readonly TopicVectors _vectors = ConformanceVectors.Load<TopicVectors>("topics.json");
+    private static readonly TopicVectors _vectors = SpecVectors.Read<TopicVectors>("messaging", "topics.json");
 
     [Fact]
     public void MaxLength_IsTheOneInTheVectors()

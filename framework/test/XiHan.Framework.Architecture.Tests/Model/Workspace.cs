@@ -3,6 +3,7 @@
 
 using System.Xml;
 using System.Xml.Linq;
+using XiHan.Framework.Testing;
 
 namespace XiHan.Framework.Architecture.Tests.Model;
 
@@ -22,7 +23,10 @@ internal static class Workspace
     /// <summary>
     /// 框架工作区根目录
     /// </summary>
-    public static string Root { get; } = Locate();
+    /// <remarks>
+    /// 由 <see cref="FrameworkWorkspace"/> 从测试输出目录向上找，架构测试必须在框架工作区里运行
+    /// </remarks>
+    public static string Root { get; } = FrameworkWorkspace.Root;
 
     /// <summary>
     /// 正式包所在目录
@@ -85,25 +89,6 @@ internal static class Workspace
     /// 相对于工作区根的路径，统一使用正斜杠以便跨平台比较与输出
     /// </summary>
     public static string Relative(string path) => Path.GetRelativePath(Root, path).Replace('\\', '/');
-
-    /// <summary>
-    /// 从测试输出目录向上查找框架工作区根（以 <c>XiHan.Framework.slnx</c> 为标记）
-    /// </summary>
-    private static string Locate()
-    {
-        var directory = new DirectoryInfo(AppContext.BaseDirectory);
-        while (directory is not null)
-        {
-            if (File.Exists(Path.Combine(directory.FullName, "XiHan.Framework.slnx")))
-            {
-                return directory.FullName;
-            }
-
-            directory = directory.Parent;
-        }
-
-        throw new InvalidOperationException("Could not locate 'XiHan.Framework.slnx'; the architecture tests must run inside the framework workspace.");
-    }
 
     /// <summary>
     /// 枚举根目录下每个目录中与目录同名的项目文件

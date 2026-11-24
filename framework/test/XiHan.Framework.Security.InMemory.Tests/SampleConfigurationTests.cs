@@ -2,6 +2,7 @@
 // See the LICENSE file in the project root for full license text.
 
 using Microsoft.Extensions.Configuration;
+using XiHan.Framework.Testing;
 
 namespace XiHan.Framework.Security.InMemory.Tests;
 
@@ -14,18 +15,9 @@ namespace XiHan.Framework.Security.InMemory.Tests;
 public sealed class SampleConfigurationTests
 {
     /// <summary>
-    /// 从测试输出目录向上找到框架工作区，定位示例应用的 appsettings.json
+    /// 示例应用的 appsettings.json
     /// </summary>
-    private static string Locate()
-    {
-        var directory = new DirectoryInfo(AppContext.BaseDirectory);
-        while (directory is not null && !File.Exists(Path.Combine(directory.FullName, "XiHan.Framework.slnx")))
-        {
-            directory = directory.Parent;
-        }
-
-        return Path.Combine(directory?.FullName ?? throw new InvalidOperationException("The framework workspace could not be located."), "samples", "SimpleApp", "appsettings.json");
-    }
+    private static string Locate() => Path.Combine(FrameworkWorkspace.Root, "samples", "SimpleApp", "appsettings.json");
 
     [Fact]
     public void SimpleAppSettings_LoadPrincipalsAndGrants_AndAuthenticateByApiKey()

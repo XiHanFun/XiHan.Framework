@@ -3,6 +3,7 @@
 
 using System.Reflection;
 using XiHan.Framework.Messaging.Abstractions.Envelopes;
+using XiHan.Framework.Testing;
 using XiHan.Framework.Workflow.Abstractions.Events;
 
 namespace XiHan.Framework.Workflow.Abstractions.Tests;
@@ -18,7 +19,7 @@ public sealed class WorkflowEventTopicVectorTests
     /// <summary>
     /// 向量文件的内容
     /// </summary>
-    private static readonly TopicVectors _vectors = ConformanceVectors.Load<TopicVectors>("workflow-event-topics.json");
+    private static readonly TopicVectors _vectors = SpecVectors.Read<TopicVectors>("workflow", "workflow-event-topics.json");
 
     [Fact]
     public void Source_IsTheOneInTheVectors()

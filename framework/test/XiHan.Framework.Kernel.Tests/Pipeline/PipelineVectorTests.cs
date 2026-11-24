@@ -3,8 +3,8 @@
 
 using System.Text.Json;
 using XiHan.Framework.Kernel.Pipeline;
-using XiHan.Framework.Kernel.Tests.Fixtures;
 using XiHan.Framework.Primitives;
+using XiHan.Framework.Testing;
 
 namespace XiHan.Framework.Kernel.Tests.Pipeline;
 
@@ -19,7 +19,7 @@ public sealed class PipelineVectorTests
     /// <summary>
     /// 向量文件的内容
     /// </summary>
-    private static readonly OrderingVectors _vectors = SpecVectors.Load<OrderingVectors>("pipeline/ordering.json");
+    private static readonly OrderingVectors _vectors = SpecVectors.Read<OrderingVectors>("pipeline", "ordering.json");
 
     [Fact]
     public void Dump_MatchesTheVectorOrder()

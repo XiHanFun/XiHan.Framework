@@ -6,6 +6,7 @@ using System.Text.Json.Nodes;
 using System.Text.Json.Serialization.Metadata;
 using XiHan.Framework.Caching.Abstractions;
 using XiHan.Framework.Caching.Abstractions.Stores;
+using XiHan.Framework.Testing;
 
 namespace XiHan.Framework.Caching.Remote.Tests;
 
@@ -20,8 +21,7 @@ public sealed class RemoteCacheVectorTests
     /// <summary>
     /// 向量文件
     /// </summary>
-    private static readonly JsonDocument _vectors = JsonDocument.Parse(File.ReadAllText(Path.GetFullPath(Path.Combine(
-        CacheGoPluginHost.SourceDirectory, "..", "..", "spec", "conformance", "vectors", "provider", "caching-distributed.json"))));
+    private static readonly JsonDocument _vectors = JsonDocument.Parse(File.ReadAllText(SpecVectors.PathOf("provider", "caching-distributed.json")));
 
     /// <summary>
     /// 每个操作的请求与响应消息类型，与 <see cref="RemoteCacheStore"/> 发出的一致

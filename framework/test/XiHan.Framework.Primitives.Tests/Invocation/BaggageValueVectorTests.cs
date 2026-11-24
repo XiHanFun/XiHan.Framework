@@ -1,6 +1,9 @@
 // Copyright (c) XiHanFun Contributors. Licensed under the MIT License.
 // See the LICENSE file in the project root for full license text.
 
+using System.Text.Json;
+using XiHan.Framework.Testing;
+
 namespace XiHan.Framework.Primitives.Tests.Invocation;
 
 /// <summary>
@@ -14,7 +17,7 @@ public sealed class BaggageValueVectorTests
     /// <summary>
     /// 向量文件的内容
     /// </summary>
-    private static readonly BaggageVectors _vectors = ConformanceVectors.Load<BaggageVectors>("baggage-keys.json");
+    private static readonly BaggageVectors _vectors = SpecVectors.Read<BaggageVectors>("primitives", "baggage-keys.json");
 
     [Fact]
     public void IsAcceptableValue_MatchesConformanceVectors()
@@ -39,9 +42,16 @@ public sealed class BaggageValueVectorTests
     }
 
     /// <summary>
-    /// 向量文件里本测试用到的部分
+    /// 向量文件的对象模型
     /// </summary>
-    private sealed record BaggageVectors(ValueVectors Values);
+    /// <remarks>
+    /// 本测试只回放 <c>values</c>，键的三项由 <see cref="InvocationContextTests"/> 按它的模型回放，这里原样留着
+    /// </remarks>
+    /// <param name="WellFormed">格式合法的键</param>
+    /// <param name="IllFormed">格式非法的键</param>
+    /// <param name="Registered">已登记的键</param>
+    /// <param name="Values">可以与不可以进入上下文的值</param>
+    private sealed record BaggageVectors(JsonElement WellFormed, JsonElement IllFormed, JsonElement Registered, ValueVectors Values);
 
     /// <summary>
     /// 可以与不可以进入上下文的值

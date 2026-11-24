@@ -3,6 +3,7 @@
 
 using XiHan.Framework.MultiTenancy.Abstractions.Sharding;
 using XiHan.Framework.MultiTenancy.Abstractions.Tenants;
+using XiHan.Framework.Testing;
 
 namespace XiHan.Framework.MultiTenancy.Abstractions.Tests;
 
@@ -22,7 +23,7 @@ public sealed class TenantShardVectorTests
     /// <summary>
     /// 向量文件的内容
     /// </summary>
-    private static readonly ShardVectors _vectors = ConformanceVectors.Load<ShardVectors>("tenant-shards.json");
+    private static readonly ShardVectors _vectors = SpecVectors.Read<ShardVectors>("multitenancy", "tenant-shards.json");
 
     [Fact]
     public void PropertyNames_AreTheOnesInTheVectors()

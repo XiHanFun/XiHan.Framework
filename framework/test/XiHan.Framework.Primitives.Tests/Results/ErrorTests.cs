@@ -1,6 +1,8 @@
 // Copyright (c) XiHanFun Contributors. Licensed under the MIT License.
 // See the LICENSE file in the project root for full license text.
 
+using XiHan.Framework.Testing;
+
 namespace XiHan.Framework.Primitives.Tests.Results;
 
 /// <summary>
@@ -16,7 +18,7 @@ public sealed class ErrorTests
     [Fact]
     public void ErrorCode_IsValid_MatchesConformanceVectors()
     {
-        var vectors = ConformanceVectors.Load<ErrorCodeVectors>("error-codes.json");
+        var vectors = SpecVectors.Read<ErrorCodeVectors>("primitives", "error-codes.json");
 
         Assert.All(vectors.Valid, static code => Assert.True(ErrorCode.IsValid(code), code));
         Assert.All(vectors.Invalid, static code => Assert.False(ErrorCode.IsValid(code), code));

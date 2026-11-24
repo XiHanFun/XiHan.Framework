@@ -2,6 +2,7 @@
 // See the LICENSE file in the project root for full license text.
 
 using Microsoft.Extensions.Configuration;
+using XiHan.Framework.Testing;
 
 namespace XiHan.Framework.Messaging.Abstractions.Tests;
 
@@ -21,7 +22,7 @@ public sealed class InstanceIdVectorTests
     /// <summary>
     /// 向量文件的内容
     /// </summary>
-    private static readonly InstanceIdVectors _vectors = ConformanceVectors.Load<InstanceIdVectors>("instance-ids.json");
+    private static readonly InstanceIdVectors _vectors = SpecVectors.Read<InstanceIdVectors>("messaging", "instance-ids.json");
 
     [Fact]
     public void InstanceId_AcceptsTheValidIds()

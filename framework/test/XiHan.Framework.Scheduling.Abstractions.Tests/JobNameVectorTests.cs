@@ -3,6 +3,7 @@
 
 using XiHan.Framework.Scheduling.Abstractions.Jobs;
 using XiHan.Framework.Scheduling.Abstractions.Schedulers;
+using XiHan.Framework.Testing;
 
 namespace XiHan.Framework.Scheduling.Abstractions.Tests;
 
@@ -17,7 +18,7 @@ public sealed class JobNameVectorTests
     /// <summary>
     /// 向量文件的内容
     /// </summary>
-    private static readonly JobNameVectors _vectors = ConformanceVectors.Load<JobNameVectors>("job-names.json");
+    private static readonly JobNameVectors _vectors = SpecVectors.Read<JobNameVectors>("scheduling", "job-names.json");
 
     [Fact]
     public void MaxLength_IsTheOneInTheVectors()

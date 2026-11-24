@@ -3,6 +3,7 @@
 
 using System.Globalization;
 using XiHan.Framework.Scheduling.Abstractions.Schedules;
+using XiHan.Framework.Testing;
 
 namespace XiHan.Framework.Scheduling.Abstractions.Tests.Schedules;
 
@@ -27,7 +28,7 @@ public sealed class CronExpressionVectorTests
     /// <summary>
     /// 向量文件的内容
     /// </summary>
-    private static readonly CronVectors _vectors = ConformanceVectors.Load<CronVectors>("cron-expressions.json");
+    private static readonly CronVectors _vectors = SpecVectors.Read<CronVectors>("scheduling", "cron-expressions.json");
 
     [Fact]
     public void Next_GivesTheOccurrencesOfEveryCase()

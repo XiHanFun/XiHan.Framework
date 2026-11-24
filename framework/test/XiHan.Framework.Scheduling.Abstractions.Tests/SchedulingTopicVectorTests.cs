@@ -4,6 +4,7 @@
 using System.Reflection;
 using XiHan.Framework.Messaging.Abstractions.Envelopes;
 using XiHan.Framework.Scheduling.Abstractions.Events;
+using XiHan.Framework.Testing;
 
 namespace XiHan.Framework.Scheduling.Abstractions.Tests;
 
@@ -18,7 +19,7 @@ public sealed class SchedulingTopicVectorTests
     /// <summary>
     /// 向量文件的内容
     /// </summary>
-    private static readonly EventTopicVectors _vectors = ConformanceVectors.Load<EventTopicVectors>("event-topics.json");
+    private static readonly EventTopicVectors _vectors = SpecVectors.Read<EventTopicVectors>("scheduling", "event-topics.json");
 
     [Fact]
     public void Source_IsTheOneInTheVectors()

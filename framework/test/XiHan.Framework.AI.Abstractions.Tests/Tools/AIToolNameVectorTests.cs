@@ -3,6 +3,7 @@
 
 using XiHan.Framework.AI.Abstractions.Tools;
 using XiHan.Framework.Kernel.Operations;
+using XiHan.Framework.Testing;
 
 namespace XiHan.Framework.AI.Abstractions.Tests.Tools;
 
@@ -17,7 +18,7 @@ public sealed class AIToolNameVectorTests
     /// <summary>
     /// 向量文件的内容
     /// </summary>
-    private static readonly ToolNameVectors _vectors = ConformanceVectors.Load<ToolNameVectors>("tool-names.json");
+    private static readonly ToolNameVectors _vectors = SpecVectors.Read<ToolNameVectors>("ai", "tool-names.json");
 
     [Fact]
     public void MaxLength_IsTheOneInTheVectors()

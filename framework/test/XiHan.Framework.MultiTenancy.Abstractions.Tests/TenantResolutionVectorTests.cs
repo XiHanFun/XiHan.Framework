@@ -23,7 +23,7 @@ public sealed class TenantResolutionVectorTests
     /// <summary>
     /// 向量文件的内容
     /// </summary>
-    private static readonly ResolutionVectors _vectors = ConformanceVectors.Load<ResolutionVectors>("tenant-resolution.json");
+    private static readonly ResolutionVectors _vectors = SpecVectors.Read<ResolutionVectors>("multitenancy", "tenant-resolution.json");
 
     [Fact]
     public async Task Middleware_SettlesTheTenantOfEveryCase()

@@ -55,7 +55,7 @@ public sealed class PluginTracingTests
     [Fact]
     public async Task Invoke_OpensAClientSpanUnderTheInvocationSpan_AndThePluginIsParentedOnIt()
     {
-        using var recorder = new SpanRecorder();
+        using var recorder = new SpanCapture([FrameworkDiagnostics.SourceName]);
         var context = Sampled();
         Activity? during = null;
         TraceParent outgoing = default;
@@ -93,7 +93,7 @@ public sealed class PluginTracingTests
     public async Task Invoke_WithoutAnInvocationSpan_IsStillInTheTraceOfTheCall()
     {
         // 应用关掉了内置中间件、管道里没有 xihan.invoke：Span 按 RFC-0003 规则 7 以上游为远端父级，不另起一条链路
-        using var recorder = new SpanRecorder();
+        using var recorder = new SpanCapture([FrameworkDiagnostics.SourceName]);
         var context = Sampled();
         var runtime = new StubPluginRuntime("xihan.test.alpha", "alphas.run");
 
@@ -114,7 +114,7 @@ public sealed class PluginTracingTests
     [Fact]
     public async Task Invoke_ThatFails_MarksTheSpanAsError()
     {
-        using var recorder = new SpanRecorder();
+        using var recorder = new SpanCapture([FrameworkDiagnostics.SourceName]);
         var failing = new StubPluginRuntime("xihan.test.alpha", "alphas.run")
         {
             OnInvoke = static (_, _) => ValueTask.FromResult(Result.Failure<object>(Error.Unavailable(PluginErrors.Unavailable, PluginMessages.ProcessUnavailable, MessageArguments.Of(("id", "xihan.test.alpha"), ("state", "Failed"))))),
@@ -142,7 +142,7 @@ public sealed class PluginTracingTests
     public async Task ProxyOperation_IsInvokedInsideTheSpan_TaggedWithItsOwnerAndId()
     {
         // 代理操作是宿主调用插件操作的唯一入口：归属（插件的清单 ID）与操作 ID 作标签
-        using var recorder = new SpanRecorder();
+        using var recorder = new SpanCapture([FrameworkDiagnostics.SourceName]);
         var context = Sampled();
         var runtime = new StubPluginRuntime("xihan.test.alpha", "alphas.run")
         {
@@ -160,7 +160,7 @@ public sealed class PluginTracingTests
     [Fact]
     public async Task Delivery_OpensOneSpanPerSubscribedPlugin_WithoutAnOperationTag()
     {
-        using var recorder = new SpanRecorder();
+        using var recorder = new SpanCapture([FrameworkDiagnostics.SourceName]);
         using var roster = new PluginRoster<StubPluginRuntime>();
         roster.UseRegistry(new OperationRegistry(new PermissionRegistry()));
         var alpha = new StubPluginRuntime("xihan.test.alpha", "alphas.run", Topic);
@@ -224,7 +224,7 @@ public sealed class PluginTracingTests
     [Fact]
     public async Task RealPlugin_ReceivesTheSpanAsItsParent_SoItsCallbackHangsUnderIt()
     {
-        using var recorder = new SpanRecorder();
+        using var recorder = new SpanCapture([FrameworkDiagnostics.SourceName]);
         await using var host = await EchoPluginHost.StartAsync(static b => b.UseFeature(new StubFeature(TestManifests.Create("xihan.app.traces"))
         {
             OnConfigure = static ctx => ctx.AddOperation<TraceOperation, PingRequest, PingResponse>(new OperationContract("traces.read"), PingJsonContext.Default.PingRequest, PingJsonContext.Default.PingResponse),
@@ -262,7 +262,7 @@ public sealed class PluginTracingTests
     [Fact]
     public async Task RealPlugin_EventDelivery_IsRecordedUnderTheDeliveryInvocation()
     {
-        using var recorder = new SpanRecorder();
+        using var recorder = new SpanCapture([FrameworkDiagnostics.SourceName]);
         await using var host = await EchoPluginHost.StartAsync(static b => b.UseFeature<InMemoryMessagingFeature>());
         await using var scope = host.Services.CreateAsyncScope();
         var publisher = scope.ServiceProvider.GetRequiredService<IMessagePublisher>();

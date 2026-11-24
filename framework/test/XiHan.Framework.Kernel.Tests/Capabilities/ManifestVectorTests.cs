@@ -3,7 +3,7 @@
 
 using System.Text.Json;
 using XiHan.Framework.Kernel.Capabilities;
-using XiHan.Framework.Kernel.Tests.Fixtures;
+using XiHan.Framework.Testing;
 
 namespace XiHan.Framework.Kernel.Tests.Capabilities;
 
@@ -18,7 +18,7 @@ public sealed class ManifestVectorTests
     /// <summary>
     /// 向量文件的内容
     /// </summary>
-    private static readonly ManifestVectors _vectors = SpecVectors.Load<ManifestVectors>("manifest/manifests.json");
+    private static readonly ManifestVectors _vectors = SpecVectors.Read<ManifestVectors>("manifest", "manifests.json");
 
     [Fact]
     public void Read_AcceptsEveryValidManifest()
@@ -83,7 +83,7 @@ public sealed class ManifestVectorTests
     /// <summary>
     /// 一份清单：JSON 值或原文，合法时再写出的全文，不合法时的原因与期望的错误
     /// </summary>
-    private sealed record ManifestCase(string Name, JsonElement Manifest, string? Text, string? Reason, string? Written, ManifestError? Error);
+    private sealed record ManifestCase(string Name, JsonElement Manifest = default, string? Text = null, string? Reason = null, string? Written = null, ManifestError? Error = null);
 
     /// <summary>
     /// 期望的错误：码、消息键与参数

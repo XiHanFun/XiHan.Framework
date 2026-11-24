@@ -3,6 +3,7 @@
 
 using System.Globalization;
 using XiHan.Framework.Persistence.Abstractions.Identifiers;
+using XiHan.Framework.Testing;
 
 namespace XiHan.Framework.Persistence.Abstractions.Tests;
 
@@ -22,7 +23,7 @@ public sealed class SnowflakeIdVectorTests
     /// <summary>
     /// 向量文件的内容
     /// </summary>
-    private static readonly SnowflakeVectors _vectors = ConformanceVectors.Load<SnowflakeVectors>("snowflake-ids.json");
+    private static readonly SnowflakeVectors _vectors = SpecVectors.Read<SnowflakeVectors>("persistence", "snowflake-ids.json");
 
     [Fact]
     public void TheLayout_IsTheOneInTheVectors()

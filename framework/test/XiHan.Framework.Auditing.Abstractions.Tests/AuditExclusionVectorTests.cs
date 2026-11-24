@@ -20,7 +20,7 @@ public sealed class AuditExclusionVectorTests
     /// <summary>
     /// 向量文件的内容
     /// </summary>
-    private static readonly ExclusionVectors _vectors = ConformanceVectors.Load<ExclusionVectors>("exclusions.json");
+    private static readonly ExclusionVectors _vectors = SpecVectors.Read<ExclusionVectors>("auditing", "exclusions.json");
 
     [Fact]
     public void Exclude_AcceptsTheValidEntries()

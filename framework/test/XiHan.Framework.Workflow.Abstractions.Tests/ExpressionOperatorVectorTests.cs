@@ -1,6 +1,8 @@
 // Copyright (c) XiHanFun Contributors. Licensed under the MIT License.
 // See the LICENSE file in the project root for full license text.
 
+using XiHan.Framework.Testing;
+
 namespace XiHan.Framework.Workflow.Abstractions.Tests;
 
 /// <summary>
@@ -14,7 +16,7 @@ public sealed class ExpressionOperatorVectorTests
     /// <summary>
     /// 向量文件的内容
     /// </summary>
-    private static readonly ExpressionVectorReplay.ExpressionCases _vectors = ConformanceVectors.Load<ExpressionVectorReplay.ExpressionCases>("expression-operators.json");
+    private static readonly ExpressionVectorReplay.ExpressionCases _vectors = SpecVectors.Read<ExpressionVectorReplay.ExpressionCases>("workflow", "expression-operators.json");
 
     [Fact]
     public void Values_EvaluateToTheTypeAndTextInTheVectors()

@@ -7,6 +7,7 @@ using System.Text.Json;
 using XiHan.Framework.Messaging.Abstractions.CloudEvents;
 using XiHan.Framework.Messaging.Abstractions.Envelopes;
 using XiHan.Framework.Primitives;
+using XiHan.Framework.Testing;
 
 namespace XiHan.Framework.Messaging.Abstractions.Tests;
 
@@ -21,7 +22,7 @@ public sealed class CloudEventsEnvelopeVectorTests
     /// <summary>
     /// 向量文件的内容
     /// </summary>
-    private static readonly EnvelopeVectors _vectors = ConformanceVectors.Load<EnvelopeVectors>("cloudevents-envelopes.json");
+    private static readonly EnvelopeVectors _vectors = SpecVectors.Read<EnvelopeVectors>("messaging", "cloudevents-envelopes.json");
 
     [Fact]
     public void ContentTypeAndErrorCode_AreTheOnesInTheVectors()

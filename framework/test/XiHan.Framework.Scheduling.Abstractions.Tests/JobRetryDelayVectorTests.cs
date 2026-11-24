@@ -2,6 +2,7 @@
 // See the LICENSE file in the project root for full license text.
 
 using XiHan.Framework.Scheduling.Abstractions.Jobs;
+using XiHan.Framework.Testing;
 
 namespace XiHan.Framework.Scheduling.Abstractions.Tests;
 
@@ -16,7 +17,7 @@ public sealed class JobRetryDelayVectorTests
     /// <summary>
     /// 向量文件的内容
     /// </summary>
-    private static readonly RetryDelayVectors _vectors = ConformanceVectors.Load<RetryDelayVectors>("retry-delays.json");
+    private static readonly RetryDelayVectors _vectors = SpecVectors.Read<RetryDelayVectors>("scheduling", "retry-delays.json");
 
     [Fact]
     public void TheLimits_AreTheOnesInTheVectors()

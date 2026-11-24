@@ -29,7 +29,7 @@ public sealed class OutboxBackoffVectorTests
     /// <summary>
     /// 向量文件的内容
     /// </summary>
-    private static readonly BackoffVectors _vectors = ConformanceVectors.Load<BackoffVectors>("outbox-backoff.json");
+    private static readonly BackoffVectors _vectors = SpecVectors.Read<BackoffVectors>("messaging", "outbox-backoff.json");
 
     [Fact]
     public void Defaults_AreTheOnesInTheVectors()

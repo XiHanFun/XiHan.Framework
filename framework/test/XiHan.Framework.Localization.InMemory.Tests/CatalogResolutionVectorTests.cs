@@ -1,12 +1,12 @@
 // Copyright (c) XiHanFun Contributors. Licensed under the MIT License.
 // See the LICENSE file in the project root for full license text.
 
-using System.Text.Json;
 using Microsoft.Extensions.DependencyInjection;
 using XiHan.Framework.Localization.Abstractions;
 using XiHan.Framework.Localization.Abstractions.Locales;
 using XiHan.Framework.Localization.Abstractions.Messages;
 using XiHan.Framework.Primitives;
+using XiHan.Framework.Testing;
 
 namespace XiHan.Framework.Localization.InMemory.Tests;
 
@@ -19,17 +19,9 @@ namespace XiHan.Framework.Localization.InMemory.Tests;
 public sealed class CatalogResolutionVectorTests
 {
     /// <summary>
-    /// 向量文件的反序列化选项
-    /// </summary>
-    /// <remarks>
-    /// Web 默认（camelCase、不区分大小写）；对象模型里没有缺省值的构造参数必须出现在文件里，向量改了字段名时读取就失败，不会悄悄读成空
-    /// </remarks>
-    private static readonly JsonSerializerOptions _options = new(JsonSerializerDefaults.Web) { RespectRequiredConstructorParameters = true };
-
-    /// <summary>
     /// 向量文件的内容
     /// </summary>
-    private static readonly CatalogVectors _vectors = Load();
+    private static readonly CatalogVectors _vectors = SpecVectors.Read<CatalogVectors>("localization", "catalog-resolution.json");
 
     [Fact]
     public void ErrorCode_IsTheOneInTheVectors()
@@ -152,32 +144,6 @@ public sealed class CatalogResolutionVectorTests
         {
             return exception;
         }
-    }
-
-    /// <summary>
-    /// 读向量文件
-    /// </summary>
-    private static CatalogVectors Load()
-    {
-        var path = Path.Combine(LocateRoot(), "spec", "conformance", "vectors", "localization", "catalog-resolution.json");
-        using var stream = File.OpenRead(path);
-        return JsonSerializer.Deserialize<CatalogVectors>(stream, _options) ?? throw new InvalidOperationException($"Vector file '{path}' is empty.");
-    }
-
-    /// <summary>
-    /// 从测试输出目录向上查找框架工作区根（以 <c>XiHan.Framework.slnx</c> 为标记）
-    /// </summary>
-    private static string LocateRoot()
-    {
-        for (var directory = new DirectoryInfo(AppContext.BaseDirectory); directory is not null; directory = directory.Parent)
-        {
-            if (File.Exists(Path.Combine(directory.FullName, "XiHan.Framework.slnx")))
-            {
-                return directory.FullName;
-            }
-        }
-
-        throw new InvalidOperationException("The framework workspace root (the directory of 'XiHan.Framework.slnx') was not found above the test output directory.");
     }
 
     /// <summary>
