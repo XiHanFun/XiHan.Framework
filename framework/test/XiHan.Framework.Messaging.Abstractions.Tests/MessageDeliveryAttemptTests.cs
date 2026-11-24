@@ -1,6 +1,7 @@
 // Copyright (c) XiHanFun Contributors. Licensed under the MIT License.
 // See the LICENSE file in the project root for full license text.
 
+using System.Diagnostics;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -17,7 +18,7 @@ namespace XiHan.Framework.Messaging.Abstractions.Tests;
 /// 代理一侧一次投递尝试的归类、去向、取消与日志
 /// </summary>
 /// <remarks>
-/// 成功、返回失败、抛出、被停止取消各归成什么了结方式，失败后按尝试号与订阅方式的去向，应用不在服务状态时的等待，以及三条日志（RFC-0009「投递」第 3、5 条，ADR-0261）
+/// 成功、返回失败、抛出、被停止取消各归成什么了结方式，失败后按尝试号与订阅方式的去向，应用不在服务状态时的等待，以及三条日志（RFC-0009「投递」第 3、5 条，ADR-0261）；被管道以应用不在服务状态拒绝的派发不计尝试、回到等待，一直被拒绝时的间隔与出口（ADR-0275）
 /// </remarks>
 public sealed class MessageDeliveryAttemptTests
 {
@@ -202,7 +203,7 @@ public sealed class MessageDeliveryAttemptTests
     public async Task ThrowingAFrameworkException_KeepsItsCodeAsReason_AndItsErrorAsInner()
     {
         await using var host = await TestHost.StartAsync(static _ => { });
-        var thrown = new FrameworkException(KernelErrors.InvalidAppState, "The application is in state 'Draining' and cannot accept invocations.");
+        var thrown = new FrameworkException(MessagingErrors.BrokerUnavailable, "Failed to publish to topic 'orders'.");
 
         var outcome = await MessageDeliveryAttempt.RunAsync(Throwing(thrown), Delivery(1), _options, host.App, NullLogger.Instance, CancellationToken.None);
 
@@ -210,8 +211,8 @@ public sealed class MessageDeliveryAttemptTests
         Assert.Equal(DeliveryDisposition.Retry, outcome.Disposition);
         var error = Assert.IsType<Error>(outcome.Error);
         Assert.Equal(MessagingErrors.HandlerFailed, error.Code);
-        Assert.Equal(KernelErrors.InvalidAppState, error.Details?["reason"]);
-        Assert.Equal(KernelErrors.InvalidAppState, error.Inner?.Code);
+        Assert.Equal(MessagingErrors.BrokerUnavailable, error.Details?["reason"]);
+        Assert.Equal(MessagingErrors.BrokerUnavailable, error.Inner?.Code);
     }
 
     [Theory]
@@ -423,6 +424,192 @@ public sealed class MessageDeliveryAttemptTests
             stopGate.TrySetResult();
             await draining.WaitAsync(_patience);
         }
+    }
+
+    [Theory]
+    [InlineData(SubscriptionMode.Competing)]
+    [InlineData(SubscriptionMode.Broadcast)]
+    public async Task DispatchRejectedBecauseTheAppLeftService_IsNotAnAttempt_AndWaitsUntilStoppingAbandonsIt(SubscriptionMode mode)
+    {
+        var stopEntered = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var stopGate = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        // 特性停在闸门前，应用就一直处在排空中：代理的停止信号还没到
+        var probe = new StubFeature(TestManifests.Create("xihan.test.delivery-rejected"))
+        {
+            OnStop = async _ =>
+            {
+                stopEntered.SetResult();
+                await stopGate.Task;
+            },
+        };
+        await using var host = await TestHost.StartAsync(b => b.UseFeature(probe));
+        Task? draining = null;
+        try
+        {
+            var dispatched = 0;
+            using var logs = new LogCapture();
+            var logger = logs.CreateLogger(nameof(MessageDeliveryAttemptTests));
+            using var stopping = new CancellationTokenSource();
+
+            // 最后一次尝试：查看时应用在服务状态，派发进管道之前它开始排空，真实的管道以 KERNEL_HOSTING_004 拒绝这次调用
+            var pending = MessageDeliveryAttempt.RunAsync(
+                async (_, cancellationToken) =>
+                {
+                    Interlocked.Increment(ref dispatched);
+                    draining ??= host.App.StopAsync(CancellationToken.None);
+                    await stopEntered.Task.WaitAsync(_patience, cancellationToken);
+                    await using var scope = host.Services.CreateAsyncScope();
+                    return await host.App.InvokeAsync(App.CreateContext(scope.ServiceProvider, cancellationToken), static _ => ValueTask.CompletedTask);
+                },
+                Delivery(3, mode),
+                _options,
+                host.App,
+                logger,
+                stopping.Token).AsTask();
+
+            // 被拒绝的派发不是失败：不了结这条投递，回到等服务状态，排空中不再派发
+            await stopEntered.Task.WaitAsync(_patience);
+            await Task.Delay(200);
+            Assert.False(pending.IsCompleted);
+            Assert.Equal(1, Volatile.Read(ref dispatched));
+
+            await stopping.CancelAsync();
+            var outcome = await pending.WaitAsync(_patience);
+
+            // 停止信号到来照旧放弃：尝试次数没有被用掉，不进死信、不丢弃，也不记警告
+            Assert.Equal(DeliveryDisposition.Abandon, outcome.Disposition);
+            Assert.Null(outcome.Error);
+            Assert.Equal(1, dispatched);
+            Assert.DoesNotContain(logs.Entries, static e => e.Level >= LogLevel.Warning);
+        }
+        finally
+        {
+            // 断言失败也要放开闸门，否则宿主停不下来
+            stopGate.TrySetResult();
+            if (draining is not null)
+            {
+                await draining.WaitAsync(_patience);
+            }
+        }
+    }
+
+    [Fact]
+    public async Task RejectedDispatch_IsDispatchedAgain_OnceTheAppServes_WithoutCountingAnAttempt()
+    {
+        await using var host = await TestHost.StartAsync(static _ => { });
+        using var logs = new LogCapture();
+        var logger = logs.CreateLogger(nameof(MessageDeliveryAttemptTests));
+        var dispatched = 0;
+
+        var outcome = await MessageDeliveryAttempt.RunAsync(
+            (_, _) => Interlocked.Increment(ref dispatched) == 1
+                ? throw new FrameworkException(KernelErrors.InvalidAppState, "The application is in state 'Draining' and cannot accept invocations.")
+                : ValueTask.FromResult(Result.Success()),
+            Delivery(3),
+            _options,
+            host.App,
+            logger,
+            CancellationToken.None);
+
+        // 第一次被拒绝不算：应用在服务状态时再派发一次，处理成功即确认。最后一次尝试上也不进死信
+        Assert.Equal(DeliveryDisposition.Complete, outcome.Disposition);
+        Assert.Equal(2, dispatched);
+        Assert.DoesNotContain(logs.Entries, static e => e.Level >= LogLevel.Warning);
+        Assert.Equal(
+            [(LogLevel.Debug, $"Dispatching message {MessageId} on topic {Topic} was rejected because the application is not serving; attempt 3 is not counted.")],
+            logs.Entries.Select(static e => (e.Level, e.Message)));
+    }
+
+    [Theory]
+    [InlineData(1, DeliveryDisposition.Retry)]
+    [InlineData(3, DeliveryDisposition.DeadLetter)]
+    public async Task DispatchThatKeepsBeingRejectedWhileTheAppServes_EndsAsAFailedAttempt_AfterBoundedSpacedDispatches(int attempt, DeliveryDisposition expected)
+    {
+        await using var host = await TestHost.StartAsync(static _ => { });
+        using var logs = new LogCapture();
+        var logger = logs.CreateLogger(nameof(MessageDeliveryAttemptTests));
+        var dispatched = 0;
+        var thrown = new FrameworkException(KernelErrors.InvalidAppState, "The application is in state 'Draining' and cannot accept invocations.");
+        var started = Stopwatch.GetTimestamp();
+
+        // 状态说在服务、派发却一直被拒绝（派发绑定的不是这个应用）：不能无限空转
+        var outcome = await MessageDeliveryAttempt.RunAsync(
+            (_, _) =>
+            {
+                Interlocked.Increment(ref dispatched);
+                throw thrown;
+            },
+            Delivery(attempt),
+            _options,
+            host.App,
+            logger,
+            CancellationToken.None).AsTask().WaitAsync(_patience);
+
+        // 出口：同一次尝试里第 10 次被拒绝按一次失败的尝试处理，与抛出别的框架异常一样归类
+        Assert.Equal(10, dispatched);
+        Assert.Equal(expected, outcome.Disposition);
+        Assert.Equal(MessagingErrors.HandlerFailed, outcome.Error?.Code);
+        Assert.Equal(KernelErrors.InvalidAppState, outcome.Error?.Details?["reason"]);
+        Assert.Equal(KernelErrors.InvalidAppState, outcome.Error?.Inner?.Code);
+        // 间隔：两次派发之间各等一个查看间隔（10 毫秒），9 次间隔合计不会少于它的一半
+        Assert.True(Stopwatch.GetElapsedTime(started) >= TimeSpan.FromMilliseconds(45), $"The rejected dispatches were not spaced out: {Stopwatch.GetElapsedTime(started)}.");
+        var warning = Assert.Single(logs.Entries, static e => e.Level >= LogLevel.Warning && e.Message.Contains("threw", StringComparison.Ordinal));
+        Assert.Same(thrown, warning.Exception);
+        Assert.Equal(9, logs.Entries.Count(static e => e.Level == LogLevel.Debug && e.Message.Contains("was rejected", StringComparison.Ordinal)));
+    }
+
+    [Fact]
+    public async Task RejectedDispatch_WhenStoppingArrivesDuringTheInterval_IsAbandon()
+    {
+        await using var host = await TestHost.StartAsync(static _ => { });
+        using var logs = new LogCapture();
+        var logger = logs.CreateLogger(nameof(MessageDeliveryAttemptTests));
+        using var stopping = new CancellationTokenSource();
+        var dispatched = 0;
+
+        var outcome = await MessageDeliveryAttempt.RunAsync(
+            async (_, _) =>
+            {
+                Interlocked.Increment(ref dispatched);
+                // 停止信号与拒绝同时到：拒绝之后的间隔立刻被打断
+                await stopping.CancelAsync();
+                throw new FrameworkException(KernelErrors.InvalidAppState, "The application is in state 'Draining' and cannot accept invocations.");
+            },
+            Delivery(3),
+            _options,
+            host.App,
+            logger,
+            stopping.Token);
+
+        Assert.Equal(DeliveryDisposition.Abandon, outcome.Disposition);
+        Assert.Null(outcome.Error);
+        Assert.Equal(1, dispatched);
+        Assert.DoesNotContain(logs.Entries, static e => e.Level >= LogLevel.Warning);
+    }
+
+    [Fact]
+    public async Task ReturnedFailureCarryingTheNotServingCode_IsStillAFailedAttempt()
+    {
+        await using var host = await TestHost.StartAsync(static _ => { });
+        var dispatched = 0;
+        var returned = Error.Literal(KernelErrors.InvalidAppState, "A nested invocation was rejected.");
+
+        var outcome = await MessageDeliveryAttempt.RunAsync(
+            (_, _) =>
+            {
+                Interlocked.Increment(ref dispatched);
+                return ValueTask.FromResult(Result.Failure(returned));
+            },
+            Delivery(1),
+            _options,
+            host.App,
+            NullLogger.Instance,
+            CancellationToken.None);
+
+        // 只认管道入口抛出的拒绝：处理器已经执行、自己返回了这个错误码，照常是一次失败
+        Assert.Equal(DeliveryDisposition.Retry, outcome.Disposition);
+        Assert.Same(returned, outcome.Error);
+        Assert.Equal(1, dispatched);
     }
 
     [Theory]

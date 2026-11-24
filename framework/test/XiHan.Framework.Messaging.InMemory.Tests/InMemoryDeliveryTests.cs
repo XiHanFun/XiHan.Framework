@@ -6,6 +6,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using XiHan.Framework.Kernel;
+using XiHan.Framework.Kernel.Hosting;
 using XiHan.Framework.Messaging.Abstractions;
 using XiHan.Framework.Messaging.Abstractions.Envelopes;
 using XiHan.Framework.Messaging.Abstractions.Handlers;
@@ -19,7 +20,7 @@ namespace XiHan.Framework.Messaging.InMemory.Tests;
 /// 内存代理怎么了结一次投递
 /// </summary>
 /// <remarks>
-/// 停止打断的投递按原尝试号放回队列，应用排空中不派发，重投入不了队就到此为止，派发抛出的异常记日志（RFC-0009「投递」第 3、5 条，ADR-0261）
+/// 停止打断的投递按原尝试号放回队列，应用排空中不派发，重投入不了队就到此为止，派发抛出的异常记日志（RFC-0009「投递」第 3、5 条，ADR-0261）；被管道拒绝的派发不计尝试（ADR-0275）
 /// </remarks>
 public sealed class InMemoryDeliveryTests
 {
@@ -172,6 +173,72 @@ public sealed class InMemoryDeliveryTests
             // 断言失败也要放开闸门，否则宿主停不下来
             stopGate.TrySetResult();
             await draining.WaitAsync(_patience);
+        }
+    }
+
+    [Theory]
+    [InlineData(SubscriptionMode.Competing)]
+    [InlineData(SubscriptionMode.Broadcast)]
+    public async Task DispatchRejectedBecauseTheAppLeftService_IsNotCounted_AndTheDeliveryIsPutBackOnStop(SubscriptionMode mode)
+    {
+        var stopEntered = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var stopGate = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        // 特性停在闸门前，应用就一直处在排空中：代理的停止信号还没到
+        var probe = new StubFeature(TestManifests.Create("xihan.test.messaging-rejected"))
+        {
+            OnStop = async _ =>
+            {
+                stopEntered.SetResult();
+                await stopGate.Task;
+            },
+        };
+        await using var host = await TestHost.StartAsync(b => b.UseFeature(probe));
+        Task? draining = null;
+        try
+        {
+            var logs = new LogCapture();
+            var subscriptions = Subscriptions(mode);
+            // 最多投递 1 次：被拒绝的那一次要是算成失败，就直接进死信（广播则丢弃）
+            using var broker = new InMemoryMessageBroker(new InMemoryMessagingOptions(), new MessagingOptions { MaxAttempts = 1 }, subscriptions, host.App, logs);
+            var dispatched = 0;
+            Assert.True((await broker.PublishAsync(Topic, Envelope("flipped"), CancellationToken.None)).IsSuccess);
+
+            await broker.StartAsync(
+                [.. subscriptions.All],
+                async (_, cancellationToken) =>
+                {
+                    // 代理查看时应用在服务状态；进管道之前应用开始排空，真实的管道以 KERNEL_HOSTING_004 拒绝
+                    Interlocked.Increment(ref dispatched);
+                    draining ??= host.App.StopAsync(CancellationToken.None);
+                    await stopEntered.Task.WaitAsync(_patience, cancellationToken);
+                    await using var scope = host.Services.CreateAsyncScope();
+                    return await host.App.InvokeAsync(App.CreateContext(scope.ServiceProvider, cancellationToken), static _ => ValueTask.CompletedTask);
+                },
+                CancellationToken.None);
+            await stopEntered.Task.WaitAsync(_patience);
+            await Task.Delay(200);
+
+            // 被拒绝的派发不计尝试：投递还在代理手里等服务状态，没有进死信，也没有再派发
+            Assert.Empty(broker.DeadLetters(Topic));
+            Assert.Equal(1, Volatile.Read(ref dispatched));
+
+            await broker.StopAsync(CancellationToken.None).WaitAsync(_patience);
+
+            // 停止信号到来照旧放弃：按原尝试号放回队列
+            Assert.Equal(1, dispatched);
+            Assert.Equal(1, broker.QueuedCount(Topic));
+            Assert.Empty(broker.DeadLetters(Topic));
+            Assert.Equal(0, broker.DeliveredCount(Topic));
+            Assert.DoesNotContain(logs.Entries, static e => e.Level >= LogLevel.Warning);
+        }
+        finally
+        {
+            // 断言失败也要放开闸门，否则宿主停不下来
+            stopGate.TrySetResult();
+            if (draining is not null)
+            {
+                await draining.WaitAsync(_patience);
+            }
         }
     }
 

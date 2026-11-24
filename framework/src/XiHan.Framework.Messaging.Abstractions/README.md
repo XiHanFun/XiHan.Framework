@@ -32,7 +32,7 @@ builder.AddXiHan(xihan => xihan
     .UseFeature<OutboxFeature>());
 ```
 
-处理器返回失败或抛出异常都算投递失败，重试到 `XiHan:Messaging:MaxAttempts`（默认 3）后竞争订阅进死信、广播订阅丢弃。宿主停止打断的处理器不算一次失败，消息之后重新投递。消息派发不写幂等键，去重由处理器按消息 ID 自理。
+处理器返回失败或抛出异常都算投递失败，重试到 `XiHan:Messaging:MaxAttempts`（默认 3）后竞争订阅进死信、广播订阅丢弃。宿主停止打断的处理器不算一次失败，消息之后重新投递；应用开始排空的那一刻被管道拒绝的派发（处理器没有执行）同样不算。消息派发不写幂等键，去重由处理器按消息 ID 自理。
 
 写代理提供程序时，收到一条消息后用 `MessageDeliveryAttempt.RunAsync` 投递一次，再按结论的 `Disposition` 做自己的确认、重投或死信：
 

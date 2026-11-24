@@ -2,6 +2,7 @@
 // See the LICENSE file in the project root for full license text.
 
 using Microsoft.Extensions.Logging;
+using XiHan.Framework.Kernel;
 using XiHan.Framework.Kernel.Hosting;
 using XiHan.Framework.Primitives;
 
@@ -14,6 +15,9 @@ namespace XiHan.Framework.Messaging.Abstractions.Handlers;
 /// 各代理的消费循环差别很大（重新入队、重新发布、原位重试），相同的只有这一段，收在这里一份（RFC-0009「投递」第 3、5 条，ADR-0261）。代理只把 <see cref="MessageDeliveryOutcome.Disposition"/> 翻译成自己的确认、重投与死信动作
 /// <para>
 /// 每次尝试之前都等应用进入服务状态，不只在一条消息的第一次：原位重试的代理在应用排空期间接着派发，管道只会拒绝调用，几次空转就把尝试次数用完
+/// </para>
+/// <para>
+/// 派发被管道以 <see cref="KernelErrors.InvalidAppState"/> 拒绝（查看时应用在服务状态、调用进管道时已经不在）不是一次失败的尝试：处理器没有执行，等一个查看间隔后回到上面的等待，应用再进入服务状态时重新派发，停止信号到来即 <see cref="DeliveryDisposition.Abandon"/>。只认派发抛出的这个错误码，处理器自己返回的同码失败照常计入。状态说在服务、管道却一直拒绝时不无限地等：同一次尝试里第 10 次被拒绝按抛出的异常归成一次失败（ADR-0275）
 /// </para>
 /// <para>
 /// 派发返回成功即 <see cref="DeliveryDisposition.Complete"/>。返回失败与抛出异常都算一次失败的尝试：抛出的异常转成 <see cref="MessagingErrors.HandlerFailed"/>，<c>reason</c> 只写异常类型的全名（<see cref="FrameworkException"/> 写它的错误码，原错误作内部错误），完整异常经 <c>logger</c> 记警告。失败之后尝试号小于 <see cref="MessagingOptions.MaxAttempts"/> 即 <see cref="DeliveryDisposition.Retry"/>，否则按 <see cref="Exhausted"/> 了结
@@ -31,8 +35,19 @@ public static partial class MessageDeliveryAttempt
     private const string UnknownErrorCode = "?";
 
     /// <summary>
+    /// 同一次尝试里派发被管道以「应用不在服务状态」拒绝的次数上限
+    /// </summary>
+    /// <remarks>
+    /// 第这么多次被拒绝时不再回去等，按抛出的异常归成一次失败的尝试：应用的状态只往前走，正常的拒绝一次尝试里至多一次，连续被拒绝说明状态与管道不一致
+    /// </remarks>
+    private const int MaxRejections = 10;
+
+    /// <summary>
     /// 等应用进入服务状态时两次查看之间的间隔
     /// </summary>
+    /// <remarks>
+    /// 派发被拒绝之后再查看状态之前也等这么久
+    /// </remarks>
     private static readonly TimeSpan _servingPollInterval = TimeSpan.FromMilliseconds(10);
 
     /// <summary>
@@ -90,13 +105,35 @@ public static partial class MessageDeliveryAttempt
         Result result;
         try
         {
-            // 宿主未进入服务状态前不派发，避免处理器在特性尚未就绪时执行；排空中的应用同样等在这里，直到停止信号到来
-            while (!app.State.IsServing())
+            for (var rejections = 0; ;)
             {
+                // 宿主未进入服务状态前不派发，避免处理器在特性尚未就绪时执行；排空中的应用同样等在这里，直到停止信号到来
+                while (!app.State.IsServing())
+                {
+                    await Task.Delay(_servingPollInterval, cancellationToken).ConfigureAwait(false);
+                }
+
+                try
+                {
+                    result = await dispatch(delivery, cancellationToken).ConfigureAwait(false);
+                    break;
+                }
+                catch (FrameworkException exception) when (string.Equals(exception.Code, KernelErrors.InvalidAppState, StringComparison.Ordinal))
+                {
+                    // 查看时应用在服务状态、调用进管道时已经不在：管道在入口拒绝，处理器没有执行，这不是一次失败的尝试
+                    // 出口：状态说在服务、管道却一直拒绝（派发绑定的不是这个应用）时不能无限地等，第 MaxRejections 次按抛出的异常归类
+                    if (++rejections >= MaxRejections)
+                    {
+                        throw;
+                    }
+
+                    LogRejected(logger, delivery.Envelope.Id, delivery.Topic, delivery.Attempt);
+                }
+
+                // 被拒绝之后先等一个查看间隔再回去看状态：状态与管道不一致时两次派发之间也有间隔，不空转；
+                // 状态已经翻成不在服务的，接着等在上面的循环里，直到再进入服务状态或停止信号到来
                 await Task.Delay(_servingPollInterval, cancellationToken).ConfigureAwait(false);
             }
-
-            result = await dispatch(delivery, cancellationToken).ConfigureAwait(false);
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
@@ -106,7 +143,7 @@ public static partial class MessageDeliveryAttempt
         catch (Exception exception)
         {
             // 抛出与返回失败一样算投递失败；令牌没取消时的取消异常（处理器自己的超时）也落在这里
-            // 不记下来这个异常就没人看得到：经管道的处理器异常由管道记，到这里的是管道之外的（建作用域、应用不在服务状态）
+            // 不记下来这个异常就没人看得到：经管道的处理器异常由管道记，到这里的是管道之外的（建作用域失败、一直被管道拒绝）
             LogDispatchThrew(logger, delivery.Envelope.Id, delivery.Topic, delivery.Attempt, exception);
             result = Fault(exception);
         }
@@ -144,6 +181,15 @@ public static partial class MessageDeliveryAttempt
         var type = exception.GetType();
         return Error.Unexpected(MessagingErrors.HandlerFailed, MessagingMessages.HandlerFailed, MessageArguments.Of(("reason", type.FullName ?? type.Name)));
     }
+
+    /// <summary>
+    /// 记录派发被管道以应用不在服务状态拒绝
+    /// </summary>
+    /// <remarks>
+    /// Debug 级别：应用开始排空的那一刻正在派发的投递会遇到，是预期的状态，不是故障
+    /// </remarks>
+    [LoggerMessage(Level = LogLevel.Debug, Message = "Dispatching message {MessageId} on topic {Topic} was rejected because the application is not serving; attempt {Attempt} is not counted.")]
+    private static partial void LogRejected(ILogger logger, string messageId, string topic, int attempt);
 
     /// <summary>
     /// 记录派发抛出了异常
