@@ -169,10 +169,11 @@ XiHan.Framework.ObjectStorage.Abstractions.Stores.BlobStores.Check() -> System.C
 XiHan.Framework.ObjectStorage.Abstractions.Stores.BlobStores.DisposeAsync() -> System.Threading.Tasks.ValueTask
 XiHan.Framework.ObjectStorage.Abstractions.Stores.BlobStores.GetAsync(string! name, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<XiHan.Framework.ObjectStorage.Abstractions.Blobs.IBlobStore!>>
 XiHan.Framework.ObjectStorage.Abstractions.Stores.BlobStores.GetOrAddAsync(XiHan.Framework.ObjectStorage.Abstractions.Stores.BlobStoreDefinition! definition, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<XiHan.Framework.ObjectStorage.Abstractions.Blobs.IBlobStore!>>
+XiHan.Framework.ObjectStorage.Abstractions.Stores.BlobStores.MaxCount.get -> int
 XiHan.Framework.ObjectStorage.Abstractions.Stores.BlobStores.Names.get -> System.Collections.Generic.IReadOnlyList<string!>!
 XiHan.Framework.ObjectStorage.Abstractions.Stores.BlobStores.ProbeAsync(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask
 XiHan.Framework.ObjectStorage.Abstractions.Stores.BlobStores.Providers.get -> System.Collections.Generic.IReadOnlyCollection<string!>!
-XiHan.Framework.ObjectStorage.Abstractions.Stores.BlobStores.RemoveAsync(string! name, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<bool>
+XiHan.Framework.ObjectStorage.Abstractions.Stores.BlobStores.RemoveAsync(System.Collections.Generic.IReadOnlyList<string!>! names, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<System.Collections.Generic.IReadOnlyList<bool>!>
 XiHan.Framework.ObjectStorage.Abstractions.Stores.IBlobStoreProvider
 XiHan.Framework.ObjectStorage.Abstractions.Stores.IBlobStoreProvider.CreateAsync(XiHan.Framework.ObjectStorage.Abstractions.Stores.BlobStoreDefinition! definition, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<XiHan.Framework.ObjectStorage.Abstractions.Blobs.IBlobStore!>>
 XiHan.Framework.ObjectStorage.Abstractions.Stores.IBlobStoreProvider.Name.get -> string!
@@ -202,6 +203,7 @@ const XiHan.Framework.ObjectStorage.Abstractions.ObjectStorageErrors.ProbeDenied
 const XiHan.Framework.ObjectStorage.Abstractions.ObjectStorageErrors.QuotaExceeded = "OBJECTSTORAGE_UNAVAILABLE_002" -> string!
 const XiHan.Framework.ObjectStorage.Abstractions.ObjectStorageErrors.RangeNotSatisfiable = "OBJECTSTORAGE_VALIDATION_001" -> string!
 const XiHan.Framework.ObjectStorage.Abstractions.ObjectStorageErrors.SignatureInvalid = "OBJECTSTORAGE_DENIED_001" -> string!
+const XiHan.Framework.ObjectStorage.Abstractions.ObjectStorageErrors.StoreCapacityExceeded = "OBJECTSTORAGE_UNAVAILABLE_005" -> string!
 const XiHan.Framework.ObjectStorage.Abstractions.ObjectStorageErrors.StoreDefinitionInvalid = "OBJECTSTORAGE_VALIDATION_003" -> string!
 const XiHan.Framework.ObjectStorage.Abstractions.ObjectStorageErrors.StoreNotFound = "OBJECTSTORAGE_NOTFOUND_003" -> string!
 const XiHan.Framework.ObjectStorage.Abstractions.ObjectStorageErrors.StoreSelectionInvalid = "OBJECTSTORAGE_VALIDATION_004" -> string!
@@ -227,6 +229,7 @@ const XiHan.Framework.ObjectStorage.Abstractions.ObjectStorageMessages.QuotaReac
 const XiHan.Framework.ObjectStorage.Abstractions.ObjectStorageMessages.RangeNotSatisfiable = "objectstorage.range.not_satisfiable" -> string!
 const XiHan.Framework.ObjectStorage.Abstractions.ObjectStorageMessages.SignedUrlExpired = "objectstorage.signed_url.expired" -> string!
 const XiHan.Framework.ObjectStorage.Abstractions.ObjectStorageMessages.SignedUrlInvalid = "objectstorage.signed_url.invalid" -> string!
+const XiHan.Framework.ObjectStorage.Abstractions.ObjectStorageMessages.StoreCapacityExceeded = "objectstorage.store.capacity_exceeded" -> string!
 const XiHan.Framework.ObjectStorage.Abstractions.ObjectStorageMessages.StoreDefinitionInvalid = "objectstorage.store.definition_invalid" -> string!
 const XiHan.Framework.ObjectStorage.Abstractions.ObjectStorageMessages.StoreNotFound = "objectstorage.store.not_found" -> string!
 const XiHan.Framework.ObjectStorage.Abstractions.ObjectStorageMessages.StoreProviderUnknown = "objectstorage.store.provider_unknown" -> string!
@@ -236,6 +239,7 @@ const XiHan.Framework.ObjectStorage.Abstractions.ObjectStorageMessages.UploadsEx
 const XiHan.Framework.ObjectStorage.Abstractions.Signing.BlobUrlRequest.MaxDownloadFileNameLength = 255 -> int
 const XiHan.Framework.ObjectStorage.Abstractions.Stores.BlobStores.ConfigurationSection = "XiHan:ObjectStorage:Stores" -> string!
 const XiHan.Framework.ObjectStorage.Abstractions.Stores.BlobStores.HealthPrefix = "objectstorage.store." -> string!
+const XiHan.Framework.ObjectStorage.Abstractions.Stores.BlobStores.MaxCountLimit = 1024 -> int
 override XiHan.Framework.ObjectStorage.Abstractions.Blobs.BlobContentRange.Equals(object? obj) -> bool
 override XiHan.Framework.ObjectStorage.Abstractions.Blobs.BlobContentRange.GetHashCode() -> int
 override XiHan.Framework.ObjectStorage.Abstractions.Blobs.BlobContentRange.ToString() -> string!

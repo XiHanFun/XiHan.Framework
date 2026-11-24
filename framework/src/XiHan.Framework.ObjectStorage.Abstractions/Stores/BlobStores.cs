@@ -13,7 +13,9 @@ namespace XiHan.Framework.ObjectStorage.Abstractions.Stores;
 /// 命名存储实例的注册表（单例）
 /// </summary>
 /// <remarks>
-/// 按 <see cref="BlobStoreDefinition"/> 经对应的 <see cref="IBlobStoreProvider"/> 建实例，按名缓存。实例有两个来源：配置节 <c>XiHan:ObjectStorage:Stores:&lt;name&gt;</c>（<c>Provider</c> 加该 Provider 的设置，首次取用时建出），与应用运行时登记（<see cref="GetOrAddAsync"/>，如存放在库里的存储配置）。同名同定义返回同一实例；定义变了（Provider 或任一设置不同）建新实例替换旧的并释放旧的——替换时仍在旧实例上进行的调用可能失败。缺省的 <see cref="IBlobStore"/> 注入方式不受影响。同时是健康项的贡献者：每个实例一条 <c>objectstorage.store.&lt;name&gt;</c>，按 <c>XiHan:ObjectStorage:StoreHealthProbeIntervalSeconds</c>（缺省 15 秒）在后台逐个探测，新实例建出后立即探一次；尚未探过的条目为 Started
+/// <para>按 <see cref="BlobStoreDefinition"/> 经对应的 <see cref="IBlobStoreProvider"/> 建实例，按名缓存。实例有两个来源：配置节 <c>XiHan:ObjectStorage:Stores:&lt;name&gt;</c>（<c>Provider</c> 加该 Provider 的设置，首次取用时建出），与应用运行时登记（<see cref="GetOrAddAsync"/>，如存放在库里的存储配置）。同名同定义返回同一实例；定义变了（Provider 或任一设置不同）建新实例替换旧的并释放旧的——替换时仍在旧实例上进行的调用可能失败。缺省的 <see cref="IBlobStore"/> 注入方式不受影响</para>
+/// <para>容量：已建的实例数不超过 <see cref="MaxCount"/>（<c>XiHan:ObjectStorage:StoreMaxCount</c>，缺省 64，1 到 <see cref="MaxCountLimit"/>），两个来源的实例都算。满了再登记新名字返回 <see cref="ObjectStorageErrors.StoreCapacityExceeded"/>，不淘汰已有的；替换同名的不占名额，<see cref="RemoveAsync"/> 腾出名额（ADR-0266）</para>
+/// <para>健康：每个实例一条 <c>objectstorage.store.&lt;name&gt;</c>，按 <c>XiHan:ObjectStorage:StoreHealthProbeIntervalSeconds</c>（缺省 15 秒）在后台逐个探测，新实例建出后立即探一次；尚未探过的条目为 Started</para>
 /// </remarks>
 [ApiLevel(Stability.Stable, "5.0")]
 public sealed partial class BlobStores : IHealthContributor, IAsyncDisposable
@@ -34,9 +36,27 @@ public sealed partial class BlobStores : IHealthContributor, IAsyncDisposable
     public const string HealthPrefix = "objectstorage.store.";
 
     /// <summary>
+    /// 登记数上限的上限
+    /// </summary>
+    public const int MaxCountLimit = 1024;
+
+    /// <summary>
     /// 定义里 Provider 名的配置键
     /// </summary>
     private const string ProviderKey = "Provider";
+
+    /// <summary>
+    /// 登记数上限的配置键
+    /// </summary>
+    /// <remarks>
+    /// 不放在 <see cref="ConfigurationSection"/> 之下：那一节的子键都是实例名，配置键不区分大小写，<c>maxcount</c> 本身是合法的实例名
+    /// </remarks>
+    private const string MaxCountKey = "XiHan:ObjectStorage:StoreMaxCount";
+
+    /// <summary>
+    /// 登记数上限的缺省值
+    /// </summary>
+    private const int DefaultMaxCount = 64;
 
     /// <summary>
     /// Provider，按名（不区分大小写）
@@ -113,7 +133,8 @@ public sealed partial class BlobStores : IHealthContributor, IAsyncDisposable
     /// <param name="providers">Provider；同名重复是装配错误</param>
     /// <param name="clock">时钟</param>
     /// <param name="loggerFactory">日志工厂</param>
-    /// <param name="configuration">配置；为 <see langword="null"/> 时没有配置定义的实例</param>
+    /// <param name="configuration">配置；为 <see langword="null"/> 时没有配置定义的实例，登记数上限与探测间隔取缺省值</param>
+    /// <exception cref="ArgumentException">Provider 同名重复，或 <c>XiHan:ObjectStorage:StoreMaxCount</c>、<c>XiHan:ObjectStorage:StoreHealthProbeIntervalSeconds</c> 的值不合法</exception>
     public BlobStores(IEnumerable<IBlobStoreProvider> providers, TimeProvider clock, ILoggerFactory loggerFactory, IConfiguration? configuration)
     {
         ArgumentNullException.ThrowIfNull(providers);
@@ -132,12 +153,22 @@ public sealed partial class BlobStores : IHealthContributor, IAsyncDisposable
         _configuration = configuration;
         _probeInterval = (configuration is null ? null : ConfigurationValues.ReadSeconds(configuration, "XiHan:ObjectStorage:StoreHealthProbeIntervalSeconds"))
             ?? TimeSpan.FromSeconds(15);
+        MaxCount = (configuration is null ? null : ConfigurationValues.ReadInt32(configuration, MaxCountKey, 1, MaxCountLimit))
+            ?? DefaultMaxCount;
     }
 
     /// <summary>
     /// 已登记的 Provider 名
     /// </summary>
     public IReadOnlyCollection<string> Providers => _providers.Keys;
+
+    /// <summary>
+    /// 最多同时有多少个已建的实例
+    /// </summary>
+    /// <remarks>
+    /// <c>XiHan:ObjectStorage:StoreMaxCount</c>，1 到 <see cref="MaxCountLimit"/>，缺省 64。满了再登记新名字返回 <see cref="ObjectStorageErrors.StoreCapacityExceeded"/>，不淘汰已有的；替换同名的不占名额
+    /// </remarks>
+    public int MaxCount { get; }
 
     /// <summary>
     /// 已建的与配置里定义的实例名，按序数排序
@@ -168,7 +199,7 @@ public sealed partial class BlobStores : IHealthContributor, IAsyncDisposable
     /// 取实例
     /// </summary>
     /// <remarks>
-    /// 已建的直接返回；配置里有定义的首次取用时建出。都没有返回 <see cref="ObjectStorageErrors.StoreNotFound"/>，配置定义不合法返回 <see cref="ObjectStorageErrors.StoreDefinitionInvalid"/>
+    /// 已建的直接返回；配置里有定义的首次取用时建出，建出时与 <see cref="GetOrAddAsync"/> 一样受登记数上限约束（满了返回 <see cref="ObjectStorageErrors.StoreCapacityExceeded"/>）。都没有返回 <see cref="ObjectStorageErrors.StoreNotFound"/>，配置定义不合法返回 <see cref="ObjectStorageErrors.StoreDefinitionInvalid"/>
     /// </remarks>
     public async ValueTask<Result<IBlobStore>> GetAsync(string name, CancellationToken cancellationToken)
     {
@@ -191,7 +222,7 @@ public sealed partial class BlobStores : IHealthContributor, IAsyncDisposable
     /// 按定义取实例
     /// </summary>
     /// <remarks>
-    /// 同名同定义返回已有的；没有或定义变了就建（替换并释放旧实例）。Provider 未登记或设置不合法返回 <see cref="ObjectStorageErrors.StoreDefinitionInvalid"/>，后端建不出来（I/O 或权限错误）返回 <see cref="ObjectStorageErrors.StoreUnavailable"/>，建实例时的探测发现实例不能用返回 Provider 给出的错误码（如 S3 探明服务不认条件写入时 <see cref="ObjectStorageErrors.ConditionalWriteUnavailable"/>，探测被拒绝时 <see cref="ObjectStorageErrors.ProbeDenied"/>，探测桶不存在时 <see cref="ObjectStorageErrors.BlobNotFound"/>）；这些情况已有实例都不受影响
+    /// 同名同定义返回已有的；没有或定义变了就建（替换并释放旧实例）。登记已满（已建的实例数达到 <see cref="MaxCount"/>）再登记新名字返回 <see cref="ObjectStorageErrors.StoreCapacityExceeded"/>（参数 <c>store</c>、<c>capacity</c>），不建实例、不淘汰已有的，替换同名的不占名额；Provider 未登记或设置不合法返回 <see cref="ObjectStorageErrors.StoreDefinitionInvalid"/>，后端建不出来（I/O 或权限错误）返回 <see cref="ObjectStorageErrors.StoreUnavailable"/>，建实例时的探测发现实例不能用返回 Provider 给出的错误码（如 S3 探明服务不认条件写入时 <see cref="ObjectStorageErrors.ConditionalWriteUnavailable"/>，探测被拒绝时 <see cref="ObjectStorageErrors.ProbeDenied"/>，探测桶不存在时 <see cref="ObjectStorageErrors.BlobNotFound"/>）；这些情况已有实例都不受影响
     /// </remarks>
     public async ValueTask<Result<IBlobStore>> GetOrAddAsync(BlobStoreDefinition definition, CancellationToken cancellationToken)
     {
@@ -203,9 +234,18 @@ public sealed partial class BlobStores : IHealthContributor, IAsyncDisposable
         {
             lock (_entries)
             {
-                if (_entries.TryGetValue(definition.Name, out var existing) && existing.Definition.Describes(definition))
+                if (_entries.TryGetValue(definition.Name, out var existing))
                 {
-                    return Result.Success(existing.Store);
+                    if (existing.Definition.Describes(definition))
+                    {
+                        return Result.Success(existing.Store);
+                    }
+                }
+                else if (_entries.Count >= MaxCount)
+                {
+                    // 容量只拦新名字：替换同名的不增加登记数；满了不淘汰已有的，淘汰会让正在用它的调用落到已释放的实例上。
+                    // 建、替换与移除都在 _gate 里串行，这里判过之后到放进登记表之前登记数不会变，并发登记超不过上限
+                    return Error.Unavailable(ObjectStorageErrors.StoreCapacityExceeded, ObjectStorageMessages.StoreCapacityExceeded, MessageArguments.Of(("store", definition.Name), ("capacity", MaxCount)));
                 }
             }
 
@@ -250,23 +290,42 @@ public sealed partial class BlobStores : IHealthContributor, IAsyncDisposable
     }
 
     /// <summary>
-    /// 移除并释放实例
+    /// 移除并释放实例（批量）
     /// </summary>
     /// <remarks>
-    /// 返回是否存在过。配置里有定义的实例之后再取用会重新建出
+    /// 逐项返回该名字的实例是否存在过，与入参一一对应；同一批里重复的名字第二次为 <see langword="false"/>；空集合返回空列表。进入前检查取消，整批在一次加锁里移除，不会只移一半；移除之后逐个释放，释放不响应取消，某个实例释放失败只记警告、不影响其余实例与返回值。配置里有定义的实例之后再取用会重新建出。应用的存储配置改了、停用或删了时调用，腾出的名额可以再登记
     /// </remarks>
-    public async ValueTask<bool> RemoveAsync(string name, CancellationToken cancellationToken)
+    /// <param name="names">实例名；有 <see langword="null"/> 是编程错误，抛出且不移除任何实例</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    public async ValueTask<IReadOnlyList<bool>> RemoveAsync(IReadOnlyList<string> names, CancellationToken cancellationToken)
     {
-        ArgumentNullException.ThrowIfNull(name);
+        ArgumentNullException.ThrowIfNull(names);
+        for (var i = 0; i < names.Count; i++)
+        {
+            ArgumentNullException.ThrowIfNull(names[i], nameof(names));
+        }
+
+        cancellationToken.ThrowIfCancellationRequested();
+        if (names.Count == 0)
+        {
+            return [];
+        }
+
+        var results = new bool[names.Count];
+        var removed = new List<Entry>();
         await _gate.WaitAsync(cancellationToken).ConfigureAwait(false);
-        Entry? removed;
         try
         {
+            // 一次加锁移除整批：按入参顺序逐项施加，重复的名字第二次已不在
             lock (_entries)
             {
-                if (!_entries.Remove(name, out removed))
+                for (var i = 0; i < names.Count; i++)
                 {
-                    return false;
+                    if (_entries.Remove(names[i], out var entry))
+                    {
+                        results[i] = true;
+                        removed.Add(entry);
+                    }
                 }
             }
         }
@@ -275,8 +334,20 @@ public sealed partial class BlobStores : IHealthContributor, IAsyncDisposable
             _gate.Release();
         }
 
-        await DisposeStoreAsync(removed.Store).ConfigureAwait(false);
-        return true;
+        foreach (var entry in removed)
+        {
+            try
+            {
+                await DisposeStoreAsync(entry.Store).ConfigureAwait(false);
+            }
+            catch (Exception exception)
+            {
+                // 实例已经不在登记表里，结果已定：释放失败只记日志，不让它挡住后面几个实例的释放
+                LogDisposeFailed(_logger, entry.Definition.Name, exception);
+            }
+        }
+
+        return results;
     }
 
     /// <summary>
@@ -483,6 +554,12 @@ public sealed partial class BlobStores : IHealthContributor, IAsyncDisposable
     /// </summary>
     [LoggerMessage(Level = LogLevel.Warning, Message = "Creating blob store '{Store}' failed with '{Code}'.")]
     private static partial void LogCreateFailed(ILogger logger, string store, string code);
+
+    /// <summary>
+    /// 移除的实例释放失败
+    /// </summary>
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Disposing the removed blob store '{Store}' failed.")]
+    private static partial void LogDisposeFailed(ILogger logger, string store, Exception exception);
 
     /// <summary>
     /// 探测抛出（从可用变成不可用）

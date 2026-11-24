@@ -111,4 +111,12 @@ public static class ObjectStorageErrors
     /// S3 的条件写入探测在启动或建实例时连不上（之后的探测也可能被拒绝或缺桶），后台在重试；这期间 <c>Overwrite = false</c> 的写入与分片上传的发起、完成以它失败（HTTP 503），不访问写入目标，探测通过后自动恢复（ADR-0090）
     /// </remarks>
     public const string ConditionalWriteUnconfirmed = "OBJECTSTORAGE_UNAVAILABLE_004";
+
+    /// <summary>
+    /// 命名存储实例登记已满
+    /// </summary>
+    /// <remarks>
+    /// <see cref="Stores.BlobStores.MaxCount"/>（<c>XiHan:ObjectStorage:StoreMaxCount</c>）；不淘汰已有的，替换同名的不占名额（ADR-0266）
+    /// </remarks>
+    public const string StoreCapacityExceeded = "OBJECTSTORAGE_UNAVAILABLE_005";
 }

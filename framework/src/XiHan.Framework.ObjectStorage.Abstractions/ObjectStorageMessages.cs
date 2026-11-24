@@ -199,6 +199,14 @@ public static class ObjectStorageMessages
     public const string StoreDefinitionInvalid = "objectstorage.store.definition_invalid";
 
     /// <summary>
+    /// 命名存储实例登记已满
+    /// </summary>
+    /// <remarks>
+    /// 参数：<c>store</c>（要登记的名字）、<c>capacity</c>。与 <see cref="ObjectStorageErrors.StoreCapacityExceeded"/> 搭配
+    /// </remarks>
+    public const string StoreCapacityExceeded = "objectstorage.store.capacity_exceeded";
+
+    /// <summary>
     /// 列举的页大小越界
     /// </summary>
     /// <remarks>

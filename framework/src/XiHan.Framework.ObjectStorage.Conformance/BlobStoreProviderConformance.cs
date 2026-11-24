@@ -87,7 +87,7 @@ public abstract class BlobStoreProviderConformance
     /// 用例 3：经注册表同名同定义返回同一实例，定义变了建新实例替换，按名取到的是新的
     /// </summary>
     /// <remarks>
-    /// 探测后有该实例的健康项且就绪；移除后取用返回 NOTFOUND、健康项消失
+    /// 探测后有该实例的健康项且就绪；批量移除逐项报告是否存在过，移除后取用返回 NOTFOUND、健康项消失
     /// </remarks>
     [Fact]
     public async Task Registry_ReusesReplacesAndRemovesInstances()
@@ -111,8 +111,9 @@ public abstract class BlobStoreProviderConformance
             var status = Assert.Single(registry.Check());
             Assert.Equal((BlobStores.HealthPrefix + "conformance-registry", LifecycleState.Ready), (status.Name, status.State));
 
-            Assert.True(await registry.RemoveAsync("conformance-registry", CancellationToken.None).ConfigureAwait(false));
-            Assert.False(await registry.RemoveAsync("conformance-registry", CancellationToken.None).ConfigureAwait(false));
+            // 移除是批量的，逐项报告是否存在过：同一批里重复的名字第二次已不在，移除之后再移除也不在
+            Assert.Equal([true, false], await registry.RemoveAsync(["conformance-registry", "conformance-registry"], CancellationToken.None).ConfigureAwait(false));
+            Assert.Equal([false], await registry.RemoveAsync(["conformance-registry"], CancellationToken.None).ConfigureAwait(false));
             Assert.Equal(ObjectStorageErrors.StoreNotFound, (await registry.GetAsync("conformance-registry", CancellationToken.None).ConfigureAwait(false)).Error?.Code);
             Assert.Empty(registry.Check());
         }

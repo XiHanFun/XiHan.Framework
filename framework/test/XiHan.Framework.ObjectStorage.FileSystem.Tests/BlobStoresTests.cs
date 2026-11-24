@@ -1,6 +1,7 @@
 // Copyright (c) XiHanFun Contributors. Licensed under the MIT License.
 // See the LICENSE file in the project root for full license text.
 
+using System.Globalization;
 using System.Text;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -20,7 +21,7 @@ namespace XiHan.Framework.ObjectStorage.FileSystem.Tests;
 /// 命名存储实例的注册表
 /// </summary>
 /// <remarks>
-/// 配置定义的实例首次取用时建出、设置错误、健康项随实例的状态、替换 / 移除 / 停止时释放实例，以及特性装配后注册表与健康项可用
+/// 配置定义的实例首次取用时建出、设置错误、健康项随实例的状态、替换 / 移除 / 停止时释放实例、批量移除的逐项结果、登记数上限（ADR-0266），以及特性装配后注册表与健康项可用
 /// </remarks>
 public sealed class BlobStoresTests : IDisposable
 {
@@ -129,7 +130,7 @@ public sealed class BlobStoresTests : IDisposable
             second = (CountingStore)(await registry.GetOrAddAsync(Counting("one", "2"), CancellationToken.None)).ValueOrThrow();
             Assert.Equal((1, 0), (first.Disposed, second.Disposed));
 
-            Assert.True(await registry.RemoveAsync("one", CancellationToken.None));
+            Assert.Equal([true], await registry.RemoveAsync(["one"], CancellationToken.None));
             Assert.Equal(1, second.Disposed);
 
             third = (CountingStore)(await registry.GetOrAddAsync(Counting("two", "1"), CancellationToken.None)).ValueOrThrow();
@@ -142,6 +143,162 @@ public sealed class BlobStoresTests : IDisposable
     }
 
     [Fact]
+    public async Task Remove_IsBatch_ReportsEachName_AndDisposesTheRemoved()
+    {
+        await using var registry = new BlobStores([new CountingProvider()], TimeProvider.System, NullLoggerFactory.Instance);
+        var one = (CountingStore)(await registry.GetOrAddAsync(Counting("one", "1"), CancellationToken.None)).ValueOrThrow();
+        var two = (CountingStore)(await registry.GetOrAddAsync(Counting("two", "1"), CancellationToken.None)).ValueOrThrow();
+        var kept = (CountingStore)(await registry.GetOrAddAsync(Counting("kept", "1"), CancellationToken.None)).ValueOrThrow();
+
+        // 逐项结果与入参同序：没登记过的是 false，同一批里重复的名字第二次已不在
+        var removed = await registry.RemoveAsync(["one", "missing", "two", "one"], CancellationToken.None);
+        var empty = await registry.RemoveAsync([], CancellationToken.None);
+
+        Assert.Equal([true, false, true, false], removed);
+        Assert.Empty(empty);
+        Assert.Equal((1, 1, 0), (one.Disposed, two.Disposed, kept.Disposed));
+        Assert.Equal(["kept"], registry.Names);
+        Assert.Equal(ObjectStorageErrors.StoreNotFound, (await registry.GetAsync("one", CancellationToken.None)).Error?.Code);
+        Assert.Equal(["objectstorage.store.kept"], registry.Check().Select(static s => s.Name));
+    }
+
+    [Fact]
+    public async Task Remove_RejectsNullNamesAndCancellation_WithoutRemovingAnything()
+    {
+        await using var registry = new BlobStores([new CountingProvider()], TimeProvider.System, NullLoggerFactory.Instance);
+        var one = (CountingStore)(await registry.GetOrAddAsync(Counting("one", "1"), CancellationToken.None)).ValueOrThrow();
+        using var cancelled = new CancellationTokenSource();
+        await cancelled.CancelAsync();
+
+        // 名字为 null 是编程错误：在移除任何实例之前抛出，排在它前面的名字也不移除
+        await Assert.ThrowsAsync<ArgumentNullException>(async () => await registry.RemoveAsync(["one", null!], CancellationToken.None));
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(async () => await registry.RemoveAsync(["one"], cancelled.Token));
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(async () => await registry.RemoveAsync([], cancelled.Token));
+
+        Assert.Equal(0, one.Disposed);
+        Assert.Equal(["one"], registry.Names);
+    }
+
+    [Fact]
+    public async Task Remove_WhenDisposingOneInstanceFails_StillDisposesTheRest_AndLogsIt()
+    {
+        var logs = new LogCapture();
+        await using var registry = new BlobStores([new CountingProvider()], TimeProvider.System, logs);
+        var faulty = (CountingStore)(await registry.GetOrAddAsync(Counting("faulty", "1"), CancellationToken.None)).ValueOrThrow();
+        var healthy = (CountingStore)(await registry.GetOrAddAsync(Counting("healthy", "1"), CancellationToken.None)).ValueOrThrow();
+        faulty.DisposeFault = new IOException("The connection pool is already closed.");
+
+        var removed = await registry.RemoveAsync(["faulty", "healthy"], CancellationToken.None);
+
+        // 两个都已经不在登记表里：前一个释放失败不改变结果，也不挡住后一个的释放
+        Assert.Equal([true, true], removed);
+        Assert.Equal((1, 1), (faulty.Disposed, healthy.Disposed));
+        Assert.Empty(registry.Names);
+        var logged = Assert.Single(logs.Entries, entry => ReferenceEquals(entry.Exception, faulty.DisposeFault));
+        Assert.Equal(LogLevel.Warning, logged.Level);
+        Assert.Contains("'faulty'", logged.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task GetOrAdd_BeyondCapacity_IsUnavailable_ButReplacingAnExistingNameIsAllowed()
+    {
+        var provider = new CountingProvider();
+        await using var registry = Bounded(provider, 2);
+        var first = (CountingStore)(await registry.GetOrAddAsync(Counting("a", "1"), CancellationToken.None)).ValueOrThrow();
+        (await registry.GetOrAddAsync(Counting("b", "1"), CancellationToken.None)).ValueOrThrow();
+
+        var full = await registry.GetOrAddAsync(Counting("c", "1"), CancellationToken.None);
+        var same = await registry.GetOrAddAsync(Counting("a", "1"), CancellationToken.None);
+        var replaced = await registry.GetOrAddAsync(Counting("b", "2"), CancellationToken.None);
+
+        Assert.Equal(2, registry.MaxCount);
+        Assert.Equal((ObjectStorageErrors.StoreCapacityExceeded, ObjectStorageMessages.StoreCapacityExceeded), (full.Error?.Code, full.Error?.MessageKey));
+        Assert.Equal<object?>("c", full.Error!.Details!["store"]);
+        Assert.Equal<object?>(2, full.Error.Details["capacity"]);
+        // 满了不淘汰已有的：同名同定义照常返回，同名换定义照常替换，被拒的那次没有建实例
+        Assert.Same(first, same.ValueOrThrow());
+        Assert.True(replaced.IsSuccess, replaced.ToString());
+        Assert.Equal(0, first.Disposed);
+        Assert.Equal(["a", "b"], registry.Names);
+        Assert.Equal(3, provider.Created);
+    }
+
+    [Fact]
+    public async Task Remove_FreesASlot_ForANewName()
+    {
+        await using var registry = Bounded(new CountingProvider(), 1);
+        (await registry.GetOrAddAsync(Counting("a", "1"), CancellationToken.None)).ValueOrThrow();
+        Assert.Equal(ObjectStorageErrors.StoreCapacityExceeded, (await registry.GetOrAddAsync(Counting("b", "1"), CancellationToken.None)).Error?.Code);
+
+        Assert.Equal([true], await registry.RemoveAsync(["a"], CancellationToken.None));
+
+        Assert.True((await registry.GetOrAddAsync(Counting("b", "1"), CancellationToken.None)).IsSuccess);
+        Assert.Equal(["b"], registry.Names);
+    }
+
+    [Fact]
+    public async Task ConcurrentRegistrations_NeverExceedTheCapacity()
+    {
+        const int capacity = 4;
+        const int callers = 32;
+        // 建实例让出线程：登记方在「判容量」与「放进登记表」之间交错
+        var provider = new CountingProvider { Yields = true };
+        await using var registry = Bounded(provider, capacity);
+        var start = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var registrations = Enumerable.Range(0, callers).Select(index => Task.Run(async () =>
+        {
+            await start.Task;
+            return await registry.GetOrAddAsync(Counting("store-" + index, "1"), CancellationToken.None);
+        })).ToArray();
+        start.SetResult();
+        var results = await Task.WhenAll(registrations);
+
+        Assert.Equal(capacity, results.Count(static r => r.IsSuccess));
+        Assert.All(results.Where(static r => r.IsFailure), static r => Assert.Equal(ObjectStorageErrors.StoreCapacityExceeded, r.Error?.Code));
+        Assert.Equal(capacity, registry.Names.Count);
+        Assert.Equal(capacity, registry.Check().Count);
+        // 被拒的登记方没有建出实例：没有建了又丢、没人释放的实例
+        Assert.Equal(capacity, provider.Created);
+    }
+
+    [Fact]
+    public async Task ConfiguredStores_CountTowardsTheCapacity_OnceCreated()
+    {
+        var configuration = Configuration(
+            ("XiHan:ObjectStorage:StoreMaxCount", "1"),
+            ("XiHan:ObjectStorage:Stores:archive:Provider", "counting"),
+            ("XiHan:ObjectStorage:Stores:archive:Version", "1"),
+            ("XiHan:ObjectStorage:Stores:reports:Provider", "counting"),
+            ("XiHan:ObjectStorage:Stores:reports:Version", "1"));
+        await using var registry = new BlobStores([new CountingProvider()], TimeProvider.System, NullLoggerFactory.Instance, configuration);
+
+        // 配置里定义的实例首次取用时才建出，建出之后同样占名额
+        Assert.Equal(["archive", "reports"], registry.Names);
+        (await registry.GetAsync("archive", CancellationToken.None)).ValueOrThrow();
+        var full = await registry.GetAsync("reports", CancellationToken.None);
+        Assert.Equal(ObjectStorageErrors.StoreCapacityExceeded, full.Error?.Code);
+
+        Assert.Equal([true], await registry.RemoveAsync(["archive"], CancellationToken.None));
+        Assert.True((await registry.GetAsync("reports", CancellationToken.None)).IsSuccess);
+    }
+
+    [Fact]
+    public async Task MaxCount_DefaultsTo64_AndRejectsInvalidConfiguration()
+    {
+        await using var unconfigured = new BlobStores([], TimeProvider.System, NullLoggerFactory.Instance);
+        await using var largest = Bounded(new CountingProvider(), BlobStores.MaxCountLimit);
+        Assert.Equal(64, unconfigured.MaxCount);
+        Assert.Equal(1024, largest.MaxCount);
+
+        // 写了值就必须合法：越界、不是整数、空串都在构造时抛出，消息带完整的配置键
+        foreach (var value in new[] { "0", "1025", "many", "" })
+        {
+            var exception = Assert.Throws<ArgumentException>(() => new BlobStores([], TimeProvider.System, NullLoggerFactory.Instance, Configuration(("XiHan:ObjectStorage:StoreMaxCount", value))));
+            Assert.Contains("XiHan:ObjectStorage:StoreMaxCount", exception.Message, StringComparison.Ordinal);
+        }
+    }
+
+    [Fact]
     public async Task Feature_RegistersTheRegistry_AndItsHealthItems()
     {
         await using var host = await TestHost.StartAsync(
@@ -150,9 +307,11 @@ public sealed class BlobStoresTests : IDisposable
                 new("XiHan:ObjectStorage:FileSystem:RootPath", Path.Combine(_root.Path, "default")),
                 new("XiHan:ObjectStorage:Stores:archive:Provider", "filesystem"),
                 new("XiHan:ObjectStorage:Stores:archive:RootPath", Path.Combine(_root.Path, "archive")),
+                new("XiHan:ObjectStorage:StoreMaxCount", "3"),
             ]);
         var registry = host.Services.GetRequiredService<BlobStores>();
         Assert.Equal("filesystem", Assert.Single(registry.Providers));
+        Assert.Equal(3, registry.MaxCount);
         var archive = (await registry.GetAsync("archive", CancellationToken.None)).ValueOrThrow();
         Assert.NotSame(host.Services.GetRequiredService<IBlobStore>(), archive);
         await registry.ProbeAsync(CancellationToken.None);
@@ -170,6 +329,12 @@ public sealed class BlobStoresTests : IDisposable
     /// </summary>
     private static BlobStoreDefinition Definition(string name, params (string Key, string Value)[] settings)
         => new(name, FileSystemBlobStoreProvider.ProviderName, settings.ToDictionary(static s => s.Key, static s => s.Value));
+
+    /// <summary>
+    /// 以给定的登记数上限建注册表
+    /// </summary>
+    private static BlobStores Bounded(IBlobStoreProvider provider, int maxCount)
+        => new([provider], TimeProvider.System, NullLoggerFactory.Instance, Configuration(("XiHan:ObjectStorage:StoreMaxCount", maxCount.ToString(CultureInfo.InvariantCulture))));
 
     /// <summary>
     /// 计数 Provider 的定义：版本不同即定义不同
@@ -209,11 +374,35 @@ public sealed class BlobStoresTests : IDisposable
     /// </summary>
     private sealed class CountingProvider : IBlobStoreProvider
     {
+        /// <summary>
+        /// 建过几个实例
+        /// </summary>
+        private int _created;
+
+        /// <summary>
+        /// 建过几个实例
+        /// </summary>
+        public int Created => Volatile.Read(ref _created);
+
+        /// <summary>
+        /// 建实例之前是否让出线程
+        /// </summary>
+        public bool Yields { get; init; }
+
         /// <inheritdoc />
         public string Name => "counting";
 
         /// <inheritdoc />
-        public ValueTask<Result<IBlobStore>> CreateAsync(BlobStoreDefinition definition, CancellationToken cancellationToken) => ValueTask.FromResult(Result.Success<IBlobStore>(new CountingStore()));
+        public async ValueTask<Result<IBlobStore>> CreateAsync(BlobStoreDefinition definition, CancellationToken cancellationToken)
+        {
+            if (Yields)
+            {
+                await Task.Yield();
+            }
+
+            Interlocked.Increment(ref _created);
+            return Result.Success<IBlobStore>(new CountingStore());
+        }
 
         /// <inheritdoc />
         public ValueTask<Result> ProbeAsync(IBlobStore store, CancellationToken cancellationToken) => ValueTask.FromResult(Result.Success());
@@ -232,8 +421,20 @@ public sealed class BlobStoresTests : IDisposable
         /// </summary>
         public int Disposed { get; private set; }
 
+        /// <summary>
+        /// 非空时释放以它抛出
+        /// </summary>
+        public Exception? DisposeFault { get; set; }
+
         /// <inheritdoc />
-        public void Dispose() => Disposed++;
+        public void Dispose()
+        {
+            Disposed++;
+            if (DisposeFault is { } fault)
+            {
+                throw fault;
+            }
+        }
 
         /// <inheritdoc />
         public ValueTask<IReadOnlyList<Result<BlobMetadata>>> PutAsync(ContainerName container, IReadOnlyList<BlobUpload> uploads, CancellationToken cancellationToken) => throw new NotSupportedException();
