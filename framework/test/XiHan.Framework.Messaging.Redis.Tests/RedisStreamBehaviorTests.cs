@@ -173,15 +173,106 @@ public sealed class RedisStreamBehaviorTests : IAsyncDisposable
         }
 
         // 停止时处理器被取消：条目没有确认，停下的消费者因为还有待确认条目没被删除
-        var pending = await database.StreamPendingMessagesAsync(Key, Group, 10, RedisValue.Null);
-        Assert.Equal(firstConsumer, (string?)Assert.Single(pending).ConsumerName);
+        // 被打断的这一次不计尝试：读取算上的那一次投递已经退回（ADR-0284）
+        var pending = Assert.Single(await database.StreamPendingMessagesAsync(Key, Group, 10, RedisValue.Null));
+        Assert.Equal(firstConsumer, (string?)pending.ConsumerName);
+        Assert.Equal(0, pending.DeliveryCount);
 
         var second = new DeliveryLog();
         await using var next = await StartAsync(second, [new(Topic, SubscriptionMode.Competing)]);
 
+        // 回收让投递次数加一：仍是第 1 次尝试（以前是第 2 次，被打断的那次白白用掉一次）
         var received = Assert.Single(await second.WaitAsync(static r => r.Delivery.Envelope.Id == "slow-1", 1, _timeout));
+        Assert.Equal(1, received.Delivery.Attempt);
+        await WaitUntilAsync(async () => (await database.StreamPendingAsync(Key, Group)).PendingMessageCount == 0);
+    }
+
+    [Fact]
+    public async Task LastAttemptInterruptedByStop_IsReclaimedWithTheSameAttempt_AndHandledInsteadOfDeadLettered()
+    {
+        var database = RedisTestServer.Database();
+        var first = new DeliveryLog();
+        first.FailingIds["last-1"] = 0;
+        first.BlockingAttempts["last-1"] = 2;
+        var host = await StartAsync(first, [new(Topic, SubscriptionMode.Competing)]);
+        try
+        {
+            (await PublishAsync(host, Topic, [Envelope("last-1")]))[0].ThrowIfFailure();
+
+            // 第 1 次失败后原位重试；第 2 次（上限）到达处理器后等在取消令牌上
+            var attempts = await first.WaitAsync(static r => r.Delivery.Envelope.Id == "last-1", 2, _timeout);
+            Assert.Equal([1, 2], attempts.Select(static r => r.Delivery.Attempt));
+        }
+        finally
+        {
+            await host.DisposeAsync();
+        }
+
+        // 停止打断了最后一次尝试：它不计尝试，投递次数由 2 退回 1，没有进死信
+        Assert.Equal(1, Assert.Single(await database.StreamPendingMessagesAsync(Key, Group, 10, RedisValue.Null)).DeliveryCount);
+        Assert.False(await database.KeyExistsAsync(DeadLetterKey));
+
+        var second = new DeliveryLog();
+        await using var next = await StartAsync(second, [new(Topic, SubscriptionMode.Competing)]);
+
+        // 接手的实例回收后仍是第 2 次尝试，处理器再执行一次并成功；以前回收到的投递次数是 3，超过上限，不派发就进死信
+        var received = Assert.Single(await second.WaitAsync(static r => r.Delivery.Envelope.Id == "last-1", 1, _timeout));
         Assert.Equal(2, received.Delivery.Attempt);
         await WaitUntilAsync(async () => (await database.StreamPendingAsync(Key, Group)).PendingMessageCount == 0);
+        Assert.False(await database.KeyExistsAsync(DeadLetterKey));
+    }
+
+    [Fact]
+    public async Task LastAttemptOfAVanishedConsumer_StaysCounted_AndThePoisonMessageIsStillDeadLettered()
+    {
+        var database = RedisTestServer.Database();
+        // 一个在最后一次尝试上消失的消费者（进程被强行终止，来不及退回投递次数）：投递次数 2 留在待确认列表里
+        await database.StreamCreateConsumerGroupAsync(Key, Group, StreamPosition.NewMessages, createStream: true);
+        await database.StreamAddAsync(Key, "envelope", CloudEventsFormat.Encode(Envelope("killed-1")));
+        var taken = Assert.Single(await database.StreamReadGroupAsync(Key, Group, "ghost", StreamPosition.NewMessages, 10));
+        Assert.Single(await database.StreamClaimAsync(Key, Group, "ghost", 0, [taken.Id]));
+        var log = new DeliveryLog();
+
+        await using var host = await StartAsync(log, [new(Topic, SubscriptionMode.Competing)]);
+
+        // 没有退回就照旧计入：让进程崩溃的消息每崩一次用掉一次尝试，到上限进死信，不会无限地投
+        var deadLetter = Assert.Single(await WaitForEntriesAsync(DeadLetterKey, 1));
+        Assert.Equal("killed-1", Decode(deadLetter).Id);
+        Assert.Empty(log.All);
+    }
+
+    [Fact]
+    public async Task EntriesReadButNotDispatchedBeforeStop_AreReclaimedWithTheirFirstAttempt()
+    {
+        var database = RedisTestServer.Database();
+        var first = new DeliveryLog();
+        first.BlockingIds["batch-1"] = 0;
+        var host = await StartAsync(first, [new(Topic, SubscriptionMode.Competing)]);
+        try
+        {
+            // 一个事务里写入三条：消费循环一次读到，第一条处理时停止，后两条没有派发
+            Assert.All(await PublishAsync(host, Topic, [Envelope("batch-1"), Envelope("batch-2"), Envelope("batch-3")]), static r => Assert.True(r.IsSuccess, r.ToString()));
+            Assert.Single(await first.WaitAsync(static r => r.Delivery.Envelope.Id == "batch-1", 1, _timeout));
+        }
+        finally
+        {
+            await host.DisposeAsync();
+        }
+
+        Assert.Single(first.All);
+        // 三条都还待确认，读取算上的那一次都已退回
+        var pending = await database.StreamPendingMessagesAsync(Key, Group, 10, RedisValue.Null);
+        Assert.Equal([0, 0, 0], pending.Select(static p => p.DeliveryCount));
+
+        var second = new DeliveryLog();
+        await using var next = await StartAsync(second, [new(Topic, SubscriptionMode.Competing)]);
+
+        // 接手的实例从第 1 次尝试起投递每一条；以前没派发过的两条也从第 2 次起，上限是 1 时不经处理就进死信
+        var received = await second.WaitAsync(static r => r.Delivery.Envelope.Id.StartsWith("batch-", StringComparison.Ordinal), 3, _timeout);
+        Assert.Equal(["batch-1", "batch-2", "batch-3"], received.Select(static r => r.Delivery.Envelope.Id));
+        Assert.All(received, static r => Assert.Equal(1, r.Delivery.Attempt));
+        await WaitUntilAsync(async () => (await database.StreamPendingAsync(Key, Group)).PendingMessageCount == 0);
+        Assert.False(await database.KeyExistsAsync(DeadLetterKey));
     }
 
     [Fact]

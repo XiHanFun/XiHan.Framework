@@ -19,7 +19,7 @@ namespace XiHan.Framework.Messaging.Redis.Tests;
 /// 消费循环怎么了结一次投递（RFC-0009「投递」第 3、5 条，ADR-0261、ADR-0275）
 /// </summary>
 /// <remarks>
-/// 对打桩的数据库验证新条目的投递：成功确认，失败认领后原位重试、到上限竞争订阅写死信流再确认、广播订阅确认掉，无法解码的条目不派发、按订阅方式了结，停止打断的不确认，应用排空期间不接着原位重试。不需要 Redis；回收与投递次数由 <see cref="RedisStreamBehaviorTests"/> 在真实 Redis 上验证
+/// 对打桩的数据库验证新条目的投递：成功确认，失败认领后原位重试、到上限竞争订阅写死信流再确认、广播订阅确认掉，无法解码的条目不派发、按订阅方式了结，停止打断的不确认并退回这一次的投递次数（ADR-0284），应用排空期间不接着原位重试。不需要 Redis；回收与投递次数由 <see cref="RedisStreamBehaviorTests"/> 在真实 Redis 上验证
 /// </remarks>
 public sealed class RedisDeliveryTests
 {
@@ -200,6 +200,116 @@ public sealed class RedisDeliveryTests
         Assert.Empty(fake.Acknowledged);
         Assert.Empty(fake.Claimed);
         Assert.Empty(fake.Added);
+
+        // 被打断的这一次不计尝试：读取让投递次数成了 1，退回去，回收之后仍是第 1 次尝试
+        Assert.Equal([("1-1", 1)], fake.Restored);
+    }
+
+    [Theory]
+    [InlineData(SubscriptionMode.Competing)]
+    [InlineData(SubscriptionMode.Broadcast)]
+    public async Task LastAttemptCancelledByStop_IsNotSettled_AndItsDeliveryCountIsRestored(SubscriptionMode mode)
+    {
+        await using var host = await TestHost.StartAsync(static _ => { });
+        var (database, fake) = FakeRedisDatabase.Create(Entry("1-1", "slow"));
+        var consumer = Consumer(host, database, mode);
+        var last = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var attempts = new ConcurrentQueue<int>();
+        using var stopping = new CancellationTokenSource();
+
+        var loop = consumer.RunAsync(
+            async (delivery, cancellationToken) =>
+            {
+                attempts.Enqueue(delivery.Attempt);
+                if (delivery.Attempt < 2)
+                {
+                    return Result.Failure(Error.Literal("ORDERS_VALIDATION_001", "Rejected."));
+                }
+
+                // 最后一次尝试（上限是 2）：等到停止信号，管道把取消写成失败结果返回
+                last.TrySetResult();
+                try
+                {
+                    await Task.Delay(Timeout.Infinite, cancellationToken);
+                }
+                catch (OperationCanceledException)
+                {
+                    // 由下面的失败结果代替
+                }
+
+                return Result.Failure(new Error(KernelErrors.Cancelled, KernelMessages.Cancelled));
+            },
+            stopping.Token);
+        await last.Task.WaitAsync(_patience);
+        await StopAsync(stopping, loop);
+
+        // 第 1 次失败后认领一次（投递次数成了 2）再试；第 2 次被停止打断：不进死信、不确认
+        Assert.Equal([1, 2], attempts);
+        Assert.Equal(["1-1"], fake.Claimed);
+        Assert.Empty(fake.Added);
+        Assert.Empty(fake.Acknowledged);
+
+        // 这一次不计尝试：投递次数由 2 退回 1。不退的话回收再加一成 3，超过上限，条目不经处理就进死信（ADR-0284）
+        Assert.Equal([("1-1", 2)], fake.Restored);
+    }
+
+    [Fact]
+    public async Task EntriesReadButNotDispatchedBeforeStop_GetTheirDeliveryCountRestored()
+    {
+        await using var host = await TestHost.StartAsync(static _ => { });
+        var (database, fake) = FakeRedisDatabase.Create(Entry("1-1", "slow"), Entry("1-2", "next"), Entry("1-3", "after"));
+        var consumer = Consumer(host, database, SubscriptionMode.Competing);
+        var entered = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var dispatched = new ConcurrentQueue<string>();
+        using var stopping = new CancellationTokenSource();
+
+        var loop = consumer.RunAsync(
+            async (delivery, cancellationToken) =>
+            {
+                dispatched.Enqueue(delivery.Envelope.Id);
+                entered.TrySetResult();
+                try
+                {
+                    await Task.Delay(Timeout.Infinite, cancellationToken);
+                }
+                catch (OperationCanceledException)
+                {
+                    // 由下面的失败结果代替
+                }
+
+                return Result.Failure(new Error(KernelErrors.Cancelled, KernelMessages.Cancelled));
+            },
+            stopping.Token);
+        await entered.Task.WaitAsync(_patience);
+        await StopAsync(stopping, loop);
+
+        // 一批读到三条，第一条处理时停止：后两条没有派发过，读取却已经让它们的投递次数成了 1
+        Assert.Equal(["slow"], dispatched);
+        Assert.Empty(fake.Acknowledged);
+        Assert.Empty(fake.Added);
+
+        // 三条都退回：被打断的一条，与还没轮到的两条
+        Assert.Equal([("1-1", 1), ("1-2", 1), ("1-3", 1)], fake.Restored);
+    }
+
+    [Fact]
+    public async Task CompletedOrSettledEntries_DoNotGetTheirDeliveryCountRestored()
+    {
+        await using var host = await TestHost.StartAsync(static _ => { });
+        var (database, fake) = FakeRedisDatabase.Create(Entry("1-1", "ok"), Entry("1-2", "poison"));
+        var consumer = Consumer(host, database, SubscriptionMode.Competing);
+        using var stopping = new CancellationTokenSource();
+
+        var loop = consumer.RunAsync(
+            static (delivery, _) => ValueTask.FromResult(delivery.Envelope.Id == "ok" ? Result.Success() : Result.Failure(Error.Literal("ORDERS_VALIDATION_001", "Rejected."))),
+            stopping.Token);
+        Assert.True(SpinWait.SpinUntil(() => fake.Read(static f => f.Acknowledged.Count) == 2, _patience));
+        await StopAsync(stopping, loop);
+
+        // 处理成功的与真实失败到上限的都已了结：只有被停止打断的才退回投递次数，毒消息照样在上限次失败后进死信
+        Assert.Equal(["1-1", "1-2"], fake.Acknowledged);
+        Assert.Single(fake.Added);
+        Assert.Empty(fake.Restored);
     }
 
     [Fact]

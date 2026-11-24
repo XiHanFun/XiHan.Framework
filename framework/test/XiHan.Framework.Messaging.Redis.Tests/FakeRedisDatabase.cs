@@ -7,10 +7,10 @@ using StackExchange.Redis;
 namespace XiHan.Framework.Messaging.Redis.Tests;
 
 /// <summary>
-/// 打桩的 <see cref="IDatabase"/>：一条流上预置的新条目，记录确认、认领与写入
+/// 打桩的 <see cref="IDatabase"/>：一条流上预置的新条目，记录确认、认领、写入与退回的投递次数
 /// </summary>
 /// <remarks>
-/// 以 <see cref="DispatchProxy"/> 生成，只实现消费循环用到的成员：<c>StreamReadGroupAsync</c> 把预置的条目一次交出、之后为空；<c>StreamAcknowledgeAsync</c>、<c>StreamClaimAsync</c> 与 <c>StreamAddAsync</c> 记下调用；维护脚本返回空数组，<c>StreamAutoClaimAsync</c> 没有可回收的条目。其余成员抛 <see cref="NotSupportedException"/>。不模拟待确认列表与投递次数，回收的行为只在真实 Redis 上验证
+/// 以 <see cref="DispatchProxy"/> 生成，只实现消费循环用到的成员：<c>StreamReadGroupAsync</c> 把预置的条目一次交出、之后为空；<c>StreamAcknowledgeAsync</c>、<c>StreamClaimAsync</c> 与 <c>StreamAddAsync</c> 记下调用；退回投递次数的脚本记下每一对条目 ID 与次数，别的脚本（维护）返回空数组；<c>StreamAutoClaimAsync</c> 没有可回收的条目。其余成员抛 <see cref="NotSupportedException"/>。不模拟待确认列表与投递次数，回收的行为只在真实 Redis 上验证
 /// </remarks>
 public class FakeRedisDatabase : DispatchProxy
 {
@@ -33,6 +33,14 @@ public class FakeRedisDatabase : DispatchProxy
     /// 认领（原位重试前）过的条目 ID，按顺序
     /// </summary>
     public List<string> Claimed { get; } = [];
+
+    /// <summary>
+    /// 退回过投递次数的条目：条目 ID 与消费循环看到的投递次数，按顺序
+    /// </summary>
+    /// <remarks>
+    /// 停止打断的投递与停止时还没派发的条目，脚本把它们的次数设回减一后的值（ADR-0284）
+    /// </remarks>
+    public List<(string Id, int DeliveryCount)> Restored { get; } = [];
 
     /// <summary>
     /// 写入过的条目：流键与字段，按顺序
@@ -71,6 +79,14 @@ public class FakeRedisDatabase : DispatchProxy
         {
             switch (targetMethod.Name)
             {
+                case "ScriptEvaluateAsync" when args[0] is RedisStreamScripts.RestoreDeliveryCounts && args[2] is RedisValue[] pairs:
+                    // 前两项是组名与消费者名，之后每两项一对：条目 ID 与投递次数
+                    for (var index = 2; index + 1 < pairs.Length; index += 2)
+                    {
+                        Restored.Add((pairs[index].ToString(), (int)pairs[index + 1]));
+                    }
+
+                    return Task.FromResult(RedisResult.Create((RedisValue)((pairs.Length - 2) / 2)));
                 case "ScriptEvaluateAsync":
                     // 维护脚本：没有清理或整理任何东西
                     return Task.FromResult(RedisResult.Create(Array.Empty<RedisValue>()));

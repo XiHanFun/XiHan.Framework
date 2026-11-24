@@ -11,7 +11,7 @@ namespace XiHan.Framework.Messaging.Conformance;
 /// 套件的到达日志
 /// </summary>
 /// <remarks>
-/// 处理器把每次投递写进来，用例按条件等待。可指定某些事件 ID 失败、抛异常或一直等到被取消
+/// 处理器把每次投递写进来，用例按条件等待。可指定某些事件 ID 失败、抛异常或一直等到被取消（每次投递都等，或只在某一次尝试上等）
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class DeliveryLog
@@ -51,6 +51,14 @@ public sealed class DeliveryLog
     /// 模拟代理停止时还在处理的投递：处理器记下到达后等在调用的取消令牌上。从表里移除之后到达的投递照常处理
     /// </remarks>
     public ConcurrentDictionary<string, byte> BlockingIds { get; } = new(StringComparer.Ordinal);
+
+    /// <summary>
+    /// 只在给定的尝试号上一直等到调用被取消的事件 ID
+    /// </summary>
+    /// <remarks>
+    /// 值是尝试号（从 1 起）：这个 ID 的投递只有尝试号与它相同的那一次等在调用的取消令牌上，别的尝试照 <see cref="FailingIds"/> 与 <see cref="ThrowingIds"/> 处理。与 <see cref="FailingIds"/> 合用可以让前几次尝试失败、让代理停止时正好打断最后一次尝试
+    /// </remarks>
+    public ConcurrentDictionary<string, int> BlockingAttempts { get; } = new(StringComparer.Ordinal);
 
     /// <summary>
     /// 全部到达，按顺序

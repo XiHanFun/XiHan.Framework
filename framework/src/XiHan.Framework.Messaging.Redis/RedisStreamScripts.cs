@@ -109,6 +109,27 @@ internal static class RedisStreamScripts
         """;
 
     /// <summary>
+    /// 把没有执行完的投递从待确认条目的投递次数里退掉
+    /// </summary>
+    /// <remarks>
+    /// <c>KEYS[1]</c> 流，<c>ARGV[1]</c> 组名，<c>ARGV[2]</c> 消费者名，之后每两项一对：条目 ID 与本实例看到的投递次数。
+    /// 读取与认领都让投递次数加一，被停止打断的那一次并没有执行完（或根本没有派发），不该算进尝试上限：把次数设回减一后的值（<c>XCLAIM … RETRYCOUNT … JUSTID</c> 只改计数，不再加一）。
+    /// 只动仍在本消费者名下、次数与看到的相同的条目：已被别的实例认领（处理得比回收阈值久）、已确认或已被裁剪的不碰。空闲时间照原样写回（<c>IDLE</c>），什么时候轮到回收不因为这次改动而变。返回退回的条目数
+    /// </remarks>
+    public const string RestoreDeliveryCounts = """
+        local restored = 0
+        for i = 3, #ARGV, 2 do
+          local count = tonumber(ARGV[i + 1])
+          local pending = redis.call('XPENDING', KEYS[1], ARGV[1], ARGV[i], ARGV[i], 1, ARGV[2])
+          if #pending == 1 and tonumber(pending[1][4]) == count then
+            redis.call('XCLAIM', KEYS[1], ARGV[1], ARGV[2], 0, ARGV[i], 'IDLE', pending[1][3], 'RETRYCOUNT', count - 1, 'JUSTID')
+            restored = restored + 1
+          end
+        end
+        return restored
+        """;
+
+    /// <summary>
     /// 停止时删除本实例在竞争组里的消费者
     /// </summary>
     /// <remarks>

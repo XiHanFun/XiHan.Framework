@@ -491,7 +491,7 @@ public abstract class MessageBrokerConformance
     /// 用例 16：处理器正在处理时停止消费，这次投递不进死信，重新开始消费后重新投递
     /// </summary>
     /// <remarks>
-    /// 被停止打断的投递不是失败：不在原位重试、不进死信，原消息留给代理重新投递（RFC-0009「投递」第 3 条，ADR-0261）。在同一个宿主上停止再启动消息运行时，应用一直在服务状态。再到达时的尝试号由代理决定（内存代理、RabbitMQ 与 Kafka 仍是 1，Redis 的回收让它加一），这里只要求不超过上限
+    /// 被停止打断的投递不是失败：不在原位重试、不进死信，原消息留给代理重新投递（RFC-0009「投递」第 3 条，ADR-0261）。在同一个宿主上停止再启动消息运行时，应用一直在服务状态。再到达时的尝试号由代理决定，这里只要求不超过上限；最后一次尝试上被打断的见用例 17
     /// </remarks>
     [Fact]
     public async Task DeliveryInterruptedByStop_IsNotDeadLettered_AndIsRedeliveredAfterRestart()
@@ -522,6 +522,45 @@ public abstract class MessageBrokerConformance
         await Task.Delay(300).ConfigureAwait(false);
         Assert.Equal(2, log.All.Count(static r => r.Delivery.Envelope.Id == "held-1"));
         Assert.DoesNotContain(await ReadDeadLettersAsync(host, OrdersTopic, CancellationToken.None).ConfigureAwait(false), static e => e.Id == "held-1");
+    }
+
+    /// <summary>
+    /// 用例 17：最后一次尝试被停止打断，重新开始消费后再处理一次
+    /// </summary>
+    /// <remarks>
+    /// 前几次尝试照常失败，最后一次（第 <see cref="MaxAttempts"/> 次）正在处理时停止消费，这一次不进死信。被停止打断的投递不计入尝试上限（RFC-0009「投递」第 3 条，ADR-0261）：尝试次数还没有用完，重新开始消费后处理器必须再执行一次，这次成功即了结。靠投递次数计尝试的代理（Redis）要在放弃时把这一次退掉，否则重新到达时已经超过上限、不派发就进死信（ADR-0284）。再到达时的尝试号由代理决定（内存代理、RabbitMQ 与 Redis 仍是最后一次的，Kafka 重启后从 1 起），这里只要求不超过上限
+    /// </remarks>
+    [Fact]
+    public async Task LastAttemptInterruptedByStop_IsNotDeadLettered_AndIsHandledAgainAfterRestart()
+    {
+        var log = new DeliveryLog();
+        log.FailingIds["last-1"] = 0;
+        log.BlockingAttempts["last-1"] = MaxAttempts;
+        await using var host = await StartAsync(log).ConfigureAwait(false);
+        var runtime = host.Services.GetRequiredService<MessagingRuntime>();
+
+        (await PublishAsync(host, OrdersTopic, Envelope("last-1", "orders.last")).ConfigureAwait(false)).ThrowIfFailure();
+
+        // 前几次尝试返回失败，最后一次到达处理器后等在调用的取消令牌上
+        var attempts = await log.WaitAsync(static r => r.Delivery.Envelope.Id == "last-1", MaxAttempts, DeliveryTimeout).ConfigureAwait(false);
+        Assert.Equal(Enumerable.Range(1, MaxAttempts), attempts.Select(static r => r.Delivery.Attempt));
+
+        // 停止消费打断最后一次尝试：它不是失败，尝试次数没有用完，不进死信
+        await runtime.StopAsync(CancellationToken.None).ConfigureAwait(false);
+        Assert.Equal(MaxAttempts, log.All.Count(static r => r.Delivery.Envelope.Id == "last-1"));
+        Assert.DoesNotContain(await ReadDeadLettersAsync(host, OrdersTopic, CancellationToken.None).ConfigureAwait(false), static e => e.Id == "last-1");
+
+        // 重新开始消费：同一条消息再到达处理器（不是不经处理就进死信），这次处理成功
+        log.BlockingAttempts.Clear();
+        log.FailingIds.Clear();
+        await runtime.StartAsync(CancellationToken.None).ConfigureAwait(false);
+        var deliveries = await log.WaitAsync(static r => r.Delivery.Envelope.Id == "last-1", MaxAttempts + 1, RedeliveryTimeout).ConfigureAwait(false);
+        Assert.InRange(deliveries[^1].Delivery.Attempt, 1, MaxAttempts);
+
+        // 处理成功即了结：不再投递，也不进死信
+        await Task.Delay(300).ConfigureAwait(false);
+        Assert.Equal(MaxAttempts + 1, log.All.Count(static r => r.Delivery.Envelope.Id == "last-1"));
+        Assert.DoesNotContain(await ReadDeadLettersAsync(host, OrdersTopic, CancellationToken.None).ConfigureAwait(false), static e => e.Id == "last-1");
     }
 
     /// <summary>

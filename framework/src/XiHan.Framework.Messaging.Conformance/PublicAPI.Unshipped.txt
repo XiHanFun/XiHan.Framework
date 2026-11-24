@@ -1,6 +1,7 @@
 #nullable enable
 XiHan.Framework.Messaging.Conformance.DeliveryLog
 XiHan.Framework.Messaging.Conformance.DeliveryLog.All.get -> System.Collections.Generic.IReadOnlyList<XiHan.Framework.Messaging.Conformance.ReceivedMessage!>!
+XiHan.Framework.Messaging.Conformance.DeliveryLog.BlockingAttempts.get -> System.Collections.Concurrent.ConcurrentDictionary<string!, int>!
 XiHan.Framework.Messaging.Conformance.DeliveryLog.BlockingIds.get -> System.Collections.Concurrent.ConcurrentDictionary<string!, byte>!
 XiHan.Framework.Messaging.Conformance.DeliveryLog.DeliveryLog() -> void
 XiHan.Framework.Messaging.Conformance.DeliveryLog.FailingIds.get -> System.Collections.Concurrent.ConcurrentDictionary<string!, byte>!
@@ -14,6 +15,7 @@ XiHan.Framework.Messaging.Conformance.MessageBrokerConformance.Competing_Reaches
 XiHan.Framework.Messaging.Conformance.MessageBrokerConformance.DeliveryInterruptedByStop_IsNotDeadLettered_AndIsRedeliveredAfterRestart() -> System.Threading.Tasks.Task!
 XiHan.Framework.Messaging.Conformance.MessageBrokerConformance.ExhaustedCompetingDelivery_IsDeadLettered_WithItsEnvelope() -> System.Threading.Tasks.Task!
 XiHan.Framework.Messaging.Conformance.MessageBrokerConformance.FailingHandler_IsRetriedUpToMaxAttempts_ThenStops() -> System.Threading.Tasks.Task!
+XiHan.Framework.Messaging.Conformance.MessageBrokerConformance.LastAttemptInterruptedByStop_IsNotDeadLettered_AndIsHandledAgainAfterRestart() -> System.Threading.Tasks.Task!
 XiHan.Framework.Messaging.Conformance.MessageBrokerConformance.MessageBrokerConformance() -> void
 XiHan.Framework.Messaging.Conformance.MessageBrokerConformance.PublishMany_ReportsPerItem_EmptyIsEmpty_AndInvalidTopicRejectsAll() -> System.Threading.Tasks.Task!
 XiHan.Framework.Messaging.Conformance.MessageBrokerConformance.PublishWithinInvocation_CarriesTraceAndBaggage_ToTheHandler() -> System.Threading.Tasks.Task!

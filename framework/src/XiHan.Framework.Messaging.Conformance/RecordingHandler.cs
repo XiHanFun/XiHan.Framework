@@ -19,7 +19,7 @@ public sealed class RecordingHandler(DeliveryLog log) : IMessageHandler
         ArgumentNullException.ThrowIfNull(delivery);
         ArgumentNullException.ThrowIfNull(context);
         log.Record(new ReceivedMessage(delivery, new Dictionary<string, string>(context.Baggage, StringComparer.Ordinal), context.TraceId) { Origin = context.FindOrigin().TryGetValue(out var origin) ? origin : null, TraceFlags = context.TraceFlags });
-        if (log.BlockingIds.ContainsKey(delivery.Envelope.Id))
+        if (log.BlockingIds.ContainsKey(delivery.Envelope.Id) || (log.BlockingAttempts.TryGetValue(delivery.Envelope.Id, out var blocked) && blocked == delivery.Attempt))
         {
             // 等到调用被取消（代理停止）：取消异常由管道写成失败结果返回，代理据停止信号判定这次投递被打断
             await Task.Delay(Timeout.InfiniteTimeSpan, context.CancellationToken).ConfigureAwait(false);

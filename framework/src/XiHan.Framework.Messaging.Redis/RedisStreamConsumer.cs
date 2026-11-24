@@ -15,7 +15,8 @@ namespace XiHan.Framework.Messaging.Redis;
 /// 一个订阅在一条流上的消费
 /// </summary>
 /// <remarks>
-/// 竞争订阅在消费组 <see cref="RedisMessagingOptions.ConsumerGroup"/> 里，广播订阅在本实例独占的组 <c>&lt;ConsumerGroup&gt;@&lt;InstanceId&gt;</c> 里，消费者名都是实例标识。消费循环单线程：取新条目、依次派发、成功即确认；失败在原位重试，到上限进死信流（广播丢弃）。每个维护周期清理遗留的组与消费者、整理已确认的条目，并以 <c>XAUTOCLAIM</c> 回收超时未确认的条目
+/// 竞争订阅在消费组 <see cref="RedisMessagingOptions.ConsumerGroup"/> 里，广播订阅在本实例独占的组 <c>&lt;ConsumerGroup&gt;@&lt;InstanceId&gt;</c> 里，消费者名都是实例标识。消费循环单线程：取新条目、依次派发、成功即确认；失败在原位重试，到上限进死信流（广播丢弃）。每个维护周期清理遗留的组与消费者、整理已确认的条目，并以 <c>XAUTOCLAIM</c> 回收超时未确认的条目。
+/// 尝试号就是待确认列表里的投递次数。被停止打断的投递不计尝试（RFC-0009「投递」第 3 条）：停止时把没有执行完的那一次、以及读到或认领到却还没派发的条目的投递次数退回一次（ADR-0284），回收之后仍是原来的尝试号；来不及退回（进程被强行终止、Redis 不可达）的那一次照旧计入，所以让进程崩溃的消息仍然会进死信
 /// </remarks>
 internal sealed partial class RedisStreamConsumer
 {
@@ -210,15 +211,17 @@ internal sealed partial class RedisStreamConsumer
                 }
 
                 var entries = await _database.StreamReadGroupAsync(_key, _group, _consumer, StreamPosition.NewMessages, _options.BatchSize).ConfigureAwait(false);
-                foreach (var entry in entries)
+                for (var index = 0; index < entries.Length; index++)
                 {
                     // 停止时这一批剩下的条目不再派发：它们留在本消费者的待确认列表里，由别的实例回收
+                    // 读取已经让它们的投递次数成了 1，而它们一次也没有派发过：退回去，回收之后从第 1 次尝试起
                     if (stopping.IsCancellationRequested)
                     {
+                        await RestoreDeliveryCountsAsync([.. entries[index..].Select(static entry => (entry.Id, 1))]).ConfigureAwait(false);
                         break;
                     }
 
-                    await DeliverAsync(entry, attempt: 1, dispatch, stopping).ConfigureAwait(false);
+                    await DeliverAsync(entries[index], attempt: 1, dispatch, stopping).ConfigureAwait(false);
                 }
 
                 handled += entries.Length;
@@ -345,6 +348,8 @@ internal sealed partial class RedisStreamConsumer
         {
             if (stopping.IsCancellationRequested)
             {
+                // 认领让这些条目的投递次数加了一，而它们还没轮到派发：退回去，否则每停一次就白白用掉一次尝试
+                await RestoreDeliveryCountsAsync([.. Enumerable.Range(index, claimed.Length - index).Where(rest => pending[rest].Length > 0).Select(rest => (claimed[rest].Id, AttemptOf(pending[rest][0])))]).ConfigureAwait(false);
                 break;
             }
 
@@ -353,7 +358,7 @@ internal sealed partial class RedisStreamConsumer
                 continue;
             }
 
-            var attempt = (int)Math.Min(pending[index][0].DeliveryCount, int.MaxValue);
+            var attempt = AttemptOf(pending[index][0]);
             var entryId = claimed[index].Id.ToString();
             LogReclaimed(_logger, entryId, Subscription.Topic, _group, attempt);
             await DeliverAsync(claimed[index], attempt, dispatch, stopping).ConfigureAwait(false);
@@ -366,7 +371,7 @@ internal sealed partial class RedisStreamConsumer
     /// 投递一个条目
     /// </summary>
     /// <remarks>
-    /// 解码失败：竞争订阅原样进死信流，广播订阅确认掉。尝试号已超过上限（回收来的）：不再派发，按到上限处理。否则派发（每次尝试之前都等应用进入服务状态），成功即确认；失败在原位重试，每次重试前把条目认领给自己让投递次数加一，到上限竞争订阅进死信流、广播订阅确认掉。停止时不确认，留给回收
+    /// 解码失败：竞争订阅原样进死信流，广播订阅确认掉。尝试号已超过上限（回收来的）：不再派发，按到上限处理。否则派发（每次尝试之前都等应用进入服务状态），成功即确认；失败在原位重试，每次重试前把条目认领给自己让投递次数加一，到上限竞争订阅进死信流、广播订阅确认掉。停止时不确认，留给回收；被打断的这一次从投递次数里退掉
     /// </remarks>
     private async Task DeliverAsync(StreamEntry entry, int attempt, MessageDispatch dispatch, CancellationToken stopping)
     {
@@ -409,6 +414,8 @@ internal sealed partial class RedisStreamConsumer
             {
                 // 停止打断了这次投递，或失败发生在停止期间（多半是取消造成的，管道把取消变成失败结果返回）：
                 // 不确认、不在这里重试也不进死信，条目留在待确认列表里，由别的实例回收后按投递次数接着投递
+                // 这一次不计尝试：读取或认领已经把它算进了投递次数，退回去；否则回收再加一，赶上最后一次尝试的条目会超过上限、不派发就进死信
+                await RestoreDeliveryCountsAsync([(entry.Id, attempt)]).ConfigureAwait(false);
                 return;
             }
 
@@ -433,6 +440,44 @@ internal sealed partial class RedisStreamConsumer
                 LogNoLongerPending(_logger, envelope.Id, topic, _group);
                 return;
             }
+        }
+    }
+
+    /// <summary>
+    /// 待确认条目的投递次数，即它的尝试号
+    /// </summary>
+    private static int AttemptOf(StreamPendingMessageInfo pending) => (int)Math.Min(pending.DeliveryCount, int.MaxValue);
+
+    /// <summary>
+    /// 把被停止打断、没有执行完的投递从投递次数里退掉
+    /// </summary>
+    /// <remarks>
+    /// 每项是条目 ID 与本实例看到的投递次数（它的尝试号）；脚本只动仍在本消费者名下、次数没变的条目。不随停止信号取消：正是停止时才要做。
+    /// 失败只记日志、不抛出：这些条目的那一次照旧计入，回收之后尝试号多一，最坏是少处理一次就进死信（与进程被强行终止时相同），不会丢消息，也不会让停止流程卡住
+    /// </remarks>
+    private async Task RestoreDeliveryCountsAsync(IReadOnlyList<(RedisValue Id, int DeliveryCount)> entries)
+    {
+        if (entries.Count == 0)
+        {
+            return;
+        }
+
+        var arguments = new RedisValue[2 + (entries.Count * 2)];
+        arguments[0] = _group;
+        arguments[1] = _consumer;
+        for (var index = 0; index < entries.Count; index++)
+        {
+            arguments[2 + (index * 2)] = entries[index].Id;
+            arguments[3 + (index * 2)] = entries[index].DeliveryCount;
+        }
+
+        try
+        {
+            await _database.ScriptEvaluateAsync(RedisStreamScripts.RestoreDeliveryCounts, [_key], arguments).ConfigureAwait(false);
+        }
+        catch (Exception exception) when (exception is RedisException or TimeoutException)
+        {
+            LogRestoreFailed(_logger, entries.Count, Subscription.Topic, _group, exception);
         }
     }
 
@@ -503,6 +548,15 @@ internal sealed partial class RedisStreamConsumer
     /// </summary>
     [LoggerMessage(Level = LogLevel.Warning, Message = "{Count} pending entries on topic {Topic} (group {Group}) were trimmed before they were acknowledged; the consumers fell behind by more than MaxLength and these messages are lost.")]
     private static partial void LogTrimmedBeforeAcknowledged(ILogger logger, int count, string topic, string group);
+
+    /// <summary>
+    /// 记录停止时没能把被打断的投递从投递次数里退掉
+    /// </summary>
+    /// <remarks>
+    /// 这些条目的那一次照旧计入尝试上限
+    /// </remarks>
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Restoring the delivery count of {Count} interrupted entries on topic {Topic} (group {Group}) failed; the interrupted attempts stay counted.")]
+    private static partial void LogRestoreFailed(ILogger logger, int count, string topic, string group, Exception exception);
 
     /// <summary>
     /// 记录重试前条目已不在待确认列表里
