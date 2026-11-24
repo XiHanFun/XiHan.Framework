@@ -124,9 +124,9 @@ public static class EntityIndexes
     /// 校验显式给出的索引名
     /// </summary>
     /// <remarks>
-    /// 名字原样拼进建索引的语句（PostgreSQL、SQLite 加引号，MySQL、Oracle 不加），所以只收在各数据库上都不必转义的标识符：字母开头，只含 ASCII 字母、数字与下划线
+    /// 名字原样拼进建索引的语句（PostgreSQL、SQLite 加引号，MySQL、Oracle 不加），所以只收在各数据库上都不必转义的标识符：字母开头，只含 ASCII 字母、数字与下划线；不检查长度
     /// </remarks>
-    private static string ExplicitName(Type entityType, string name)
+    internal static string ExplicitName(Type entityType, string name)
     {
         if (name.Length == 0 || !char.IsAsciiLetter(name[0]) || !name.All(static c => char.IsAsciiLetterOrDigit(c) || c == '_'))
         {
