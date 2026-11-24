@@ -183,7 +183,7 @@ internal static partial class ManifestShape
                 ["requires"] = List(new ValueShape(ShapeKind.Object) { Object = requirement }),
                 ["bindings"] = List(new ValueShape(ShapeKind.Object) { Object = binding }),
                 ["contributes"] = new ValueShape(ShapeKind.Object) { Object = contributions },
-                ["activation"] = List(Text(static text => ActivationPattern().IsMatch(text))) with { NonEmpty = true },
+                ["activation"] = List(Text(ActivationEvent.IsValid)) with { NonEmpty = true },
                 ["permissions"] = List(Text(static text => PermissionPattern().IsMatch(text))),
                 ["entry"] = any,
             },
@@ -244,12 +244,6 @@ internal static partial class ManifestShape
     /// </summary>
     [GeneratedRegex("^[a-z][a-z0-9.-]*\\z")]
     private static partial Regex HealthPattern();
-
-    /// <summary>
-    /// 激活事件
-    /// </summary>
-    [GeneratedRegex("^(onStartup|onOperation:[a-z0-9.*-]+|onEvent:[a-z0-9.*-]+)\\z")]
-    private static partial Regex ActivationPattern();
 
     /// <summary>
     /// 插件申请的权限

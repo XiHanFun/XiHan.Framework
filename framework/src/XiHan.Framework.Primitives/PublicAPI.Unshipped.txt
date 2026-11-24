@@ -66,6 +66,7 @@ XiHan.Framework.Primitives.LifecycleState.Resolved = 1 -> XiHan.Framework.Primit
 XiHan.Framework.Primitives.LifecycleState.Started = 3 -> XiHan.Framework.Primitives.LifecycleState
 XiHan.Framework.Primitives.LifecycleState.Stopped = 7 -> XiHan.Framework.Primitives.LifecycleState
 XiHan.Framework.Primitives.LifecycleStateExtensions
+XiHan.Framework.Primitives.Manifests.ActivationEvent
 XiHan.Framework.Primitives.Manifests.Binding
 XiHan.Framework.Primitives.Manifests.Binding.<Clone>$() -> XiHan.Framework.Primitives.Manifests.Binding!
 XiHan.Framework.Primitives.Manifests.Binding.Binding(string! name, string! type) -> void
@@ -335,6 +336,7 @@ static XiHan.Framework.Primitives.FrameworkInfo.Version.get -> string!
 static XiHan.Framework.Primitives.LifecycleStateExtensions.CanTransitionTo(this XiHan.Framework.Primitives.LifecycleState from, XiHan.Framework.Primitives.LifecycleState to) -> bool
 static XiHan.Framework.Primitives.LifecycleStateExtensions.IsServing(this XiHan.Framework.Primitives.LifecycleState state) -> bool
 static XiHan.Framework.Primitives.LifecycleStateExtensions.IsTerminal(this XiHan.Framework.Primitives.LifecycleState state) -> bool
+static XiHan.Framework.Primitives.Manifests.ActivationEvent.IsValid(string? value) -> bool
 static XiHan.Framework.Primitives.Manifests.Binding.operator !=(XiHan.Framework.Primitives.Manifests.Binding? left, XiHan.Framework.Primitives.Manifests.Binding? right) -> bool
 static XiHan.Framework.Primitives.Manifests.Binding.operator ==(XiHan.Framework.Primitives.Manifests.Binding? left, XiHan.Framework.Primitives.Manifests.Binding? right) -> bool
 static XiHan.Framework.Primitives.Manifests.CapabilityDeclaration.Parse(string! text) -> XiHan.Framework.Primitives.Manifests.CapabilityDeclaration!

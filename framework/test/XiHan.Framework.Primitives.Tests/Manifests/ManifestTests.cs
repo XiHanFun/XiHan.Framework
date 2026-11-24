@@ -99,6 +99,7 @@ public sealed class ManifestTests
         Assert.Throws<ArgumentException>(() => CreateProvider() with { Version = "5" });
         Assert.Throws<ArgumentOutOfRangeException>(() => CreateProvider() with { Primitives = 0 });
         Assert.Throws<ArgumentException>(() => CreateProvider() with { Activation = ["onBoot"] });
+        Assert.Throws<ArgumentException>(() => CreateProvider() with { Activation = ["onStartup", "onOperation:order_lines.*"] });
         Assert.Throws<ArgumentException>(() => CreateProvider() with { Permissions = ["root"] });
         Assert.Throws<ArgumentException>(() => new Binding("Db", "connection:relational"));
         Assert.Throws<ArgumentException>(() => new ConfigContribution("Caching"));
@@ -129,7 +130,7 @@ public sealed class ManifestTests
             Kind = ManifestKind.Plugin,
             Isolation = PluginIsolation.OutOfProcess,
             Permissions = ["capability:caching.distributed", "fs.read:./data"],
-            Activation = ["onOperation:orders.*", "onEvent:orders.created"],
+            Activation = ["onOperation:orders.*", "onEvent:orders.created", "onEvent:order_events.*"],
         };
 
         Assert.True(pluginWithoutIsolation.Validate().IsFailure);

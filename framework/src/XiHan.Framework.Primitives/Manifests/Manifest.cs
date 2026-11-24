@@ -99,12 +99,12 @@ public sealed partial record Manifest
     /// 激活事件
     /// </summary>
     /// <remarks>
-    /// 默认 <c>onStartup</c>
+    /// 默认 <c>onStartup</c>；每一项的文法见 <see cref="ActivationEvent"/>
     /// </remarks>
     public IReadOnlyList<string> Activation
     {
         get => field;
-        init => field = ValidateAll(value, ActivationPattern(), "Activation event");
+        init => field = ValidateAll(value, ActivationEvent.IsValid, "Activation event");
     } = ["onStartup"];
 
     /// <summary>
@@ -116,7 +116,7 @@ public sealed partial record Manifest
     public IReadOnlyList<string> Permissions
     {
         get => field;
-        init => field = ValidateAll(value, PermissionPattern(), "Permission");
+        init => field = ValidateAll(value, static permission => PermissionPattern().IsMatch(permission), "Permission");
     } = [];
 
     /// <summary>
@@ -162,20 +162,20 @@ public sealed partial record Manifest
     }
 
     /// <summary>
-    /// 校验列表中每一项都匹配 <paramref name="pattern"/>
+    /// 校验列表中每一项都通过 <paramref name="accepts"/>
     /// </summary>
     /// <remarks>
     /// 通过时原样返回列表
     /// </remarks>
     /// <param name="values">待校验的值</param>
-    /// <param name="pattern">每一项必须匹配的正则</param>
+    /// <param name="accepts">每一项必须通过的判定</param>
     /// <param name="what">出错时用于描述该项的名词，例如 <c>Activation event</c></param>
-    private static IReadOnlyList<string> ValidateAll(IReadOnlyList<string> values, Regex pattern, string what)
+    private static IReadOnlyList<string> ValidateAll(IReadOnlyList<string> values, Func<string, bool> accepts, string what)
     {
         ArgumentNullException.ThrowIfNull(values);
         foreach (var value in values)
         {
-            if (value is null || !pattern.IsMatch(value))
+            if (value is null || !accepts(value))
             {
                 throw new ArgumentException($"{what} '{value}' is not well-formed.", nameof(values));
             }
@@ -206,12 +206,6 @@ public sealed partial record Manifest
     /// </summary>
     [GeneratedRegex("^[0-9]+\\.[0-9]+\\.[0-9]+(-[0-9A-Za-z.-]+)?(\\+[0-9A-Za-z.-]+)?\\z")]
     private static partial Regex SemVerPattern();
-
-    /// <summary>
-    /// 激活事件的正则：<c>onStartup</c>、<c>onOperation:&lt;模式&gt;</c> 或 <c>onEvent:&lt;模式&gt;</c>
-    /// </summary>
-    [GeneratedRegex("^(onStartup|onOperation:[a-z0-9.*-]+|onEvent:[a-z0-9.*-]+)\\z")]
-    private static partial Regex ActivationPattern();
 
     /// <summary>
     /// 插件权限的正则：<c>net.outbound</c>、<c>fs.read</c>、<c>fs.write</c> 或 <c>capability</c> 前缀加冒号与目标
