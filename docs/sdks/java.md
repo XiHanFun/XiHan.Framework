@@ -170,7 +170,7 @@ Java 的写法与差异：
 - **调用器**：内置步骤的归属是 `OperationInvoker.KERNEL_OWNER`，调用器复制使用者的 `PipelineBuilder` 再加内置步骤，不改动它。Observe 阶段翻译异常时 `java.lang.Error` 不翻译，`FrameworkException` 的错误进 `inner`。响应在管道结束之后编码，编码时关掉 Jackson 的 `WRITE_NAN_AS_STRINGS`，非有限的浮点写不出、调用以未处理失败结束。
 - **载荷**：调用器在反序列化之前按请求类型以文本顺序核对载荷（`RequestShape`），报错的先后不随 Jackson 的内部路径变。
 - **清单**：`ManifestJson.tryRead` / `tryReadFile` 以 `Result<Manifest>` 返回读取失败（`KERNEL_CAPABILITY_006`），`read` / `readFile` 是它们的包装，失败时抛 `FrameworkException`；文件存在却读不出来时两者都照常抛 `IOException`。`tryRead(byte[])` 不跳过 BOM，`tryReadFile` 跳过。`Manifest.Builder.validate()` 以结果返回跨字段约束的失败（`PRIMITIVES_VALIDATION_001`），`build()` 把它抛出。`Manifest` 按生效的值比较，写出的清单再读一遍与原来的相等。
-- **文法与枚举**：规范的正则一律用 `Matcher.matches()` 整串匹配。按名字编码的枚举（`LifecycleState`、`PipelineStage`、`Stability`、`ManifestKind`、`ManifestRole`、`PluginIsolation`、`Expose`、`Network`、`SubscriptionMode`）都是 `parse(name)` 返回 `Optional`、`wireName()` 给出线上的名字。
+- **文法与枚举**：规范的正则一律用 `Matcher.matches()` 整串匹配；操作 ID 另有长度上限 128 个字符（`OperationId.MAX_LENGTH`）。按名字编码的枚举（`LifecycleState`、`PipelineStage`、`Stability`、`ManifestKind`、`ManifestRole`、`PluginIsolation`、`Expose`、`Network`、`SubscriptionMode`）都是 `parse(name)` 返回 `Optional`、`wireName()` 给出线上的名字。
 - **插件运行时**：`Instant` 精确到纳秒，`deadline` 的九位小数不截断。运行时的消息键目录 `PluginMessages` 带 10 种区域，只供本地渲染，不随握手发送。
 
 ## 语言映射
@@ -210,3 +210,5 @@ Java 的写法与差异：
 - 弃用 `LifecycleState.stateName()` 与 `PipelineStage.manifestName()`（旧名仍可用）→ 改用各枚举统一的 `wireName()`。
 - 弃用 `OperationErrors.UNEXPECTED`（旧名仍可用）→ 改用 `InvocationErrors.UNHANDLED_EXCEPTION`。
 - 管道终点报的「操作未登记」（`kernel.operation.unknown`）补上了参数 `id`，文案能填出操作 ID → 不用改。
+- `OperationId.validate`、`OperationContract.of` 与读清单不再接受超过 128 个字符的操作 ID（抛 `IllegalArgumentException`，读清单为 `kernel.manifest.invalid`），原先不设上限；新增常量 `OperationId.MAX_LENGTH` → 把 ID 缩到 128 个字符以内。
+- 清单 `activation` 里 `onEvent:` 的模式可以带下划线（如 `onEvent:order_events.*`），原先读不出 → 不用改。

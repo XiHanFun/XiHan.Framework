@@ -214,3 +214,5 @@ TypeScript 的写法与差异：
 - 导入 `xihan-framework/plugin` 之后，`ErrorInfo#message` 对 `plugins.*` 键给出英文文案，原先是「键 (参数)」→ 按文本匹配的地方改为按错误码或消息键。
 - `XIHAN_PLUGIN_PROTOCOL_VERSIONS` 里不合文法的项（空项、正负号、小数、指数、十六进制、超过 uint32）现在都记 `warning`；未声明健康项的警告至多记 256 个名字 → 不用改。
 - 发布的包不再带 `.js.map` / `.d.ts.map`，`sideEffects` 由 `false` 改为列出 `plugin/messages` → 不用改；调试时跳不到 `.ts` 源码。
+- `isOperationId`、`validateOperationId`、`defineContract`、`OperationRegistry.add` 与 `readManifest` 不再接受超过 128 个字符的操作 ID（抛 `FrameworkError`，读清单为 `kernel.manifest.invalid`），原先不设上限；新增导出 `maxOperationIdLength` → 把 ID 缩到 128 个字符以内；按消息文本匹配的改按错误码。
+- 清单 `activation` 里 `onEvent:` 的模式可以带下划线（如 `onEvent:order_events.*`），原先读不出 → 不用改。

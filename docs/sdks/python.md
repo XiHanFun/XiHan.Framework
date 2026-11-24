@@ -242,3 +242,5 @@ Python 的写法与差异：
 - 区域名按 RFC-0010 校验并归一：`set_default_messages` 与 `Catalog` 遇到不合文法的区域名、只差大小写的两个区域名抛 `FrameworkError`，原先接受 → 区域名写成 `zh-CN` 这样的 BCP 47 形式。
 - 区域名的查找不区分大小写：请求 `zh-cn` 命中 `zh-CN` 的模板，原先落回 `en-US` → 不用改；按旧文案断言的测试更新期望。
 - 调用状态按调用隔离：处理器或中间件里再调另一个操作、或在同一个上下文上并发调用时，`operation.current` 等读到的是自己这次调用，原先互相覆盖 → 不用改。
+- `operation.is_id`、`Contract(...)`、`Manifest(...)` 与 `manifest.read` 不再接受超过 128 个字符的操作 ID（抛 `FrameworkError`，读清单为 `kernel.manifest.invalid`），原先不设上限；新增常量 `operation.MAX_ID_LENGTH` → 把 ID 缩到 128 个字符以内。
+- 清单 `activation` 里 `onEvent:` 的模式可以带下划线（如 `onEvent:order_events.*`），原先读不出 → 不用改。

@@ -200,7 +200,7 @@ Go 自己的文本（日期、`Duration`、结构体）不跨语言：插件的�
 
 ### 文法与空白
 
-操作 ID、主题、协议版本协商、端点与回调失败的映射直接调规范一致性模块的 `rules`，SDK 里不另存一份。空白指 RFC-0001「空白字符」写死的 25 个码位（`rules.IsWhitespace`），握手行、`Error` 的 `message` 与自由文本共用。
+操作 ID、主题、清单的激活事件、缓存键、协议版本协商、端点与回调失败的映射直接调规范一致性模块的 `rules`，SDK 里不另存一份。操作 ID 不超过 128 个字符（`operation.MaxIDLength`），缓存键按 UTF-8 编码后不超过 512 字节（`caching.MaxKeyLength`）。空白指 RFC-0001「空白字符」写死的 25 个码位（`rules.IsWhitespace`），握手行、`Error` 的 `message` 与自由文本共用。
 
 ## 设计取舍
 
@@ -229,3 +229,6 @@ Go 自己的文本（日期、`Duration`、结构体）不跨语言：插件的�
 - 插件进程里操作 panic 与响应写不出的日志从 `slog.Default()` 改写进运行时的日志器 → 要收这些日志的给 `Options.Logger`，不再靠替换 `slog.Default()`。
 - 生命周期回调与 `caching.Store` 返回的、用 `%w` 包着的 `*primitives.Error` 原样交给宿主，不再报成 `plugins.process.failed` 或后端不可用 → 不想把内部错误带给宿主的不要用 `%w` 包它。
 - `caching` 的九个操作都在适配层先校验键，`try-remove` 在键与 `expected` 都不合法时改报键（`CACHING_VALIDATION_001`）→ 自己实现的 `Store` 不必再校验键；按错误内容断言的测试更新期望。
+- 超过 128 个字符的操作 ID 不再合法：`operation.Add` 返回 `PRIMITIVES_VALIDATION_001`，读清单为 `kernel.manifest.invalid`，原先不设上限；新增常量 `operation.MaxIDLength` → 把 ID 缩到 128 个字符以内。
+- 清单 `activation` 里 `onEvent:` 的模式可以带下划线（如 `onEvent:order_events.*`），原先读不出 → 不用改。
+- 示例 `examples/cache` 的 `caching.remote.key_invalid` 文案由「512 个字符」改为「512 字节」→ 照抄这份消息目录的插件，目录要与宿主 `Caching.Remote` 的同名目录逐字一致，两边同时升级。

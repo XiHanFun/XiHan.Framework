@@ -199,7 +199,7 @@ PHP 的写法与差异：
 规范把取决于语言的地方交给各 SDK 写明，PHP 的做法：
 
 - **JSON 文本的共同检查**：语法、嵌套层数、孤立的代理项转义与原始控制字符交给 `json_decode`，非法 UTF-8 由 PCRE 的 UTF-8 校验拒绝，重复成员在原文上找（`json_decode` 遇到重复取最后一个）。过了检查之后按内部的读取器读成保留文本顺序与原文写法的树，不经 `stdClass`。
-- **文法的匹配**：PCRE 的 `$` 在结尾的换行之前也算匹配，所以规范文法的正则都带 `D` 修饰符。
+- **文法的匹配**：PCRE 的 `$` 在结尾的换行之前也算匹配，所以规范文法的正则都带 `D` 修饰符。操作 ID 另有长度上限 128 个字符（`OperationId::MAX_LENGTH`）。
 - **值模型**（RFC-0010「模板」）：`null`、`bool`、`string`、`int`（PHP 的 `int` 就是 64 位）、`float` 原样。SDK 读出的 JSON 对象是 `JsonObject`：不可变，成员按文本顺序，`{}` 与 `[]` 不混淆，用 `$object['name']`、`get()` 取成员，`with()` 得到改了一个成员的新对象。PHP 自己的数组是列表（`array_is_list`，含空数组 `[]`）时是数组，否则是对象；`stdClass` 也是对象。模型之外的值写成 PHP 的文本：`BackedEnum` 取值的文本，`UnitEnum` 取名字，`Stringable` 取 `(string)`，`DateTimeInterface` 取 ATOM 格式，`JsonSerializable` 取 `jsonSerialize()` 再归入，其余对象写类型名。它们不跨语言，插件要跨语言格式化时先转成字符串。
 - **请求的形状**（RFC-0011 规则 2）：成员用 `Shape` 声明，成员名区分大小写，未知成员忽略。
   - 必填：`Shape::string()->required()`；只要求出现，值为 `null` 也算出现。
@@ -234,3 +234,5 @@ PHP 的写法与差异：
 - `Context` 与 `OperationErrors` 上的消息键常量（`MESSAGE_*`）弃用，旧名仍可用 → 改用 `KernelMessages::*`。
 - 弃用 `OperationErrors::deadlineBeforeStart()` 与 `unhandledException()`（旧名仍可用）→ 改用 `KernelErrors` 上的同名工厂。
 - `Configuration::string()` 读浮点叶子的文本不再随进程的 `serialize_precision` 变化（原先不是 `-1` 时 `0.1` 写成 `0.10000000000000001`）→ 不用改。
+- `OperationId::isValid`、`Operation\Contract` 与读清单不再接受超过 128 个字符的操作 ID（抛 `InvalidArgumentException`，读清单为 `kernel.manifest.invalid`），原先不设上限；新增常量 `OperationId::MAX_LENGTH` → 把 ID 缩到 128 个字符以内。
+- 清单 `activation` 里 `onEvent:` 的模式可以带下划线（如 `onEvent:order_events.*`），原先读不出 → 不用改。

@@ -279,3 +279,5 @@ RFC-0010「模板」。模板参数与错误细节是 `serde_json::Value`：
 - `with_*`（`Error`、`Contract`、`Plugin`、`Subscription`、`Envelope`、`Context`）标了 `#[must_use]` → 丢掉返回值的调用本来就没有效果，改成接住返回值。
 - 弃用 `Context::cancellation()`（旧名仍可用）→ 改用 `Context::cancellation_error()`。
 - 弃用 `plugin::ERROR_CODE_UNEXPECTED`（旧名仍可用）→ 改用 `plugin::ERROR_CODE_PLUGIN_UNEXPECTED`。
+- `operation::is_id`、`Registry::add` / `add_with` 与 `manifest::read` 不再接受超过 128 个字符的操作 ID（`PRIMITIVES_VALIDATION_001`，读清单为 `kernel.manifest.invalid`），原先能登记、能读出；新增常量 `operation::ID_MAX_LENGTH` → 把 ID 缩到 128 个字符以内。
+- 清单 `activation` 里 `onEvent:` 的模式可以带下划线（如 `onEvent:order_events.*`），原先读不出 → 不用改。
