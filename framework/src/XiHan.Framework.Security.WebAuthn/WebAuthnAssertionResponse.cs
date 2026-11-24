@@ -13,9 +13,12 @@ namespace XiHan.Framework.Security.WebAuthn;
 /// <param name="AuthenticatorData">认证器数据（base64url）</param>
 /// <param name="Signature">签名（base64url）</param>
 /// <param name="UserHandle">用户句柄（base64url）；可发现凭据登录时认证器交回注册时的句柄，指名凭据时可能为空</param>
+/// <remarks>
+/// 为空的 <c>userHandle</c> 写出时省略，读入时也可以没有：构造参数带缺省值，按构造参数严格绑定的读法同样接受
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed record WebAuthnAssertionResponse(
     [property: JsonPropertyName("clientDataJSON")] string ClientDataJson,
     string AuthenticatorData,
     string Signature,
-    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] string? UserHandle);
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] string? UserHandle = null);

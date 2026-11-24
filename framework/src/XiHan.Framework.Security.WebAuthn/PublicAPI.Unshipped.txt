@@ -11,7 +11,7 @@ XiHan.Framework.Security.WebAuthn.WebAuthnAssertionResponse.Signature.get -> str
 XiHan.Framework.Security.WebAuthn.WebAuthnAssertionResponse.Signature.init -> void
 XiHan.Framework.Security.WebAuthn.WebAuthnAssertionResponse.UserHandle.get -> string?
 XiHan.Framework.Security.WebAuthn.WebAuthnAssertionResponse.UserHandle.init -> void
-XiHan.Framework.Security.WebAuthn.WebAuthnAssertionResponse.WebAuthnAssertionResponse(string! ClientDataJson, string! AuthenticatorData, string! Signature, string? UserHandle) -> void
+XiHan.Framework.Security.WebAuthn.WebAuthnAssertionResponse.WebAuthnAssertionResponse(string! ClientDataJson, string! AuthenticatorData, string! Signature, string? UserHandle = null) -> void
 XiHan.Framework.Security.WebAuthn.WebAuthnAttestationResponse
 XiHan.Framework.Security.WebAuthn.WebAuthnAttestationResponse.<Clone>$() -> XiHan.Framework.Security.WebAuthn.WebAuthnAttestationResponse!
 XiHan.Framework.Security.WebAuthn.WebAuthnAttestationResponse.AttestationObject.get -> string!
@@ -22,7 +22,7 @@ XiHan.Framework.Security.WebAuthn.WebAuthnAttestationResponse.Deconstruct(out st
 XiHan.Framework.Security.WebAuthn.WebAuthnAttestationResponse.Equals(XiHan.Framework.Security.WebAuthn.WebAuthnAttestationResponse? other) -> bool
 XiHan.Framework.Security.WebAuthn.WebAuthnAttestationResponse.Transports.get -> System.Collections.Generic.IReadOnlyList<string!>?
 XiHan.Framework.Security.WebAuthn.WebAuthnAttestationResponse.Transports.init -> void
-XiHan.Framework.Security.WebAuthn.WebAuthnAttestationResponse.WebAuthnAttestationResponse(string! ClientDataJson, string! AttestationObject, System.Collections.Generic.IReadOnlyList<string!>? Transports) -> void
+XiHan.Framework.Security.WebAuthn.WebAuthnAttestationResponse.WebAuthnAttestationResponse(string! ClientDataJson, string! AttestationObject, System.Collections.Generic.IReadOnlyList<string!>? Transports = null) -> void
 XiHan.Framework.Security.WebAuthn.WebAuthnAuthenticationResponse
 XiHan.Framework.Security.WebAuthn.WebAuthnAuthenticationResponse.<Clone>$() -> XiHan.Framework.Security.WebAuthn.WebAuthnAuthenticationResponse!
 XiHan.Framework.Security.WebAuthn.WebAuthnAuthenticationResponse.Deconstruct(out string! Id, out string! RawId, out string! Type, out XiHan.Framework.Security.WebAuthn.WebAuthnAssertionResponse! Response) -> void

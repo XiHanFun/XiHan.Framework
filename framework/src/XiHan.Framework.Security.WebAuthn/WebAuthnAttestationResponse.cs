@@ -12,8 +12,11 @@ namespace XiHan.Framework.Security.WebAuthn;
 /// <param name="ClientDataJson">客户端数据（base64url），JSON 名 <c>clientDataJSON</c></param>
 /// <param name="AttestationObject">证明对象（base64url 的 CBOR）</param>
 /// <param name="Transports">认证器的传输方式；浏览器不报告时为空</param>
+/// <remarks>
+/// 为空的 <c>transports</c> 写出时省略，读入时也可以没有：构造参数带缺省值，按构造参数严格绑定的读法同样接受
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed record WebAuthnAttestationResponse(
     [property: JsonPropertyName("clientDataJSON")] string ClientDataJson,
     string AttestationObject,
-    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] IReadOnlyList<string>? Transports);
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] IReadOnlyList<string>? Transports = null);
