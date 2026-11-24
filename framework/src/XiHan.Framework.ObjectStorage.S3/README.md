@@ -32,13 +32,16 @@ builder.AddXiHan(xihan => xihan.UseFullProfile().UseFeature<S3ObjectStorageFeatu
 
 `ServiceUrl` 为空时访问 Amazon S3；`AccessKey` 与 `SecretKey` 都为空时走 SDK 默认凭据链。本包是缺省存储时不要再装 `HostedBlobUrlFeature`。服务不支持条件写入时可设 `ConditionalWrites = false`，后果见概念文档。
 
+端点、区域、密钥与路径风格都在配置里。选项表达不了的（临时凭据、代理、超时、重试策略），在装配前向容器注册自己的 `IAmazonS3`，缺省实例沿用它；这时应用直接用到 AWS SDK 的类型，SDK 升大版本要跟着改。本包的公开类型不带 SDK 的类型，`S3BlobStore` 没有公开构造：缺省实例由特性建出，更多实例经 `BlobStores` 按定义登记。
+
 ## 主要类型
 
 此库提供的主要类型：
 
 * `S3ObjectStorageFeature`：特性入口
 * `S3ObjectStorageOptions`：端点、区域、密钥、探测桶与条件写入
-* `S3BlobStore`：`IBlobStore`、`IBlobMultipartStore`、`IBlobUrlSigner` 的实现
+* `S3BlobStore`：`IBlobStore`、`IBlobMultipartStore`、`IBlobUrlSigner` 的实现，由特性或 `S3BlobStoreProvider` 建出
+* `S3BlobStoreProvider`：命名实例的提供程序（名 `s3`）
 
 ## 更多文档
 

@@ -21,7 +21,7 @@ namespace XiHan.Framework.ObjectStorage.S3;
 /// S3 对象存储
 /// </summary>
 /// <remarks>
-/// 容器即桶，键即对象键。不覆盖写入用条件请求（<c>If-None-Match: *</c>）保证原子，已存在返回 <see cref="ObjectStorageErrors.BlobExists"/>；服务是否认条件写入要先探明（ADR-0089、ADR-0090）：特性启动或命名实例建出时探一次，没探明就在后台重试，这期间不覆盖的写入与分片上传返回 <see cref="ObjectStorageErrors.ConditionalWriteUnconfirmed"/>，探明不认或选项关闭条件写入时一律返回 <see cref="ObjectStorageErrors.ConditionalWriteUnavailable"/>；批量删除先逐键 HEAD 得知是否存在，再一次 <c>DeleteObjects</c>；列举经 <c>ListObjectsV2</c>，条目只有键、长度、ETag 与修改时间（内容类型为默认值、自定义元数据为空，需要时再 HEAD）。范围读取经 <c>Range</c> 请求头；分片上传直接映射 S3 的 multipart（不覆盖的完成带 <c>If-None-Match: *</c>）；预签名地址由 SDK 本地签出（签名 V4），客户端直连存储。不存在的键与桶映射为 <see cref="ObjectStorageErrors.BlobNotFound"/>，其余服务端与网络错误映射为 <see cref="ObjectStorageErrors.StoreUnavailable"/>。经公开构造函数创建的实例不探测条件写入（由调用方负责服务认它），也不拥有客户端，释放什么都不做；命名实例（<see cref="S3BlobStoreProvider"/>）自己建客户端并在后台重试探测，释放实例即停止重试、释放客户端
+/// 容器即桶，键即对象键。不覆盖写入用条件请求（<c>If-None-Match: *</c>）保证原子，已存在返回 <see cref="ObjectStorageErrors.BlobExists"/>；服务是否认条件写入要先探明（ADR-0089、ADR-0090）：特性启动或命名实例建出时探一次，没探明就在后台重试，这期间不覆盖的写入与分片上传返回 <see cref="ObjectStorageErrors.ConditionalWriteUnconfirmed"/>，探明不认或选项关闭条件写入时一律返回 <see cref="ObjectStorageErrors.ConditionalWriteUnavailable"/>；批量删除先逐键 HEAD 得知是否存在，再一次 <c>DeleteObjects</c>；列举经 <c>ListObjectsV2</c>，条目只有键、长度、ETag 与修改时间（内容类型为默认值、自定义元数据为空，需要时再 HEAD）。范围读取经 <c>Range</c> 请求头；分片上传直接映射 S3 的 multipart（不覆盖的完成带 <c>If-None-Match: *</c>）；预签名地址由 SDK 本地签出（签名 V4），客户端直连存储。不存在的键与桶映射为 <see cref="ObjectStorageErrors.BlobNotFound"/>，其余服务端与网络错误映射为 <see cref="ObjectStorageErrors.StoreUnavailable"/>。没有公开构造（ADR-0266，公开面不出现 SDK 的类型）：缺省实例由 <see cref="S3ObjectStorageFeature"/> 建出，客户端归容器所有，释放实例什么都不做；命名实例由 <see cref="S3BlobStoreProvider"/> 按定义建出（经 <c>BlobStores</c>，或直接调它的 <c>CreateAsync</c>），自己建客户端并在后台重试探测，释放实例即停止重试、释放客户端
 /// </remarks>
 [ApiLevel(Stability.Stable, "5.0")]
 public sealed partial class S3BlobStore : IBlobStore, IBlobMultipartStore, IBlobUrlSigner, IDisposable, IAsyncDisposable
@@ -70,12 +70,12 @@ public sealed partial class S3BlobStore : IBlobStore, IBlobMultipartStore, IBlob
     private readonly bool _owned;
 
     /// <summary>
-    /// 创建
+    /// 创建不探测条件写入的实例
     /// </summary>
     /// <remarks>
-    /// 客户端归调用方（或容器）所有。不探测条件写入：<see cref="S3ObjectStorageOptions.ConditionalWrites"/> 开启时视作服务认它（由调用方负责），关闭时不覆盖的写入一律返回 <see cref="ObjectStorageErrors.ConditionalWriteUnavailable"/>
+    /// 只在包内与测试里使用（ADR-0266）：构造收 SDK 的客户端，公开出去就把 SDK 的类型带进了本包的公开面。客户端归调用方所有，释放实例什么都不做。不探测条件写入：<see cref="S3ObjectStorageOptions.ConditionalWrites"/> 开启时视作服务认它（由调用方负责），关闭时不覆盖的写入一律返回 <see cref="ObjectStorageErrors.ConditionalWriteUnavailable"/>
     /// </remarks>
-    public S3BlobStore(IAmazonS3 client, S3ObjectStorageOptions options, TimeProvider clock, ILoggerFactory loggerFactory)
+    internal S3BlobStore(IAmazonS3 client, S3ObjectStorageOptions options, TimeProvider clock, ILoggerFactory loggerFactory)
     {
         ArgumentNullException.ThrowIfNull(loggerFactory);
         _logger = loggerFactory.CreateLogger<S3BlobStore>();
