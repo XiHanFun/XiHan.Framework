@@ -231,7 +231,7 @@ File.Delete(path);
 
 ### 用例之间互相影响
 
-每个用例起自己的 `TestHost`，用完 `await using` 释放；不要在类级别共享宿主。同一进程里的静态状态（如内存 Provider 的静态字典）才会串，框架的默认实现都是容器内实例，不会。
+每个用例起自己的 `TestHost`，用完 `await using` 释放；不要在类级别共享宿主。同一进程里的静态状态（如内存 Provider 的静态字典）才会串，框架的默认实现都是容器内实例，不会。`ActivityListener` 与 `MeterListener` 是进程级的，并行的用例会收到彼此的 Span 与测量值：用 [Testing](/packages/testing) 的 `SpanCapture` 按本用例的 trace-id 取 Span，用 `MetricCapture.RestrictToCurrentFlow()` 只收本用例异步流里的测量值；靠采样结果断言的用例与别的挂监听器的用例放进同一个不并行的集合。
 
 ### 怎样给操作传截止时间或租户
 

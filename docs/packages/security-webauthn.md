@@ -78,7 +78,7 @@ builder.AddXiHan(xihan => xihan.UseStandardProfile().UseFeature<WebAuthnSecurity
 | `WebAuthnOptions` | 上表的配置；`FromConfiguration` 读取并核对 |
 | `WebAuthnCeremonies` | `CreateRegistrationOptions`、`CreateAuthenticationOptions`、`VerifyRegistration`、`VerifyAuthentication` |
 | `WebAuthnCreationOptions` / `WebAuthnRequestOptions` | 交给浏览器的选项 |
-| `WebAuthnRegistrationResponse` / `WebAuthnAuthenticationResponse` | 浏览器交回的响应 |
+| `WebAuthnRegistrationResponse` / `WebAuthnAuthenticationResponse` | 浏览器交回的响应（`PublicKeyCredential` 的 JSON 形态），认证器的部分是 `WebAuthnAttestationResponse` / `WebAuthnAssertionResponse`。`transports` 与 `userHandle` 可以省略：构造参数缺省为 `null`，按构造参数严格绑定的读法同样接受没有它们的 JSON，为空时写出也省略 |
 | `WebAuthnRegisteredCredential` | 注册核对通过的凭据：凭据 ID、COSE 公钥、算法、签名计数、AAGUID、BE / BS / UV、传输方式 |
 | `WebAuthnStoredCredential` | 应用存储的凭据，认证时交给核对 |
 | `WebAuthnVerifiedAssertion` | 认证核对通过的结果：新的签名计数、UV、BS |

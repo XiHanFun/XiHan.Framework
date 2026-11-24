@@ -90,6 +90,7 @@
 - **调整** `IAuthenticationHandler` 改名 `ICredentialHandler`，三个实现改名 `ApiKeyCredentialHandler` / `JwtCredentialHandler` / `OpenIdConnectCredentialHandler`（ADR-0264）
 - **调整** 内核 `AuthorizationResult` 改名 `AuthorizationDecision`（ADR-0264）
 - **调整** `SecurityContext`、`TenantContext`、`PermissionGrant`、`AuthorizationRequirement` 改为初始化成员（`Principal`、`Id`、`Subject` 与 `Permission`、`Policy` 标 `required`），位置构造、构造重载与解构删除；原先只读的成员可以经 `with` 换，校验异常的 `ParamName` 变成 `value`（ADR-0288）
+- **修复** `Security.WebAuthn` 的 `WebAuthnAttestationResponse.Transports` 与 `WebAuthnAssertionResponse.UserHandle` 的构造参数缺省为 `null`，严格绑定也接受省略它们的 JSON（ADR-0289）
 
 ### 持久化与消息
 
@@ -166,6 +167,8 @@
 
 - **新增** `XiHan.Framework.Testing` 的 `ScriptedUnitOfWork` 与 `ScriptedRepository<TEntity, TKey>`：按脚本失败的工作单元与仓储替身，测管道外的代码在数据库故障时的收尾（ADR-0259）
 - **新增** `XiHan.Framework.Testing` 的 `LogCapture`：把日志收进内存的日志工厂，按级别、类别、消息与异常断言组件写了哪条日志（ADR-0262）
+- **新增** `XiHan.Framework.Testing` 的 `SpanCapture` / `SpanSamplingRequest` 与 `MetricCapture` / `MetricCaptureEntry`：按源名与 Meter 名收集 Span、采样询问与测量值，有条数上限，可按 trace-id 或异步流只取本用例的（ADR-0289）
+- **新增** `XiHan.Framework.Testing` 的 `SpecVectors` 与 `FrameworkWorkspace`：在框架仓库里定位工作区根与规范向量，按目录与文件名严格读成对象模型，支持反射或源生成上下文（ADR-0289）
 - **新增** `MessageBrokerConformance.ReadDeadLettersAsync`（抽象，继承代理套件的测试类要实现）与两条用例：用完尝试次数进死信、停止打断的投递不进死信（ADR-0275）
 - **新增** 消息一致性套件的用例「最后一次尝试被停止打断，重新开始消费后再处理一次」与 `DeliveryLog.BlockingAttempts`：靠代理一侧的计数得出尝试号的自写 Provider 要在放弃时退回这一次（ADR-0284）
 - **新增** `MessageLocalizerConformance` 的用例：取文案先按区域、再按目录，先按目录查的自写本地化器过不了（ADR-0286）

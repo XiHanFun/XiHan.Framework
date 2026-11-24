@@ -14,6 +14,8 @@
 - 给出特性：持久化、消息的 `CreateFeature()`，调度、工作流、AI 的 `StartAsync(...)` 返回套件的宿主句柄。这类套件自己用 `TestHost` 装配并走完整管道，验证的是 Provider 在真实管道里的行为，不只是接口方法。
 - 给出插件的构建产物目录：`Plugins.Conformance` 的 `PluginDirectory`，见下文。
 
+套件之外，规范仓库还有数据驱动的一致性向量（`spec/conformance/vectors/`，见[规范与多语言](/appendix/spec#一致性测试)），收文法、换算与判定表这类输入输出确定的规则。框架的 .NET 测试经 [Testing](/packages/testing) 的 `SpecVectors` 严格回放：文件里有、模型里没有的成员，缺了的必需成员，同一对象里重名的成员，都让读取失败，向量改了写法时回放随之失败，不会漏掉字段还照样通过。
+
 ## 最小示例
 
 新建测试项目，引用被测 Provider、对应的 `<领域>.Conformance` 包与 `xunit.v3`，写一个 `public sealed class` 继承基类。`Caching.InMemory` 的测试项目就这样跑完整套缓存用例：
