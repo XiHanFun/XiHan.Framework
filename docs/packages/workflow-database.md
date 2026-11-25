@@ -123,6 +123,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
 | `Entities.WorkflowLockRecord` | 租约行：`Id` 是实例 ID 或资源名，`Holder`、`ExpiresAt`、并发戳 |
 | `Storage.DatabaseWorkflowDefinitionStore` / `DatabaseWorkflowInstanceStore` / `DatabaseWorkflowBookmarkStore` | 三个存储实现 |
 | `DatabaseWorkflowTransaction` | 与调用方事务的关系 |
+| `DatabaseWorkflowBackfill` / `DatabaseWorkflowBackfillReport` | 升级之后按分区、分批回填已有行的查询列（Preview）：`RunAsync(partitions, batchSize, ct)` 逐项返回 `Scanned`、`Rewritten`、`Busy`、`Batches`，`MaxBatchSize` = 1000；见下文「升级之后回填查询列」 |
 
 ## 使用示例
 
@@ -134,7 +135,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
 - 实例列表的每个过滤项都是 SQL 条件，按排序项 `Sorts` 依次（空时创建时间降序）再接创建时间降序、写入序号降序、ID 降序在 SQL 里排序后分页（ADR-0102、ADR-0104，排序项里有创建时间时它不再作次序键，写入序号与 ID 随它的方向）；`CountAsync` 是 SQL 计数。关联 ID 集合是 `IN`（空集合不匹配），只取顶层是 `ParentInstanceId IS NULL`，关键字对 `SearchText` 做包含判断——实例标题或关联 ID 包含即匹配（ADR-0096、ADR-0099）。
 - 定义列表（`ListSummariesAsync` / `CountAsync`）是 SQL（ADR-0096）：关键字对 `SearchText` 做包含判断，两边都已小写折叠（见 [关键字](/workflow/definitions#关键字)），按字面由持久化的 `Contains` 保证（ADR-0098）；分类、名字、状态等值，创建时间区间按列比较；按排序项 `Sorts` 依次（空时名字升序）再接名字升序、版本降序、ID 升序在 SQL 里排序（ADR-0102、ADR-0104；次序键跳过排序项里已有的列、重复的排序项只取第一次，SQL Server 不许同一列在 `ORDER BY` 里出现两次）；摘要从读回的 `Document` 取。
 - 待办查询（`ListUserTasksAsync` / `CountUserTasksAsync`）同样是 SQL：书签行带所属实例的定义名、状态与实例一侧的关键字查询列，写书签时从实例行算出，实例新增或这几列变化时同步到它的书签行（同一事务），只取状态为 `Running` 的；关键字对任务标题列 `SearchTitle` 与实例一侧的 `SearchInstanceText`（实例行的 `SearchText` 再拼上折叠后的定义名）各自做包含判断、取或——任务标题、实例标题、定义名、关联 ID 任一包含即匹配（ADR-0096、ADR-0099）。到期书签按到期时间升序，其余书签与节点实例按时间升序、同刻按写入序号。
-- 上面三种查询用到的列（`Category`、`SearchText`、`SearchTitle`、`SearchInstanceText`）可空只为给已有行的表加列，已有的行要回填，没回填的行不被分类与关键字匹配，回填规则见下文「排序与查询列」。
+- 上面三种查询用到的列（`Category`、`SearchText`、`SearchTitle`、`SearchInstanceText`）可空只为给已有行的表加列，已有的行要回填，没回填的行不被分类与关键字匹配；回填用 `DatabaseWorkflowBackfill`，见下文「升级之后回填查询列」。
 - 读出来的模型来自 JSON 反序列化，天然是快照；按 ID 批量查找每 1000 个一批，列表与级联查询按全序排序分页读完。删除对不存在的 ID 忽略，`DeleteByInstanceAsync` 删该实例全部书签；写入的记录的 `TenantId` 不等于分区时抛 `ArgumentException`。
 - 可空时间列的条件不写 `!= null`：SQL 的 `NULL <= 值` 本就不成立，而 SqlSugar 会把它翻译成 `<> @参数(NULL)`。
 - 仓储失败 → `WORKFLOW_UNAVAILABLE_001`，`reason` 是原错误码，原错误在 `Inner`；只读工作单元的拒绝 `PERSISTENCE_UNEXPECTED_001` 原样返回。
@@ -167,9 +168,37 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
 - 不配置时租约表在平台库（默认连接）；PostgreSQL、SQL Server、MySQL 等行级锁的数据库不需要配。
 - 多个节点共用租约库：租约库的连接串在各节点上要指向同一个库，SQLite 文件只适合单机的开发与集成测试。
 
+## 升级之后回填查询列
+
+定义、实例与书签的行除了整份文档，还存着由文档算出、供 SQL 过滤与排序的查询列（见下文「排序与查询列」）。规则变了（如关键字的折叠改成 Unicode 简单小写映射，ADR-0296）或列是后来加的，升级之前写入的行里就是旧值或空值：含 `İ` 的行按关键字查不到，空的列不被分类与关键字匹配，按标题与状态排序时落在空值的位置。表结构由应用管理，本包没有架构版本与自动迁移；数据库实现的应用升级之后，为平台与每个租户调用一次 `DatabaseWorkflowBackfill`（特性登记的单例，ADR-0304）：
+
+```csharp
+var backfill = app.Services.GetRequiredService<DatabaseWorkflowBackfill>();
+IReadOnlyList<string?> partitions = [null, .. tenantIds]; // null 是平台，其余是租户 ID
+var results = await backfill.RunAsync(partitions, batchSize: 500, cancellationToken);
+for (var i = 0; i < results.Count; i++)
+{
+    if (results[i].IsFailure)
+    {
+        app.Logger.LogWarning("Backfill of {Partition} failed: {Code}", partitions[i] ?? "platform", results[i].Error!.Code);
+    }
+    else if (results[i].ValueOrThrow().Busy > 0)
+    {
+        // 有实例的锁被占用而跳过，过一会儿再跑一次
+    }
+}
+```
+
+- 结果与入参等长同序，每个分区一项 `Result<DatabaseWorkflowBackfillReport>`：`Scanned`（按批扫描读到的定义、实例与书签行数）、`Rewritten`（改写的行数）、`Busy`（锁被占用而跳过的实例数）、`Batches`（扫描的批数）。一个分区失败（存储不可达是 `WORKFLOW_UNAVAILABLE_001`）只让它那一项失败，别的分区照常，失败的分区里已经提交的批留着；空集合不触存储；同一个分区写两次就回填两次，第二次改写零行。
+- `batchSize` 是 1 到 `DatabaseWorkflowBackfill.MaxBatchSize`（1000）；越界、入参为 `null` 或租户 ID 是空白时，在动存储之前抛出参数异常。
+- 先定义、后实例，各按创建时间与 ID 的次序分批读，书签随所属实例的批走（定义级定时书签随定义）；每批在自己的只读事务里扫描，用存储写入行时同一份算法从文档重新算出查询列（书签另取所属实例的行），与行里现有的值相同就不改写（文本列的空串与 `NULL` 当作相同）。所以可以重复运行，没有过时行的库跑一遍只读不写。
+- 与引擎互斥：要改写的实例行与它的书签行在实例锁内重读再改写，一次只持有一个锁；等待超过 `XiHan:Workflow:LockTimeoutSeconds` 的这次跳过、计入 `Busy`，`Busy` 不为零时再跑一次。定义不加锁，在一个短事务里重读再写，宜在没有人编辑定义的时候运行。
+- 取消在每批之前检查，抛出 `OperationCanceledException`，已经提交的批留着、进行中的那一批回滚。不经管道：租户分区在新作用域里绑定租户的分片，不看租户是否启用。
+- 在本机的 SQLite（SqlSugar 与 EF Core）上验证；真实数据库只有 PostgreSQL 的门控用例（`XIHAN_TEST_POSTGRES`），SQL Server、MySQL 与 Oracle 上没有回填的门控用例。
+
 ## 排序与查询列
 
-下面这些列由存储维护，都可空，给已有行的表加列时按这里回填。
+下面这些列由存储维护，都可空；给已有行的表加了列、或升级改了算法之后，用上一节的 `DatabaseWorkflowBackfill` 回填，各列由什么算出列在这里。
 
 待办查询用的书签列（ADR-0077）：
 
@@ -179,7 +208,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
 
 - 定义表与实例表（租户与平台，独立库的租户库同样要有）带可空列 `StatusOrder`（整数：SqlSugar `int`、EF Core `INTEGER` / `integer`），值是状态在生命周期里的序号——定义 `Draft` 0、`Published` 1、`Disabled` 2、`Archived` 3，实例 `Running` 1、`Suspended` 2、`Completed` 3、`Canceled` 4、`Faulted` 5、`Terminated` 6。按状态排序时对它 `ORDER BY`；存储每次整行写入时随 `Status` 一起写（新增、状态变更、迁移、跳转、重试都经整行写入），是存储内部的细节。
 - 可空是为了 `InitTables` 能给已有行的表加上（RFC-0005：SqlSugar 只在 PostgreSQL 上给非空数值列带缺省值，别的库给已有行的表加非空列会失败）；没有单独的索引（按状态排序是对过滤后的行排序，实例按状态过滤已有 `Status` 列）。
-- 回填（没回填的行按状态排序时位置照数据库的空值规则，下一次整行写入时自愈）：只靠 `Status` 列即可，SQL 写法（表名、列名按应用的命名规则换）：
+- 回填（没回填的行按状态排序时位置照数据库的空值规则，下一次整行写入时自愈）：`DatabaseWorkflowBackfill` 一并补上；只缺这一列时也可以只靠 `Status` 列用 SQL 补（表名、列名按应用的命名规则换）：
 
 ```sql
 UPDATE WorkflowDefinitionRecord SET StatusOrder = CASE Status WHEN 'Draft' THEN 0 WHEN 'Published' THEN 1 WHEN 'Disabled' THEN 2 WHEN 'Archived' THEN 3 END WHERE StatusOrder IS NULL;
@@ -195,7 +224,7 @@ UPDATE WorkflowInstanceRecord SET StatusOrder = CASE Status WHEN 'Running' THEN 
 关键字查询列（ADR-0096、ADR-0099、ADR-0101）：
 
 - 定义行与实例行的 `SearchText`、书签行的 `SearchTitle` 与 `SearchInstanceText` 都是折叠后的值，折叠只做逐个码位的 Unicode 简单小写映射（`WorkflowKeyword.Fold`，见 [关键字](/workflow/definitions#关键字)），`%`、`_`、`[`、反斜杠原样保留（ADR-0099 第四节、ADR-0296）。
-- 回填：定义行 `SearchText = WorkflowKeyword.Join(name, displayName, description)`，`Category` 取 `Document` 的 `category`；实例行 `SearchText = WorkflowKeyword.Join(title, correlationId)`（`title` 取 `Document` 的 `displayName`，为空取 `definitionName`；`correlationId` 取同名列）；书签行 `SearchTitle = WorkflowKeyword.Fold(Document.payload.title)`（没有标题为空），`SearchInstanceText` = 所属实例行回填后的 `SearchText` + U+001F + `WorkflowKeyword.Fold(definitionName)`。折叠用 `WorkflowKeyword` 算（简单小写映射加字符替换），SQL 的 `lower()` 在 SQLite 上只管 ASCII、各库对 `İ` 与平面以外的字母也各不相同，用应用代码回填。没回填的行不被关键字匹配；查询列里的值与 `WorkflowKeyword` 算出的不同（如 `İ` 没有折成 `i`）时，关键字里的这些字符匹配不到它，重新算出回填即可。
+- 回填：定义行 `SearchText = WorkflowKeyword.Join(name, displayName, description)`，`Category` 取 `Document` 的 `category`；实例行 `SearchText = WorkflowKeyword.Join(title, correlationId)`（`title` 取 `Document` 的 `displayName`，为空取 `definitionName`；`correlationId` 取同名列）；书签行 `SearchTitle = WorkflowKeyword.Fold(Document.payload.title)`（没有标题为空），`SearchInstanceText` = 所属实例行回填后的 `SearchText` + U+001F + `WorkflowKeyword.Fold(definitionName)`。折叠用 `WorkflowKeyword` 算（简单小写映射加字符替换），SQL 的 `lower()` 在 SQLite 上只管 ASCII、各库对 `İ` 与平面以外的字母也各不相同，不要用 SQL 回填，用 `DatabaseWorkflowBackfill`。没回填的行不被关键字匹配；查询列里的值与 `WorkflowKeyword` 算出的不同（如 `İ` 没有折成 `i`）时，关键字里的这些字符匹配不到它，跑一次回填即可。
 
 ## 相关
 

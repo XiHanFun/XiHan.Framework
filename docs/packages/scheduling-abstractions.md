@@ -100,7 +100,7 @@ public sealed class ArchiveJob : IJob
 | `JobDefinition` | 作业定义：`Name`、`JobType`、`Triggers`、`Data`、`AllowConcurrent`、`RunOnEveryInstance`、`RequestsRecovery`、`Retry`、`Timeout`、`Description` |
 | `JobTriggerDefinition` | 触发器：`Name`、`Schedule`、`Data`、`Priority`（缺省 5）、`MisfirePolicy`、`Description` |
 | `JobRetryPolicy`、`JobRetryBackoff` | 重试：`MaxRetries` 1–100、`Delay`、`Fixed` / `Exponential`、`MaxDelay`，等待最长 30 天；`DelayFor(n)` |
-| `JobSchedule`、`JobScheduleKind` | 计划：`Manual`、`Every`、`FromCron`（时区只收 IANA 名）、`Once`，加 `StartAt` / `EndAt` / `Calendar`；`ToString` / `Parse` 文本往返，读法与写法相同：单个空格分隔，间隔 `[d.]hh:mm:ss[.fffffff]`，次数不带前导 0，选项按 `tz=`、`start=`、`end=`、`calendar=` 的次序且不重复，时刻按 RFC 3339 读，见[作业与触发器](/scheduling/jobs#计划) |
+| `JobSchedule`、`JobScheduleKind` | 计划：`Manual`、`Every`、`FromCron`（时区只收 IANA 名，在本机的时区库里查，精简的 Linux 容器要装 `tzdata`，见[作业与触发器](/scheduling/jobs#cron-文法)）、`Once`，加 `StartAt` / `EndAt` / `Calendar`；`ToString` / `Parse` 文本往返，读法与写法相同：单个空格分隔，间隔 `[d.]hh:mm:ss[.fffffff]`，次数不带前导 0，选项按 `tz=`、`start=`、`end=`、`calendar=` 的次序且不重复，时刻按 RFC 3339 读，见[作业与触发器](/scheduling/jobs#计划) |
 | `CronExpression` | 秒精度 cron：5 / 6 / 7 段、`?`、`L`、`W`、`#`、名字、时区与夏令时；星期 0/7 = 周日 |
 | `MisfirePolicy` | `RunOnce`（缺省）、`Skip`、`RunAll` |
 | `IJobCalendar`、`HolidayCalendar`、`WeeklyCalendar`、`DailyCalendar`、`CronCalendar`、`CompositeCalendar`、`JobCalendars` | 排除日历；按日历推算下一次由引擎完成 |

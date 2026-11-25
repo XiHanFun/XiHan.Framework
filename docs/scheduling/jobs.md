@@ -163,7 +163,7 @@ builder.Services.AddJob<NightlyReportJob>(new JobDefinition("reports.nightly", t
 | 时刻 | 读按 RFC 3339（必须有 `T`、秒与偏移，与截止时间同一条文法）；写出换算成 UTC、七位小数、`+00:00` |
 | 选项 | `tz=`（只跟在 cron 的表达式后面）、`start=`、`end=`、`calendar=`，按这个次序、每个至多一次；`=` 之后不能为空，日历名是作业名的文法，时区是本机时区库里查得到的 IANA 名 |
 
-例如 `every 00:10:00 x5`、`cron 0 0 9 * * MON-FRI tz=Asia/Shanghai start=2026-10-23T10:30:00.0000000+00:00`。框架写出的文本都读得回来；不合上表的（`00:10` 这样的间隔、`x05`、不带偏移的时刻、次序不对或重复的选项、跟在 cron 以外的种类后面的 `tz=`、Windows 的时区 ID）读不出，自己拼计划文本的地方改用工厂方法加 `ToString()`。时区在本机的时区库里查不到时整段文本读不出，读到这一行的存储操作随之失败：Linux 容器要装 `tzdata`。
+例如 `every 00:10:00 x5`、`cron 0 0 9 * * MON-FRI tz=Asia/Shanghai start=2026-10-23T10:30:00.0000000+00:00`。框架写出的文本都读得回来；不合上表的（`00:10` 这样的间隔、`x05`、不带偏移的时刻、次序不对或重复的选项、跟在 cron 以外的种类后面的 `tz=`、Windows 的时区 ID）读不出，自己拼计划文本的地方改用工厂方法加 `ToString()`。时区在本机的时区库里查不到时整段文本读不出，读到这一行的存储操作随之失败，见下文「时区来自本机的时区库」。
 
 ### cron 文法
 
@@ -174,6 +174,10 @@ builder.Services.AddJob<NightlyReportJob>(new JobDefinition("reports.nightly", t
 :::
 
 带时区的 cron 按该时区的墙上时间匹配：夏令时跳过的时刻不运行，重复出现的时刻只运行第一次。搜索有上限：下一次的墙上时间与起点的墙上时间（去掉秒以下）相差超过 1830 天即没有下一次，年份段与多年一遇的日期组合可能因此没有下一次。
+
+::: warning 时区来自本机的时区库
+框架不自带时区数据，时区名经 .NET 的 `TimeZoneInfo` 在本机的时区库里查：Linux 上读系统的 tz 数据库（`/usr/share/zoneinfo`），Windows 用系统自带的数据。精简的 Linux 容器镜像（Alpine、distroless 一类）可能不带它，这时 `JobSchedule.FromCron` 给了时区就抛 `ArgumentException`，存储里带 `tz=` 的计划文本读不出，读到这一行的调度器与存储操作随之失败；不带时区（UTC）的计划不受影响。在镜像里装上 `tzdata`（Debian / Ubuntu 是 `apt-get install -y tzdata`，Alpine 是 `apk add tzdata`），或换用带时区数据的镜像变体。时区规则随时区库的版本更新，集群里各节点的版本宜保持一致。
+:::
 
 ### 排除日历
 
@@ -233,7 +237,7 @@ builder.Services.AddJob<NightlyReportJob>(new JobDefinition("reports.nightly", t
 
 ### 作业登记了却一直不运行
 
-按顺序查：是否装配了 `InMemorySchedulingFeature` 或 `DatabaseSchedulingFeature`（只引用抽象包不运行作业）；应用是否已进入服务状态；cron 的时区是否写对（空为 UTC）；多实例且只装配内存实现时，看的是否不是领导者。用下一页的 `FindStatusAsync` 看触发器的 `NextFireAt` 与状态最直接。
+按顺序查：是否装配了 `InMemorySchedulingFeature` 或 `DatabaseSchedulingFeature`（只引用抽象包不运行作业）；应用是否已进入服务状态；cron 的时区是否写对（空为 UTC），Linux 容器里有没有装 `tzdata`；多实例且只装配内存实现时，看的是否不是领导者。用下一页的 `FindStatusAsync` 看触发器的 `NextFireAt` 与状态最直接。
 
 ### 用 `JobSchedule.Every` 的作业为什么节奏越来越慢
 
