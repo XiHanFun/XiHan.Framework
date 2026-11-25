@@ -7,7 +7,7 @@ namespace XiHan.Framework.Testing.Workspace;
 /// 定位框架工作区的根目录
 /// </summary>
 /// <remarks>
-/// 框架工作区是解决方案文件 <c>XiHan.Framework.slnx</c> 所在的目录（仓库里的 <c>framework/</c>），从测试的输出目录 <see cref="AppContext.BaseDirectory"/> 逐级向上找。测试读规范（<see cref="SpecVectors"/>）、示例与别的项目的构建产物时以它为起点。只在框架仓库的检出里找得到，所以放在不发包的测试类库里（ADR-0300）
+/// 框架工作区是解决方案文件 <c>XiHan.Framework.slnx</c> 所在的目录（仓库里的 <c>framework/</c>），从测试的输出目录 <see cref="AppContext.BaseDirectory"/> 逐级向上找。测试读规范（<see cref="SpecVectors"/>）、示例与别的项目的构建产物时以它为起点。只在框架仓库的检出里找得到，所以放在不发包的测试类库里（ADR-0300）；测试项目不再自己写解决方案文件名去找，架构测试 <c>TestToolingTests</c> 核对
 /// </remarks>
 public static class FrameworkWorkspace
 {
