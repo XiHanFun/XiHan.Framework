@@ -163,7 +163,7 @@ go run ./cmd/xihan-conformance plugin --dir <插件目录> --sample 'greetings.c
 
 Java 的写法与差异：
 
-- **JSON 文本**：共同检查 `JsonText.check` 是手写的逐字节检查器，不经 Jackson（它会跳过 BOM、按字节猜 UTF-16、放过孤立的代理项）。收字符串的入口（`JsonText.check(String)`、`ManifestJson.tryRead(String)`、`PrimitivesJson.read(mapper, String, …)`）先编成 UTF-8，字符串里有孤立的代理项按语法错误处理，不像 `String.getBytes` 那样换成 `?`。
+- **JSON 文本**：共同检查 `JsonText.check` 是手写的逐字节检查器，不经 Jackson（它会跳过 BOM、按字节猜 UTF-16、放过孤立的代理项）。收字符串的入口（`JsonText.check(String)`、`ManifestJson.tryRead(String)`、`PrimitivesJson.read(mapper, String, …)`）先编成 UTF-8，字符串里有孤立的代理项按语法错误处理，不像 `String.getBytes` 那样换成 `?`。`OperationRequest.of(String id, String json)` 同样严格编码：文本里有孤立的代理项时请求照样建得出，`hasUnencodableText()` 为真，载荷是文本的广义 UTF-8（WTF-8，不是合法的 UTF-8），本地调用器读它报 `KERNEL_VALIDATION_001` + `kernel.operation.invalid_payload`（`reason` 为 `$`）；`Host.invoke` 在回调端点、权限、租户、截止时间与取消的核对之后以同一个错误在本地失败、不发请求；`OperationRequest.of(String, byte[])` 的字节原样发出，由宿主核对（`plugin/invocation.md` §5，ADR-0312）。
 - **线上编码**：无值成功是 `Result<Unit>`，`Result<Maybe<T>>` 的无值是 `"value":null`。解码器自己核对重复成员、64 层与孤立的代理项，不看 `ObjectMapper` 的配置。`Error.literal` 与 `withText` 的文案、`FrameworkException` 的说明为空或只有空白时抛 `IllegalArgumentException`。
 - **空白**：按 RFC-0001 写死的 25 个码位判断，不用 `Character.isWhitespace` 或 `String.isBlank`（它们不含 U+0085、U+00A0、U+2007、U+202F，却含 U+001C–U+001F）。
 - **模板与区域**：`MessageTemplate.format(template, arguments, locale)` / `tryFormat(…, locale)` / `text(value, locale)` 与 `MessageCatalog.resolve(key, locale, arguments)` 按区域取小数点与分组符，不给区域按不变文化；`Error.message()` 按 `MessageScope` 的进程默认区域。
@@ -220,3 +220,4 @@ Java 的写法与差异：
 - `Envelope.toString()` 有 `dataschema` 时多一段 `, dataSchema=…` → 按旧文本断言的测试要更新。
 - 新增 `dataSchema()`、`Builder.dataSchema(String)`（ADR-0305）→ 不用改。
 - 错误细节里的孤立代理项当作没有细节，原先换成 `?` 读出（ADR-0301）→ 不用改。
+- `OperationRequest.of(String, String)` 严格编码成 UTF-8：孤立的代理项不再换成 `?`，本地调用得到 `KERNEL_VALIDATION_001` + `kernel.operation.invalid_payload`（`reason` 为 `$`），`Host.invoke` 不发请求、在本地以同一个错误失败；新增 `OperationRequest.hasUnencodableText()`（ADR-0312）→ 不用改；要发出的 JSON 文本里不要有孤立的代理项。

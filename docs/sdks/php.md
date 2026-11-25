@@ -193,6 +193,7 @@ PHP 的写法与差异：
 - **清单**：`Manifest::tryRead` / `tryReadFile` 以 `Result` 返回读取失败（`KERNEL_CAPABILITY_006`），`read` / `readFile` 是它们的包装，失败时抛 `ConfigurationException`，`toError()` 是逐字的错误。`tryRead` 不跳过 BOM，`tryReadFile` 跳过。跨字段约束在 `Manifest::validate()`（`PRIMITIVES_VALIDATION_001`），构造清单时不核对。
 - **模板**：`MessageTemplate::format()` / `tryFormat()` 与 `MessageCatalog` 按区域取小数点与分组符（`MessageTemplate::numberSymbols()`），`describe` 按不变文化。
 - **插件运行时**：PHP 的时刻精确到微秒，`deadline` 更细的小数截断。运行时消息键的 10 种区域模板在 `PluginMessages::catalog()`，只供本地渲染，不随握手发送。
+- **回调的载荷**：`Host::invoke` 的 `$payload` 是字节串，原样发出，由宿主核对；`plugin/invocation.md` §5 的严格编码一条（ADR-0312）对 PHP 不用改。
 
 ## 语言映射
 

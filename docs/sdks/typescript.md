@@ -170,6 +170,7 @@ TypeScript 的写法与差异：
 - **清单**：`readManifest` 返回 `Result<Manifest>`、不跳过 BOM；`xihan-framework/manifest/node` 的 `readManifestFile` 跳过开头的 BOM，`readManifestSource` / `readManifestBytes` 另返回原文，都按严格的 UTF-8 读。读出的 `Manifest` 补齐缺省值，`$schema` 不在模型里；`writeManifest` 写出后按 `readManifest` 再读一遍，读不回来即抛 `FrameworkError`。
 - **文法**：规范的正则都按整串匹配。JavaScript 的 `$` 在没有 `m` 标志时只匹配输入的末尾，本 SDK 的正则都不带 `m`。
 - **插件运行时**：JavaScript 的时钟精度是毫秒，读 `deadline` 时第三位之后的小数截断，写出时补零到七位。`healthInterval` 选项以毫秒给出健康回调的轮询间隔（缺省 10 秒）。`parseHandshakeLine`、`parseEndpoint`、`parseHostAddresses`、`selectHostEndpoint` 是握手行与端点文法的公开入口；运行时消息键的目录是 `pluginMessages`，只用于本地渲染与日志。
+- **回调的载荷**：`Host.invoke` 的字符串载荷在发出之前严格编码成 UTF-8，先逐个码元核对代理项成对，不像 `TextEncoder` 那样换成 U+FFFD。有孤立的代理项时不发请求，结果是 `KERNEL_VALIDATION_001` + `kernel.operation.invalid_payload`（`id` 为操作 ID，`reason` 为 `$`），排在回调端点、权限、租户、截止时间与取消的本地核对之后。`Uint8Array` 载荷原样发出，由宿主核对（`plugin/invocation.md` §5，ADR-0312）。
 
 ## 语言映射
 
@@ -214,6 +215,7 @@ TypeScript 的写法与差异：
 - `Maybe#toJSON()` 对 `JsonNumber` 原样交出，`JSON.stringify(Maybe.some(jsonNumber))` 写成对象而不是数字 → 线上编码用 `writeJson`。
 - 导入 `xihan-framework/plugin` 之后，`ErrorInfo#message` 对 `plugins.*` 键给出英文文案，原先是「键 (参数)」→ 按文本匹配的地方改为按错误码或消息键。
 - `XIHAN_PLUGIN_PROTOCOL_VERSIONS` 里不合文法的项（空项、正负号、小数、指数、十六进制、超过 uint32）现在都记 `warning`；未声明健康项的警告至多记 256 个名字 → 不用改。
+- `Host.invoke` 收到有孤立代理项的字符串载荷时不发请求，在本地以 `KERNEL_VALIDATION_001` + `kernel.operation.invalid_payload`（`reason` 为 `$`）失败，原先经 `TextEncoder` 换成 U+FFFD 照发（ADR-0312）→ 要发出这样的文本，先自己换成合法的字符串或 UTF-8 字节。
 - 发布的包不再带 `.js.map` / `.d.ts.map`，`sideEffects` 由 `false` 改为列出 `plugin/messages` → 不用改；调试时跳不到 `.ts` 源码。
 - `isOperationId`、`validateOperationId`、`defineContract`、`OperationRegistry.add` 与 `readManifest` 不再接受超过 128 个字符的操作 ID（抛 `FrameworkError`，读清单为 `kernel.manifest.invalid`），原先不设上限；新增导出 `maxOperationIdLength` → 把 ID 缩到 128 个字符以内；按消息文本匹配的改按错误码。
 - 清单 `activation` 里 `onEvent:` 的模式可以带下划线（如 `onEvent:order_events.*`），原先读不出 → 不用改。
