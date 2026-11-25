@@ -1,6 +1,7 @@
 // Copyright (c) XiHanFun Contributors. Licensed under the MIT License.
 // See the LICENSE file in the project root for full license text.
 
+using System.Text;
 using XiHan.Framework.Testing;
 
 namespace XiHan.Framework.Workflow.Abstractions.Tests;
@@ -9,7 +10,7 @@ namespace XiHan.Framework.Workflow.Abstractions.Tests;
 /// 回放 <c>keyword-matching.json</c>：列表查询关键字的折叠与匹配
 /// </summary>
 /// <remarks>
-/// 规范 RFC-0021「定义」的「关键字」（ADR-0096、ADR-0099、ADR-0277）：关键字去掉首尾空白，为空不过滤；关键字与字段都折叠（不变文化的小写，U+001F 换成空格）之后按序数判断包含，任一字段包含即匹配，不跨字段，通配字符按字面。向量是规范的一部分，这里只回放，不另存一份
+/// 规范 RFC-0021「定义」的「关键字」与「关键字的小写」（ADR-0096、ADR-0099、ADR-0277、ADR-0296）：关键字去掉首尾空白，为空不过滤；关键字与字段都折叠（逐个码位的 Unicode 简单小写映射，U+001F 换成空格）之后按序数判断包含，任一字段包含即匹配，不跨字段，通配字符按字面。向量是规范的一部分，这里只回放，不另存一份
 /// </remarks>
 public sealed class WorkflowKeywordVectorTests
 {
@@ -80,6 +81,38 @@ public sealed class WorkflowKeywordVectorTests
         // 按字面匹配的四个字符都要有命中的用例；SQL 的 LIKE 当成通配的三个还要有「当通配才命中」的用例，按字面不命中
         Assert.All<char>(['%', '_', '[', '\\'], static literal => Assert.Contains(_vectors.Matches, vector => vector.Matches && vector.Keyword.Contains(literal)));
         Assert.All<char>(['%', '_', '['], static wildcard => Assert.Contains(_vectors.Matches, vector => !vector.Matches && vector.Keyword.Contains(wildcard)));
+
+        // 简单小写映射与不变文化分歧的地方：U+0130 折成 i、平面以外的字母也折叠，还要有完全映射才会命中、简单映射不命中的用例
+        Assert.Contains(_vectors.Normalize, static vector => vector.Keyword is not null && vector.Keyword.Contains('İ') && vector.Normalized is not null && !vector.Normalized.Contains('İ'));
+        Assert.Contains(_vectors.Normalize, static vector => vector.Keyword is not null && vector.Keyword.Any(char.IsSurrogate) && vector.Normalized != vector.Keyword);
+        Assert.Contains(_vectors.Matches, static vector => !vector.Matches && vector.Keyword.Contains('̇'));
+    }
+
+    [Fact]
+    public void Fold_KeepsTheLengthOfEveryCodePoint()
+    {
+        // 数据库的查询列与内存实现都按码元比较：简单小写映射不跨平面，任何一个码位折叠前后的长度都相同，也不抛出
+        var changed = new List<string>();
+        for (var value = 0; value <= 0x10FFFF; value++)
+        {
+            if (value is >= 0xD800 and <= 0xDFFF)
+            {
+                continue;
+            }
+
+            var text = new Rune(value).ToString();
+            if (WorkflowKeyword.Fold(text).Length != text.Length)
+            {
+                changed.Add($"U+{value:X4}");
+            }
+        }
+
+        Assert.Empty(changed);
+        Assert.Equal("i", WorkflowKeyword.Fold("İ"));
+        Assert.Equal("𐐨", WorkflowKeyword.Fold("𐐀"));
+
+        // 孤立的代理项不变
+        Assert.Equal("\uD801a", WorkflowKeyword.Fold("\uD801A"));
     }
 
     /// <summary>
