@@ -349,7 +349,7 @@ public static class ResultJson
         }
 
         // 先过共同的读取检查：语法错误一律写 $，重复成员写第一处重复的路径，不论它在 value、details 还是 inner 里（RFC-0001「JSON 文本」，ADR-0236）
-        if (JsonText.Check(utf8) is { } problem)
+        if (JsonText.FindProblem(utf8).TryGetValue(out var problem))
         {
             return InvalidJson(problem.Path);
         }

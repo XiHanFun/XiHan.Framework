@@ -102,11 +102,11 @@ public static class CloudEventsFormat
 
         // 写出的文档自己过一遍读取一侧的检查：过不了的在发布时就拒绝，不等消费方把它当成无法解码的消息送进死信
         // 能让它过不了的只有调用方给的 JSON 数据（重复成员、不成对的代理项转义）与同规范属性重名的扩展
-        if (JsonText.Check(encoded) is { } problem)
+        if (JsonText.FindProblem(encoded).TryGetValue(out var problem))
         {
             throw new FrameworkException(
                 MessagingErrors.InvalidEnvelope,
-                problem.IsSyntax ? Unreadable(envelope) : $"Envelope '{envelope.Id}' cannot be encoded: member '{problem.Path}' would appear twice in the document.");
+                problem.Kind == JsonTextProblemKind.DuplicateMember ? $"Envelope '{envelope.Id}' cannot be encoded: member '{problem.Path}' would appear twice in the document." : Unreadable(envelope));
         }
 
         return encoded;
@@ -129,7 +129,7 @@ public static class CloudEventsFormat
     public static Result<MessageEnvelope> Decode(ReadOnlyMemory<byte> json)
     {
         // 先过共同的读取检查：重复的成员不取第一个也不取最后一个，整个文档不合法；语法错误只写 $，重复成员写它的路径
-        if (JsonText.Check(json.Span) is { } problem)
+        if (JsonText.FindProblem(json.Span).TryGetValue(out var problem))
         {
             return InvalidJson(problem.Path);
         }

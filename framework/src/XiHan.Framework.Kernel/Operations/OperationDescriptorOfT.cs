@@ -79,7 +79,7 @@ public sealed class OperationDescriptor<TOperation, TRequest, TResponse> : Opera
         var json = payload.IsEmpty ? _emptyObject : payload;
 
         // 先过共同的读取检查：语法错误一律写 $，重复成员写它的路径（RFC-0011 规则 2，ADR-0236）
-        if (JsonText.Check(json.Span) is { } problem)
+        if (JsonText.FindProblem(json.Span).TryGetValue(out var problem))
         {
             return InvalidPayload(problem.Path);
         }

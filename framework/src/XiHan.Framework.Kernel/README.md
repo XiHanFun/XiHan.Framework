@@ -48,7 +48,7 @@ await builder.Build().RunAsync();
 * `UnreadableDeadlineLog`：调用方给的截止时间读不出时的限频告警，内核登记为单例。请求头（`xihan-deadline`、`grpc-timeout`）与插件回调各算一类，每类 1 分钟最多一条 Warning，不带原值，下一条带上被压掉的条数
 * `SecurityContext`、`Principal`、`PermissionRegistry`：安全上下文与权限登记
 * `ResultJson`：Result 与 Error 的线上 JSON 编码，与各语言 SDK 逐字一致
-* `JsonText`：读取 JSON 文本的共同检查（语法、64 层、合法 Unicode、任何一层的重复成员），操作载荷、清单与消息信封都先过它
+* `JsonText`、`JsonTextProblem`、`JsonTextProblemKind`：读取 JSON 文本的共同检查，操作载荷、清单与消息信封都先过它。`JsonText.FindProblem(utf8)` 核对语法、嵌套不超过 `MaxDepth`（64）层、合法的 Unicode 与任何一层都没有重复的成员，通过时返回无值的 `Maybe`，否则是第一个问题：`Kind` 是 `Syntax`、`NestingTooDeep`、`InvalidUtf8`、`LoneSurrogate` 或 `DuplicateMember`，`Path` 在重复成员时是第二次出现的路径（如 `$.data.lines[0].sku`），其余都是语法错误、一律是 `$`。语法错误不论出现在哪里都优先于重复成员，几种语法错误之间报文本里第一处
 
 ## 更多文档
 

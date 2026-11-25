@@ -3,6 +3,7 @@
 
 using System.Text;
 using System.Text.Json;
+using XiHan.Framework.Kernel.Json;
 using XiHan.Framework.Kernel.Operations;
 using XiHan.Framework.Kernel.Tests.Fixtures;
 using XiHan.Framework.Testing;
@@ -13,7 +14,7 @@ namespace XiHan.Framework.Kernel.Tests.Json;
 /// 回放共同的 JSON 读取检查的一致性向量
 /// </summary>
 /// <remarks>
-/// <c>primitives/json-text.json</c>（RFC-0001「JSON 文本」，ADR-0236）：经请求是任意 JSON 的操作解码观察，语法错误的 <c>reason</c> 是 <c>$</c>，重复成员是第一处重复的路径
+/// <c>primitives/json-text.json</c>（RFC-0001「JSON 文本」，ADR-0236）：直接经 <see cref="JsonText.FindProblem"/> 回放（除重复成员之外的种类都是向量的 <c>syntax</c>，ADR-0291），再经请求是任意 JSON 的操作解码观察，语法错误的 <c>reason</c> 是 <c>$</c>，重复成员是第一处重复的路径
 /// </remarks>
 public sealed class JsonTextVectorTests
 {
@@ -26,6 +27,34 @@ public sealed class JsonTextVectorTests
     /// 请求是任意 JSON 的描述
     /// </summary>
     private static readonly OperationDescriptor _descriptor = new OperationDescriptor<VectorJsonOperation, JsonElement, VectorOrder>(VectorJsonOperation.Contract, "vectors", VectorJsonContext.Default.JsonElement, VectorJsonContext.Default.VectorOrder);
+
+    [Fact]
+    public void FindProblem_FollowsTheJsonTextVectors()
+    {
+        Assert.NotEmpty(_vectors.Cases);
+        var failures = new List<string>();
+        foreach (var vector in _vectors.Cases)
+        {
+            var bytes = vector.Text is { } text ? Encoding.UTF8.GetBytes(text) : Convert.FromHexString(vector.Hex!);
+            var actual = JsonText.FindProblem(bytes).Match(
+                static problem => problem.Kind == JsonTextProblemKind.DuplicateMember ? "duplicate " + problem.Path : "syntax " + problem.Path,
+                static () => "valid");
+
+            // 语法错误的位置一律是 $
+            var expected = vector.Expect switch
+            {
+                "duplicate" => "duplicate " + vector.Path,
+                "syntax" => "syntax $",
+                _ => vector.Expect,
+            };
+            if (actual != expected)
+            {
+                failures.Add($"{vector.Name}: {actual}, expected {expected}");
+            }
+        }
+
+        Assert.True(failures.Count == 0, string.Join(Environment.NewLine, failures));
+    }
 
     [Fact]
     public void DecodeRequest_FollowsTheJsonTextVectors()

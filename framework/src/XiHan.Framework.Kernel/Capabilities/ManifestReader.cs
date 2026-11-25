@@ -172,7 +172,7 @@ public static class ManifestReader
     /// </remarks>
     private static Result<Manifest> ReadUtf8(ReadOnlyMemory<byte> utf8)
     {
-        if (JsonText.Check(utf8.Span) is { } problem)
+        if (JsonText.FindProblem(utf8.Span).TryGetValue(out var problem))
         {
             return InvalidJson(problem.Path);
         }

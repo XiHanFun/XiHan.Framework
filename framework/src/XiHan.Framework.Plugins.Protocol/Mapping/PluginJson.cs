@@ -52,7 +52,7 @@ internal static class PluginJson
         }
 
         var utf8 = Encoding.UTF8.GetBytes(json);
-        if (JsonText.Check(utf8) is not null)
+        if (JsonText.FindProblem(utf8).HasValue)
         {
             return null;
         }

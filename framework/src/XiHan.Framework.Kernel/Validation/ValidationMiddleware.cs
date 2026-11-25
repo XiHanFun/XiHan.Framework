@@ -107,7 +107,7 @@ public sealed class ValidationMiddleware : IPipelineMiddleware
     {
         // 与解码同一套读取检查：语法错误写 $，重复成员写它的路径（RFC-0011 规则 2，ADR-0236）；通过后解析不会再失败
         var json = payload.IsEmpty ? _emptyObject : payload;
-        if (JsonText.Check(json.Span) is { } problem)
+        if (JsonText.FindProblem(json.Span).TryGetValue(out var problem))
         {
             return Error.Validation(KernelErrors.InvalidOperationPayload, KernelMessages.InvalidOperationPayload, MessageArguments.Of(("id", descriptor.Id), ("reason", problem.Path)));
         }
