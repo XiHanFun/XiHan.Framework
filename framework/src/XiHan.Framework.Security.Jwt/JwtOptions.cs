@@ -28,14 +28,22 @@ public sealed record JwtOptions
     public const int MinSecretBytes = 32;
 
     /// <summary>
+    /// 严格的 UTF-8：遇到孤立的代理项抛出，不换成 U+FFFD
+    /// </summary>
+    private static readonly UTF8Encoding _strictUtf8 = new(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true);
+
+    /// <summary>
     /// 对称密钥
     /// </summary>
+    /// <remarks>
+    /// 按严格的 UTF-8 编码成密钥字节，至少 <see cref="MinSecretBytes"/> 字节，不能有孤立的代理项：宽松的编码把它们都换成 U+FFFD，十一个孤立的代理项就按 33 字节过了最小长度，实际的密钥却是公开的十一个 U+FFFD
+    /// </remarks>
     public required string Secret
     {
         get => field;
-        init => field = value is not null && Encoding.UTF8.GetByteCount(value) >= MinSecretBytes
+        init => field = value is not null && SecretBytes(value) >= MinSecretBytes
             ? value
-            : throw new ArgumentException($"The JWT secret must be at least {MinSecretBytes} bytes long.", nameof(value));
+            : throw new ArgumentException($"The JWT secret must be at least {MinSecretBytes} bytes of UTF-8 text without lone surrogates.", nameof(value));
     }
 
     /// <summary>
@@ -102,6 +110,30 @@ public sealed record JwtOptions
         }
 
         return options;
+    }
+
+    /// <summary>
+    /// 密钥字节：<see cref="Secret"/> 按严格的 UTF-8 编码
+    /// </summary>
+    /// <remarks>
+    /// 与校验最小长度时用同一个编码：<see cref="Secret"/> 已拒收孤立的代理项，这里不会失败
+    /// </remarks>
+    internal byte[] EncodeSecret() => _strictUtf8.GetBytes(Secret);
+
+    /// <summary>
+    /// 密钥按严格的 UTF-8 编码的字节数
+    /// </summary>
+    /// <returns>字节数；有孤立的代理项编码不成时为 -1</returns>
+    private static int SecretBytes(string value)
+    {
+        try
+        {
+            return _strictUtf8.GetByteCount(value);
+        }
+        catch (EncoderFallbackException)
+        {
+            return -1;
+        }
     }
 
     /// <summary>

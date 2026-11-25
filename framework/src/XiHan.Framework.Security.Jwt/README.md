@@ -25,7 +25,7 @@ dotnet add package XiHan.Framework.Security.Jwt --prerelease
 builder.AddXiHan(x => x.UseFeature<InMemorySecurityFeature>().UseFeature<JwtSecurityFeature>());
 ```
 
-密钥至少 32 字节，生产环境从环境变量或密钥库注入，不要提交到仓库：
+密钥按 UTF-8 编码至少 32 字节、不能有孤立的代理项，生产环境从环境变量或密钥库注入，不要提交到仓库：
 
 ```json
 { "XiHan": { "Security": { "Jwt": { "Secret": "<至少 32 字节的密钥>", "Issuer": "https://issuer", "Audience": "api" } } } }

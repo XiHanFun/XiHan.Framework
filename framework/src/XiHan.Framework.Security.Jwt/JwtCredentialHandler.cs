@@ -1,7 +1,6 @@
 // Copyright (c) XiHanFun Contributors. Licensed under the MIT License.
 // See the LICENSE file in the project root for full license text.
 
-using System.Text;
 using Microsoft.IdentityModel.JsonWebTokens;
 using Microsoft.IdentityModel.Tokens;
 using XiHan.Framework.Kernel.Security;
@@ -58,7 +57,7 @@ public sealed class JwtCredentialHandler : ICredentialHandler
         // 签名、exp 与有效期始终强制；签发者与受众只在配置了才校验
         _parameters = new TokenValidationParameters
         {
-            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(options.Secret)),
+            IssuerSigningKey = new SymmetricSecurityKey(options.EncodeSecret()),
             ValidateIssuerSigningKey = true,
             RequireSignedTokens = true,
             RequireExpirationTime = true,

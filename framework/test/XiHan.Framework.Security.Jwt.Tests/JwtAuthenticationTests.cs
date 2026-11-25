@@ -105,6 +105,21 @@ public sealed class JwtAuthenticationTests
     }
 
     [Fact]
+    public async Task Secrets_WithLoneSurrogates_AreRejected()
+    {
+        // 宽松的 UTF-8 把孤立的代理项都换成 U+FFFD：以前十一个孤立的代理项按 33 字节过了最小长度，实际的密钥是公开的十一个 U+FFFD，拿它签的令牌照样通过；两个只差在孤立代理项上的密钥也是同一个密钥
+        Assert.Contains("lone surrogates", Assert.Throws<ArgumentException>(static () => new JwtOptions { Secret = new string('\uD800', 11) }).Message, StringComparison.Ordinal);
+        Assert.Throws<ArgumentException>(static () => new JwtOptions { Secret = Secret + "\uDC00" });
+        Assert.Throws<ArgumentException>(static () => JwtOptions.FromConfiguration(new ConfigurationBuilder().AddInMemoryCollection([new("XiHan:Security:Jwt:Secret", Secret + "\uD800")]).Build()));
+
+        // 成对的代理项是一个字符，按它的四个字节计：八个 emoji 正好 32 字节
+        var emoji = string.Concat(Enumerable.Repeat("😀", 8));
+        var options = new JwtOptions { Secret = emoji, ClockSkew = TimeSpan.Zero };
+        Assert.True((await AuthenticateAsync(CreateToken(secret: emoji), options)).IsSuccess);
+        Assert.True((await AuthenticateAsync(CreateToken(secret: new string('�', 11)), options)).IsFailure);
+    }
+
+    [Fact]
     public void Options_FromConfiguration_RequireSecret_AndParseRest()
     {
         // 用内存键值对构造配置

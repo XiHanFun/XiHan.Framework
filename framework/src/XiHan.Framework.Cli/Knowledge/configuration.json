@@ -2011,7 +2011,7 @@
           "key": "Principals:{name}:ApiKey",
           "type": "string",
           "sample": "dev-api-key-0001",
-          "summary": "主体 {name} 的 API Key，至少 8 个字符；该主体出现时必填"
+          "summary": "主体 {name} 的 API Key，至少 8 个字符、不能有孤立的代理项；该主体出现时必填"
         },
         {
           "key": "Principals:{name}:DisplayName",
@@ -2092,7 +2092,7 @@
           "type": "string",
           "required": true,
           "sample": "dev-only-jwt-secret-change-me-0123456789",
-          "summary": "HS256 对称密钥，UTF-8 编码至少 32 字节"
+          "summary": "HS256 对称密钥，UTF-8 编码至少 32 字节、不能有孤立的代理项"
         },
         {
           "key": "Issuer",
