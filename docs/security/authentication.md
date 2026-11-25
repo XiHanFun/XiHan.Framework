@@ -65,7 +65,7 @@
 }
 ```
 
-节名是主体 ID；`ApiKey` 必填且至少 8 个字符；`Roles` 逗号分隔；`Claims:*` 下的键值作为附加声明。认证成功的主体按顺序带上：每个角色一条 `RoleClaim` 类型的声明、一条租户声明（有 `Tenant` 时，类型取 `XiHan:MultiTenancy:TenantClaim`，缺省 `tenant`）、附加声明。
+节名是主体 ID；`ApiKey` 必填，至少 8 个字符，不能有孤立的代理项；`Roles` 逗号分隔；`Claims:*` 下的键值作为附加声明。认证成功的主体按顺序带上：每个角色一条 `RoleClaim` 类型的声明、一条租户声明（有 `Tenant` 时，类型取 `XiHan:MultiTenancy:TenantClaim`，缺省 `tenant`）、附加声明。
 
 Standard 组合包已含 `Security.InMemory`（ApiKey 认证与内存授予），不用再装配特性。接在[第一个应用](/getting-started/first-app)换成 Standard 组合后的 `Program.cs` 上，在 `app.UseXiHan()` 之后多一个端点：
 
@@ -91,7 +91,7 @@ curl -i -H "Authorization: ApiKey wrong-key" http://localhost:5000/whoami    # 4
 
 操作契约的处理器从传进来的调用上下文读同样的东西：`context.GetSecurity().Principal`。
 
-`ApiKeyCredentialHandler` 逐条做常量时间比较，不用字典查找，耗时不随匹配位置泄露信息；找不到返回 `SECURITY_DENIED_003`。主体数上限 `XiHan:Security:InMemory:MaxPrincipals`，缺省 1000。
+`ApiKeyCredentialHandler` 逐条做常量时间比较，不用字典查找，耗时不随匹配位置泄露信息；比的是严格编码成 UTF-8 的字节，两个只差在孤立代理项上的 key 不会被当成同一个；找不到返回 `SECURITY_DENIED_003`。主体数上限 `XiHan:Security:InMemory:MaxPrincipals`，缺省 1000。
 
 ::: warning 内存安全只用于开发与测试
 API Key 明文写在配置里，主体与授予都在进程内存中，重启即恢复为配置内容。生产环境换成 JWT 或 OpenID Connect 认证，授予换成 `Security.Database`，见 [RBAC 授予与条件](/security/grants)。
@@ -143,7 +143,7 @@ builder.AddXiHan(xihan => xihan
 }
 ```
 
-`Secret` 必填，UTF-8 编码后至少 32 字节；`Issuer` 与 `Audience` 配置了才校验；`ClockSkewSeconds` 是校验有效期时允许的时钟偏移。各键的类型与缺省值见 [Security.Jwt](/packages/security-jwt#配置)。
+`Secret` 必填，按严格的 UTF-8 编码后至少 32 字节，不能有孤立的代理项（宽松的编码会把它们都换成 U+FFFD，几个孤立代理项就能凑够长度，实际的密钥却是公开的）；`Issuer` 与 `Audience` 配置了才校验；`ClockSkewSeconds` 是校验有效期时允许的时钟偏移。各键的类型与缺省值见 [Security.Jwt](/packages/security-jwt#配置)。
 
 签名、`exp` 与有效期始终强制校验。主体 ID 取 `NameClaim`（缺省 `sub`）声明，令牌里没有这条声明同样返回 `SECURITY_DENIED_003`（消息键 `security.token.subject_missing`）；显示名取 `name` 声明；令牌的全部声明按原始类型名进入主体，所以角色声明的类型要与 `XiHan:Security:RoleClaim` 一致，租户声明的类型要与 `XiHan:MultiTenancy:TenantClaim` 一致。密钥放在用户机密、环境变量或远程配置里，不进仓库，见[远程配置与密钥](/configuration/remote)。
 

@@ -48,7 +48,7 @@ builder.AddXiHan(xihan => xihan
 
 | 键（`XiHan:Security:Jwt`） | 类型 | 缺省 | 说明 |
 | --- | --- | --- | --- |
-| `Secret` | `string` | 必填 | 对称密钥，UTF-8 编码后至少 32 字节（`JwtOptions.MinSecretBytes`）；缺失或过短在装配时抛出 `ArgumentException` |
+| `Secret` | `string` | 必填 | 对称密钥，按严格的 UTF-8 编码后至少 32 字节（`JwtOptions.MinSecretBytes`），不能有孤立的代理项；缺失、过短或有孤立的代理项时在装配时抛出 `ArgumentException` |
 | `Issuer` | `string` | 不校验 | 配置了才校验签发者 |
 | `Audience` | `string` | 不校验 | 配置了才校验受众 |
 | `ClockSkewSeconds` | `double` | 60 | 有效期校验允许的时钟偏移，不能为负 |

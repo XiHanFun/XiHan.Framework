@@ -120,7 +120,7 @@ S3 由存储自己签名（签名 V4），客户端直连存储。文件系统�
 | 键 | 缺省 | 说明 |
 | --- | --- | --- |
 | `XiHan:ObjectStorage:SignedUrls:BaseUrl` | `/blobs` | 签出地址的前缀：以 `/` 开头的路径（相对应用的源）或绝对地址；端点的路由前缀取它的路径部分 |
-| `XiHan:ObjectStorage:SignedUrls:Secret` | 无，必填 | 签名密钥，UTF-8 至少 32 字节；多实例部署必须一致；缺失或过短时装配抛出 `ArgumentException` |
+| `XiHan:ObjectStorage:SignedUrls:Secret` | 无，必填 | 签名密钥，按严格的 UTF-8 编码后至少 32 字节，不能有孤立的代理项；多实例部署必须一致；缺失、过短或有孤立的代理项时装配抛出 `ArgumentException` |
 
 宿主端点 `GET` 支持单个 `Range` 区间（206 与 `Content-Range`，不可满足回 416），`PUT` 写整个对象或一片并在响应头带 `ETag`。端点经内核管道，Observe 照常记录，不要求凭据，签名即授权；上传解除了请求体大小上限，单对象上限由存储把关。签名不符或过期回 403（`OBJECTSTORAGE_DENIED_001`）。上传端点照 RFC 9110 §5.5 先去掉 `Content-Type` 首尾的空格与制表符再用，Kestrel、进程内的测试服务器与别的宿主收到同一个请求时结果相同（ADR-0314）：签名限定了内容类型时以去掉之后的值与它比较（不区分大小写，不符同样回 403）；没限定时去掉之后为空即当作没给，存成缺省的 `application/octet-stream`，否则以去掉之后的值作对象的内容类型（`text/plain; ` 存成 `text/plain;`，`text/plain;`、`text/plain; charset=utf-8;` 这类空参数照收）。不合文法（媒体类型，最长 255 个字符，`;` 两侧只收空格、不收制表符）回 400（`OBJECTSTORAGE_VALIDATION_006`），不写入；不换行空格等别的空白不是 HTTP 的空白，留在值里照文法判，开头或结尾带它的回 400。端点读的请求头只有上传的 `Content-Type` 与下载的 `Range`，`Range` 由宿主的头解析器去掉首尾空白，签名的各项都在查询串里。没有装配 `HostedBlobUrlFeature` 就调用 `MapXiHanBlobs()`，调用处抛出 `FrameworkException`（`KERNEL_HOSTING_004`）。
 

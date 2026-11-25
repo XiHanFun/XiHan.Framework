@@ -39,7 +39,7 @@ dotnet add package XiHan.Framework.Hosting.AspNetCore --prerelease
 | --- | --- | --- | --- |
 | 环境变量 `XIHAN_CONFIG_PATH` | 目录 | 无 | 挂载的配置目录，可重载；文件的装载顺序与配置源的优先级见[配置目录与热更新](/configuration/config-directory) |
 | `XiHan:Security:RoleClaim` | string | `role` | 方案 `XiHan` 转出的 `ClaimsPrincipal` 的角色声明类型 |
-| `XiHan:ObjectStorage:SignedUrls:Secret` | string | 无，必填 | 预签名地址的 HMAC-SHA256 密钥，至少 32 字节 UTF-8，多实例须一致 |
+| `XiHan:ObjectStorage:SignedUrls:Secret` | string | 无，必填 | 预签名地址的 HMAC-SHA256 密钥，按严格的 UTF-8 编码后至少 32 字节、不能有孤立的代理项，多实例须一致 |
 | `XiHan:ObjectStorage:SignedUrls:BaseUrl` | string | `/blobs` | 预签名地址的基址 |
 
 后两项只在装配 `HostedBlobUrlFeature` 时读取。`AddXiHan` 还按 `XiHan:Kernel:Banner:Enabled` 登记[启动 Banner](/startup/bootstrap#启动-banner) 的选项，应用版本取自入口程序集的 `AssemblyInformationalVersion`（去掉 `+` 之后的提交哈希）。

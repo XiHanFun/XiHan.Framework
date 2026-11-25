@@ -47,7 +47,7 @@ builder.AddXiHan(xihan => xihan.UseFeature<InMemorySecurityFeature>());
 
 | 键（`XiHan:Security:InMemory`） | 类型 | 缺省 | 说明 |
 | --- | --- | --- | --- |
-| `Principals:<id>:ApiKey` | `string` | 必填 | API Key，至少 8 个字符；节名 `<id>` 是主体 ID |
+| `Principals:<id>:ApiKey` | `string` | 必填 | API Key，至少 8 个字符，不能有孤立的代理项，不合要求的在装载配置时抛 `ArgumentException`；节名 `<id>` 是主体 ID |
 | `Principals:<id>:DisplayName` | `string` | 无 | 显示名 |
 | `Principals:<id>:Roles` | `string` | 无 | 逗号分隔的角色 |
 | `Principals:<id>:Tenant` | `string` | 无 | 所属租户，写成 `tenant` 声明 |
@@ -124,7 +124,7 @@ public sealed class TrialGrants(IPermissionGrantAdministration grants)
 
 - 被选为授权能力时，特性在 `Configure` 里登记启动核对 `PolicyCatalog.EnforceOn`，核对操作契约按名引用的策略：内核在容器建好之后、任何特性启动之前执行它，不存在（含 `permission:<code>` 的权限码未登记）即抛出 `SECURITY_VALIDATION_004`、宿主启动失败，不论失败策略（`IsolateFeature` 也一样，不包成 `KERNEL_HOSTING_002`）；之后登记的操作（插件握手之后）在登记时核对（ADR-0080、ADR-0085）。特性本身不实现 `IHostedFeature`。
 - 认证成功的主体按顺序带上：每个角色一条类型为 `XiHan:Security:RoleClaim` 的声明、一条租户声明（有 `Tenant` 时）、附加声明。租户声明的类型取 `XiHan:MultiTenancy:TenantClaim`（缺省 `tenant`），与多租户的 `ClaimTenantResolver` 读同一个配置键，改了它 ApiKey 主体的租户照样被认出。
-- API Key 逐条做常量时间比较；找不到返回 `SECURITY_DENIED_003`。
+- API Key 逐条做常量时间比较，比的是严格编码成 UTF-8 的字节：两个只差在孤立代理项上的 key 不会被当成同一个（宽松的编码把孤立的代理项都换成 U+FFFD），请求带来的 key 有孤立的代理项时与任何主体都不相等；找不到返回 `SECURITY_DENIED_003`。
 - 容量：新增主体超过 `MaxPrincipals`、新增授予超过 `MaxGrants` 时返回 `SECURITY_UNAVAILABLE_002`；替换已有主体、重复授予不占容量。配置里的条目超过上限时，构造存储即抛出 `FrameworkException`。
 - 授予存储按（主体，租户）分组保存：被容量拒绝的授予不留下任何条目，撤销某个主体在某个租户下的最后一条授予时连同这一组一起移除，授予与撤销反复进行也不会让存储增长。
 - 健康项 `security.inmemory.capacity`：主体存储或授予存储任一达到上限即 Degraded（`SECURITY_UNAVAILABLE_002`，两者都满时报主体存储），否则 Ready。
