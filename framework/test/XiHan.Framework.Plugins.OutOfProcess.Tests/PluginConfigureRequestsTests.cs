@@ -5,9 +5,12 @@ using System.Text;
 using System.Text.Json;
 using Google.Protobuf;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Time.Testing;
 using XiHan.Framework.Kernel.Hosting;
 using XiHan.Framework.Kernel.Plugins;
+using XiHan.Framework.Plugins.OutOfProcess.Tests.Fixtures;
 using XiHan.Framework.Plugins.Protocol;
 using XiHan.Framework.Plugins.Protocol.Hosting;
 using XiHan.Framework.Plugins.Protocol.Mapping;
@@ -15,6 +18,7 @@ using XiHan.Framework.Plugins.Protocol.V1;
 using XiHan.Framework.Primitives.Manifests;
 using XiHan.Framework.Testing;
 using Binding = XiHan.Framework.Primitives.Manifests.Binding;
+using LifecycleState = XiHan.Framework.Primitives.LifecycleState;
 
 namespace XiHan.Framework.Plugins.OutOfProcess.Tests;
 
@@ -604,6 +608,56 @@ public sealed class PluginConfigureRequestsTests : IDisposable
         Assert.Equal("work", request.WorkDirectory);
         Assert.Empty(request.Bindings);
     }
+
+    [Theory]
+    [InlineData("XiHan:Bound:Greeting", "hel<high>lo")]
+    [InlineData("XiHan:Bound:Greeting", "<low>")]
+    [InlineData("XiHan:Bound:Gree<low>ting", "hello")]
+    [InlineData("XiHan:Bound:Items:0", "a<low><high>b")]
+    public void Configuration_WithALoneSurrogate_IsNotSent(string key, string value)
+    {
+        // 配置节的键与值写进 JSON 之前核对（lifecycle.md §2、RFC-0001「写出与转交」，ADR-0315）：修之前写出器把孤立的代理项写成转义的 U+FFFD 下发，插件拿到的是另一份配置。
+        // 用例数据里只写占位，孤立的代理项不进测试用例的名字
+        var manifest = TestManifests.Create(PluginId, kind: ManifestKind.Plugin) with { Contributes = new Contributions { Config = new ConfigContribution("XiHan:Bound") } };
+
+        var reason = Rejected(manifest, Configuration((WithLoneSurrogates(key), WithLoneSurrogates(value)), ("XiHan:Bound:Other", "s3cret")));
+
+        Assert.Equal("the configuration has a lone surrogate and cannot be encoded as UTF-8", reason);
+        Assert.DoesNotContain("hel", _logs.Entries[^1].Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Configuration_IsCheckedBeforeTheBindings_AndPairsAreWrittenAsGiven()
+    {
+        // 配置节先于绑定：清单的必需绑定也没给时，报的是配置节
+        var manifest = Manifest(new Binding("db", "connection:relational")) with { Contributes = new Contributions { Config = new ConfigContribution("XiHan:Bound") } };
+        Assert.Equal("the configuration has a lone surrogate and cannot be encoded as UTF-8", Rejected(manifest, Configuration(("XiHan:Bound:Greeting", WithLoneSurrogates("<high>")))));
+
+        // 代理对是合法的 UTF-16：照常写出，插件读回的值不变
+        var request = Build(manifest, Configuration(("XiHan:Bound:Greeting", "订单 😀"), ("XiHan:Bindings:db:value", "Host=db")));
+        using var configuration = JsonDocument.Parse(request.Configuration);
+        Assert.Equal("订单 😀", configuration.RootElement.GetProperty("Greeting").GetString());
+    }
+
+    [Fact]
+    public async Task EndToEnd_AConfigurationWithALoneSurrogate_LeavesThePluginFailed_AndTheHostRunning()
+    {
+        // 真实的子进程：与绑定读不出同一条失败路径，不发 Configure，插件进入 Failed、按重启策略重试，宿主照常启动（降级）
+        var clock = new FakeTimeProvider(DateTimeOffset.UtcNow);
+        await using var host = await EchoPluginHost.StartAsync(services: s => s.AddSingleton<TimeProvider>(clock), extra: [("XiHan:Echo:Signature", WithLoneSurrogates("hel<high>lo"))]);
+
+        var status = EchoPluginHost.PluginHost(host).FindStatus(EchoPluginHost.PluginId).ValueOrThrow();
+        Assert.Equal(LifecycleState.Failed, status.Status.State);
+        Assert.Equal((PluginErrors.Unexpected, PluginMessages.ProcessFailed), (status.Status.Error?.Code, status.Status.Error?.MessageKey));
+        Assert.Equal(("configure", "the configuration has a lone surrogate and cannot be encoded as UTF-8"), (status.Status.Error!.Details!["phase"], status.Status.Error.Details["reason"]));
+        Assert.Equal(LifecycleState.Degraded, host.App.State);
+    }
+
+    /// <summary>
+    /// 把占位 <c>&lt;high&gt;</c>、<c>&lt;low&gt;</c> 换成孤立的高、低代理项
+    /// </summary>
+    private static string WithLoneSurrogates(string text)
+        => text.Replace("<high>", "\uD800", StringComparison.Ordinal).Replace("<low>", "\uDC00", StringComparison.Ordinal);
 
     [Fact]
     public void Preflight_RejectsABindingThatIsDeclaredButNotGranted()

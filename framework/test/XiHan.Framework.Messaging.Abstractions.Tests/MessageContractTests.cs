@@ -349,6 +349,36 @@ public sealed class MessageContractTests
         Assert.Equal(deepest.Data.ToArray(), CloudEventsFormat.Decode(CloudEventsFormat.Encode(deepest)).ValueOrThrow().Data.ToArray());
     }
 
+    [Fact]
+    public void CloudEventsFormat_Encode_RefusesAStringAttributeWithALoneSurrogate()
+    {
+        // RFC-0009「信封」的写出与 RFC-0001「写出与转交」（ADR-0315）：规范属性与扩展属性的字符串里有孤立的代理项时发布就拒绝；
+        // 修之前序列化器把它写成转义的 U+FFFD，文档过得了读取一侧的检查，处理器读到的是另一个值
+        var envelope = new MessageEnvelope { Id = "1", Source = "/o", Type = "t" };
+        (string Attribute, MessageEnvelope Envelope)[] broken =
+        [
+            ("id", envelope with { Id = "a\uD800" }),
+            ("source", envelope with { Source = "/o\uDC00" }),
+            ("type", envelope with { Type = "t\uD800x" }),
+            ("subject", envelope with { Subject = "\uDC00\uD800" }),
+            ("dataschema", envelope with { DataSchema = "urn:\uD800" }),
+            ("datacontenttype", envelope with { DataContentType = "text/plain\uD800" }),
+            ("note", envelope.WithExtension("note", "n\uD800")),
+        ];
+
+        foreach (var (attribute, message) in broken)
+        {
+            var refused = Assert.Throws<FrameworkException>(() => CloudEventsFormat.Encode(message));
+            Assert.Equal(MessagingErrors.InvalidEnvelope, refused.Code);
+            Assert.Contains($"attribute '{attribute}' has a lone surrogate", refused.Message, StringComparison.Ordinal);
+        }
+
+        // 代理对是合法的 UTF-16：照常写出，读回的值不变
+        var paired = (envelope with { Subject = "订单 😀" }).WithExtension("note", "😀");
+        var decoded = CloudEventsFormat.Decode(CloudEventsFormat.Encode(paired)).ValueOrThrow();
+        Assert.Equal(("订单 😀", "😀"), (decoded.Subject, decoded.Extensions["note"]));
+    }
+
     /// <summary>
     /// 带必填属性与给定成员的结构化 JSON 文档
     /// </summary>

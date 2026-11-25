@@ -261,6 +261,44 @@ public sealed class CommandLineRunnerTests : IAsyncLifetime
         Assert.Equal("wid😀get", Json(pairedOutput).GetProperty("name").GetString());
     }
 
+    [Theory]
+    [InlineData("--name", "wid<high>get", "the value of option '--name' has a lone surrogate and cannot be encoded as UTF-8")]
+    [InlineData("--name", "<low>", "the value of option '--name' has a lone surrogate and cannot be encoded as UTF-8")]
+    [InlineData("--na<high>me", "widget", "an option name has a lone surrogate and cannot be encoded as UTF-8")]
+    public async Task Invoke_WithAFieldOptionHoldingALoneSurrogate_IsTheSameUsageErrorAsJson(string option, string value, string reason)
+    {
+        // 字段选项写进载荷之前核对（RFC-0001「写出与转交」，ADR-0315）：与 --json 编码不成同一个用法错误、同一个消息键，不发起调用；
+        // 修之前写出器把孤立的代理项写成转义的 U+FFFD 照常调用，操作收到的名字里是 U+FFFD。用例数据里只写占位：孤立的代理项不进测试用例的名字
+        var (code, output, error) = await RunAsync("invoke", "orders.get", WithLoneSurrogates(option), WithLoneSurrogates(value), "--page", "2");
+
+        Assert.Equal(CommandLineExitCodes.Usage, code);
+        Assert.Empty(output);
+        var failure = Json(error);
+        Assert.Equal(CommandLineErrors.UsageInvalid, failure.GetProperty("code").GetString());
+        Assert.Equal("The value of --json must be a JSON object: " + reason, failure.GetProperty("detail").GetString());
+        Assert.Empty(_host.Services.GetRequiredService<OriginLog>().Origins);
+    }
+
+    [Fact]
+    public async Task Invoke_WithARepeatedFieldOption_ChecksEveryValue_AndPairsAreWrittenAsGiven()
+    {
+        // 重复的选项写成数组，每个元素都核对
+        var (code, _, error) = await RunAsync("invoke", "orders.get", "--name", "widget", "--name", "gad\uDC00get");
+        Assert.Equal(CommandLineExitCodes.Usage, code);
+        Assert.Equal("The value of --json must be a JSON object: the value of option '--name' has a lone surrogate and cannot be encoded as UTF-8", Json(error).GetProperty("detail").GetString());
+
+        // 代理对是合法的 UTF-16，照常写出、照常调用
+        var (paired, pairedOutput, _) = await RunAsync("invoke", "orders.get", "--name", "wid😀get");
+        Assert.Equal(CommandLineExitCodes.Success, paired);
+        Assert.Equal("wid😀get", Json(pairedOutput).GetProperty("name").GetString());
+    }
+
+    /// <summary>
+    /// 把占位 <c>&lt;high&gt;</c>、<c>&lt;low&gt;</c> 换成孤立的高、低代理项
+    /// </summary>
+    private static string WithLoneSurrogates(string text)
+        => text.Replace("<high>", "\uD800", StringComparison.Ordinal).Replace("<low>", "\uDC00", StringComparison.Ordinal);
+
     [Fact]
     public async Task Invoke_OfADeprecatedOperation_WritesOneNoticeToStderr_AndLeavesStdoutAndTheExitCodeAlone()
     {

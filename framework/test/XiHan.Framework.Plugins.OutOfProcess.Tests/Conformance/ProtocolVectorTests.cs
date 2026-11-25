@@ -13,11 +13,14 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using XiHan.Framework.Kernel;
 using XiHan.Framework.Kernel.Hosting;
+using XiHan.Framework.Kernel.Operations;
 using XiHan.Framework.Messaging.Abstractions;
+using XiHan.Framework.Plugins.OutOfProcess.Tests.Fixtures;
 using XiHan.Framework.Plugins.Protocol;
 using XiHan.Framework.Plugins.Protocol.Handshake;
 using XiHan.Framework.Plugins.Protocol.Hosting;
 using XiHan.Framework.Plugins.Protocol.Mapping;
+using XiHan.Framework.Plugins.Protocol.Proxies;
 using XiHan.Framework.Primitives;
 using XiHan.Framework.Primitives.Manifests;
 using XiHan.Framework.Testing;
@@ -334,6 +337,28 @@ public sealed class ProtocolVectorTests
         var unmapped = PluginErrorMapper.FromRpc(new RpcException(new Grpc.Core.Status(StatusCode.DataLoss, "boom")), "xihan.samples.echo", "echoes.create", LifecycleState.Ready);
         Assert.Contains("{status}: {message}", reasons);
         Assert.Equal("DataLoss: boom", unmapped.Details!["reason"]);
+    }
+
+    [Fact]
+    public async Task PluginMessages_TheResponseAndConfigurationReasons_AreWhatTheHostWrites()
+    {
+        using var document = JsonDocument.Parse(File.ReadAllText(SpecVectors.PathOf("plugin", "plugin-messages.json")));
+        var reasons = document.RootElement.GetProperty("reasons").EnumerateArray().Select(static r => r.GetProperty("reason").GetString()!).ToHashSet(StringComparer.Ordinal);
+
+        // 插件交回的应答没过 JSON 文本的检查（invocation.md §1，ADR-0315）：经真实的代理写出，{path} 是问题的路径
+        var runtime = new StubPluginRuntime("xihan.samples.echo", "echoes.create")
+        {
+            OnInvoke = static (_, _) => ValueTask.FromResult(Result.Success<object>(new PluginPayload("{\"a\":1,\"a\":2}"u8.ToArray()))),
+        };
+        var proxy = new ProxyOperationDescriptor(new OperationContract("echoes.create"), "xihan.samples.echo", runtime, null);
+        var invalid = (await proxy.ExecuteAsync(TestInvocationContext.Create(), new PluginPayload("{}"u8.ToArray()))).Error!;
+        Assert.Contains("the response payload is not valid JSON text at '{path}'", reasons);
+        Assert.Equal("the response payload is not valid JSON text at '$.a'", invalid.Details!["reason"]);
+
+        // 配置节有孤立的代理项（lifecycle.md §2，ADR-0315）：经真实的组装写出
+        var manifest = TestManifests.Create("xihan.samples.echo", kind: ManifestKind.Plugin) with { Contributes = new Contributions { Config = new ConfigContribution("XiHan:Echo") } };
+        var configuration = new ConfigurationBuilder().AddInMemoryCollection([new("XiHan:Echo:Greeting", "a\uD800")]).Build();
+        Assert.Contains(ReasonOf(PluginConfigureRequests.Build(manifest, configuration, null, "work", NullLoggerFactory.Instance.CreateLogger("test"))), reasons);
     }
 
     [Fact]

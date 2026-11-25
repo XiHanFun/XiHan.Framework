@@ -40,14 +40,29 @@ public static class CloudEventsFormat
     private const string RootPath = "$";
 
     /// <summary>
+    /// 严格的 UTF-8 编码
+    /// </summary>
+    /// <remarks>
+    /// 遇到孤立的代理项抛出，不悄悄换成 U+FFFD（ADR-0315）
+    /// </remarks>
+    private static readonly UTF8Encoding _strictUtf8 = new(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true);
+
+    /// <summary>
     /// 编码
     /// </summary>
     /// <remarks>
-    /// 写出的文档必须读得回来，写不出这样的文档时抛出携带 <see cref="MessagingErrors.InvalidEnvelope"/> 的 <see cref="FrameworkException"/>：JSON 数据不是合法 JSON，或文档过不了读取一侧的共同检查（RFC-0001「JSON 文本」）——JSON 数据里有重复的成员名、嵌套让文档超过 64 层、字符串里有不成对的代理项转义。扩展属性与规范属性同名的信封构造不出来（<see cref="EnvelopeExtensions.ReservedNames"/>，ADR-0298），写出之后的检查照样覆盖整份文档
+    /// 写出的文档必须读得回来，写不出这样的文档时抛出携带 <see cref="MessagingErrors.InvalidEnvelope"/> 的 <see cref="FrameworkException"/>：JSON 数据不是合法 JSON，或文档过不了读取一侧的共同检查（RFC-0001「JSON 文本」）——JSON 数据里有重复的成员名、嵌套让文档超过 64 层、字符串里有不成对的代理项转义；规范属性与扩展属性的字符串值里有孤立的代理项时同样抛出，消息带属性名（ADR-0315，以前写成 U+FFFD）。扩展属性与规范属性同名的信封构造不出来（<see cref="EnvelopeExtensions.ReservedNames"/>，ADR-0298），写出之后的检查照样覆盖整份文档
     /// </remarks>
     public static byte[] Encode(MessageEnvelope envelope)
     {
         ArgumentNullException.ThrowIfNull(envelope);
+
+        // 字符串属性先核对：序列化器把孤立的代理项写成转义的 U+FFFD，文档过得了写出之后的检查，处理器读到的却是另一个值（RFC-0001「写出与转交」，ADR-0315）
+        if (LoneSurrogateAttributeOf(envelope) is { } attribute)
+        {
+            throw new FrameworkException(MessagingErrors.InvalidEnvelope, $"Envelope '{envelope.Id}' cannot be encoded: attribute '{attribute}' has a lone surrogate.");
+        }
+
         var document = new CloudEventDocument
         {
             SpecVersion = MessageEnvelope.SpecVersion,
@@ -112,6 +127,62 @@ public static class CloudEventsFormat
         }
 
         return encoded;
+    }
+
+    /// <summary>
+    /// 字符串里有孤立的代理项的第一个属性
+    /// </summary>
+    /// <remarks>
+    /// 按规范属性在文档里的先后，再按扩展属性的顺序；扩展属性名合文法（ASCII），只查值
+    /// </remarks>
+    /// <returns>都能严格编码成 UTF-8 时为 <see langword="null"/>；否则是属性名</returns>
+    private static string? LoneSurrogateAttributeOf(MessageEnvelope envelope)
+    {
+        (string Name, string? Value)[] attributes =
+        [
+            ("id", envelope.Id),
+            ("source", envelope.Source),
+            ("type", envelope.Type),
+            ("subject", envelope.Subject),
+            ("dataschema", envelope.DataSchema),
+            ("datacontenttype", envelope.DataContentType),
+        ];
+        foreach (var (name, value) in attributes)
+        {
+            if (value is not null && !IsEncodable(value))
+            {
+                return name;
+            }
+        }
+
+        foreach (var (name, value) in envelope.Extensions)
+        {
+            if (!IsEncodable(value))
+            {
+                return name;
+            }
+        }
+
+        return null;
+    }
+
+    /// <summary>
+    /// 字符串能否严格编码成 UTF-8
+    /// </summary>
+    /// <remarks>
+    /// 编码不成的只有孤立的代理项
+    /// </remarks>
+    private static bool IsEncodable(string text)
+    {
+        try
+        {
+            _strictUtf8.GetByteCount(text);
+            return true;
+        }
+        catch (EncoderFallbackException)
+        {
+            return false;
+        }
     }
 
     /// <summary>

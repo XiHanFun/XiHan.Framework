@@ -65,7 +65,7 @@ switch (outcome.Disposition)
 此库提供的主要类型：
 
 * `MessageEnvelope`：CloudEvents 信封，`DataSchema` 承载可选的 `dataschema`（非空字符串，不核对 URI 语法），四个代理都原样收发
-* `CloudEventsFormat`：信封的结构化 JSON 编码。读取先过 JSON 文本的共同检查（重复的成员不合法），`time` 只认带 `T`、秒与偏移的 RFC 3339 时刻并读成 UTC，`data` 与 `data_base64` 不能同时出现，扩展属性的值是字符串、数字或布尔；写不出读得回来的文档时 `Encode` 抛出
+* `CloudEventsFormat`：信封的结构化 JSON 编码。读取先过 JSON 文本的共同检查（重复的成员不合法），`time` 只认带 `T`、秒与偏移的 RFC 3339 时刻并读成 UTC，`data` 与 `data_base64` 不能同时出现，扩展属性的值是字符串、数字或布尔；写不出读得回来的文档时 `Encode` 抛出，规范属性与扩展属性的字符串里有孤立的代理项也一样（不写成 U+FFFD）
 * `IMessagePublisher`：发布入口，支持批量
 * `IMessageHandler`、`SubscriptionMode`：处理器与订阅方式
 * `IMessageBroker`：代理接口，提供程序实现它

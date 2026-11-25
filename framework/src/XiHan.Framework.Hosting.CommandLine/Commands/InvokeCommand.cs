@@ -114,7 +114,7 @@ internal sealed class InvokeCommand : ICommand
             return ObjectOrError(await File.ReadAllBytesAsync(path, context.CancellationToken).ConfigureAwait(false));
         }
 
-        return Result.Success(FieldOptionPayload.Write(context.CommandLine, descriptor.Schema));
+        return FieldOptionPayload.Write(context.CommandLine, descriptor.Schema);
     }
 
     /// <summary>

@@ -4,10 +4,12 @@
 using System.Buffers;
 using System.Globalization;
 using System.Numerics;
+using System.Text;
 using System.Text.Json;
 using XiHan.Framework.Hosting.CommandLine.Parsing;
 using XiHan.Framework.Hosting.CommandLine.Runtime;
 using XiHan.Framework.Kernel.Operations;
+using XiHan.Framework.Primitives;
 
 namespace XiHan.Framework.Hosting.CommandLine.Commands;
 
@@ -38,15 +40,43 @@ internal static class FieldOptionPayload
     private static readonly string[] _compositionKeywords = ["allOf", "anyOf", "oneOf"];
 
     /// <summary>
+    /// 严格的 UTF-8 编码
+    /// </summary>
+    /// <remarks>
+    /// 遇到孤立的代理项抛出，不悄悄换成 U+FFFD（ADR-0315）
+    /// </remarks>
+    private static readonly UTF8Encoding _strictUtf8 = new(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true);
+
+    /// <summary>
     /// 写载荷
     /// </summary>
     /// <remarks>
-    /// 保留选项不进载荷；没有任何字段时是空对象
+    /// 保留选项不进载荷；没有任何字段时是空对象。字段的名字或值里有孤立的代理项时不写，与 <c>--json</c> 编码不成同一个用法错误（<see cref="CommandLineErrors.UsageInvalid"/> + <see cref="CommandLineMessages.InvokeJsonInvalid"/>；RFC-0001「写出与转交」，ADR-0315）：写出器缺省把它换成 U+FFFD，操作收到的是另一份载荷
     /// </remarks>
     /// <param name="commandLine">解析后的命令行</param>
     /// <param name="schema">操作的 Schema；没有时值都写字符串</param>
-    public static ReadOnlyMemory<byte> Write(ParsedCommandLine commandLine, OperationSchema? schema)
+    public static Result<ReadOnlyMemory<byte>> Write(ParsedCommandLine commandLine, OperationSchema? schema)
     {
+        // 先核对再写：写出器不会报错，写到一半才发现也只能丢掉
+        foreach (var (name, values) in commandLine.Options)
+        {
+            if (CommandLineInvocation.ReservedOptions.Contains(name))
+            {
+                continue;
+            }
+
+            // 名字有问题时不把它写进原因：带着孤立的代理项的文本到了 stderr 一样被换成 U+FFFD
+            if (!IsEncodable(name))
+            {
+                return LoneSurrogate("an option name has a lone surrogate and cannot be encoded as UTF-8");
+            }
+
+            if (!values.All(IsEncodable))
+            {
+                return LoneSurrogate($"the value of option '--{name}' has a lone surrogate and cannot be encoded as UTF-8");
+            }
+        }
+
         // OperationSchema 构造时已校验过是 JSON 对象；没有 Schema 时 root 是 Undefined，下面的查找都得到"不约束"
         using var document = schema is null ? null : JsonDocument.Parse(schema.Request);
         var root = document?.RootElement ?? default;
@@ -70,6 +100,32 @@ internal static class FieldOptionPayload
 
         return buffer.WrittenMemory;
     }
+
+    /// <summary>
+    /// 字符串能否严格编码成 UTF-8
+    /// </summary>
+    /// <remarks>
+    /// 编码不成的只有孤立的代理项
+    /// </remarks>
+    private static bool IsEncodable(string text)
+    {
+        try
+        {
+            _strictUtf8.GetByteCount(text);
+            return true;
+        }
+        catch (EncoderFallbackException)
+        {
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// 字段选项有孤立的代理项时的用法错误
+    /// </summary>
+    /// <param name="reason">英文的原因</param>
+    private static Error LoneSurrogate(string reason)
+        => Error.Validation(CommandLineErrors.UsageInvalid, CommandLineMessages.InvokeJsonInvalid, MessageArguments.Of(("reason", reason)));
 
     /// <summary>
     /// 写一个字段

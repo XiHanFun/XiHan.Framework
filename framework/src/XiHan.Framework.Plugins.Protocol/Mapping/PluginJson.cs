@@ -1,6 +1,7 @@
 // Copyright (c) XiHanFun Contributors. Licensed under the MIT License.
 // See the LICENSE file in the project root for full license text.
 
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Text;
 using System.Text.Json;
@@ -90,23 +91,33 @@ internal static class PluginJson
     /// 配置节序列化为 JSON
     /// </summary>
     /// <remarks>
-    /// <c>lifecycle.md</c> §2（ADR-0237）：根总是对象；没有子项的节是叶子，写成 JSON 字符串（值为 null 写 <c>null</c>）；子项名恰好是 <c>0</c>、<c>1</c>…（十进制、不带前导零与符号）的节写成数组，其余写成对象，成员按 <see cref="IConfiguration.GetChildren"/> 的顺序
+    /// <c>lifecycle.md</c> §2（ADR-0237）：根总是对象；没有子项的节是叶子，写成 JSON 字符串（值为 null 写 <c>null</c>）；子项名恰好是 <c>0</c>、<c>1</c>…（十进制、不带前导零与符号）的节写成数组，其余写成对象，成员按 <see cref="IConfiguration.GetChildren"/> 的顺序。
+    /// 键或值里有孤立的代理项时写不出，返回 <see langword="false"/>（RFC-0001「写出与转交」，ADR-0315）：写出器缺省把它换成 U+FFFD，插件拿到的是另一份配置
     /// </remarks>
-    public static string SerializeSection(IConfigurationSection section)
+    /// <param name="section">清单声明的配置节</param>
+    /// <param name="json">写出的 JSON 对象文本</param>
+    /// <returns>写出时为 <see langword="true"/></returns>
+    public static bool TrySerializeSection(IConfigurationSection section, [NotNullWhen(true)] out string? json)
     {
         using var stream = new MemoryStream();
         using (var writer = new Utf8JsonWriter(stream))
         {
-            WriteSection(writer, section, root: true);
+            if (!WriteSection(writer, section, root: true))
+            {
+                json = null;
+                return false;
+            }
         }
 
-        return Encoding.UTF8.GetString(stream.ToArray());
+        json = Encoding.UTF8.GetString(stream.ToArray());
+        return true;
     }
 
     /// <summary>
     /// 递归写一个配置节
     /// </summary>
-    private static void WriteSection(Utf8JsonWriter writer, IConfigurationSection section, bool root)
+    /// <returns>有孤立的代理项、写不出时为 <see langword="false"/>，已写的部分作废</returns>
+    private static bool WriteSection(Utf8JsonWriter writer, IConfigurationSection section, bool root)
     {
         var children = section.GetChildren().ToList();
         if (children.Count == 0)
@@ -116,13 +127,16 @@ internal static class PluginJson
             {
                 writer.WriteStartObject();
                 writer.WriteEndObject();
-            }
-            else
-            {
-                writer.WriteStringValue(section.Value);
+                return true;
             }
 
-            return;
+            if (section.Value is { } value && !IsEncodable(value))
+            {
+                return false;
+            }
+
+            writer.WriteStringValue(section.Value);
+            return true;
         }
 
         // 子项名要逐字等于下标：int.TryParse 认 "+0"、" 1"、"01"，那样的键在别的语言里读成对象成员
@@ -132,20 +146,52 @@ internal static class PluginJson
             writer.WriteStartArray();
             foreach (var child in children)
             {
-                WriteSection(writer, child, root: false);
+                if (!WriteSection(writer, child, root: false))
+                {
+                    return false;
+                }
             }
 
             writer.WriteEndArray();
-            return;
+            return true;
         }
 
         writer.WriteStartObject();
         foreach (var child in children)
         {
+            // 键与值一样核对：写出器同样把成员名里孤立的代理项换成 U+FFFD
+            if (!IsEncodable(child.Key))
+            {
+                return false;
+            }
+
             writer.WritePropertyName(child.Key);
-            WriteSection(writer, child, root: false);
+            if (!WriteSection(writer, child, root: false))
+            {
+                return false;
+            }
         }
 
         writer.WriteEndObject();
+        return true;
+    }
+
+    /// <summary>
+    /// 字符串能否严格编码成 UTF-8
+    /// </summary>
+    /// <remarks>
+    /// 编码不成的只有孤立的代理项
+    /// </remarks>
+    private static bool IsEncodable(string text)
+    {
+        try
+        {
+            _strictUtf8.GetByteCount(text);
+            return true;
+        }
+        catch (EncoderFallbackException)
+        {
+            return false;
+        }
     }
 }

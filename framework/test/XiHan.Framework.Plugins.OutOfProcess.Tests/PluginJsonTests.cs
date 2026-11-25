@@ -1,6 +1,7 @@
 // Copyright (c) XiHanFun Contributors. Licensed under the MIT License.
 // See the LICENSE file in the project root for full license text.
 
+using System.Text.Json;
 using Microsoft.Extensions.Configuration;
 using XiHan.Framework.Plugins.Protocol.Mapping;
 using ProtoError = XiHan.Framework.Plugins.Protocol.V1.Error;
@@ -93,7 +94,7 @@ public sealed class PluginJsonTests
         var section = Configuration(("Plugin:List:0", "a"), ("Plugin:List:1", "b"), ("Plugin:Padded:0", "a"), ("Plugin:Padded:01", "b"), ("Plugin:Empty", null)).GetSection("Plugin");
 
         // 修之前 "01" 按 int.TryParse 读成 1，Padded 也写成了数组
-        Assert.Equal("""{"Empty":null,"List":["a","b"],"Padded":{"0":"a","01":"b"}}""", PluginJson.SerializeSection(section));
+        Assert.Equal("""{"Empty":null,"List":["a","b"],"Padded":{"0":"a","01":"b"}}""", Serialized(section));
     }
 
     [Fact]
@@ -102,8 +103,28 @@ public sealed class PluginJsonTests
         var section = Configuration(("Plugin:0", "a"), ("Plugin:1", "b")).GetSection("Plugin");
 
         // 修之前子项名是 0、1 的根节写成数组，插件读到的配置节不是对象就进入 Failed
-        Assert.Equal("""{"0":"a","1":"b"}""", PluginJson.SerializeSection(section));
-        Assert.Equal("{}", PluginJson.SerializeSection(Configuration().GetSection("Missing")));
+        Assert.Equal("""{"0":"a","1":"b"}""", Serialized(section));
+        Assert.Equal("{}", Serialized(Configuration().GetSection("Missing")));
+    }
+
+    [Fact]
+    public void SerializeSection_RefusesALoneSurrogate_InAKeyOrAValue()
+    {
+        // 写出器缺省把孤立的代理项写成转义的 U+FFFD（ADR-0315）：键与值都核对，数组的元素也一样；代理对照常写出
+        Assert.False(PluginJson.TrySerializeSection(Configuration(("Plugin:Name", "a\uD800")).GetSection("Plugin"), out _));
+        Assert.False(PluginJson.TrySerializeSection(Configuration(("Plugin:N\uDC00ame", "a")).GetSection("Plugin"), out _));
+        Assert.False(PluginJson.TrySerializeSection(Configuration(("Plugin:List:0", "a"), ("Plugin:List:1", "\uDC00")).GetSection("Plugin"), out _));
+        using var paired = JsonDocument.Parse(Serialized(Configuration(("Plugin:Name", "😀")).GetSection("Plugin")));
+        Assert.Equal("😀", paired.RootElement.GetProperty("Name").GetString());
+    }
+
+    /// <summary>
+    /// 写出配置节，要求写得出
+    /// </summary>
+    private static string Serialized(IConfigurationSection section)
+    {
+        Assert.True(PluginJson.TrySerializeSection(section, out var json));
+        return json;
     }
 
     /// <summary>
