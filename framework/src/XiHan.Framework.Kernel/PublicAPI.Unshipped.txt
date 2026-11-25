@@ -74,6 +74,7 @@ XiHan.Framework.Kernel.Hosting.AppBuilder.UseOptions(XiHan.Framework.Kernel.Host
 XiHan.Framework.Kernel.Hosting.AppBuilder.UseProvider(string! capabilityId, string! manifestId) -> XiHan.Framework.Kernel.Hosting.AppBuilder!
 XiHan.Framework.Kernel.Hosting.AppBuilder.UseServiceBindingRoot(string? directory) -> XiHan.Framework.Kernel.Hosting.AppBuilder!
 XiHan.Framework.Kernel.Hosting.BindingResolver
+XiHan.Framework.Kernel.Hosting.BindingRules
 XiHan.Framework.Kernel.Hosting.BindingValue
 XiHan.Framework.Kernel.Hosting.BindingValue.<Clone>$() -> XiHan.Framework.Kernel.Hosting.BindingValue!
 XiHan.Framework.Kernel.Hosting.BindingValue.BindingValue() -> void
@@ -417,7 +418,6 @@ XiHan.Framework.Kernel.Plugins.IPluginHost
 XiHan.Framework.Kernel.Plugins.IPluginHost.LoadAsync(XiHan.Framework.Kernel.Plugins.PluginSource! source, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<XiHan.Framework.Primitives.Result<XiHan.Framework.Kernel.Plugins.PluginStatus!>>!
 XiHan.Framework.Kernel.Plugins.IPluginHost.Plugins.get -> System.Collections.Generic.IReadOnlyList<XiHan.Framework.Kernel.Plugins.PluginStatus!>!
 XiHan.Framework.Kernel.Plugins.IPluginHost.UnloadAsync(string! manifestId, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<XiHan.Framework.Primitives.Result>!
-XiHan.Framework.Kernel.Plugins.PluginBindingRules
 XiHan.Framework.Kernel.Plugins.PluginContext
 XiHan.Framework.Kernel.Plugins.PluginContext.Configuration.get -> Microsoft.Extensions.Configuration.IConfiguration!
 XiHan.Framework.Kernel.Plugins.PluginContext.Manifest.get -> XiHan.Framework.Primitives.Manifests.Manifest!
@@ -833,6 +833,8 @@ static XiHan.Framework.Kernel.Hosting.App.CreateContext(System.IServiceProvider!
 static XiHan.Framework.Kernel.Hosting.App.CreateContext(System.IServiceProvider! scopedServices, XiHan.Framework.Kernel.Hosting.InvocationContextOptions! options, System.Threading.CancellationToken cancellationToken) -> XiHan.Framework.Primitives.InvocationContext!
 static XiHan.Framework.Kernel.Hosting.BindingResolver.Resolve(Microsoft.Extensions.Configuration.IConfiguration! configuration) -> System.Collections.Generic.IReadOnlyDictionary<string!, XiHan.Framework.Kernel.Hosting.BindingValue!>!
 static XiHan.Framework.Kernel.Hosting.BindingResolver.Resolve(Microsoft.Extensions.Configuration.IConfiguration! configuration, string? serviceBindingRoot) -> System.Collections.Generic.IReadOnlyDictionary<string!, XiHan.Framework.Kernel.Hosting.BindingValue!>!
+static XiHan.Framework.Kernel.Hosting.BindingRules.FindViolation(XiHan.Framework.Primitives.Manifests.Binding! declared, XiHan.Framework.Kernel.Hosting.BindingValue? resolved) -> XiHan.Framework.Primitives.Maybe<string!>
+static XiHan.Framework.Kernel.Hosting.BindingRules.HasContent(XiHan.Framework.Kernel.Hosting.BindingValue! binding) -> bool
 static XiHan.Framework.Kernel.Hosting.BindingValue.operator !=(XiHan.Framework.Kernel.Hosting.BindingValue? left, XiHan.Framework.Kernel.Hosting.BindingValue? right) -> bool
 static XiHan.Framework.Kernel.Hosting.BindingValue.operator ==(XiHan.Framework.Kernel.Hosting.BindingValue? left, XiHan.Framework.Kernel.Hosting.BindingValue? right) -> bool
 static XiHan.Framework.Kernel.Hosting.ConfigurationDirectory.IsApplicationSettings(string! path, string! environmentName) -> bool
@@ -904,8 +906,6 @@ static XiHan.Framework.Kernel.Pipeline.InvocationOrigin.operator !=(XiHan.Framew
 static XiHan.Framework.Kernel.Pipeline.InvocationOrigin.operator ==(XiHan.Framework.Kernel.Pipeline.InvocationOrigin? left, XiHan.Framework.Kernel.Pipeline.InvocationOrigin? right) -> bool
 static XiHan.Framework.Kernel.Pipeline.MiddlewareDescriptor.operator !=(XiHan.Framework.Kernel.Pipeline.MiddlewareDescriptor? left, XiHan.Framework.Kernel.Pipeline.MiddlewareDescriptor? right) -> bool
 static XiHan.Framework.Kernel.Pipeline.MiddlewareDescriptor.operator ==(XiHan.Framework.Kernel.Pipeline.MiddlewareDescriptor? left, XiHan.Framework.Kernel.Pipeline.MiddlewareDescriptor? right) -> bool
-static XiHan.Framework.Kernel.Plugins.PluginBindingRules.FindViolation(XiHan.Framework.Primitives.Manifests.Binding! declared, XiHan.Framework.Kernel.Hosting.BindingValue? resolved) -> XiHan.Framework.Primitives.Maybe<string!>
-static XiHan.Framework.Kernel.Plugins.PluginBindingRules.HasContent(XiHan.Framework.Kernel.Hosting.BindingValue! binding) -> bool
 static XiHan.Framework.Kernel.Plugins.PluginPermissions.Empty.get -> XiHan.Framework.Kernel.Plugins.PluginPermissions!
 static XiHan.Framework.Kernel.Plugins.PluginSource.operator !=(XiHan.Framework.Kernel.Plugins.PluginSource? left, XiHan.Framework.Kernel.Plugins.PluginSource? right) -> bool
 static XiHan.Framework.Kernel.Plugins.PluginSource.operator ==(XiHan.Framework.Kernel.Plugins.PluginSource? left, XiHan.Framework.Kernel.Plugins.PluginSource? right) -> bool

@@ -11,7 +11,7 @@ namespace XiHan.Framework.Kernel.Tests.Hosting;
 /// 内核装配特性时对清单声明的绑定的核对
 /// </summary>
 /// <remarks>
-/// RFC-0016「资源绑定与配置节」第 8 条（ADR-0301）：与插件宿主同一套规则（<c>PluginBindingRules</c>）。必需的绑定没有内容（没给，或只给了类型）、来源声明的类型与清单不同（必需与可选都核对）即启动失败，按清单的顺序报第一处
+/// RFC-0016「资源绑定与配置节」第 8 条（ADR-0301）：与插件宿主同一套规则（<c>BindingRules</c>）。必需的绑定没有内容（没给，或只给了类型）、来源声明的类型与清单不同（必需与可选都核对）即启动失败，按清单的顺序报第一处
 /// </remarks>
 public sealed class FeatureBindingRulesTests : IDisposable
 {

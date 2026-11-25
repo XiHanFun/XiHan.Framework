@@ -1,21 +1,21 @@
 // Copyright (c) XiHanFun Contributors. Licensed under the MIT License.
 // See the LICENSE file in the project root for full license text.
 
-using XiHan.Framework.Kernel.Hosting;
 using XiHan.Framework.Primitives;
 using XiHan.Framework.Primitives.Manifests;
 
-namespace XiHan.Framework.Kernel.Plugins;
+namespace XiHan.Framework.Kernel.Hosting;
 
 /// <summary>
 /// 清单声明的绑定与解析结果的核对
 /// </summary>
 /// <remarks>
 /// 规则出自 RFC-0016「资源绑定与配置节」第 8 条与 <c>spec/plugin/lifecycle.md</c> §2「<c>bindings</c> 的核对」（ADR-0292、ADR-0301）：内核装配特性时（不合即 <see cref="KernelErrors.MissingBinding"/>，启动失败）、进程外与 Wasm 宿主组装 <c>Configure</c> 请求时、进程内宿主加载插件代码之前，按清单的顺序对每个声明的绑定核对一次，先核对有没有、再核对类型，报第一处不合的。
-/// 按有没有能用的内容判断：只给了类型的绑定插件收不到，特性拿到的也只是一个类型；可选的绑定也核对类型，因为它一旦给出，插件与特性都会拿它去连。名字里的 Plugin 是最初的使用方，内核装配特性用的是同一处
+/// 按有没有能用的内容判断：只给了类型的绑定插件收不到，特性拿到的也只是一个类型；可选的绑定也核对类型，因为它一旦给出，插件与特性都会拿它去连。
+/// 与它核对的 <see cref="BindingValue"/>、<see cref="BindingResolver"/> 同在这个命名空间：规则不属于插件，内核装配特性与三种插件宿主用的是同一处（ADR-0311，原名 <c>XiHan.Framework.Kernel.Plugins.PluginBindingRules</c>）
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
-public static class PluginBindingRules
+public static class BindingRules
 {
     /// <summary>
     /// 解析出的绑定有没有能交给插件或特性的内容

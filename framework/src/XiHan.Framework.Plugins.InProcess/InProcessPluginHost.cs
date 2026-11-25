@@ -18,7 +18,7 @@ namespace XiHan.Framework.Plugins.InProcess;
 /// </summary>
 /// <remarks>
 /// 每个插件拥有自己的可收集加载上下文与服务容器；失败以 <see cref="Result"/> 返回，不影响宿主。
-/// 宿主不向插件下发绑定（插件读整个宿主配置），但在加载插件代码之前按与进程外、Wasm 宿主相同的规则核对清单声明的绑定：必需的没有能用的内容、来源声明的类型与清单不同即加载失败（<see cref="PluginBindingRules"/>，<c>spec/plugin/lifecycle.md</c> §2，ADR-0292）。
+/// 宿主不向插件下发绑定（插件读整个宿主配置），但在加载插件代码之前按与进程外、Wasm 宿主相同的规则核对清单声明的绑定：必需的没有能用的内容、来源声明的类型与清单不同即加载失败（<see cref="BindingRules"/>，<c>spec/plugin/lifecycle.md</c> §2，ADR-0292）。
 /// 绑定按构造时给的 Service Binding 根目录解析，插件经 <see cref="PluginContext.ServiceBindingRoot"/> 拿到同一个值：应用经 <see cref="AppBuilder.UseServiceBindingRoot"/> 指定了根目录时把同一个值交给构造函数，宿主核对的、插件读到的与内核读的才是同一个目录（ADR-0301）
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
@@ -300,7 +300,7 @@ public sealed partial class InProcessPluginHost : IPluginHost, IAsyncDisposable
 
         foreach (var binding in manifest.Bindings)
         {
-            if (PluginBindingRules.FindViolation(binding, resolved.TryGetValue(binding.Name, out var value) ? value : null).TryGetValue(out var reason))
+            if (BindingRules.FindViolation(binding, resolved.TryGetValue(binding.Name, out var value) ? value : null).TryGetValue(out var reason))
             {
                 LogBindingRejected(_logger, manifest.Id, reason);
                 return Error.Unexpected(PluginErrors.LoadFailed, PluginMessages.LoadFailed, MessageArguments.Of(("id", manifest.Id), ("reason", reason)));
@@ -314,7 +314,7 @@ public sealed partial class InProcessPluginHost : IPluginHost, IAsyncDisposable
     /// 记录清单声明的绑定不合、插件不加载
     /// </summary>
     /// <remarks>
-    /// <c>reason</c> 是 <see cref="PluginBindingRules.FindViolation"/> 给出的固定文本，只带绑定名与类型名
+    /// <c>reason</c> 是 <see cref="BindingRules.FindViolation"/> 给出的固定文本，只带绑定名与类型名
     /// </remarks>
     [LoggerMessage(Level = LogLevel.Error, Message = "Plugin {PluginId} is not loaded: {Reason}.")]
     private static partial void LogBindingRejected(ILogger logger, string pluginId, string reason);

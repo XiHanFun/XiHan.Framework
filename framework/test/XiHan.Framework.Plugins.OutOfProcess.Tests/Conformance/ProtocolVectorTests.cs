@@ -13,7 +13,6 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using XiHan.Framework.Kernel;
 using XiHan.Framework.Kernel.Hosting;
-using XiHan.Framework.Kernel.Plugins;
 using XiHan.Framework.Messaging.Abstractions;
 using XiHan.Framework.Plugins.Protocol;
 using XiHan.Framework.Plugins.Protocol.Handshake;
@@ -517,8 +516,8 @@ public sealed class ProtocolVectorTests
         // 下发之前的核对写出的两种（lifecycle.md §2「bindings 的核对」，ADR-0292）：{type} 是来源声明的类型，{declared} 是清单声明的
         var typed = reasons.Select(static r => r.Replace("{type}", "queue", StringComparison.Ordinal).Replace("{declared}", "connection:relational", StringComparison.Ordinal)).ToHashSet(StringComparer.Ordinal);
         var empty = new Dictionary<string, string>(StringComparer.Ordinal);
-        Assert.Contains(PluginBindingRules.FindViolation(new ManifestBinding("db", "connection:relational"), null).ValueOrThrow(), reasons);
-        Assert.Contains(PluginBindingRules.FindViolation(new ManifestBinding("db", "connection:relational"), new BindingValue { Name = "db", Type = "queue", Value = "x", Properties = empty }).ValueOrThrow(), typed);
+        Assert.Contains(BindingRules.FindViolation(new ManifestBinding("db", "connection:relational"), null).ValueOrThrow(), reasons);
+        Assert.Contains(BindingRules.FindViolation(new ManifestBinding("db", "connection:relational"), new BindingValue { Name = "db", Type = "queue", Value = "x", Properties = empty }).ValueOrThrow(), typed);
 
         // 绑定目录超过内核的大小与文件数上限，与整个请求超过上限：经真实的组装写出
         var root = Directory.CreateTempSubdirectory("xihan-binding-reasons-");

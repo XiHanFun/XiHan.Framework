@@ -10,7 +10,6 @@ using XiHan.Framework.Kernel.Capabilities;
 using XiHan.Framework.Kernel.Diagnostics;
 using XiHan.Framework.Kernel.Operations;
 using XiHan.Framework.Kernel.Pipeline;
-using XiHan.Framework.Kernel.Plugins;
 using XiHan.Framework.Kernel.Resilience;
 using XiHan.Framework.Kernel.Validation;
 using XiHan.Framework.Kernel.Security;
@@ -248,7 +247,7 @@ public sealed class AppBuilder
             // 可选的没有内容由特性自己通过 FindBinding 处理。说明文本只带绑定名与类型，主值与属性不进异常
             foreach (var binding in node.Manifest.Bindings)
             {
-                if (PluginBindingRules.FindViolation(binding, bindings.TryGetValue(binding.Name, out var value) ? value : null).TryGetValue(out var violation))
+                if (BindingRules.FindViolation(binding, bindings.TryGetValue(binding.Name, out var value) ? value : null).TryGetValue(out var violation))
                 {
                     throw new FrameworkException(KernelErrors.MissingBinding, $"Feature '{node.Manifest.Id}' is not configured: {violation}.");
                 }
