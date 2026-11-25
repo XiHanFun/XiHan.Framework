@@ -12,7 +12,8 @@ namespace XiHan.Framework.Kernel.Hosting;
 /// 从配置与 Service Binding 目录解析绑定
 /// </summary>
 /// <remarks>
-/// 目录来源有大小与条目数的上限：一个文件最多 <see cref="MaxFileBytes"/> 字节，一个绑定目录里读的文件合计最多 <see cref="MaxBindingBytes"/> 字节，读的时候到上限就停（RFC-0016「资源绑定与配置节」第 9 条，ADR-0292）；解析全部绑定时根目录下最多 <see cref="MaxBindings"/> 个绑定，一个绑定目录里读的文件最多 <see cref="MaxBindingFiles"/> 个，先数、后读（第 10 条，ADR-0301）。超过时抛出携带 <see cref="KernelErrors.BindingTooLarge"/> 的 <see cref="FrameworkException"/>
+/// 目录来源有大小与条目数的上限：一个文件最多 <see cref="MaxFileBytes"/> 字节，一个绑定目录里读的文件合计最多 <see cref="MaxBindingBytes"/> 字节，读的时候到上限就停（RFC-0016「资源绑定与配置节」第 9 条，ADR-0292）；解析全部绑定时根目录下最多 <see cref="MaxBindings"/> 个绑定，一个绑定目录里读的文件最多 <see cref="MaxBindingFiles"/> 个，先数、后读（第 10 条，ADR-0301）。超过时抛出携带 <see cref="KernelErrors.BindingTooLarge"/> 的 <see cref="FrameworkException"/>。
+/// 根目录下以 <c>.</c> 开头的子目录不是绑定，不读、不计，点了名也不读；目录项可以是符号链接，名字取目录项自己的，内容取链接最终指向的：Kubernetes 把 projected volume 直接挂到根目录时的 <c>..data</c> 与带时间戳的目录因此不算绑定，绑定按链接读出卷里当前的内容（第 11 条，ADR-0311）
 /// </remarks>
 [ApiLevel(Stability.Stable, "5.0")]
 public static class BindingResolver
@@ -55,7 +56,7 @@ public static class BindingResolver
     /// 解析全部绑定时根目录下的绑定数上限
     /// </summary>
     /// <remarks>
-    /// 根目录下的每个子目录都是一个绑定、都计入；与 <see cref="MaxBindingFiles"/> 同一个数，解析全部绑定读进内存的内容因此不超过 128 × <see cref="MaxBindingBytes"/> 字节（ADR-0301）。只解析点了名的绑定时不核对
+    /// 根目录下不以 <c>.</c> 开头的每个子目录都是一个绑定、都计入，以 <c>.</c> 开头的不是绑定、不计（ADR-0311）；与 <see cref="MaxBindingFiles"/> 同一个数，解析全部绑定读进内存的内容因此不超过 128 × <see cref="MaxBindingBytes"/> 字节（ADR-0301）。只解析点了名的绑定时不核对
     /// </remarks>
     public const int MaxBindings = 128;
 
@@ -106,7 +107,8 @@ public static class BindingResolver
             if (names is null)
             {
                 // 先数、后读：最多枚举到上限再多一个，多出来即失败，一个文件也不读；根目录指错到一棵大目录树时不把每个子目录都当成绑定读进内存
-                var directories = Directory.EnumerateDirectories(serviceBindingRoot).Take(MaxBindings + 1).ToList();
+                // 以点开头的子目录先跳过、不占名额：projected volume 挂到根目录时的 ..data 与带时间戳的目录不是绑定
+                var directories = Directory.EnumerateDirectories(serviceBindingRoot).Where(IsBinding).Take(MaxBindings + 1).ToList();
                 if (directories.Count > MaxBindings)
                 {
                     throw new FrameworkException(KernelErrors.BindingTooLarge, string.Create(CultureInfo.InvariantCulture, $"The service binding root contains more than {MaxBindings} bindings."));
@@ -121,8 +123,9 @@ public static class BindingResolver
             else
             {
                 // 没点名的目录连文件都不打开；比的是目录的实际名字，与不限名字时放进结果的键相同（大小写不敏感的文件系统上 db 点不到 DB）
+                // 以点开头的子目录与不限名字时一样不是绑定，点到了也不读
                 var named = Directory.EnumerateDirectories(serviceBindingRoot)
-                    .Where(directory => names.Contains(Path.GetFileName(directory)))
+                    .Where(directory => IsBinding(directory) && names.Contains(Path.GetFileName(directory)))
                     .ToDictionary(static directory => Path.GetFileName(directory), StringComparer.Ordinal);
 
                 // 按点名的顺序读：插件宿主按清单的顺序报第一个读不出或超限的绑定，与文件系统枚举的先后无关
@@ -150,6 +153,15 @@ public static class BindingResolver
 
         return result;
     }
+
+    /// <summary>
+    /// 根目录下的一个子目录是不是绑定
+    /// </summary>
+    /// <remarks>
+    /// 以 <c>.</c> 开头的不是：挂载工具放的元数据目录（<c>..data</c>、带时间戳的 <c>..&lt;时间&gt;</c>），与绑定目录里以 <c>.</c> 开头的文件同一个口径（ADR-0311）。指向目录的符号链接按目录列出，按它自己的名字判断
+    /// </remarks>
+    /// <param name="directory">枚举出的子目录路径</param>
+    private static bool IsBinding(string directory) => !Path.GetFileName(directory).StartsWith('.');
 
     /// <summary>
     /// 从配置节 <c>XiHan:Bindings:&lt;name&gt;</c> 读取一个绑定
@@ -192,7 +204,7 @@ public static class BindingResolver
     /// 按 Service Binding 规范从一个目录读取绑定
     /// </summary>
     /// <remarks>
-    /// 目录名是绑定名，每个文件是一个属性，<c>type</c> 作类型，<c>uri</c> 同时作主值。读的文件不多于 <see cref="MaxBindingFiles"/> 个，合计不超过 <see cref="MaxBindingBytes"/>，每个不超过 <see cref="MaxFileBytes"/>
+    /// 目录名是绑定名，每个文件是一个属性，<c>type</c> 作类型，<c>uri</c> 同时作主值；子目录不是属性、不读（Secret 卷里的 <c>..data</c> 与带时间戳的目录），指向文件的符号链接读它最终指向的内容。读的文件不多于 <see cref="MaxBindingFiles"/> 个，合计不超过 <see cref="MaxBindingBytes"/>，每个不超过 <see cref="MaxFileBytes"/>
     /// </remarks>
     private static BindingValue FromDirectory(string directory)
     {

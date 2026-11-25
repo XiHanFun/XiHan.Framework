@@ -41,7 +41,7 @@ await builder.Build().RunAsync();
 * `AppBuilder`、`App`：装配入口与运行中的应用
 * `KernelOptions`、`StartupBannerOptions`：内核选项与启动 Banner 的选项
 * `IFeature`、`IHostedFeature`、`FeatureContext`：特性与它的装配入口
-* `BindingResolver`、`BindingValue`：资源绑定的解析与结果（主值与其余属性；打印时主值遮蔽、属性只列名字）；`FeatureContext.Bindings` 是装配时解析好的一份，`FeatureContext.ServiceBindingRoot` 是应用指定的绑定根目录，装配之后还要按同样的来源解析时用它；进程内插件经 `PluginContext.ServiceBindingRoot` 拿到它的宿主所用的同一个根目录。绑定目录里一个文件最多 `MaxFileBytes`（524288）字节、一个绑定的文件合计最多 `MaxBindingBytes`（1048576）字节，读的时候到上限就停；一个绑定目录最多 `MaxBindingFiles`（128）个文件、根目录下最多 `MaxBindings`（128）个绑定（以 `.` 开头的文件不计，只解析点了名的绑定时不数绑定），先数、后读；超过即启动失败（`KERNEL_HOSTING_005`，消息只带绑定名、文件名与上限）
+* `BindingResolver`、`BindingValue`：资源绑定的解析与结果（主值与其余属性；打印时主值遮蔽、属性只列名字）；`FeatureContext.Bindings` 是装配时解析好的一份，`FeatureContext.ServiceBindingRoot` 是应用指定的绑定根目录，装配之后还要按同样的来源解析时用它；进程内插件经 `PluginContext.ServiceBindingRoot` 拿到它的宿主所用的同一个根目录。绑定目录里一个文件最多 `MaxFileBytes`（524288）字节、一个绑定的文件合计最多 `MaxBindingBytes`（1048576）字节，读的时候到上限就停；一个绑定目录最多 `MaxBindingFiles`（128）个文件、根目录下最多 `MaxBindings`（128）个绑定（以 `.` 开头的文件不计，只解析点了名的绑定时不数绑定），先数、后读；超过即启动失败（`KERNEL_HOSTING_005`，消息只带绑定名、文件名与上限）。根目录下以 `.` 开头的子目录不是绑定，不读、不计；目录项可以是符号链接，名字取目录项自己的、内容取链接最终指向的，Kubernetes 把 projected volume 直接挂到根目录（`..data` 与带时间戳的目录）或把 Secret 卷挂到一个绑定目录都读得出卷里当前的内容
 * `PluginBindingRules`：清单声明的绑定的核对（必需的绑定没有能用的内容、来源声明的类型与清单不同，可选的也核对类型），内核装配特性时（不合即启动失败，`KERNEL_HOSTING_001`）与进程外、Wasm、进程内三种插件宿主共用
 * `PipelineBuilder`、`IPipelineMiddleware`、`PipelineStage`：执行管道
 * `OperationAttribute`、`IOperation<TRequest, TResponse>`、`IOperationInvoker`：操作契约与调用

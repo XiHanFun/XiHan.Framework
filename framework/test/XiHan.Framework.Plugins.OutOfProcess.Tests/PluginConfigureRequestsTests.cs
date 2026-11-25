@@ -66,6 +66,22 @@ public sealed class PluginConfigureRequestsTests : IDisposable
     }
 
     [Fact]
+    public void Bindings_InAProjectedVolumeMountedAtTheRoot_AreDeliveredThroughTheirLinks()
+    {
+        // projected volume 直接挂到根目录（RFC-0016 第 11 条，ADR-0311）：内容在带时间戳的目录里，..data 指向它，绑定名是指向 ..data/<名> 的符号链接；
+        // 以 . 开头的两个目录不是绑定，下发的是链接最终指向的内容
+        const string stamp = "..2026_11_25_09_30_00.123456789";
+        Mount(Path.Combine(stamp, "db"), ("type", "connection:relational\n"), ("uri", "postgres://db/app\n"), ("password", "s3cret"));
+        LinkDirectory("..data", stamp);
+        LinkDirectory("db", Path.Combine("..data", "db"));
+
+        var binding = Assert.Single(Build(Manifest(new Binding("db", "connection:relational")), Configuration()).Bindings);
+
+        Assert.Equal(("db", "connection:relational", "postgres://db/app"), (binding.Name, binding.Type, binding.Value));
+        Assert.Equal(new Dictionary<string, string> { ["uri"] = "postgres://db/app", ["password"] = "s3cret" }, binding.Properties);
+    }
+
+    [Fact]
     public void Bindings_InConfiguration_ReplaceTheDirectoryBindingOfTheSameName()
     {
         Mount("db", ("type", "connection:document"), ("uri", "mongodb://mounted/app"));
@@ -723,6 +739,24 @@ public sealed class PluginConfigureRequestsTests : IDisposable
 
         File.CreateSymbolicLink(path, Path.Combine(_root, binding, "..missing", file));
         return null;
+    }
+
+    /// <summary>
+    /// 在绑定根下建一个指向目录的符号链接，目标按相对路径写（与 Kubernetes 相同）
+    /// </summary>
+    /// <remarks>
+    /// Windows 上建符号链接要 SeCreateSymbolicLinkPrivilege（开发人员模式或提升的进程），拿不到时跳过这条用例；其他系统不要求权限
+    /// </remarks>
+    private void LinkDirectory(string link, string target)
+    {
+        try
+        {
+            Directory.CreateSymbolicLink(Path.Combine(_root, link), target);
+        }
+        catch (Exception exception) when (OperatingSystem.IsWindows() && exception is IOException or UnauthorizedAccessException)
+        {
+            Assert.Skip("Creating symbolic links on Windows needs Developer Mode or an elevated process; the test runs where links can be created, such as Linux.");
+        }
     }
 
     /// <summary>

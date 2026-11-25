@@ -4,6 +4,7 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging.Abstractions;
 using XiHan.Framework.Kernel.Capabilities;
+using XiHan.Framework.Kernel.Hosting;
 using XiHan.Framework.Kernel.Plugins;
 using XiHan.Framework.Primitives;
 using XiHan.Framework.Testing.Workspace;
@@ -256,6 +257,36 @@ public sealed class InProcessPluginHostTests
             await using var defaults = CreateHost(string.Empty);
             var rejected = await defaults.LoadAsync(new PluginSource(directory, _granted), CancellationToken.None);
             Assert.Equal("binding 'db' is required but not provided", rejected.Error!.Details!["reason"]);
+        }
+        finally
+        {
+            DeleteQuietly(directory);
+            DeleteQuietly(root);
+        }
+    }
+
+    [Fact]
+    public async Task Load_DoesNotCountDirectoriesStartingWithADot_AsBindings()
+    {
+        // 进程内宿主解析全部绑定（RFC-0016 第 11 条，ADR-0311）：projected volume 挂到根目录时的 ..data 与带时间戳的目录不是绑定，
+        // 不占 128 个的名额；修之前它们计入，正好 128 个绑定的根目录报绑定数超限、插件加载失败
+        var directory = CopyWithBindings("""{ "name": "db", "type": "connection:relational" }""");
+        var root = MountedRoot("postgres://mounted/app");
+        for (var i = 1; i < BindingResolver.MaxBindings; i++)
+        {
+            Directory.CreateDirectory(Path.Combine(root, $"b{i}"));
+        }
+
+        Directory.CreateDirectory(Path.Combine(root, "..data"));
+        Directory.CreateDirectory(Path.Combine(root, "..2026_11_25_09_30_00.123456789"));
+        try
+        {
+            await using var host = CreateHost(string.Empty, root);
+
+            var loaded = await host.LoadAsync(new PluginSource(directory, _granted), CancellationToken.None);
+
+            Assert.True(loaded.IsSuccess, loaded.ToString());
+            Assert.True((await host.UnloadAsync("xihan.samples.plugin", CancellationToken.None)).IsSuccess);
         }
         finally
         {
