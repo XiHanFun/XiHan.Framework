@@ -135,7 +135,8 @@ Kafka 缺省开启 `auto.create.topics.enable`，主题由 broker 建出来。�
 - 每个主题一条流 `<KeyPrefix><topic>`（前缀缺省 `xihan:messaging:`），只由订阅方在启动时连同消费组一起建立，发布不建流。
 - 竞争订阅在消费组 `ConsumerGroup` 里分摊条目，广播订阅每个实例一个组 `<ConsumerGroup>@<InstanceId>`。消费是轮询：客户端的多路复用连接不支持阻塞读，没取到就等 `PollIntervalSeconds`（缺省 0.2）再取。
 - 处理失败在原位立即重试到 `MaxAttempts`；竞争订阅仍失败就写进死信流 `<KeyPrefix><topic><DeadLetterSuffix>`，广播订阅确认掉并记 Warning，不进死信。
-- 实例崩溃或停止时没确认的条目，空闲超过 `ClaimIdleTimeSeconds`（缺省 60）后由别的实例认领、接着计数投递。它必须大于一批条目的最长处理时间，否则还在处理的条目会被别的实例认领、重复处理。
+- 实例崩溃时没确认的条目，空闲超过 `ClaimIdleTimeSeconds`（缺省 60）后由别的实例认领、接着计数投递。它必须大于一批条目的最长处理时间，否则还在处理的条目会被别的实例认领、重复处理。
+- 实例正常停止时不再读新条目，没读走的留在流里由别的实例直接读到；已经拿到却没处理完的条目退回投递次数，空闲时间设到 `ClaimIdleTimeSeconds`，别的实例下一次维护就接手，不用等满这段时间。
 - 每条流以 `MaxLength`（缺省 100000）近似封顶，消费者落后超过它时最旧的条目在投递前被裁掉。
 
 发布的事务、重试时的认领、回收与清理的细则见 [Messaging.Redis](/packages/messaging-redis)。

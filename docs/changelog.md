@@ -30,7 +30,9 @@
 - 消息信封的 `time` 与 binary 模式的 `ce-time` 只认带 `T`、秒与偏移的 RFC 3339 时刻（`2026-01-02T03:04:05Z`、`…+08:00`），空格代替 `T`、没有偏移、没有秒、只有日期、`+0800`、首尾空白、HTTP 日期都是信封不合法：自己写结构化 JSON 或 `ce-time` 的发送方逐个核对
 - 信封里重复的成员（含 `data` 内部）、`data` 与 `data_base64` 同时出现、值为对象或数组的扩展属性现在是信封不合法，竞争订阅进死信、广播订阅丢弃：升级前带这类信封的队列先排空
 - 读出的 `MessageEnvelope.Time` 一律是 UTC（`Offset` 为零），值为 `null` 的扩展属性读成没有这个扩展：取 `Offset` 的处理器改为按时刻使用，扩展的有无用 `Extension(name)` 判断
-- `CloudEventsFormat.Encode` 对与规范属性同名的扩展（`id`、`data` 等）和带重复成员的 JSON 数据抛出 `MESSAGING_VALIDATION_002`：给信封加了这类扩展的代码改名
+- `CloudEventsFormat.Encode` 对带重复成员或孤立代理项的 JSON 数据抛出 `MESSAGING_VALIDATION_002`：发布之前改正数据
+- 名为 `id`、`source`、`type`、`time`、`subject`、`data`、`data_base64`、`specversion`、`datacontenttype`、`dataschema` 的扩展属性，构造信封或 `WithExtension` 时就抛 `ArgumentException`：改名（如加 `xihan` 前缀）
+- 带 `dataschema` 的 CloudEvents 事件（structured 的成员、binary 的 `ce-dataschema`）和 binary 的 `ce-data` 头读不出了，入站端点返回 400、代理上按无法解码了结：发送方去掉 `dataschema`，或改放到自己的扩展属性里
 - 下发给插件的绑定有属性名不在 `[A-Za-z0-9._-]` 之内（1–253 个字符、不以 `.` 开头）、属性多于 64 个或名与值合计超过 256 KiB 时，这个插件配置失败并按重启策略重试：把多余的文件挪出绑定目录或改属性名
 - 绑定目录里单个文件超过 512 KiB、或一个绑定目录的文件合计超过 1 MiB 时应用启动失败（`KERNEL_HOSTING_005`）：把不属于绑定的文件移出绑定目录
 - 插件清单声明的绑定没写 `required`（缺省必需）、部署里又没给或只给了类型时，进程外与 Wasm 插件配置失败，进程内插件加载失败：补上绑定，或在清单写 `"required": false`
@@ -40,6 +42,9 @@
 - 照抄 `Caching.Remote` 消息目录的远程缓存插件，把 `caching.remote.key_invalid` 改成同样的「按 UTF-8 编码后不超过 512 字节」（10 个区域），否则与宿主的目录冲突（`LOCALIZATION_CONFLICT_001`）
 - Nacos 文档里展平后同一个键出现两次（含只差大小写的）整份文档不合法（`CONFIGURATION_VALIDATION_001`）：升级前在 Nacos 里把重复的键删到只剩一个
 - cron 表达式只按空格与制表符分段，结尾的换行、夹在中间的不换行空格等不再照收：从配置或文件读表达式的地方先 `Trim()`
+- cron 步长不能超过这一段的最大值（秒、分 59，时 23，日 31，月 12，周 7，年 2099）：`*/60` 这类表达式改写成起点本身（`*/n` 改成段的最小值，`a/n`、`a-b/n` 改成 `a`）；`Scheduling.Database` 里已持久化的，先在旧版本上改写
+- `JobSchedule.FromCron` 只收 IANA 时区名，`China Standard Time`、`UTC+12` 这类 Windows ID 抛 `ArgumentException`：改用 `Asia/Shanghai`、`Etc/GMT-12`；数据库里已经存了 Windows ID 的行，直接改 `Schedule` 列
+- `JobSchedule.Parse` / `TryParse` 只收 `ToString()` 写出的形状（时刻另按 RFC 3339 读）：自己拼计划文本的地方改用工厂方法加 `ToString()`
 - `FixedWindowChunkingStrategy` 的窗口与重叠改按 Unicode 码位计，含表情等平面以外字符的文本块边界会变：要按新边界切的旧文档重新摄入
 - 工作流表达式里数字的文本只取决于数值：`1.50` 写 `1.5`、`1.5 + 1.5` 写 `3`（模板、拼接、`toString`、`WorkflowValues.AsString`）；要固定小数位数的展示改用 `format(x, n)`
 - `now()` 与 `date()` 返回字符串 `2026-01-02T03:04:05.0000000+00:00`，进程内读结果改用 `WorkflowValues.TryConvert<DateTimeOffset>`；`date()` 与比较只认 `YYYY-MM-DD` 或再加 `T` / 空格与 `HH:MM[:SS[.小数]][偏移]`，`01/02/2026`、`Jan 2, 2026`、`12:30` 不再是时间
@@ -127,10 +132,14 @@
 - **新增** 发件箱健康项 `messaging.outbox.backlog` 与四个阈值 `XiHan:Messaging:Outbox:Health*`：积压超限以 `MESSAGING_UNAVAILABLE_004` 降级，死信超限（缺省有死信就算）以 `MESSAGING_UNAVAILABLE_005` 降级（ADR-0272）
 - **新增** `OutboxDeadLetters.RedriveManyAsync(ids)`：批量重投发件箱死信，逐项结果与入参同序，尝试次数归零；不存在的行是 `MESSAGING_NOTFOUND_001`，不在死信里的行是 `MESSAGING_CONFLICT_001`（ADR-0272）
 - **调整** 消息信封的读取收紧：`time`（含 binary 模式的 `ce-time`）只认 RFC 3339 时刻并读成 UTC，任何一层重复的成员、`data` 与 `data_base64` 同时出现、值为对象或数组的扩展属性是信封不合法（新消息键 `messaging.envelope.data_conflict`、`messaging.envelope.invalid_extension_value`），`invalid_json` 的 `reason` 改为出错的路径（ADR-0283）
-- **调整** `CloudEventsFormat.Encode` 写不出读得回来的文档时抛出 `MESSAGING_VALIDATION_002`：与规范属性同名的扩展、JSON 数据里重复的成员或孤立的代理项、超过 64 层的文档（ADR-0283）
+- **调整** `CloudEventsFormat.Encode` 写不出读得回来的文档时抛出 `MESSAGING_VALIDATION_002`：JSON 数据里重复的成员或孤立的代理项、超过 64 层的文档（ADR-0283）
 - **修复** 文档带 `data_base64` 而不写 `datacontenttype` 时读成 `application/octet-stream`，读出的信封写得回去（ADR-0283）
 - **修复** 发件箱的退避对任何尝试次数都饱和在 `MaxRetryDelay`；以前上限大于间隔的 2 的 30 次方倍时到不了上限（ADR-0283）
 - **修复** Redis 上被停止打断的投递不计尝试：重启后仍是原来的尝试号，最后一次尝试上被打断的消息不再不经处理就进死信（ADR-0284）
+- **新增** `EnvelopeExtensions.ReservedNames`：扩展属性名不能是 CloudEvents 的规范属性名与结构化 JSON 的成员名，构造信封时就拒绝，四个代理一致（ADR-0298）
+- **调整** 带 `dataschema` 的文档与 binary 的 `ce-dataschema`、`ce-data` 头是信封不合法，以前读成同名的扩展属性（ADR-0298）
+- **优化** Redis 收到停止信号后不再读取新条目，没读走的留在流里，由别的实例直接读到（ADR-0298）
+- **优化** Redis 上被停止打断的条目，别的实例下一次维护就接手，不用等满 `ClaimIdleTimeSeconds`（ADR-0298）
 
 ### 缓存
 
@@ -146,7 +155,10 @@
 - **调整** `IJobScheduler.RunsAsync` 改名 `ListRunsAsync`，`StatusesAsync(names)` 改名 `FindStatusesAsync`，扩展方法 `StatusAsync(name)` 改名 `FindStatusAsync`（ADR-0270）
 - **调整** `IJobStore` 的六个读取改名为 `ListTriggersAsync`、`ListRunsAsync`、`ListRunningRunsAsync`、`ListLastRunsAsync`、`ListCancelRequestedRunsAsync`、`ListNodesAsync`，`JobSchedulerConformance.StatusAsync` 改名 `GetStatusAsync`（ADR-0270）
 - **调整** cron 只按空格与制表符分段，别的空白出现即不合法；下一次触发与起点相差超过 1830 天一律无值，以前多收最多一个月（ADR-0286）
-- **修复** 步长很大的 cron 表达式 `TryParse` 不再抛 `IndexOutOfRangeException`（ADR-0286）
+- **调整** cron 步长不超过这一段能写的最大值，与 Quartz、cronie 一致，超过即不合法；以前收到 2147483647，很大的步长让 `TryParse` 抛 `IndexOutOfRangeException`（ADR-0286、ADR-0297）
+- **调整** 计划文本的读法与写法相同：只认单个空格，间隔是 `[d.]hh:mm:ss[.fffffff]`，次数不带前导 0，选项按 `tz=`、`start=`、`end=`、`calendar=` 的次序且不重复，时刻按 RFC 3339 读（ADR-0297）
+- **修复** `JobSchedule.FromCron` 只收 IANA 时区名，不再写出读不回来的 `tz=China Standard Time`（ADR-0297）
+- **修复** 跟在 cron 以外的计划后面的 `tz=` 读成不合法，不再悄悄丢掉（ADR-0297）
 
 ### 工作流
 

@@ -149,14 +149,25 @@ builder.Services.AddJob<NightlyReportJob>(new JobDefinition("reports.nightly", t
 | --- | --- |
 | `JobSchedule.Manual` | 只手动触发 |
 | `JobSchedule.Every(interval, repeatCount)` | 固定延迟：上一次运行完成后再等一个间隔；`repeatCount` 是总运行次数，空为无限 |
-| `JobSchedule.FromCron(expression, timeZoneId)` | cron 表达式；时区是 `TimeZoneInfo` 的 ID（IANA 或 Windows 均可），空为 UTC，找不到的时区抛 `ArgumentException` |
+| `JobSchedule.FromCron(expression, timeZoneId)` | cron 表达式；时区是 IANA tz 数据库的名字（`Asia/Shanghai`、`UTC`），空为 UTC；不合时区名的文法、本机的时区库里找不到，或是 `China Standard Time`、`UTC+12` 这类 Windows 的时区 ID，抛 `ArgumentException`（Windows ID 可用 `TimeZoneInfo.TryConvertWindowsIdToIanaId` 换成 IANA 名） |
 | `JobSchedule.Once(at)` | 在 `at` 运行一次 |
 
-每种计划都可以用 `with` 加三个窗口条件：`StartAt`（之前不运行，间隔计划的首次落在 `StartAt + 间隔`）、`EndAt`（之后没有下一次，触发器转为 `Complete`）与 `Calendar`（排除日历名）。计划能和文本互相转换：`ToString()` 产生 `every 00:10:00 x5`、`cron 0 0 9 * * MON-FRI tz=Asia/Shanghai` 这样的文本，尾部可带 `start=`、`end=`、`calendar=`；`JobSchedule.Parse` / `TryParse` 读回。存储以这段文本持久化，管理界面可以直接让用户填它。
+每种计划都可以用 `with` 加三个窗口条件：`StartAt`（之前不运行，间隔计划的首次落在 `StartAt + 间隔`）、`EndAt`（之后没有下一次，触发器转为 `Complete`）与 `Calendar`（排除日历名）。计划能和文本互相转换：`ToString()` 写出，`JobSchedule.Parse` / `TryParse` 读回，存储以这段文本持久化。读法与写法相同（规范 RFC-0013「计划的文本形式」）：
+
+| 部分 | 写法 |
+| --- | --- |
+| 分隔 | 各部分之间正好一个空格，开头与结尾没有空格；连着的空格、制表符、换行等别的空白出现在任何位置都不合法，cron 的各段之间在这里同样只是一个空格 |
+| 种类 | `manual`；`every <间隔>`、`every <间隔> x<次数>`；`cron <表达式>`；`once <时刻>`。种类、选项名与 `x` 区分大小写 |
+| 间隔 | `[d.]hh:mm:ss[.fffffff]`：天数不带前导 0、不足一天不写，时 00–23、分秒 00–59 各两位，不足一秒的部分正好七位、为 0 时不写（`00:10:00`、`1.02:03:04.0050000`）；大于 0 |
+| 次数 | 1 到 2147483647，不带前导 0 |
+| 时刻 | 读按 RFC 3339（必须有 `T`、秒与偏移，与截止时间同一条文法）；写出换算成 UTC、七位小数、`+00:00` |
+| 选项 | `tz=`（只跟在 cron 的表达式后面）、`start=`、`end=`、`calendar=`，按这个次序、每个至多一次；`=` 之后不能为空，日历名是作业名的文法，时区是本机时区库里查得到的 IANA 名 |
+
+例如 `every 00:10:00 x5`、`cron 0 0 9 * * MON-FRI tz=Asia/Shanghai start=2026-10-23T10:30:00.0000000+00:00`。框架写出的文本都读得回来；不合上表的（`00:10` 这样的间隔、`x05`、不带偏移的时刻、次序不对或重复的选项、跟在 cron 以外的种类后面的 `tz=`、Windows 的时区 ID）读不出，自己拼计划文本的地方改用工厂方法加 `ToString()`。时区在本机的时区库里查不到时整段文本读不出，读到这一行的存储操作随之失败：Linux 容器要装 `tzdata`。
 
 ### cron 文法
 
-`CronExpression` 精确到秒，采用 Quartz 风格的文法：5 段是 `分 时 日 月 周`（秒为 0），6 段是 `秒 分 时 日 月 周`，7 段再加 `年`（1970 到 2099，写 `*` 也只到 2099 年）。各段之间只用空格与制表符分隔，连着的算一个，两端的不计；换行、不换行空格等别的空白出现在表达式里即不合法，从配置或文件读来的表达式先 `Trim()`。每段支持 `*`、数值（可带前导 0）、列表 `a,b`、范围 `a-b`、步长 `*/n`、`a/n` 与 `a-b/n`：步长是 1 到 2147483647，单个值带步长（`5/15`）从该值取到这一段的最大值，范围不回绕；日与周可写 `?`（等同 `*`），整段正好是 `*` 或 `?` 才算不限定；月可写 `JAN` 到 `DEC`，周可写 `SUN` 到 `SAT`，名字与 `L`、`W` 不区分 ASCII 字母的大小写。日段另有 `L`（当月最后一天）、`L-n`（n 为 0 到 30）、`nW`（离 n 日最近的工作日，不跨月）、`LW`；周段另有 `nL` / `FRIL`（当月最后一个周 n）与 `n#k` / `FRI#2`（当月第 k 个周 n，k 为 1 到 5），周段的范围与步长在 0 到 7 里数、再把 7 归到 0。日和周同时限定时任一匹配即可。
+`CronExpression` 精确到秒，采用 Quartz 风格的文法：5 段是 `分 时 日 月 周`（秒为 0），6 段是 `秒 分 时 日 月 周`，7 段再加 `年`（1970 到 2099，写 `*` 也只到 2099 年）。各段之间只用空格与制表符分隔，连着的算一个，两端的不计；换行、不换行空格等别的空白出现在表达式里即不合法，从配置或文件读来的表达式先 `Trim()`。每段支持 `*`、数值（可带前导 0）、列表 `a,b`、范围 `a-b`、步长 `*/n`、`a/n` 与 `a-b/n`：步长是 1 到这一段能写的最大值（秒、分 59，时 23，日 31，月 12，周 7，年 2099，与 Quartz、cronie 一致；`*/60` 写在分上不合法，要每小时一次写 `0`），单个值带步长（`5/15`）从该值取到这一段的最大值，范围不回绕；日与周可写 `?`（等同 `*`），整段正好是 `*` 或 `?` 才算不限定；月可写 `JAN` 到 `DEC`，周可写 `SUN` 到 `SAT`，名字与 `L`、`W` 不区分 ASCII 字母的大小写。日段另有 `L`（当月最后一天）、`L-n`（n 为 0 到 30）、`nW`（离 n 日最近的工作日，不跨月）、`LW`；周段另有 `nL` / `FRIL`（当月最后一个周 n）与 `n#k` / `FRI#2`（当月第 k 个周 n，k 为 1 到 5），周段的范围与步长在 0 到 7 里数、再把 7 归到 0。日和周同时限定时任一匹配即可。
 
 ::: warning 不是 Quartz 文法的超集
 `0` 与 `7` 都是周日，`1` 是周一。Quartz 的 `1` 是周日、`7` 是周六，从 Quartz 照搬带星期数字的表达式会错一天，而且不会报错；写成 `MON`、`FRI` 这类名字可以避开。另外周段单独的 `L` 与反向范围（`FRI-MON`、`22-2`）这里不支持，解析报错。
