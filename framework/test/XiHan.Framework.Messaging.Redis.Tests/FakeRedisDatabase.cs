@@ -10,7 +10,7 @@ namespace XiHan.Framework.Messaging.Redis.Tests;
 /// 打桩的 <see cref="IDatabase"/>：一条流上预置的新条目，记录确认、认领、写入与退回的投递次数
 /// </summary>
 /// <remarks>
-/// 以 <see cref="DispatchProxy"/> 生成，只实现消费循环用到的成员：<c>StreamReadGroupAsync</c> 把预置的条目一次交出、之后为空；<c>StreamAcknowledgeAsync</c>、<c>StreamClaimAsync</c> 与 <c>StreamAddAsync</c> 记下调用；退回投递次数的脚本记下每一对条目 ID 与次数，别的脚本（维护）返回空数组；<c>StreamAutoClaimAsync</c> 没有可回收的条目。其余成员抛 <see cref="NotSupportedException"/>。不模拟待确认列表与投递次数，回收的行为只在真实 Redis 上验证
+/// 以 <see cref="DispatchProxy"/> 生成，只实现消费循环用到的成员：<c>StreamReadGroupAsync</c> 把预置的条目一次交出、之后为空；<c>StreamAcknowledgeAsync</c>、<c>StreamClaimAsync</c> 与 <c>StreamAddAsync</c> 记下调用；退回投递次数的脚本记下每一对条目 ID 与次数，别的脚本（维护）返回空数组，设了 <see cref="MaintenanceGate"/> 时等它放行；<c>StreamAutoClaimAsync</c> 没有可回收的条目。读取与回收各记下调用的次数。其余成员抛 <see cref="NotSupportedException"/>。不模拟待确认列表与投递次数，回收的行为只在真实 Redis 上验证
 /// </remarks>
 public class FakeRedisDatabase : DispatchProxy
 {
@@ -41,6 +41,29 @@ public class FakeRedisDatabase : DispatchProxy
     /// 停止打断的投递与停止时还没派发的条目，脚本把它们的次数设回减一后的值（ADR-0284）
     /// </remarks>
     public List<(string Id, int DeliveryCount)> Restored { get; } = [];
+
+    /// <summary>
+    /// <c>StreamReadGroupAsync</c> 被调用的次数
+    /// </summary>
+    public int Reads { get; private set; }
+
+    /// <summary>
+    /// <c>StreamAutoClaimAsync</c> 被调用的次数
+    /// </summary>
+    public int AutoClaims { get; private set; }
+
+    /// <summary>
+    /// 维护脚本的闸门
+    /// </summary>
+    /// <remarks>
+    /// 设了的话维护脚本先标记 <see cref="MaintenanceEntered"/>，等它完成才返回：用例借此在维护途中发出停止信号
+    /// </remarks>
+    public TaskCompletionSource? MaintenanceGate { get; set; }
+
+    /// <summary>
+    /// 维护脚本开始执行的信号
+    /// </summary>
+    public TaskCompletionSource MaintenanceEntered { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
     /// <summary>
     /// 写入过的条目：流键与字段，按顺序
@@ -88,11 +111,15 @@ public class FakeRedisDatabase : DispatchProxy
 
                     return Task.FromResult(RedisResult.Create((RedisValue)((pairs.Length - 2) / 2)));
                 case "ScriptEvaluateAsync":
-                    // 维护脚本：没有清理或整理任何东西
-                    return Task.FromResult(RedisResult.Create(Array.Empty<RedisValue>()));
+                    // 维护脚本：没有清理或整理任何东西；有闸门时等它放行，不在锁里等
+                    MaintenanceEntered.TrySetResult();
+                    var empty = RedisResult.Create(Array.Empty<RedisValue>());
+                    return MaintenanceGate is { } gate ? gate.Task.ContinueWith(_ => empty, TaskScheduler.Default) : Task.FromResult(empty);
                 case "StreamAutoClaimAsync":
+                    AutoClaims++;
                     return Task.FromResult(StreamAutoClaimResult.Null);
                 case "StreamReadGroupAsync":
+                    Reads++;
                     StreamEntry[] batch = [.. _entries];
                     _entries.Clear();
                     return Task.FromResult(batch);

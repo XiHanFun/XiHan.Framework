@@ -16,7 +16,8 @@ namespace XiHan.Framework.Messaging.Redis;
 /// </summary>
 /// <remarks>
 /// 竞争订阅在消费组 <see cref="RedisMessagingOptions.ConsumerGroup"/> 里，广播订阅在本实例独占的组 <c>&lt;ConsumerGroup&gt;@&lt;InstanceId&gt;</c> 里，消费者名都是实例标识。消费循环单线程：取新条目、依次派发、成功即确认；失败在原位重试，到上限进死信流（广播丢弃）。每个维护周期清理遗留的组与消费者、整理已确认的条目，并以 <c>XAUTOCLAIM</c> 回收超时未确认的条目。
-/// 尝试号就是待确认列表里的投递次数。被停止打断的投递不计尝试（RFC-0009「投递」第 3 条）：停止时把没有执行完的那一次、以及读到或认领到却还没派发的条目的投递次数退回一次（ADR-0284），回收之后仍是原来的尝试号；来不及退回（进程被强行终止、Redis 不可达）的那一次照旧计入，所以让进程崩溃的消息仍然会进死信
+/// 尝试号就是待确认列表里的投递次数。被停止打断的投递不计尝试（RFC-0009「投递」第 3 条）：停止时把没有执行完的那一次、以及读到或认领到却还没派发的条目的投递次数退回一次（ADR-0284），回收之后仍是原来的尝试号；来不及退回（进程被强行终止、Redis 不可达）的那一次照旧计入，所以让进程崩溃的消息仍然会进死信。
+/// 停止信号一到就不再发起新的认领与读取，没读走的条目留在流里由别的实例直接读到（ADR-0298）
 /// </remarks>
 internal sealed partial class RedisStreamConsumer
 {
@@ -203,17 +204,28 @@ internal sealed partial class RedisStreamConsumer
                     _cursor = _scanStart;
                 }
 
+                // 停止信号一到就不再发起新的认领与读取（维护或回收途中收到的也一样）：认领与读取都让投递次数加一、把条目挂到本消费者名下，
+                // 停下之前还得退回去，而且读走的新条目要等别的实例回收才有人处理；不读，它们留在流里，别的实例下一次读取就能读到
+                if (stopping.IsCancellationRequested)
+                {
+                    break;
+                }
+
                 // 一轮回收可能要分几次扫完：游标没回到起点就在下一次循环接着扫，期间照常取新条目
                 if (reclaiming)
                 {
                     handled += await ReclaimAsync(dispatch, stopping).ConfigureAwait(false);
                     reclaiming = _cursor != _scanStart;
+                    if (stopping.IsCancellationRequested)
+                    {
+                        break;
+                    }
                 }
 
                 var entries = await _database.StreamReadGroupAsync(_key, _group, _consumer, StreamPosition.NewMessages, _options.BatchSize).ConfigureAwait(false);
                 for (var index = 0; index < entries.Length; index++)
                 {
-                    // 停止时这一批剩下的条目不再派发：它们留在本消费者的待确认列表里，由别的实例回收
+                    // 停止时这一批剩下的条目不再派发（停止信号在读取途中到达）：它们留在本消费者的待确认列表里，由别的实例回收
                     // 读取已经让它们的投递次数成了 1，而它们一次也没有派发过：退回去，回收之后从第 1 次尝试起
                     if (stopping.IsCancellationRequested)
                     {

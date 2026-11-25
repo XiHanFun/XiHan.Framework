@@ -276,6 +276,46 @@ public sealed class RedisStreamBehaviorTests : IAsyncDisposable
     }
 
     [Fact]
+    public async Task StopDuringAReclaim_ReadsNoNewEntries_AndLeavesThemInTheStreamForTheNextInstance()
+    {
+        var database = RedisTestServer.Database();
+        // 一个读走了条目就消失的消费者；它消失之后又写入两条新条目，还没有任何消费者读过
+        await database.StreamCreateConsumerGroupAsync(Key, Group, StreamPosition.NewMessages, createStream: true);
+        await database.StreamAddAsync(Key, "envelope", CloudEventsFormat.Encode(Envelope("reclaimed-1")));
+        var lost = Assert.Single(await database.StreamReadGroupAsync(Key, Group, "ghost", StreamPosition.NewMessages, 10));
+        await database.StreamAddAsync(Key, "envelope", CloudEventsFormat.Encode(Envelope("fresh-1")));
+        await database.StreamAddAsync(Key, "envelope", CloudEventsFormat.Encode(Envelope("fresh-2")));
+        await Task.Delay(TimeSpan.FromSeconds(1.2));
+        var first = new DeliveryLog();
+        first.BlockingIds["reclaimed-1"] = 0;
+        var host = await StartAsync(first, [new(Topic, SubscriptionMode.Competing)]);
+        try
+        {
+            // 启动时的维护回收了消失的消费者留下的条目（空闲过了 1 秒的回收阈值），处理器等在取消令牌上
+            Assert.Single(await first.WaitAsync(static r => r.Delivery.Envelope.Id == "reclaimed-1", 1, _timeout));
+        }
+        finally
+        {
+            await host.DisposeAsync();
+        }
+
+        // 回收途中停止：不再读新条目，它们留在流里，没有投递给任何消费者，组的读取位置仍停在回收到的那一条上
+        // 以前消费循环退出之前还会再读一批：两条新条目挂在停下的消费者名下，要等别的实例回收（ADR-0298）
+        var pending = Assert.Single(await database.StreamPendingMessagesAsync(Key, Group, 10, RedisValue.Null));
+        Assert.Equal(lost.Id, pending.MessageId);
+        Assert.Equal(lost.Id, (await database.StreamGroupInfoAsync(Key)).Single(static g => g.Name == Group).LastDeliveredId);
+        Assert.Single(first.All);
+
+        // 接手的实例：回收到的条目仍是第 2 次尝试（回收加一，被打断的那一次已退回），两条新条目直接读到、从第 1 次尝试起
+        var second = new DeliveryLog();
+        await using var next = await StartAsync(second, [new(Topic, SubscriptionMode.Competing)]);
+        var received = await second.WaitAsync(static r => r.Delivery.Envelope.Id is "reclaimed-1" or "fresh-1" or "fresh-2", 3, _timeout);
+        Assert.Equal([("fresh-1", 1), ("fresh-2", 1), ("reclaimed-1", 2)], received.Select(static r => (r.Delivery.Envelope.Id, r.Delivery.Attempt)).Order());
+        await WaitUntilAsync(async () => (await database.StreamPendingAsync(Key, Group)).PendingMessageCount == 0);
+        Assert.False(await database.KeyExistsAsync(DeadLetterKey));
+    }
+
+    [Fact]
     public async Task Stop_RemovesTheBroadcastGroupAndItsStream_AndTheCompetingConsumer_ButKeepsTheCompetingGroup()
     {
         var database = RedisTestServer.Database();

@@ -2,7 +2,7 @@
 
 ## 状态
 
-已采纳（规范 RFC-0009「信封」与 `protocol/cloudevents.md` 已修订，`messaging/envelope-extensions.json` 与 `cloudevents-envelopes.json` 已补，Go 一致性模块的规则已改并回放通过；`EnvelopeExtensions` 新增 `ReservedNames`，`IsValidName` 排除保留名）。
+已采纳（规范 RFC-0009「信封」与 `protocol/cloudevents.md` 已修订，`messaging/envelope-extensions.json` 与 `cloudevents-envelopes.json` 已补，Go 一致性模块的规则已改并回放通过；`EnvelopeExtensions` 新增 `ReservedNames`，`IsValidName` 排除保留名；RFC-0009 的 Redis Provider 一节已修订，`Messaging.Redis` 的消费循环收到停止信号之后不再发起新的认领与读取，公开面不变）。
 
 ## 日期
 
@@ -20,6 +20,13 @@ ADR-0283 收紧信封读取时记下了一处没有改的（「没有解决的�
 
 读代码时另看到一处：清单里的 `dataschema` 是 CloudEvents 1.0 的可选属性，但框架的信封没有这个属性，`CloudEventDocument` 也没有这个成员。带 `dataschema` 的文档现在被读成名为 `dataschema` 的扩展属性，写出时照原样写成顶层成员——读写碰巧是对称的，信封却把一个规范属性当成了扩展属性。把它列为保留名之后，这样的文档就要换一种处理。
 
+### Redis 的消费循环停止之后又读了一批
+
+`RedisStreamConsumer.RunAsync` 每一轮依次做：到了周期就维护（`Maintain` 脚本）、回收（`XAUTOCLAIM`）一批并逐条投递、`XREADGROUP` 读一批新条目并逐条投递。停止信号只在两处看：读到的一批里每派发一条之前（停止就退回剩下的投递次数、跳出），与 `while` 的条件。
+
+- 回收途中收到停止信号：回收的那一批照 ADR-0284 退回、跳出，然后这一轮照样往下走，发出一次 `XREADGROUP`。读到的新条目一条也不派发，投递次数退回到 0，却已经挂在这个停下的消费者名下，进了组的待确认列表——别的实例的 `XREADGROUP >` 读不到它们，只能等它们空闲超过 `ClaimIdleTimeSeconds`（默认 60 秒）再回收。不读的话，它们留在流里，别的实例下一次读取（`PollIntervalSeconds`，默认 0.2 秒）就读到。ADR-0261 的「影响」与 ADR-0284 的「没有解决的」都记过这一条。
+- 维护途中收到停止信号也一样：维护之后照样回收一批、读一批，认领与读取都让投递次数加一，再退回去。
+
 ## 备选
 
 1. **保留名只拦写出，`IsValidName` 不变**：否决。这就是现状：内存代理不写出，同一个信封在不同代理上行为不同。
@@ -30,6 +37,8 @@ ADR-0283 收紧信封读取时记下了一处没有改的（「没有解决的�
 6. **保留名的原因与「不合文法」用同一句异常消息**：否决。`id` 完全合文法，「只能是小写字母与数字、不超过 20 个字符」说的不是它的问题；`MessageEnvelope` 对保留名另给一句（`… is reserved: it is a CloudEvents context attribute or a member of the JSON event format.`）。
 7. **删掉 `Encode` 写出之后的 JSON 文本检查**（扩展属性与规范属性同名的信封已经构造不出来）：否决。那道检查覆盖整份文档，JSON 数据里的重复成员、超过 64 层的嵌套与不成对的代理项转义仍然要靠它；它也是双保险——信封以后多承载一个规范属性而保留名漏了更新，写出的重复成员照样在发布时拦下。只把文档与注释里「扩展属性与规范属性同名」这一种原因去掉。
 8. **保留名不公开，只在 `IsValidName` 里用**：否决。清单是规范的一部分，回放向量要拿它比对；公开成只读列表 `EnvelopeExtensions.ReservedNames`，与 `BaggageMappings` 一样。
+9. **只在 `XREADGROUP` 之前看一次停止信号**：否决。维护途中收到的停止信号同样会让回收白白认领一批再退回；在回收之前也看一次，两处都不发起新的命令。
+10. **已经发出的 `XREADGROUP` 随停止信号取消**：做不到、也不需要。StackExchange.Redis 的命令不收取消令牌，发出去的读取 Redis 照样执行；拿到的条目照 ADR-0284 退回投递次数（第一条派发之前就看到停止信号）。
 
 ## 决策
 
@@ -39,10 +48,15 @@ ADR-0283 收紧信封读取时记下了一处没有改的（「没有解决的�
 4. **读取**：结构化 JSON 里的规范属性都由信封承载，不会落进扩展属性；带 `dataschema` 的文档按第 5 条不合法（备选 5）。binary 模式（`protocol/cloudevents.md`）的 `ce-dataschema`、`ce-data` 头同样不合法。插件协议传来的信封带保留名的扩展属性，`PluginEnvelopeMapper.FromProto` 照现有做法返回 `MESSAGING_VALIDATION_002`。
 5. **`CloudEventsFormat.Encode` 写出之后的检查保留**（备选 7）。
 
+### Redis 停止时不再读取（RFC-0009「Redis」）
+
+6. 消费循环在发起回收（`XAUTOCLAIM`）之前、回收之后发起读取（`XREADGROUP`）之前各看一次停止信号，收到即退出循环：不再发起新的认领与读取。已经发出的读取与认领拿到的条目照 ADR-0284 退回投递次数。
+
 ## 理由
 
 - 扩展属性名合不合法应当在一处判定、在构造时判定：信封是四个代理共用的值，代理之间不该有「这一家能发」的差别。
 - 保留名是规范的一部分，用清单写死比「写出时撞上重复成员」好理解，也好让别的语言照着做；Go 一致性模块按清单实现之后一次回放通过。
+- 停下的实例不该再从流里拿走条目：拿走了也不处理，只是把它们从「谁都能读」变成「等回收」。
 
 ## 影响
 
@@ -55,6 +69,10 @@ ADR-0283 收紧信封读取时记下了一处没有改的（「没有解决的�
 - **Go 一致性模块**：新增 `rules.EnvelopeExtensionReservedNames`，`IsEnvelopeExtensionName` 排除保留名（`DecodeCloudEvent` 随之拒绝带 `dataschema` 的文档）；`conformance.EnvelopeExtensionNames` 新增 `Reserved`。导出面只增。
 - **六个 SDK**：只认领 `core` 与 `plugin`，不认领 `messaging`，不受影响。插件经插件协议发给宿主的信封带保留名的扩展属性时由宿主拒绝（`MESSAGING_VALIDATION_002`）；SDK 在本地先拒绝更好，但不是必须。Go SDK 升 conformance 模块不用改代码。
 - **测试**：`EnvelopeExtensionVectorTests` 核对保留名与向量一致、信封对每个保留名都拒绝（`WithExtension` 与 `Extensions` 两条路）、合文法的保留名给出「保留」的原因、向量里有只比保留名多一个字符的合法名字；`MessageContractTests` 里「`Encode` 拒绝同名扩展」改为构造时就抛出；`CloudEventsHttpBindingTests` 新增 binary 模式 `ce-dataschema`、`ce-data` 两条。
+- **Redis 停止时**（行为变化，公开面不变）：回收或维护途中收到停止信号，消费循环不再读新条目，它们留在流里，别的实例下一次读取就读到、从第 1 次尝试起；以前被这个停下的实例读走、退回投递次数之后挂在它名下，要等 `ClaimIdleTimeSeconds` 过后才被别的实例回收。只有一个实例时没有区别：重启后的读取与回收都会拿到它们。
+- **Redis 的测试**：
+  - 打桩数据库（不需要 Redis）：`FakeRedisDatabase` 记下读取与回收的次数，维护脚本可以挂一道闸门；新增「维护途中收到停止信号：不再回收、不再读取」（改动之前回收与读取各一次，读到的条目被退回）。
+  - 真实 Redis（设置 `XIHAN_TEST_REDIS` 时）：新增「回收途中停止：新条目留在流里、组的读取位置停在回收到的那一条上，接手的实例直接读到它们、从第 1 次尝试起」（改动之前两条新条目挂在停下的消费者名下）。本机用临时容器跑过（Redis 8），改动之前这条失败、之后通过；CI 用 Redis 7。
 - **文档**：文档站 `messaging` 各页里扩展属性名的说明、`appendix/spec`、更新日志待改。
 
 ## 没有解决的

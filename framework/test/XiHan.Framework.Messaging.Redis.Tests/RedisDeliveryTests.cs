@@ -19,7 +19,7 @@ namespace XiHan.Framework.Messaging.Redis.Tests;
 /// 消费循环怎么了结一次投递（RFC-0009「投递」第 3、5 条，ADR-0261、ADR-0275）
 /// </summary>
 /// <remarks>
-/// 对打桩的数据库验证新条目的投递：成功确认，失败认领后原位重试、到上限竞争订阅写死信流再确认、广播订阅确认掉，无法解码的条目不派发、按订阅方式了结，停止打断的不确认并退回这一次的投递次数（ADR-0284），应用排空期间不接着原位重试。不需要 Redis；回收与投递次数由 <see cref="RedisStreamBehaviorTests"/> 在真实 Redis 上验证
+/// 对打桩的数据库验证新条目的投递：成功确认，失败认领后原位重试、到上限竞争订阅写死信流再确认、广播订阅确认掉，无法解码的条目不派发、按订阅方式了结，停止打断的不确认并退回这一次的投递次数（ADR-0284），停止信号到达之后不再认领与读取（ADR-0298），应用排空期间不接着原位重试。不需要 Redis；回收与投递次数由 <see cref="RedisStreamBehaviorTests"/> 在真实 Redis 上验证
 /// </remarks>
 public sealed class RedisDeliveryTests
 {
@@ -290,6 +290,37 @@ public sealed class RedisDeliveryTests
 
         // 三条都退回：被打断的一条，与还没轮到的两条
         Assert.Equal([("1-1", 1), ("1-2", 1), ("1-3", 1)], fake.Restored);
+    }
+
+    [Fact]
+    public async Task StopSignalledDuringMaintenance_StartsNoReclaimAndNoRead()
+    {
+        await using var host = await TestHost.StartAsync(static _ => { });
+        var (database, fake) = FakeRedisDatabase.Create(Entry("1-1", "new"));
+        var gate = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        fake.MaintenanceGate = gate;
+        var consumer = Consumer(host, database, SubscriptionMode.Competing);
+        var dispatched = 0;
+        using var stopping = new CancellationTokenSource();
+
+        var loop = consumer.RunAsync(
+            (_, _) =>
+            {
+                Interlocked.Increment(ref dispatched);
+                return ValueTask.FromResult(Result.Success());
+            },
+            stopping.Token);
+        await fake.MaintenanceEntered.Task.WaitAsync(_patience);
+        await stopping.CancelAsync();
+        gate.TrySetResult();
+        await loop.WaitAsync(_patience);
+
+        // 停止信号在维护途中到达：不再发起认领与读取，新条目留在流里，别的实例下一次读取就能读到（ADR-0298）
+        // 以前接着回收一轮、再读一批：读到的条目挂在本消费者名下，退回投递次数之后仍要等别的实例回收
+        Assert.Equal((0, 0), fake.Read(static f => (f.AutoClaims, f.Reads)));
+        Assert.Equal(0, dispatched);
+        Assert.Empty(fake.Restored);
+        Assert.Empty(fake.Acknowledged);
     }
 
     [Fact]
