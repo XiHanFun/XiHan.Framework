@@ -145,7 +145,7 @@ jobs:
           go: "true"
 
   test-database:
-    # Persistence.SqlSugar（PostgreSQL、SQL Server、MySQL）与 Workflow.Database（PostgreSQL）的门控用例：全套里最慢的两个测试程序集
+    # Persistence.SqlSugar 与 Workflow.Database 在 PostgreSQL、SQL Server、MySQL 上的门控用例：全套里最慢的两个测试程序集
     name: 测试（database）
     runs-on: ubuntu-latest
     timeout-minutes: 20
@@ -204,7 +204,7 @@ jobs:
           shard: database
 
   test-oracle:
-    # Persistence.SqlSugar 的 Oracle 门控用例（库结构读取与一致性套件，每个用例建删一个用户）。Oracle 镜像大、冷启动慢，
+    # Persistence.SqlSugar 与 Workflow.Database 的 Oracle 门控用例（库结构读取、一致性套件与查询列的回填，每个用例建删一个用户）。Oracle 镜像大、冷启动慢，
     # 单独一片：拉镜像与启动的时间不压在别的作业上
     name: 测试（oracle）
     runs-on: ubuntu-latest

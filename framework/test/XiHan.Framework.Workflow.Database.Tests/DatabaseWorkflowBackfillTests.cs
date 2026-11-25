@@ -10,7 +10,7 @@ namespace XiHan.Framework.Workflow.Database.Tests;
 /// 查询列的回填在本机的库上（RFC-0021「默认实现与 Provider」，ADR-0304）
 /// </summary>
 /// <remarks>
-/// SQLite（SqlSugar 与 EF Core 两种持久化），不靠外部的数据库服务：分批、可以重复跑（已是新值的行不再改写）、锁被占用时跳过、可取消、批大小有上限、按分区的逐项结果。真实数据库上同样的用例在 <see cref="PostgresWorkflowBackfillTests"/>
+/// SQLite（SqlSugar 与 EF Core 两种持久化），不靠外部的数据库服务：分批、可以重复跑（已是新值的行不再改写）、锁被占用时跳过、可取消、批大小有上限、按分区的逐项结果。真实数据库上同样的用例在 <see cref="ServerWorkflowBackfillTests"/> 的四个派生类里（PostgreSQL、SQL Server、MySQL、Oracle）
 /// </remarks>
 public sealed class DatabaseWorkflowBackfillTests
 {

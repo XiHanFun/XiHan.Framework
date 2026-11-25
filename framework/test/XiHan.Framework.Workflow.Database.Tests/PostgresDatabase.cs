@@ -17,7 +17,7 @@ namespace XiHan.Framework.Workflow.Database.Tests;
 /// <remarks>
 /// 服务器来自环境变量 <see cref="EnvironmentVariable"/>（不含 <c>Database</c> 的连接串，如 <c>Host=127.0.0.1;Port=5432;Username=postgres;Password=postgres</c>），未设置即跳过。PostgreSQL 是行级锁，租约表不必放到另一个库（与 <see cref="SqliteDatabase"/> 不同）；定义列表、实例与待办的关键字在这里翻译成区分大小写、带转义的 <c>LIKE … ESCAPE '!'</c>（ADR-0098），小写折叠的查询列与关键字按字面匹配（ADR-0099 第四节）。释放时停止宿主并删库
 /// </remarks>
-internal sealed class PostgresDatabase : IAsyncDisposable
+internal sealed class PostgresDatabase : IGatedDatabase
 {
     /// <summary>
     /// 指向测试服务器的环境变量名
@@ -71,9 +71,7 @@ internal sealed class PostgresDatabase : IAsyncDisposable
         return new PostgresDatabase(server, name);
     }
 
-    /// <summary>
-    /// 启动宿主：业务库绑定 <c>db</c>，开启 <c>InitTables</c>，关掉后台轮询（周期 1 小时）
-    /// </summary>
+    /// <inheritdoc />
     public async Task<TestHost> StartHostAsync(IEnumerable<KeyValuePair<string, string?>>? configuration = null, Action<IServiceCollection>? services = null, Action<AppBuilder>? configure = null)
     {
         // 内存配置不接受重复键：后给的覆盖默认的
@@ -114,9 +112,7 @@ internal sealed class PostgresDatabase : IAsyncDisposable
         maintenance.Ado.ExecuteCommand($"DROP DATABASE IF EXISTS \"{Name}\" WITH (FORCE)");
     }
 
-    /// <summary>
-    /// 停止宿主并删库
-    /// </summary>
+    /// <inheritdoc />
     public async ValueTask DisposeAsync()
     {
         if (_host is not null)

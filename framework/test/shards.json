@@ -31,7 +31,8 @@
       "variables": ["XIHAN_TEST_ORACLE"],
       "tools": [],
       "projects": [
-        "XiHan.Framework.Persistence.SqlSugar.Tests"
+        "XiHan.Framework.Persistence.SqlSugar.Tests",
+        "XiHan.Framework.Workflow.Database.Tests"
       ]
     }
   ]
