@@ -513,13 +513,13 @@ public abstract class BlobStoreConformance
     /// 用例 15：内容类型原样存取，写不出原值的在写入之前拒绝
     /// </summary>
     /// <remarks>
-    /// 写入、读出与把读出的值写回都不规范化：不去掉空参数，不改 <c>;</c> 两侧的空格。存储客户端写不出原值的，写入与分片上传的发起返回 VALIDATION_007（参数 <c>contentType</c>）且不写入（RFC-0012「契约」，ADR-0295）
+    /// 写入、读出与把读出的值写回都不规范化：不去掉空参数，不改 <c>;</c> 两侧的空格。存储客户端写不出原值的，写入与分片上传的发起返回 VALIDATION_007（参数 <c>contentType</c>）且不写入（RFC-0012「契约」，ADR-0295）。以空格结尾的不合文法、进不了存储；空格之后还有字符的（<c>text/plain ;</c>、参数之后跟着 <c>;</c>）照样原样存取（ADR-0308）
     /// </remarks>
     [Fact]
     public async Task ContentTypes_AreKeptAsGiven_OrRefusedBeforeWriting()
     {
         var store = await CreateStoreAsync().ConfigureAwait(false);
-        string[] contentTypes = ["text/plain", "text/plain; charset=utf-8", "multipart/mixed; boundary=\"a;b\"", "text/plain;", "text/plain; charset=utf-8;", "text/plain;;charset=utf-8", "text/plain;charset=utf-8", "text/plain ; charset=utf-8"];
+        string[] contentTypes = ["text/plain", "text/plain; charset=utf-8", "multipart/mixed; boundary=\"a;b\"", "text/plain;", "text/plain; charset=utf-8;", "text/plain;;charset=utf-8", "text/plain;charset=utf-8", "text/plain ; charset=utf-8", "text/plain ;", "text/plain; charset=utf-8 ;"];
         for (var index = 0; index < contentTypes.Length; index++)
         {
             var contentType = contentTypes[index];

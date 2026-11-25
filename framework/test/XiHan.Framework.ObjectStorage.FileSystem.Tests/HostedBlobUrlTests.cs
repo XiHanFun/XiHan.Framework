@@ -204,6 +204,29 @@ public sealed class HostedBlobUrlTests : IDisposable
     }
 
     [Fact]
+    public async Task Uploads_WithoutASignedContentType_RejectATrailingSpaceThatReachesTheEndpoint()
+    {
+        await using var app = await StartAsync();
+        using var client = app.GetTestClient();
+        var store = app.Services.GetRequiredService<IBlobStore>();
+        var signer = app.Services.GetRequiredService<IBlobUrlSigner>();
+        var upload = (await signer.SignAsync(new ContainerName(Container), new BlobKey("inbox/trailing.txt"), BlobUrlRequest.ForUpload(), CancellationToken.None)).ValueOrThrow();
+
+        // 以空格结尾的内容类型不合文法（ADR-0308）。Kestrel 照 RFC 9110 先去掉请求头首尾的空白，这样的值到不了端点；
+        // 进程内的测试服务器原样转交请求头，端点照文法回 400、不写入。测试用的 HttpClient 会把 .NET 解析得了的值改写后再发
+        // （text/plain; charset=utf-8 发出去去掉了结尾的空格），所以只用它解析不了、原样发出的值
+        foreach (var contentType in new[] { "text/plain; ", "text/plain; charset=utf-8; " })
+        {
+            using var trailing = new ByteArrayContent(Encoding.UTF8.GetBytes("x"));
+            Assert.True(trailing.Headers.TryAddWithoutValidation("Content-Type", contentType));
+            using var rejected = await client.PutAsync(upload.Url, trailing);
+            Assert.Equal((HttpStatusCode.BadRequest, ObjectStorageErrors.ContentTypeInvalid), (rejected.StatusCode, await CodeOf(rejected)));
+        }
+
+        Assert.False((await store.ExistsAsync(new ContainerName(Container), new BlobKey("inbox/trailing.txt"), CancellationToken.None)).ValueOrThrow());
+    }
+
+    [Fact]
     public async Task StoreBoundSigner_ServesNamedStores_AndBindsTheStoreIntoTheSignature()
     {
         await using var app = await StartAsync(

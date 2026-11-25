@@ -183,7 +183,7 @@ public sealed record BlobUrlRequest
     private static string? ContentTypeOrNull(string? contentType)
         => contentType is null || BlobPutOptions.IsValidContentType(contentType)
             ? contentType
-            : throw new ArgumentException($"The content type must be a media type 'type/subtype', optionally followed by non-empty ';' parameters of printable ASCII, at most {BlobPutOptions.MaxContentTypeLength} characters.", nameof(contentType));
+            : throw new ArgumentException($"The content type must be a media type 'type/subtype', optionally followed by ';' parameters of printable ASCII, not ending with a space and at most {BlobPutOptions.MaxContentTypeLength} characters long.", nameof(contentType));
 
     /// <summary>
     /// 可选的保存文件名：给了就不能是空白、不能含控制字符、不能过长

@@ -49,7 +49,7 @@ public sealed partial record BlobPutOptions
     public string ContentType
     {
         get => field;
-        init => field = IsValidContentType(value) ? value : throw new ArgumentException($"The content type must be a media type 'type/subtype', optionally followed by ';' parameters of printable ASCII, at most {MaxContentTypeLength} characters.", nameof(value));
+        init => field = IsValidContentType(value) ? value : throw new ArgumentException($"The content type must be a media type 'type/subtype', optionally followed by ';' parameters of printable ASCII, not ending with a space and at most {MaxContentTypeLength} characters long.", nameof(value));
     } = DefaultContentType;
 
     /// <summary>
@@ -103,7 +103,7 @@ public sealed partial record BlobPutOptions
     /// 内容类型是否合法
     /// </summary>
     /// <remarks>
-    /// 媒体类型 <c>type/subtype</c>，两段都是 HTTP 的 token 字符，可跟若干个 <c>;</c> 起头的参数，整体 1 到 <see cref="MaxContentTypeLength"/> 个字符。参数照 RFC 9110 的 <c>*( OWS ";" OWS [ parameter ] )</c>：每个 <c>;</c> 两侧可以有空格（只取空格，不收制表符），参数可以为空——<c>text/plain;</c>、结尾多出的 <c>;</c> 与连续的 <c>;</c> 都合法；不为空的参数是不含 <c>;</c> 的可打印 ASCII 与空格，不解析引号（RFC-0012，ADR-0282、ADR-0295）
+    /// 媒体类型 <c>type/subtype</c>，两段都是 HTTP 的 token 字符，可跟若干个 <c>;</c> 起头的参数，整体 1 到 <see cref="MaxContentTypeLength"/> 个字符。参数照 RFC 9110 的 <c>*( OWS ";" OWS [ parameter ] )</c>：每个 <c>;</c> 两侧可以有空格（只取空格，不收制表符），参数可以为空——<c>text/plain;</c>、结尾多出的 <c>;</c> 与连续的 <c>;</c> 都合法；不为空的参数是不含 <c>;</c> 的可打印 ASCII 与空格，不解析引号（RFC-0012，ADR-0282、ADR-0295）。整串不以空格结尾：HTTP 的字段值不含首尾空白，靠 HTTP 头存内容类型的存储存不住它，<c>text/plain; </c> 与 <c>text/plain; charset=utf-8 </c> 不合法（ADR-0308）
     /// </remarks>
     public static bool IsValidContentType([NotNullWhen(true)] string? contentType)
         => contentType is { Length: > 0 and <= MaxContentTypeLength } && MediaType().IsMatch(contentType);
@@ -123,8 +123,8 @@ public sealed partial record BlobPutOptions
     /// 媒体类型的匹配
     /// </summary>
     /// <remarks>
-    /// token 字符取 RFC 9110。参数可以为空，所以第一个 <c>;</c>（之前可以有空格）之后是任意的可打印 ASCII 与空格：这样一串在每个 <c>;</c> 处都能切成可以为空的参数，与逐段写的文法是同一个集合，也没有嵌套的量词可回溯；参数内部不细分，不解析引号，不含制表与换行
+    /// token 字符取 RFC 9110。参数可以为空，所以第一个 <c>;</c>（之前可以有空格）之后是任意的可打印 ASCII 与空格：这样一串在每个 <c>;</c> 处都能切成可以为空的参数，与逐段写的文法是同一个集合，也没有嵌套的量词可回溯；参数内部不细分，不解析引号，不含制表与换行。<c>;</c> 之后要么为空，要么最后一个字符不是空格：整串不以空格结尾（ADR-0308）
     /// </remarks>
-    [GeneratedRegex(@"^[!#$%&'*+.^_`|~0-9A-Za-z-]+/[!#$%&'*+.^_`|~0-9A-Za-z-]+(?: *;[\x20-\x7E]*)?\z")]
+    [GeneratedRegex(@"^[!#$%&'*+.^_`|~0-9A-Za-z-]+/[!#$%&'*+.^_`|~0-9A-Za-z-]+(?: *;(?:[\x20-\x7E]*[\x21-\x7E])?)?\z")]
     private static partial Regex MediaType();
 }

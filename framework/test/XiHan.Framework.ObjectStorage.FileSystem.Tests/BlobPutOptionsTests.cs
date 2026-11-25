@@ -2,6 +2,7 @@
 // See the LICENSE file in the project root for full license text.
 
 using XiHan.Framework.ObjectStorage.Abstractions.Blobs;
+using XiHan.Framework.ObjectStorage.Abstractions.Signing;
 
 namespace XiHan.Framework.ObjectStorage.FileSystem.Tests;
 
@@ -42,7 +43,7 @@ public sealed class BlobPutOptionsTests
         }
 
         // RFC 9110 的参数可以为空（ADR-0295）：ADR-0282 曾拒绝这几种写法，宿主代收的上传回 400，野外的客户端确有这样发的；照收且原样保存
-        foreach (var valid in new[] { "text/plain;", "text/plain; ", "text/plain ;", "text/plain; charset=utf-8;", "text/plain; charset=utf-8; ", "text/plain;;charset=utf-8", "text/plain; ;charset=utf-8" })
+        foreach (var valid in new[] { "text/plain;", "text/plain ;", "text/plain; charset=utf-8;", "text/plain;;charset=utf-8", "text/plain; ;charset=utf-8" })
         {
             Assert.True(BlobPutOptions.IsValidContentType(valid), valid);
             Assert.Equal(valid, new BlobPutOptions { ContentType = valid }.ContentType);
@@ -53,6 +54,27 @@ public sealed class BlobPutOptionsTests
         {
             Assert.False(BlobPutOptions.IsValidContentType(invalid), invalid);
             Assert.Throws<ArgumentException>(() => new BlobPutOptions { ContentType = invalid });
+        }
+    }
+
+    [Fact]
+    public void ContentType_MustNotEndWithASpace()
+    {
+        // HTTP 的字段值不含首尾空白，靠 HTTP 头存内容类型的存储存不住结尾的空格（ADR-0308）：以空格结尾的哪种写法都不收
+        foreach (var invalid in new[] { "text/plain; ", "text/plain;  ", "text/plain ; ", "text/plain; charset=utf-8 ", "text/plain; charset=utf-8; ", "text/plain;; ", "text/plain; charset=\"a\" " })
+        {
+            Assert.False(BlobPutOptions.IsValidContentType(invalid), invalid);
+            var thrown = Assert.Throws<ArgumentException>(() => new BlobPutOptions { ContentType = invalid });
+            Assert.Contains("not ending with a space", thrown.Message, StringComparison.Ordinal);
+            Assert.Throws<ArgumentException>(() => BlobUrlRequest.ForUpload(null, invalid));
+        }
+
+        // 空格之后还有字符就照收，原样保存
+        foreach (var valid in new[] { "text/plain ;", "text/plain; charset=utf-8 ;", "text/plain;  ;", "text/plain; charset=\"a \"", "text/plain; charset=utf-8 ; format=flowed" })
+        {
+            Assert.True(BlobPutOptions.IsValidContentType(valid), valid);
+            Assert.Equal(valid, new BlobPutOptions { ContentType = valid }.ContentType);
+            Assert.Equal(valid, BlobUrlRequest.ForUpload(null, valid).ContentType);
         }
     }
 
