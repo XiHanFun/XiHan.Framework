@@ -19,7 +19,7 @@ $OutputEncoding = [System.Text.UTF8Encoding]::new($false)
 $framework = Split-Path -Parent $PSScriptRoot
 $project = Join-Path $framework 'test/XiHan.Framework.Cli.Tests/XiHan.Framework.Cli.Tests.csproj'
 
-& dotnet build $project -c Release
+& dotnet build $project -c Release -m:4 -nr:false
 if ($LASTEXITCODE -ne 0) { throw 'Build failed.' }
 
 # 生成：只有清单测试会因变量改写文件，其余测试照常运行，失败也不影响这一步
@@ -32,7 +32,7 @@ finally {
 }
 
 # 工具把索引作为嵌入资源打进程序集：重新构建后再核对一遍
-& dotnet build $project -c Release
+& dotnet build $project -c Release -m:4 -nr:false
 if ($LASTEXITCODE -ne 0) { throw 'Build failed.' }
 & dotnet test --project $project -c Release --no-build
 if ($LASTEXITCODE -ne 0) { throw 'Tests failed after regenerating the catalog; fix Knowledge/configuration.json by the reported differences.' }
