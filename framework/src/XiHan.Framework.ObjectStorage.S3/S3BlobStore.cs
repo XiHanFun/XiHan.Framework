@@ -1,6 +1,7 @@
 // Copyright (c) XiHanFun Contributors. Licensed under the MIT License.
 // See the LICENSE file in the project root for full license text.
 
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Net;
 using Amazon.Runtime;
@@ -21,7 +22,7 @@ namespace XiHan.Framework.ObjectStorage.S3;
 /// S3 对象存储
 /// </summary>
 /// <remarks>
-/// 容器即桶，键即对象键。不覆盖写入用条件请求（<c>If-None-Match: *</c>）保证原子，已存在返回 <see cref="ObjectStorageErrors.BlobExists"/>；服务是否认条件写入要先探明（ADR-0089、ADR-0090）：特性启动或命名实例建出时探一次，没探明就在后台重试，这期间不覆盖的写入与分片上传返回 <see cref="ObjectStorageErrors.ConditionalWriteUnconfirmed"/>，探明不认或选项关闭条件写入时一律返回 <see cref="ObjectStorageErrors.ConditionalWriteUnavailable"/>；批量删除先逐键 HEAD 得知是否存在，再一次 <c>DeleteObjects</c>；列举经 <c>ListObjectsV2</c>，条目只有键、长度、ETag 与修改时间（内容类型为默认值、自定义元数据为空，需要时再 HEAD）。范围读取经 <c>Range</c> 请求头；分片上传直接映射 S3 的 multipart（不覆盖的完成带 <c>If-None-Match: *</c>）；预签名地址由 SDK 本地签出（签名 V4），客户端直连存储。不存在的键与桶映射为 <see cref="ObjectStorageErrors.BlobNotFound"/>，其余服务端与网络错误映射为 <see cref="ObjectStorageErrors.StoreUnavailable"/>。内容类型原样存取：SDK 写不出原值的（<see cref="S3ContentTypeHeader"/>）写入与分片上传的发起返回 <see cref="ObjectStorageErrors.ContentTypeUnsupported"/>，不发请求；读取时 SDK 按 .NET 的写法交出它解析得了的值（ADR-0295）。没有公开构造（ADR-0266，公开面不出现 SDK 的类型）：缺省实例由 <see cref="S3ObjectStorageFeature"/> 建出，客户端归容器所有，释放实例什么都不做；命名实例由 <see cref="S3BlobStoreProvider"/> 按定义建出（经 <c>BlobStores</c>，或直接调它的 <c>CreateAsync</c>），自己建客户端并在后台重试探测，释放实例即停止重试、释放客户端
+/// 容器即桶，键即对象键。不覆盖写入用条件请求（<c>If-None-Match: *</c>）保证原子，已存在返回 <see cref="ObjectStorageErrors.BlobExists"/>；服务是否认条件写入要先探明（ADR-0089、ADR-0090）：特性启动或命名实例建出时探一次，没探明就在后台重试，这期间不覆盖的写入与分片上传返回 <see cref="ObjectStorageErrors.ConditionalWriteUnconfirmed"/>，探明不认或选项关闭条件写入时一律返回 <see cref="ObjectStorageErrors.ConditionalWriteUnavailable"/>；批量删除先逐键 HEAD 得知是否存在，再一次 <c>DeleteObjects</c>；列举经 <c>ListObjectsV2</c>，条目只有键、长度、ETag 与修改时间（内容类型为默认值、自定义元数据为空，需要时再 HEAD）。范围读取经 <c>Range</c> 请求头；分片上传直接映射 S3 的 multipart（不覆盖的完成带 <c>If-None-Match: *</c>）；预签名地址由 SDK 本地签出（签名 V4），客户端直连存储。不存在的键与桶映射为 <see cref="ObjectStorageErrors.BlobNotFound"/>，其余服务端与网络错误映射为 <see cref="ObjectStorageErrors.StoreUnavailable"/>，服务应答成功却缺了必需的内容同此（发起分片上传的应答没有可用的上传标识，ADR-0302）。内容类型原样存取：SDK 写不出原值的（<see cref="S3ContentTypeHeader"/>）写入与分片上传的发起返回 <see cref="ObjectStorageErrors.ContentTypeUnsupported"/>，不发请求；读取时 SDK 按 .NET 的写法交出它解析得了的值（ADR-0295）。没有公开构造（ADR-0266，公开面不出现 SDK 的类型）：缺省实例由 <see cref="S3ObjectStorageFeature"/> 建出，客户端归容器所有，释放实例什么都不做；命名实例由 <see cref="S3BlobStoreProvider"/> 按定义建出（经 <c>BlobStores</c>，或直接调它的 <c>CreateAsync</c>），自己建客户端并在后台重试探测，释放实例即停止重试、释放客户端
 /// </remarks>
 [ApiLevel(Stability.Stable, "5.0")]
 public sealed partial class S3BlobStore : IBlobStore, IBlobMultipartStore, IBlobUrlSigner, IDisposable, IAsyncDisposable
@@ -40,6 +41,22 @@ public sealed partial class S3BlobStore : IBlobStore, IBlobMultipartStore, IBlob
     /// 一次 DeleteObjects 允许的最大键数
     /// </summary>
     private const int DeleteBatchSize = 1000;
+
+    /// <summary>
+    /// 句柄收得下的最长上传标识
+    /// </summary>
+    /// <remarks>
+    /// 同 <see cref="BlobMultipartUpload"/> 构造的公开前置条件（1 到 1024 个可见字符）
+    /// </remarks>
+    private const int MaxUploadIdLength = 1024;
+
+    /// <summary>
+    /// 发起的应答没有可用的上传标识时 <c>reason</c> 的文本
+    /// </summary>
+    /// <remarks>
+    /// 固定文本，不带应答里的值（ADR-0302）
+    /// </remarks>
+    private const string UploadIdMissingReason = "InitiateMultipartUpload returned no usable UploadId";
 
     /// <summary>
     /// S3 客户端
@@ -447,6 +464,14 @@ public sealed partial class S3BlobStore : IBlobStore, IBlobMultipartStore, IBlob
                 }
 
                 var response = await _client.InitiateMultipartUploadAsync(request, cancellationToken).ConfigureAwait(false);
+                // 服务回了成功却没给当得了句柄的上传标识，是不合规的应答：按服务端错误返回，不让句柄的构造把 ArgumentException 抛给调用方。
+                // 不重发：服务端可能已经建了这个上传，没有标识放弃不了，留给桶的生命周期规则清理（ADR-0302）
+                if (!IsUsableUploadId(response.UploadId))
+                {
+                    LogUploadIdMissing(_logger, container.Value);
+                    return Unavailable(UploadIdMissingReason);
+                }
+
                 return Result.Success(new BlobMultipartUpload(container, key, response.UploadId) { Overwrite = options.Overwrite });
             }
             catch (AmazonS3Exception exception) when (!ensured && _options.EnsureBuckets && IsNoSuchBucket(exception))
@@ -716,6 +741,15 @@ public sealed partial class S3BlobStore : IBlobStore, IBlobMultipartStore, IBlob
     private static bool IsNoSuchUpload(AmazonS3Exception exception) => exception.ErrorCode == "NoSuchUpload";
 
     /// <summary>
+    /// 应答里的上传标识当得了句柄
+    /// </summary>
+    /// <remarks>
+    /// 照 <see cref="BlobMultipartUpload"/> 构造的公开前置条件先判：1 到 <see cref="MaxUploadIdLength"/> 个字符，不含空白与控制字符
+    /// </remarks>
+    private static bool IsUsableUploadId([NotNullWhen(true)] string? uploadId)
+        => uploadId is { Length: > 0 and <= MaxUploadIdLength } && !uploadId.Any(static ch => char.IsWhiteSpace(ch) || char.IsControl(ch));
+
+    /// <summary>
     /// 分片上传不存在或已结束
     /// </summary>
     private static Error UploadNotFound(BlobMultipartUpload upload)
@@ -951,4 +985,13 @@ public sealed partial class S3BlobStore : IBlobStore, IBlobMultipartStore, IBlob
     /// </summary>
     [LoggerMessage(Level = LogLevel.Warning, Message = "An S3 operation of the blob store failed.")]
     private static partial void LogOperationFailed(ILogger logger, Exception exception);
+
+    /// <summary>
+    /// 发起分片上传的应答没有可用的上传标识
+    /// </summary>
+    /// <remarks>
+    /// 不带应答里的值：它可能很长，也可能带控制字符
+    /// </remarks>
+    [LoggerMessage(Level = LogLevel.Warning, Message = "The S3 service answered InitiateMultipartUpload for bucket '{Bucket}' without a usable upload ID.")]
+    private static partial void LogUploadIdMissing(ILogger logger, string bucket);
 }

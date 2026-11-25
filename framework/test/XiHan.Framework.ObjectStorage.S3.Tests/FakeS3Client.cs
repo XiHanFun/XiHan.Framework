@@ -72,6 +72,14 @@ public class FakeS3Client : DispatchProxy
     public Func<string, Exception?> Fault { get; set; } = static _ => null;
 
     /// <summary>
+    /// 发起分片上传时应答里的上传标识
+    /// </summary>
+    /// <remarks>
+    /// 缺省每次一个新的 GUID；换掉它模拟不合规的应答：返回 <see langword="null"/> 时应答不带标识，也可以返回空串或当不了句柄的标识。只有非空的标识记为未结束的上传
+    /// </remarks>
+    public Func<string?> NextUploadId { get; set; } = static () => Guid.NewGuid().ToString("N");
+
+    /// <summary>
     /// 挂起直到取消的请求名
     /// </summary>
     public string? Hang { get; set; }
@@ -294,8 +302,12 @@ public class FakeS3Client : DispatchProxy
     private InitiateMultipartUploadResponse Initiate(InitiateMultipartUploadRequest request)
     {
         RequireBucket(request.BucketName);
-        var id = Guid.NewGuid().ToString("N");
-        _uploads.Add(id);
+        var id = NextUploadId();
+        if (!string.IsNullOrEmpty(id))
+        {
+            _uploads.Add(id);
+        }
+
         return new InitiateMultipartUploadResponse { UploadId = id, HttpStatusCode = HttpStatusCode.OK };
     }
 
