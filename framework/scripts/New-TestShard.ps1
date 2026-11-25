@@ -4,6 +4,7 @@
 
 .DESCRIPTION
     分片表只列要外部服务或工具链的测试项目；没列进任何分片的测试项目归 core
+    测试项目与 framework/test/Directory.Build.props 的判定相同：test 下名字以 .Tests 结尾、有同名项目文件的目录；给测试项目引用的类库（如 XiHan.Framework.Testing.Workspace）不进筛选器
     筛选器写到 framework/artifacts/shards/<分片>.slnf，只含这一片的测试项目，被引用的正式包与示例由项目引用带出
     CI 的各测试作业与本机用同一份：dotnet build <筛选器> -c Release，再 dotnet test --solution <筛选器> -c Release --no-build
 
@@ -26,16 +27,27 @@ $framework = Split-Path -Parent $PSScriptRoot
 $testRoot = Join-Path $framework 'test'
 $table = Get-Content -Raw -Encoding utf8 (Join-Path $testRoot 'shards.json') | ConvertFrom-Json
 
-# 测试项目 = test 下有同名项目文件的目录，与架构测试的口径一致
+# test/Directory.Build.props 只按项目名的后缀设测试项目的属性与包：后缀从它的条件里取，不在这里另写一份（ADR-0307）
+$props = Get-Content -Raw -Encoding utf8 (Join-Path $testRoot 'Directory.Build.props')
+$suffixes = @([regex]::Matches($props, "\`$\(MSBuildProjectName\.EndsWith\('([^']+)'\)\)") |
+    ForEach-Object { $_.Groups[1].Value } |
+    Sort-Object -Unique -CaseSensitive)
+if ($suffixes.Count -ne 1) {
+    throw "framework/test/Directory.Build.props should mark test projects by one name suffix in '`$(MSBuildProjectName.EndsWith(...))' conditions, but it uses $($suffixes.Count)."
+}
+
+$suffix = $suffixes[0]
+
+# 测试项目 = test 下名字以这个后缀结尾、有同名项目文件的目录，与架构测试的口径一致；别的是给测试项目引用的类库，dotnet test 不运行，不进筛选器
 $all = @(Get-ChildItem $testRoot -Directory |
-    Where-Object { Test-Path (Join-Path $_.FullName "$($_.Name).csproj") } |
+    Where-Object { $_.Name.EndsWith($suffix, [StringComparison]::Ordinal) -and (Test-Path (Join-Path $_.FullName "$($_.Name).csproj")) } |
     ForEach-Object { $_.Name } |
     Sort-Object)
 
 $listed = @($table.shards | ForEach-Object { $_.projects } | Sort-Object -Unique)
 $unknown = @($listed | Where-Object { $_ -notin $all })
 if ($unknown.Count -gt 0) {
-    throw "framework/test/shards.json lists test projects that do not exist: $($unknown -join ', ')."
+    throw "framework/test/shards.json lists names that are not test projects under framework/test (a directory ending in '$suffix' with a project file of its name): $($unknown -join ', ')."
 }
 
 if ($Shard -eq 'core') {

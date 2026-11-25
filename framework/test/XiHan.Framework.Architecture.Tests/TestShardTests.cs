@@ -31,7 +31,7 @@ public sealed partial class TestShardTests
         Assert.DoesNotContain(shards, static s => s.Name == CoreShard);
 
         var missing = shards.SelectMany(s => s.Projects.Where(p => !known.Contains(p)).Select(p => $"{s.Name}: {p}")).ToList();
-        Assert.True(missing.Count == 0, "Test projects listed in 'test/shards.json' that do not exist: " + string.Join(", ", missing));
+        Assert.True(missing.Count == 0, "Names listed in 'test/shards.json' that are not test projects under 'test': " + string.Join(", ", missing));
 
         var empty = shards.Where(static s => s.Projects.Count == 0).Select(static s => s.Name).ToList();
         Assert.True(empty.Count == 0, "Shards without test projects: " + string.Join(", ", empty));

@@ -21,6 +21,14 @@ internal static class Workspace
     public const string PackagePrefix = "XiHan.Framework.";
 
     /// <summary>
+    /// 测试项目的名字后缀
+    /// </summary>
+    /// <remarks>
+    /// 与 <c>test/Directory.Build.props</c> 的条件相同：它只给名字以这个后缀结尾的项目设测试项目的属性与包（ADR-0300），<c>TestProjectNamingTests</c> 核对两处一致（ADR-0307）
+    /// </remarks>
+    public const string TestProjectSuffix = ".Tests";
+
+    /// <summary>
     /// 框架工作区根目录
     /// </summary>
     /// <remarks>
@@ -49,12 +57,20 @@ internal static class Workspace
     public static IReadOnlyList<SourceProject> SourceProjects { get; } = LoadProjects(SourceRoot);
 
     /// <summary>
+    /// <c>test</c> 下的全部项目（有同名项目文件的目录），按项目名排序
+    /// </summary>
+    /// <remarks>
+    /// 测试项目与给测试项目引用的类库（如 <c>XiHan.Framework.Testing.Workspace</c>）；目录与子命名空间规则对它们同样生效
+    /// </remarks>
+    public static IReadOnlyList<SourceProject> TestDirectoryProjects { get; } = LoadProjects(TestRoot);
+
+    /// <summary>
     /// 全部测试项目，按项目名排序
     /// </summary>
     /// <remarks>
-    /// 目录与子命名空间规则对它们同样生效
+    /// <see cref="TestDirectoryProjects"/> 里名字以 <see cref="TestProjectSuffix"/> 结尾的，与 <c>test/Directory.Build.props</c> 和 <c>New-TestShard.ps1</c> 的口径相同（ADR-0307）
     /// </remarks>
-    public static IReadOnlyList<SourceProject> TestProjects { get; } = LoadProjects(TestRoot);
+    public static IReadOnlyList<SourceProject> TestProjects { get; } = TestDirectoryProjects.Where(static p => IsTestProjectName(Path.GetFileNameWithoutExtension(p.ProjectPath))).ToList();
 
     /// <summary>
     /// 全部示例与基准项目（有同名项目文件的目录），按项目名排序
@@ -67,7 +83,13 @@ internal static class Workspace
     /// <summary>
     /// 正式包、测试、示例与基准：命名空间门禁检查的全部项目
     /// </summary>
-    public static IEnumerable<SourceProject> AllProjects => SourceProjects.Concat(TestProjects).Concat(SampleProjects);
+    public static IEnumerable<SourceProject> AllProjects => SourceProjects.Concat(TestDirectoryProjects).Concat(SampleProjects);
+
+    /// <summary>
+    /// 项目名是否标明测试项目
+    /// </summary>
+    /// <param name="projectName">项目名，即项目文件名去掉扩展名（MSBuild 的 <c>MSBuildProjectName</c>）</param>
+    public static bool IsTestProjectName(string projectName) => projectName.EndsWith(TestProjectSuffix, StringComparison.Ordinal);
 
     /// <summary>
     /// 枚举目录下的全部 C# 源文件，跳过构建输出
