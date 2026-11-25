@@ -512,6 +512,24 @@ internal sealed class ExpressionCompiler
 
                     return JsonValue.Create(Math.Round(number, (int)digits, MidpointRounding.AwayFromZero));
                 };
+            case "format":
+                Arity(name, args, 2, 2);
+                return scope =>
+                {
+                    var value = args[0](scope);
+                    var places = args[1](scope);
+                    var number = Number(value, "format");
+                    var digits = Number(places, "format");
+
+                    // 小数位数必须是 0 到 28 的整数：与 round 不同，2.5 位小数没有意义，不截去小数部分将就
+                    if (digits != decimal.Truncate(digits) || digits < 0 || digits > MaxScale)
+                    {
+                        throw new ExpressionException(WorkflowMessages.ExpressionNumberOutOfRange, MessageArguments.Of(("operator", "format")));
+                    }
+
+                    // 舍入与 round 相同（正好一半时远离零），结果是字符串：定长的文本不是数字，带结尾的零
+                    return JsonValue.Create(WorkflowNumberText.Format(Math.Round(number, (int)digits, MidpointRounding.AwayFromZero), (int)digits));
+                };
             case "tonumber":
                 Arity(name, args, 1, 1);
                 return scope => JsonValue.Create(Number(args[0](scope), "toNumber"));

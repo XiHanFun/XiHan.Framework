@@ -979,7 +979,7 @@ public static class WorkflowMessages
     /// 运算的操作数或结果超出数字范围
     /// </summary>
     /// <remarks>
-    /// 参数：<c>expression</c>、<c>operator</c>（<c>+</c>、<c>-</c>、<c>*</c>、<c>/</c> 的结果放不下，或 <c>round</c> 的小数位数不在 0 到 28 之间）
+    /// 参数：<c>expression</c>、<c>operator</c>（<c>+</c>、<c>-</c>、<c>*</c>、<c>/</c> 的结果放不下，<c>round</c> 的小数位数不在 0 到 28 之间，或 <c>format</c> 的小数位数不是 0 到 28 之间的整数）
     /// </remarks>
     public const string ExpressionNumberOutOfRange = "workflow.expression.number_out_of_range";
 

@@ -199,6 +199,35 @@ internal static class WorkflowNumberText
     }
 
     /// <summary>
+    /// 数字写成恰好 <paramref name="places"/> 位小数的定长文本
+    /// </summary>
+    /// <remarks>
+    /// 内置函数 <c>format</c> 的写法（RFC-0021「表达式」的「内置函数」，ADR-0296）：规范文本补零到 <paramref name="places"/> 位小数，<paramref name="places"/> 为 0 时不写小数点；零（含舍入出来的负零）没有负号，不带千分位、不随区域。调用方先把数字舍入到不超过 <paramref name="places"/> 位小数
+    /// </remarks>
+    /// <param name="number">已舍入的数字</param>
+    /// <param name="places">小数位数，0 到 28</param>
+    public static string Format(decimal number, int places)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegative(places);
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(places, MaxScale);
+        var text = Format(number);
+        var point = text.IndexOf('.', StringComparison.Ordinal);
+        var decimals = point < 0 ? 0 : text.Length - point - 1;
+        if (decimals > places)
+        {
+            throw new ArgumentOutOfRangeException(nameof(number), number, $"The number has more than {places} decimal places.");
+        }
+
+        if (places == 0)
+        {
+            return text;
+        }
+
+        // 规范文本不带结尾的零：补够位数，整数再补小数点
+        return point < 0 ? string.Concat(text, ".", new string('0', places)) : string.Concat(text, new string('0', places - decimals));
+    }
+
+    /// <summary>
     /// 数字的规范文本
     /// </summary>
     /// <remarks>
