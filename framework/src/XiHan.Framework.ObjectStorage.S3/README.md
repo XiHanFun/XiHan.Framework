@@ -30,7 +30,7 @@ builder.AddXiHan(xihan => xihan.UseFullProfile().UseFeature<S3ObjectStorageFeatu
 { "XiHan": { "ObjectStorage": { "S3": { "ServiceUrl": "http://localhost:9000", "Region": "us-east-1", "AccessKey": "<access-key>", "SecretKey": "<secret-key>", "ForcePathStyle": true, "HealthBucket": "uploads" } } } }
 ```
 
-`ServiceUrl` 为空时访问 Amazon S3；`AccessKey` 与 `SecretKey` 都为空时走 SDK 默认凭据链。本包是缺省存储时不要再装 `HostedBlobUrlFeature`。服务不支持条件写入时可设 `ConditionalWrites = false`，后果见概念文档。
+`ServiceUrl` 为空时访问 Amazon S3；`AccessKey` 与 `SecretKey` 都为空时走 SDK 默认凭据链，只给一项是配置错误（绑定的 `accessKey`、`secretKey` 覆盖之后再核对）。本包是缺省存储时不要再装 `HostedBlobUrlFeature`。服务不支持条件写入时可设 `ConditionalWrites = false`，后果见概念文档。
 
 端点、区域、密钥与路径风格都在配置里，临时凭据、超时、重试与代理也是。下面这几个键都是可选的，不写时客户端与 SDK 的缺省相同；配置节 `XiHan:ObjectStorage:S3` 与命名实例的设置里都能写：
 
@@ -42,7 +42,16 @@ builder.AddXiHan(xihan => xihan.UseFullProfile().UseFeature<S3ObjectStorageFeatu
 | `ProxyHost`、`ProxyPort` | 主机名或 IP 字面量；1 到 65535 | HTTP 代理，两项必须同时给出。主机不带协议、端口、路径与用户信息 |
 | `ProxyUserName`、`ProxyPassword` | 字符串 | 代理的凭据，可选，两项必须同时给出，且只能跟着代理给 |
 
-成组的键只给了一部分、数值不在范围内都是配置错误：缺省实例启动失败，命名实例登记失败（`OBJECTSTORAGE_VALIDATION_003`）。`SessionToken`、`ProxyUserName`、`ProxyPassword` 与两项密钥一样是凭据，打印选项时遮蔽，报错里不带它们的值。命名实例的客户端过出站地址策略：配了代理时过策略的是代理的地址，端点由代理去连，要限制经代理能到的目标就在代理上做。
+成组的键只给了一部分、数值不在范围内都是配置错误：缺省实例启动失败，命名实例登记失败（`OBJECTSTORAGE_VALIDATION_003`）。`SessionToken`、`ProxyUserName`、`ProxyPassword` 与两项密钥一样是凭据，打印选项时遮蔽，报错里不带它们的值；`ServiceUrl` 不合法时报错同样只写键名。命名实例的客户端过出站地址策略：配了代理时过策略的是代理的地址，端点由代理去连，要限制经代理能到的目标就在代理上做。
+
+命名实例（经 `BlobStores` 按定义登记）的设置可能由租户填写，下面两项只由运营方写在配置节 `XiHan:ObjectStorage:S3` 里，不在实例设置的键里，实例自己打不开；缺省实例不受它们约束：
+
+| 键 | 缺省 | 打开之后 |
+| --- | --- | --- |
+| `NamedInstancesUseAmbientCredentials` | `false` | 命名实例可以不给两项密钥，用宿主的 AWS 凭据链；没打开时不给密钥即登记失败 |
+| `NamedInstancesAllowProxy` | `false` | 命名实例可以在设置里配 `ProxyHost` 等四项；没打开时配了代理即登记失败（原因不带代理的取值）。策略放行了一个内网代理时，能填实例设置的人就能经它到达策略本来拒绝的地址，打开前先想清楚 |
+
+两项不是布尔值时，容器建 Provider（首次取用 `BlobStores`）即抛出。
 
 选项仍然表达不了的（自定义凭据链等），在装配前向容器注册自己的 `IAmazonS3`，缺省实例沿用它，上面这几个键对它不起作用；这时应用直接用到 AWS SDK 的类型，SDK 升大版本要跟着改。本包的公开类型不带 SDK 的类型，`S3BlobStore` 没有公开构造：缺省实例由特性建出，更多实例经 `BlobStores` 按定义登记。
 

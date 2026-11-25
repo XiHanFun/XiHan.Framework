@@ -212,14 +212,15 @@ public sealed class S3ClientSettingsWireTests
     /// 按设置建出一个不探测条件写入的存储
     /// </summary>
     /// <remarks>
-    /// <paramref name="named"/> 为真时经 <see cref="S3BlobStoreProvider"/> 按定义建出，客户端过出站地址策略；为假时照缺省实例的做法，从配置节读选项、用 SDK 自己的传输。两者的设置键相同
+    /// <paramref name="named"/> 为真时经 <see cref="S3BlobStoreProvider"/> 按定义建出，客户端过出站地址策略，运营方打开了命名实例的代理开关（ADR-0294）；为假时照缺省实例的做法，从配置节读选项、用 SDK 自己的传输。两者的设置键相同
     /// </remarks>
     private static async Task<OwnedStore> CreateAsync(bool named, LogCapture logs, bool allowLoopback, params (string Key, string Value)[] settings)
     {
         (string Key, string Value)[] all = [.. settings, ("AccessKey", "ak"), ("SecretKey", "sk"), ("ConditionalWrites", "false")];
         if (named)
         {
-            var provider = new S3BlobStoreProvider(TimeProvider.System, logs, new OutboundAddressPolicy(new OutboundAddressOptions { AllowLoopback = allowLoopback }, logs));
+            var operatorSettings = new ConfigurationBuilder().AddInMemoryCollection([new(S3BlobStoreProvider.AllowProxyKey, "true")]).Build();
+            var provider = new S3BlobStoreProvider(TimeProvider.System, logs, new OutboundAddressPolicy(new OutboundAddressOptions { AllowLoopback = allowLoopback }, logs), operatorSettings);
             var definition = new BlobStoreDefinition("tenant-a", S3BlobStoreProvider.ProviderName, all.ToDictionary(static pair => pair.Key, static pair => pair.Value, StringComparer.Ordinal));
             var created = (await provider.CreateAsync(definition, CancellationToken.None)).ValueOrThrow();
             return new OwnedStore(created, (IAsyncDisposable)created);

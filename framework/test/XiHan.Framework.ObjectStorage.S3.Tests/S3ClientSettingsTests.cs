@@ -318,11 +318,12 @@ public sealed class S3ClientSettingsTests
     public async Task ANamedInstance_BuildsItsClientFromItsOwnSettings()
     {
         S3ObjectStorageOptions? seen = null;
+        // 设置里配了代理：运营方打开了命名实例的代理开关（ADR-0294）
         var provider = new S3BlobStoreProvider(TimeProvider.System, new LogCapture(), options =>
         {
             seen = options;
             return FakeS3Client.Create().AsClient();
-        });
+        }, ambientCredentials: false, allowProxy: true);
         var settings = FullSettings().Append(("ConditionalWrites", "false")).ToDictionary(static pair => pair.Item1, static pair => pair.Item2, StringComparer.Ordinal);
 
         var created = await provider.CreateAsync(new BlobStoreDefinition("tenant-a", S3BlobStoreProvider.ProviderName, settings), CancellationToken.None);
@@ -338,7 +339,7 @@ public sealed class S3ClientSettingsTests
     public async Task ANamedInstanceWithAPartialGroup_IsAnInvalidDefinition_AndLeaksNoCredential()
     {
         var logs = new LogCapture();
-        var provider = new S3BlobStoreProvider(TimeProvider.System, logs, static _ => throw new InvalidOperationException("No client may be built for an invalid definition."));
+        var provider = new S3BlobStoreProvider(TimeProvider.System, logs, static _ => throw new InvalidOperationException("No client may be built for an invalid definition."), ambientCredentials: false, allowProxy: true);
         var settings = new Dictionary<string, string>
         {
             ["ServiceUrl"] = "http://tenant-store:9000",

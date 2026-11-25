@@ -197,7 +197,7 @@ public sealed class S3ObjectStorageFeature : IHostedFeature, IShadowAwareFeature
     /// 按选项创建客户端
     /// </summary>
     /// <remarks>
-    /// 有端点时指向兼容服务并只在服务端要求时计算 / 校验校验和（多数兼容服务不支持分块尾部校验和），没有端点时按区域访问 Amazon S3；没有密钥时走 SDK 默认凭据链，带会话令牌时是临时凭据；超时、尝试次数与代理只在选项里给了才设（ADR-0281）
+    /// 有端点时指向兼容服务并只在服务端要求时计算 / 校验校验和（多数兼容服务不支持分块尾部校验和），没有端点时按区域访问 Amazon S3；两项密钥都没有时走 SDK 默认凭据链，带会话令牌时是临时凭据；超时、尝试次数与代理只在选项里给了才设（ADR-0281）
     /// 缺省实例用它，端点与代理都是运维配的，不过出站地址策略（ADR-0117）
     /// </remarks>
     internal static AmazonS3Client CreateClient(S3ObjectStorageOptions options) => CreateClient(options, null);
@@ -266,7 +266,7 @@ public sealed class S3ObjectStorageFeature : IHostedFeature, IShadowAwareFeature
     /// 按选项得出客户端的凭据
     /// </summary>
     /// <remarks>
-    /// 带会话令牌的是临时凭据（ADR-0281）；两项密钥都没有时为 <see langword="null"/>，客户端走 SDK 的默认凭据链。只有令牌没有密钥在读取选项时已经拒绝
+    /// 带会话令牌的是临时凭据（ADR-0281）；两项密钥都没有时为 <see langword="null"/>，客户端走 SDK 的默认凭据链。只有一项密钥（ADR-0294）、只有令牌没有密钥在读取选项时已经拒绝，手工构造的选项在这里同样拒绝
     /// </remarks>
     internal static AWSCredentials? CreateCredentials(S3ObjectStorageOptions options)
     {

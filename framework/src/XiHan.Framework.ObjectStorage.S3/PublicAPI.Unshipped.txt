@@ -63,6 +63,7 @@ XiHan.Framework.ObjectStorage.S3.S3ObjectStorageOptions.ServiceUrl.get -> string
 XiHan.Framework.ObjectStorage.S3.S3ObjectStorageOptions.ServiceUrl.init -> void
 XiHan.Framework.ObjectStorage.S3.S3ObjectStorageOptions.SessionToken.get -> string?
 XiHan.Framework.ObjectStorage.S3.S3ObjectStorageOptions.SessionToken.init -> void
+const XiHan.Framework.ObjectStorage.S3.S3BlobStoreProvider.AllowProxyKey = "XiHan:ObjectStorage:S3:NamedInstancesAllowProxy" -> string!
 const XiHan.Framework.ObjectStorage.S3.S3BlobStoreProvider.AmbientCredentialsKey = "XiHan:ObjectStorage:S3:NamedInstancesUseAmbientCredentials" -> string!
 const XiHan.Framework.ObjectStorage.S3.S3BlobStoreProvider.ProviderName = "s3" -> string!
 const XiHan.Framework.ObjectStorage.S3.S3ObjectStorageFeature.ConnectionBinding = "objectstorage" -> string!

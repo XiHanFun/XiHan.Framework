@@ -72,7 +72,7 @@ public sealed class S3NamedInstanceCredentialTests
             settings["SecretKey"] = secretKey;
         }
 
-        var provider = new S3BlobStoreProvider(TimeProvider.System, NullLoggerFactory.Instance, _ => FakeS3Client.Create().AsClient(), ambientCredentials);
+        var provider = new S3BlobStoreProvider(TimeProvider.System, NullLoggerFactory.Instance, _ => FakeS3Client.Create().AsClient(), ambientCredentials, allowProxy: false);
         return await provider.CreateAsync(new BlobStoreDefinition("tenant-a", S3BlobStoreProvider.ProviderName, settings), CancellationToken.None);
     }
 

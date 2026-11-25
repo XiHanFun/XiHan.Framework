@@ -14,7 +14,8 @@ namespace XiHan.Framework.ObjectStorage.S3;
 /// </summary>
 /// <remarks>
 /// <para>从配置节 <c>XiHan:ObjectStorage:S3</c> 显式读取：<c>ServiceUrl</c>、<c>Region</c>、<c>AccessKey</c>、<c>SecretKey</c>、<c>SessionToken</c>、<c>ForcePathStyle</c>、<c>EnsureBuckets</c>、<c>HealthBucket</c>、<c>ConditionalWrites</c>、<c>HealthProbeIntervalSeconds</c>，以及客户端的设置 <c>RequestTimeoutSeconds</c>、<c>MaxAttempts</c>、<c>ProxyHost</c>、<c>ProxyPort</c>、<c>ProxyUserName</c>、<c>ProxyPassword</c>（ADR-0281）；绑定 <c>objectstorage</c> 存在时其主值与属性（<c>region</c>、<c>accessKey</c>、<c>secretKey</c>、<c>sessionToken</c>、<c>forcePathStyle</c>）逐项覆盖配置，空白的不算给出（RFC-0016「资源绑定与配置节」）。命名实例（Provider <c>s3</c>）的设置用同样的键（不含 <c>HealthProbeIntervalSeconds</c>）。</para>
-/// <para>成组的设置必须给全：会话令牌要有两项密钥，代理的主机与端口、用户名与口令各自成对，用户名与口令只能跟着代理给。<see cref="FromConfiguration(IConfiguration)"/> 与 <see cref="FromSettings"/> 读完即核对，只给了一部分抛出 <see cref="ArgumentException"/>；消息里只写键名，不带令牌、主机、用户名与口令的值。</para>
+/// <para>成组的设置必须给全：两项密钥成对（ADR-0294），会话令牌要有两项密钥，代理的主机与端口、用户名与口令各自成对，用户名与口令只能跟着代理给。<see cref="FromConfiguration(IConfiguration)"/> 在绑定覆盖之后、<see cref="FromSettings"/> 读完即核对，只给了一部分抛出 <see cref="ArgumentException"/>；消息里只写键名，不带令牌、主机、用户名与口令的值。</para>
+/// <para>不合法的值同样抛出 <see cref="ArgumentException"/>，消息带键名；带出的原值只限数值与布尔值，服务端点不合法时也只报键名：写成带用户信息的地址时口令不能进异常与日志（ADR-0294）。</para>
 /// </remarks>
 [ApiLevel(Stability.Stable, "5.0")]
 public sealed record S3ObjectStorageOptions
@@ -28,14 +29,14 @@ public sealed record S3ObjectStorageOptions
     /// 服务端点（如 <c>http://localhost:9000</c>、<c>https://oss-cn-hangzhou.aliyuncs.com</c>）
     /// </summary>
     /// <remarks>
-    /// 空表示按 <see cref="Region"/> 访问 Amazon S3
+    /// 空表示按 <see cref="Region"/> 访问 Amazon S3。不合法时抛出的消息不带原值：写成带用户信息的地址（<c>http://user:pass@host</c>）时口令不会进异常与日志（ADR-0294）
     /// </remarks>
     public string? ServiceUrl
     {
         get => field;
-        init => field = value is null || Uri.TryCreate(value, UriKind.Absolute, out var uri) && (uri.Scheme == Uri.UriSchemeHttp || uri.Scheme == Uri.UriSchemeHttps)
+        init => field = value is null || IsServiceUrl(value)
             ? value
-            : throw new ArgumentException($"The service URL '{value}' must be an absolute http or https URL.", nameof(value));
+            : throw new ArgumentException("The service URL must be an absolute http or https URL.", nameof(value));
     }
 
     /// <summary>
@@ -54,13 +55,16 @@ public sealed record S3ObjectStorageOptions
     /// 访问密钥 ID
     /// </summary>
     /// <remarks>
-    /// 与 <see cref="SecretKey"/> 都为空时用 AWS SDK 的默认凭据链（环境变量、配置文件、实例角色）。是访问密钥的一半，打印选项时与 <see cref="SecretKey"/> 一样遮蔽（ADR-0089）
+    /// 与 <see cref="SecretKey"/> 都为空时用 AWS SDK 的默认凭据链（环境变量、配置文件、实例角色）；只给一项是配置错误，读取选项时抛出，不悄悄退回凭据链（ADR-0294）。是访问密钥的一半，打印选项时与 <see cref="SecretKey"/> 一样遮蔽（ADR-0089）
     /// </remarks>
     public string? AccessKey { get; init; }
 
     /// <summary>
     /// 访问密钥
     /// </summary>
+    /// <remarks>
+    /// 必须与 <see cref="AccessKey"/> 同时给出或都不给
+    /// </remarks>
     public string? SecretKey { get; init; }
 
     /// <summary>
@@ -240,7 +244,10 @@ public sealed record S3ObjectStorageOptions
         {
             if (!string.IsNullOrWhiteSpace(value.Value))
             {
-                options = options with { ServiceUrl = value.Value };
+                // 绑定的主值常是 Secret 里的整串地址：报错只说是哪个绑定，不带原值
+                options = IsServiceUrl(value.Value)
+                    ? options with { ServiceUrl = value.Value }
+                    : throw new ArgumentException($"The value of binding '{S3ObjectStorageFeature.ConnectionBinding}' must be an absolute http or https URL.");
             }
 
             if (BoundText(value, "region") is { } boundRegion)
@@ -269,7 +276,7 @@ public sealed record S3ObjectStorageOptions
             }
         }
 
-        // 绑定覆盖之后再核对成组的设置：令牌与密钥可以一半来自绑定、一半来自配置节
+        // 绑定覆盖之后再核对成组的设置：两项密钥、令牌与密钥都可以一半来自绑定、一半来自配置节
         return options.RequireComplete(ConfigurationSection + ":");
     }
 
@@ -304,11 +311,17 @@ public sealed record S3ObjectStorageOptions
     /// 核对成组的设置都给全了
     /// </summary>
     /// <remarks>
-    /// 会话令牌要有两项密钥；代理的主机与端口成对，用户名与口令成对且只能跟着代理给。只给一部分时照着用，要么悄悄退回凭据链、要么悄悄不走代理，所以一律拒绝。消息只写键名（<paramref name="prefix"/> 是键的前缀），不带任何值
+    /// 两项密钥成对（ADR-0294）；会话令牌要有两项密钥；代理的主机与端口成对，用户名与口令成对且只能跟着代理给。只给一部分时照着用，要么悄悄退回凭据链、要么悄悄不走代理，所以一律拒绝。消息只写键名（<paramref name="prefix"/> 是键的前缀），不带任何值
     /// </remarks>
     /// <exception cref="ArgumentException">成组的设置只给了一部分</exception>
     internal S3ObjectStorageOptions RequireComplete(string prefix)
     {
+        // 只给一项密钥时 SDK 会忽略它、改用默认凭据链：配置的人以为用的是这把钥匙，实际是宿主的身份
+        if ((AccessKey is null) != (SecretKey is null))
+        {
+            throw new ArgumentException($"'{prefix}AccessKey' and '{prefix}SecretKey' must be set together.");
+        }
+
         if (SessionToken is not null && (AccessKey is null || SecretKey is null))
         {
             throw new ArgumentException($"'{prefix}SessionToken' requires both '{prefix}AccessKey' and '{prefix}SecretKey'.");
@@ -342,7 +355,6 @@ public sealed record S3ObjectStorageOptions
     {
         var options = new S3ObjectStorageOptions
         {
-            ServiceUrl = Text(read, "ServiceUrl"),
             AccessKey = Text(read, "AccessKey"),
             SecretKey = Text(read, "SecretKey"),
             SessionToken = Text(read, "SessionToken"),
@@ -350,6 +362,14 @@ public sealed record S3ObjectStorageOptions
             ProxyUserName = Text(read, "ProxyUserName"),
             ProxyPassword = Text(read, "ProxyPassword"),
         };
+        if (Text(read, "ServiceUrl") is { } serviceUrl)
+        {
+            // 先判再赋值，报错带键名而不带原值：端点写成带用户信息的地址时口令不能出现在消息里（ADR-0294）
+            options = IsServiceUrl(serviceUrl)
+                ? options with { ServiceUrl = serviceUrl }
+                : throw new ArgumentException($"'{prefix}ServiceUrl' must be an absolute http or https URL.");
+        }
+
         if (Text(read, "Region") is { } region)
         {
             options = options with { Region = region };
@@ -409,10 +429,19 @@ public sealed record S3ObjectStorageOptions
     /// 解析布尔值
     /// </summary>
     /// <remarks>
-    /// 不是 <c>true</c> / <c>false</c> 时抛出，<paramref name="name"/> 是报错用的全名
+    /// 不是 <c>true</c> / <c>false</c> 时抛出，<paramref name="name"/> 是报错用的全名。用到它的键都是开关，不是机密，原值照写便于排查
     /// </remarks>
     private static bool ParseBoolean(string text, string name)
         => bool.TryParse(text, out var value) ? value : throw new ArgumentException($"{name} must be 'true' or 'false', but was '{text}'.");
+
+    /// <summary>
+    /// 是否是服务端点的合法写法
+    /// </summary>
+    /// <remarks>
+    /// 绝对的 http 或 https 地址
+    /// </remarks>
+    private static bool IsServiceUrl(string value)
+        => Uri.TryCreate(value, UriKind.Absolute, out var uri) && (uri.Scheme == Uri.UriSchemeHttp || uri.Scheme == Uri.UriSchemeHttps);
 
     /// <summary>
     /// 是否是代理主机的合法写法
