@@ -1,8 +1,8 @@
 // Copyright (c) XiHanFun Contributors. Licensed under the MIT License.
 // See the LICENSE file in the project root for full license text.
 
-using System.Text;
 using XiHan.Framework.Primitives;
+using XiHan.Framework.Workflow.Abstractions.Values;
 
 namespace XiHan.Framework.Workflow.Abstractions;
 
@@ -24,14 +24,6 @@ public static class WorkflowKeyword
     public const char FieldSeparator = '\u001F';
 
     /// <summary>
-    /// 带点的大写 I（U+0130）
-    /// </summary>
-    /// <remarks>
-    /// Unicode 的简单小写映射是 <c>i</c>（U+0069），不变文化不转换它（ADR-0296）
-    /// </remarks>
-    private const char DottedCapitalI = 'İ';
-
-    /// <summary>
     /// 规范化关键字：去掉首尾空白后折叠
     /// </summary>
     /// <returns>折叠后的关键字；为 <see langword="null"/>、空或只有空白时为 <see langword="null"/>（不过滤）</returns>
@@ -45,38 +37,14 @@ public static class WorkflowKeyword
     /// 折叠一段文本
     /// </summary>
     /// <remarks>
-    /// 逐个码位取 Unicode 的简单小写映射（UnicodeData.txt 的 Simple_Lowercase_Mapping），不做 SpecialCasing 的完全映射，也不随上下文与区域（RFC-0021「定义」的「关键字的小写」，ADR-0296）：<c>İ</c>（U+0130）折成 <c>i</c>，<c>Σ</c> 总是折成 <c>σ</c>，基本多文种平面以外的字母同样折叠，孤立的代理项不变。映射取自平台的 Unicode 数据（<see cref="Rune.ToLowerInvariant"/>），只有 U+0130 由这里补上：不变文化不转换它。简单小写映射不跨平面，折叠前后的长度相同。幂等：折叠过的文本再折叠不变
+    /// 逐个码位取 Unicode 的简单小写映射（UnicodeData.txt 的 Simple_Lowercase_Mapping），不做 SpecialCasing 的完全映射，也不随上下文与区域（RFC-0021「定义」的「关键字的小写」，ADR-0296）：<c>İ</c>（U+0130）折成 <c>i</c>，<c>Σ</c> 总是折成 <c>σ</c>，基本多文种平面以外的字母同样折叠，孤立的代理项不变；映射与表达式的 <c>lower</c> 是同一份（ADR-0303），结果以平台所带的 Unicode 数据为准。之后把字段分隔符换成空格。简单小写映射不跨平面，折叠前后的长度相同。幂等：折叠过的文本再折叠不变
     /// </remarks>
     public static string Fold(string text)
     {
         ArgumentNullException.ThrowIfNull(text);
-        return string.Create(text.Length, text, static (span, source) =>
-        {
-            for (var index = 0; index < source.Length; index++)
-            {
-                var c = source[index];
-                if (char.IsHighSurrogate(c) && index + 1 < source.Length && char.IsLowSurrogate(source[index + 1]))
-                {
-                    // 平面以外的字母按整个码位映射：逐个码元取小写会把它们原样留下
-                    var lowered = Rune.ToLowerInvariant(new Rune(c, source[index + 1]));
-                    if (lowered.EncodeToUtf16(span[index..]) != 2)
-                    {
-                        throw new InvalidOperationException($"The lowercase mapping of U+{char.ConvertToUtf32(c, source[index + 1]):X} leaves the supplementary planes.");
-                    }
 
-                    index++;
-                    continue;
-                }
-
-                // 分隔符换成空格，关键字里就不会有它，一次包含判断不跨字段；按字面匹配交给持久化（ADR-0099 第四节）
-                span[index] = c switch
-                {
-                    FieldSeparator => ' ',
-                    DottedCapitalI => 'i',
-                    _ => char.ToLowerInvariant(c),
-                };
-            }
-        });
+        // 分隔符换成空格，关键字里就不会有它，一次包含判断不跨字段；按字面匹配交给持久化（ADR-0099 第四节）
+        return WorkflowCaseMapping.ToLower(text).Replace(FieldSeparator, ' ');
     }
 
     /// <summary>

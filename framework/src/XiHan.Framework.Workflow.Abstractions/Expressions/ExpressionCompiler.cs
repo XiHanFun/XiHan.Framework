@@ -531,10 +531,11 @@ internal sealed class ExpressionCompiler
                 };
             case "upper":
                 Arity(name, args, 1, 1);
-                return run => JsonValue.Create(ReadText(run, args[0](run)).ToUpperInvariant());
+                // 逐个码位的简单大写映射，与关键字的折叠同一份映射（ADR-0303）
+                return run => JsonValue.Create(WorkflowCaseMapping.ToUpper(ReadText(run, args[0](run))));
             case "lower":
                 Arity(name, args, 1, 1);
-                return run => JsonValue.Create(ReadText(run, args[0](run)).ToLowerInvariant());
+                return run => JsonValue.Create(WorkflowCaseMapping.ToLower(ReadText(run, args[0](run))));
             case "trim":
                 Arity(name, args, 1, 1);
                 return run => JsonValue.Create(ReadText(run, args[0](run)).Trim());

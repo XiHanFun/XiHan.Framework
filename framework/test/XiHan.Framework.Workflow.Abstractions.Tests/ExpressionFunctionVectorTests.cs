@@ -57,6 +57,12 @@ public sealed class ExpressionFunctionVectorTests
         Assert.Contains(_vectors.Values, static vector => vector.Expression.StartsWith("format(", StringComparison.Ordinal) && vector.Type == "string" && vector.Text.EndsWith(".00", StringComparison.Ordinal));
         Assert.Contains(_vectors.Values, static vector => vector.Expression.StartsWith("format(", StringComparison.Ordinal) && vector.Expression.EndsWith(", 0)", StringComparison.Ordinal) && !vector.Text.Contains('.'));
         Assert.Contains(_vectors.Errors, static vector => vector.MessageKey == WorkflowMessages.ExpressionNumberOutOfRange && vector.Arguments["operator"]?.GetValue<string>() == "format");
+
+        // upper / lower 是简单大小写映射（ADR-0303）：不变文化不转换的 U+0130 与 U+0131、平面以外的字母、没有简单映射而不变的字符都要有用例
+        Assert.Contains(_vectors.Values, static vector => vector.Expression == "lower('İ')" && vector.Text == "i");
+        Assert.Contains(_vectors.Values, static vector => vector.Expression == "upper('ı')" && vector.Text == "I");
+        Assert.Contains(_vectors.Values, static vector => vector.Expression.StartsWith("upper(", StringComparison.Ordinal) && vector.Expression.Any(char.IsSurrogate) && vector.Text.Any(char.IsSurrogate) && !vector.Expression.Contains(vector.Text, StringComparison.Ordinal));
+        Assert.Contains(_vectors.Values, static vector => vector.Expression.StartsWith("upper(", StringComparison.Ordinal) && vector.Text.Contains('ß'));
     }
 
     [Theory]
