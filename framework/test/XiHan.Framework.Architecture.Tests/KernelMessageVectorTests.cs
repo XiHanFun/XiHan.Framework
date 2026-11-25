@@ -7,6 +7,7 @@ using XiHan.Framework.Architecture.Tests.Model;
 using XiHan.Framework.Kernel;
 using XiHan.Framework.Primitives;
 using XiHan.Framework.Primitives.Manifests;
+using XiHan.Framework.Testing.Workspace;
 
 namespace XiHan.Framework.Architecture.Tests;
 
@@ -18,17 +19,10 @@ namespace XiHan.Framework.Architecture.Tests;
 /// </remarks>
 public sealed class KernelMessageVectorTests
 {
-    /// <summary>
-    /// 向量文件的反序列化选项：Web 默认（camelCase）
-    /// </summary>
-    private static readonly JsonSerializerOptions _options = new(JsonSerializerDefaults.Web);
-
     [Fact]
     public void KernelMessages_MatchConstantsAndEnglishCatalogs()
     {
-        var vectors = JsonSerializer.Deserialize<KernelMessageVectors>(
-            File.ReadAllText(Path.Combine(Workspace.SpecRoot, "conformance", "vectors", "primitives", "kernel-messages.json")),
-            _options)!;
+        var vectors = SpecVectors.Read<KernelMessageVectors>("primitives", "kernel-messages.json");
         var codes = Constants(typeof(KernelErrors)).Concat(Constants(typeof(ErrorCode))).ToHashSet(StringComparer.Ordinal);
         var keys = Constants(typeof(KernelMessages)).Concat(Constants(typeof(ResultMessages))).Concat(Constants(typeof(ManifestMessages))).ToHashSet(StringComparer.Ordinal);
         var catalog = EnglishCatalog("XiHan.Framework.Primitives").Concat(EnglishCatalog("XiHan.Framework.Kernel")).ToDictionary(StringComparer.Ordinal);
