@@ -16,7 +16,7 @@ CloudEvents 1.0 是 CNCF 定义的事件信封标准，框架的消息子系统�
 | --- | --- | --- |
 | structured | `Content-Type: application/cloudevents+json` | 请求体是一个结构化 JSON 事件 |
 | batch | `Content-Type: application/cloudevents-batch+json` | 请求体是结构化事件的数组，按顺序处理 |
-| binary | 其他内容类型且有 `ce-specversion` 头 | `ce-id`、`ce-source`、`ce-type` 必填，`ce-time`（带 `T`、秒与偏移的 RFC 3339 时刻，与结构化 JSON 的 `time` 同一条文法，读出 UTC 时刻）、`ce-subject` 可选，其余 `ce-*` 头是扩展属性（名字是保留名的不合法，`ce-dataschema` 与 `ce-data` 都是 400 `MESSAGING_VALIDATION_002`），头值按百分号解码；`Content-Type` 是数据内容类型，请求体是数据 |
+| binary | 其他内容类型且有 `ce-specversion` 头 | `ce-id`、`ce-source`、`ce-type` 必填，`ce-time`（带 `T`、秒与偏移的 RFC 3339 时刻，与结构化 JSON 的 `time` 同一条文法，读出 UTC 时刻）、`ce-subject`、`ce-dataschema` 可选（`ce-dataschema` 读成信封的 `DataSchema`，值为空等于没有这个头、只有空白不合法），其余 `ce-*` 头是扩展属性（名字是保留名的不合法，`ce-data` 是 400 `MESSAGING_VALIDATION_002`），头值按百分号解码；`Content-Type` 是数据内容类型，请求体是数据 |
 
 事件类型查配置 `XiHan:Protocols:CloudEvents:Topics:<事件类型>` 得到主题，没有映射的类型是 400 `PROTOCOLS_VALIDATION_009`。缺省只收映射过的类型：发送方由宿主授权投递某几种事件，没有映射就以类型本身为主题时，它能投进任何有订阅的主题，包括插件订阅的主题（ADR-0200）。发送方可信、想让类型直接当主题时打开 `XiHan:Protocols:CloudEvents:AcceptUnmappedTypes`，此时没有映射的类型本身须满足主题文法（`orders.placed` 可以直接当主题）。扩展属性 `xihantenant`、`xihanprincipal`、`xihancorrelation`、`xihanlocale` 与 `traceparent` 在派发时进入调用上下文，成为租户、主体、关联 ID、区域与追踪。
 
@@ -159,7 +159,7 @@ builder.Services.AddHttpClient(CloudEventsWebhookPublisher.HttpClientName, clien
 }
 ```
 
-`Outbound` 为 `Binary`（缺省，`ce-*` 头加数据体，头值按规范百分号编码）或 `Structured`（`application/cloudevents+json` 请求体），不接受 `Batch`。`PublishManyAsync` 一条时沿用这个模式，多条时用 batch 内容模式一次 POST，接收方须支持 `application/cloudevents-batch+json`，一个响应对整批生效。Webhook 地址必须是绝对的 `http` / `https` 地址，`Inbound`、`Outbound` 的值不区分大小写，不合法时读取配置就抛出 `ArgumentException`。
+`Outbound` 为 `Binary`（缺省，`ce-*` 头加数据体，头值按规范百分号编码，信封有 `DataSchema` 时写 `ce-dataschema`）或 `Structured`（`application/cloudevents+json` 请求体），不接受 `Batch`。`PublishManyAsync` 一条时沿用这个模式，多条时用 batch 内容模式一次 POST，接收方须支持 `application/cloudevents-batch+json`，一个响应对整批生效。Webhook 地址必须是绝对的 `http` / `https` 地址，`Inbound`、`Outbound` 的值不区分大小写，不合法时读取配置就抛出 `ArgumentException`。
 
 信封按原样发出，不从当前调用补齐扩展：`xihantenant`、`xihanprincipal`、`xihancorrelation`、`xihanlocale` 与 `traceparent` 都不由框架加上。接收方是第三方，租户、主体、关联是本系统的内部标识，推出去会暴露内部结构与身份，并让第三方依赖本该可变的内部 ID；追踪链要不要跨出组织边界也由调用方决定。要带给接收方的扩展显式写进信封。HTTP 层同理：启用追踪时 .NET 的 `HttpClient` 本会按当前 Activity 在请求头里写 W3C 的 `traceparent`、`tracestate` 与 `baggage`，Webhook 的命名客户端 `xihan.protocols.cloudevents` 缺省不写；确实要把追踪链接到接收方，设 `XiHan:Protocols:CloudEvents:PropagateTraceContext` 为 `true`，它只作用于这个客户端，出站请求的客户端跨度照常记录。
 

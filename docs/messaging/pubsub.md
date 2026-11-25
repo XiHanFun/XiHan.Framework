@@ -45,6 +45,7 @@ builder.AddXiHan(xihan => xihan
 | `Type` | 必填，事件类型（如 `orders.placed`） |
 | `Time` | 可选，发生时间；从线上读出的一律是 UTC 时刻（`Offset` 为零），按时刻使用，要别的时区自己换算 |
 | `Subject` | 可选，事件所涉的对象（如 `order/42`） |
+| `DataSchema` | 可选，CloudEvents 的 `dataschema`：数据遵循的模式（如 `https://example.com/schemas/order.json`），`null` 是没有；给了就不能是空串或只有空白（否则抛 `ArgumentException`），与 `Source` 一样不核对 URI 语法，框架也不按它取模式、校验数据。四个代理、CloudEvents 协议绑定与插件协议都原样收发 |
 | `DataContentType` | 数据内容类型，缺省 `application/json` |
 | `Data` | 数据字节 |
 | `Extensions` | 扩展属性，名称只含小写字母与数字、1 到 20 个字符，且不是保留名（`EnvelopeExtensions.ReservedNames`：CloudEvents 的规范属性名与结构化 JSON 的成员名 `specversion`、`id`、`source`、`type`、`datacontenttype`、`dataschema`、`subject`、`time`、`data`、`data_base64`，按整串比较，`ids` 照常合法）；不合的在构造信封、`WithExtension` 时就抛 `ArgumentException`，四个代理一致。用 `WithExtension(name, value)` 派生、`Extension(name)` 读取，有无用 `Extension(name)` 判断 |
@@ -69,7 +70,8 @@ builder.AddXiHan(xihan => xihan
 - `time` 只认带 `T`、秒与偏移的 RFC 3339 时刻（`2026-01-02T03:04:05Z`、`2026-01-02T11:04:05.5+08:00`），与 `xihan-deadline` 同一条文法；空格代替 `T`、没有偏移、没有秒、只有日期、`+0800`、首尾空白都不合法。
 - `data` 与 `data_base64` 不能同时出现；文档带 `data_base64` 而不写 `datacontenttype` 时，内容类型是 `application/octet-stream`。
 - 扩展属性的值是字符串、数字或布尔，数字与布尔保留 JSON 原文；值为 `null` 视为没有这个扩展，对象与数组不合法。
-- 规范属性之外的顶层成员是扩展属性，名字要合上表的规则：信封不承载 CloudEvents 的 `dataschema`，带 `dataschema` 的文档不合法（`messaging.envelope.invalid_extension`，参数 `name`），发送方去掉它，或把数据模式放进自己的扩展属性。
+- `dataschema` 是规范属性，读成 `DataSchema`、不进扩展属性，写出时有则写成同名的字符串成员、没有则不写；它是空串或只有空白（`messaging.envelope.invalid`）、不是字符串（`messaging.envelope.invalid_json`，`reason` 为 `$.dataschema`）时信封不合法。
+- 规范属性之外的顶层成员是扩展属性，名字要合上表的规则。
 
 不合这些的信封是 `MESSAGING_VALIDATION_002`，按无法解码的消息处理：竞争订阅原样进死信，广播订阅丢弃。自己写结构化 JSON 或 `ce-time` 头的发送方用带偏移的写法：JavaScript 的 `Date.prototype.toISOString()`、Go 的 `time.RFC3339Nano`、Java 的 `Instant.toString()`、.NET 带偏移的 `ToString("O")` 都合文法。`Encode` 写完之后自己再过一遍读取的检查，写不出读得回来的文档（JSON 数据里有重复的成员或孤立的代理项转义、数据嵌套得让文档超过 64 层）时抛出携带 `MESSAGING_VALIDATION_002` 的 `FrameworkException`，发布的调用方当场得到。内存代理不经线上编码，这类数据在它上面照样能发，换成别的代理或接上发件箱时在发布处抛出。
 
