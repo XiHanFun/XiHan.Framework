@@ -768,7 +768,7 @@ public sealed partial class S3BlobStore : IBlobStore, IBlobMultipartStore, IBlob
     /// </remarks>
     private async ValueTask<Result<BlobMetadata>> PutOneAsync(ContainerName container, BlobUpload upload, CancellationToken cancellationToken)
     {
-        // 内容类型写不出原值时先于一切判定，连不覆盖写入的 Head 也不发：SDK 会在请求发出一半时抛出，或改写之后签名对不上（ADR-0295）
+        // 内容类型写不出原值时先于一切判定，连不覆盖写入的 Head 也不发：SDK 会在请求发出一半时抛出，或改写之后签名对不上、悄悄存成改写后的值（ADR-0295、ADR-0308）
         if (!S3ContentTypeHeader.IsSentVerbatim(upload.Options.ContentType))
         {
             return ContentTypeUnsupported(upload.Options.ContentType);

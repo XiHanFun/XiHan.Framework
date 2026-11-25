@@ -164,10 +164,15 @@ public sealed class S3ContentTypeWireTests
 
         await Assert.ThrowsAsync<FormatException>(() => client.PutObjectAsync(Put("text/plain;"), CancellationToken.None));
         await client.PutObjectAsync(Put("text/plain;charset=utf-8"), CancellationToken.None);
-
         Assert.Equal("text/plain; charset=utf-8", RecordingHttpListener.Header(endpoint.Requests[^1], "Content-Type"));
+
+        // 只差在连续空格的同样被改写：SigV4 按合并空格之后的原值签名，服务验签通过、存下的是改写后的值（ADR-0308，RustFS 实测）
+        await client.PutObjectAsync(Put("text/plain;  charset=utf-8"), CancellationToken.None);
+        Assert.Equal("text/plain; charset=utf-8", RecordingHttpListener.Header(endpoint.Requests[^1], "Content-Type"));
+
         Assert.False(S3ContentTypeHeader.IsSentVerbatim("text/plain;"));
         Assert.False(S3ContentTypeHeader.IsSentVerbatim("text/plain;charset=utf-8"));
+        Assert.False(S3ContentTypeHeader.IsSentVerbatim("text/plain;  charset=utf-8"));
         Assert.True(S3ContentTypeHeader.IsSentVerbatim("text/plain; charset=utf-8"));
     }
 
