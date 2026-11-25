@@ -305,3 +305,4 @@
 | [0303](0303-表达式的大小写映射与读数字的工作量.md) | 表达式的 `upper` / `lower` 改用与关键字折叠同一份的 Unicode 简单大小写映射，写明结果以实现所带的 Unicode 数据为准、向量只用早已分配的字符；读数字按它的写法的长度计入工作量，表达式得出的数字写成 JSON 是数字的文本 | 已采纳 |
 | [0304](0304-工作流数据库实现的查询列回填.md) | `Workflow.Database` 新增 `DatabaseWorkflowBackfill`：按分区分批从文档重新算出已有行的查询列，可重复运行（已是新值的行不改写），实例与书签在实例锁内改写，可取消，批大小至多 1000 | 已采纳 |
 | [0305](0305-信封承载CloudEvents的dataschema.md) | 信封承载 CloudEvents 的可选属性 `dataschema`（`MessageEnvelope.DataSchema`，与 `source` 同规则：非空字符串、不核对 URI 语法），结构化 JSON、binary 的 `ce-dataschema` 与插件协议新字段 `Envelope.data_schema`（11）原样收发，带它的标准事件又读得出 | 已采纳 |
+| [0307](0307-CI分片只列测试项目与测试项目命名的门禁.md) | CI 分片只列测试项目与测试项目命名的门禁：`New-TestShard.ps1` 从 `test/Directory.Build.props` 的条件取后缀，只把名字以 `.Tests` 结尾的项目列进筛选器（`core` 少了 `Testing.Workspace`，测试项目一个不少）；架构测试新增 `TestProjectNamingTests`，含测试（`[Fact]` / `[Theory]` 或从一致性套件派生）的项目名字以 `.Tests` 结尾、以它结尾的都含测试，别的类库只能是门禁里名单列出的，项目文件放在 `test/<名>/<名>.csproj`、不自己设 `IsTestProject` 或引用测试包 | 已采纳 |
