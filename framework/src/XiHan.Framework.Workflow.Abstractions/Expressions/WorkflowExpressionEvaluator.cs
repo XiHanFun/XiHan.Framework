@@ -169,17 +169,17 @@ public sealed class WorkflowExpressionEvaluator : IWorkflowExpressionEvaluator
                 return evaluated.Error!;
             }
 
-            // 写成文本之前记它的读取量：占位可以是整个变量，几十万个值的容器写成文本要遍历一遍；在这里超过的，错误带的是模板，与长度超过上限相同
+            // 写成文本之前记它的读取量：占位可以是整个变量，几十万个值的容器写成文本要遍历一遍；在这里超过的，错误带的是模板，与长度超过上限相同。字符串量长度取出的文本就是写进结果的文本，只取一次
+            string text;
             try
             {
-                run.Read(value.OrNull());
+                text = run.ReadText(value.OrNull());
             }
             catch (ExpressionException exception)
             {
                 return exception.ToError(source);
             }
 
-            var text = WorkflowValueText.Of(value.OrNull());
             if (TooLong(source, builder.Length, text.Length) is { } placeholderTooLong)
             {
                 return placeholderTooLong;

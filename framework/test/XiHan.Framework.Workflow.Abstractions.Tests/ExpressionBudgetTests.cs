@@ -11,7 +11,7 @@ namespace XiHan.Framework.Workflow.Abstractions.Tests;
 /// 一次求值的工作量上限（RFC-0021「表达式」的「长度与上限」）
 /// </summary>
 /// <remarks>
-/// ADR-0296、ADR-0303、ADR-0309。计数规则逐条由 <c>expression-limits.json</c> 的 <c>budgets</c> 回放；这里核对向量写不出来的部分：几十万个值的容器、溢出的乘积、工作量按求值与渲染分开计、进程内由 CLR 类型构造的数字与写进存储再读回来的读取量相同、表达式得出的数字写成 JSON 是数字的文本、<c>len</c> 与 <c>isNullOrEmpty</c> 对从 JSON 读来与进程内构造的字符串记同样的读取量
+/// ADR-0296、ADR-0303、ADR-0309。计数规则逐条由 <c>expression-limits.json</c> 的 <c>budgets</c> 回放；这里核对向量写不出来的部分：几十万个值的容器、溢出的乘积、工作量按求值与渲染分开计、进程内由 CLR 类型构造的数字与写进存储再读回来的读取量相同、表达式得出的数字写成 JSON 是数字的文本、<c>len</c> 与 <c>isNullOrEmpty</c> 对从 JSON 读来与进程内构造的字符串记同样的读取量、读字符串的运算接着用量长度时取出的文本之后结果与工作量不变
 /// </remarks>
 public sealed class ExpressionBudgetTests
 {
@@ -211,6 +211,48 @@ public sealed class ExpressionBudgetTests
         var chain = "isNullOrEmpty(parsedLong)" + string.Concat(Enumerable.Repeat("||isNullOrEmpty(parsedLong)", 140));
         Assert.True(_evaluator.Evaluate(chain, scope, out var total).IsSuccess);
         Assert.Equal((141L * ((2 * ExpressionRun.StepWork) + 1)) + (140L * ExpressionRun.StepWork), total);
+    }
+
+    [Fact]
+    public void StringsReadFromJson_GiveTheSameResultsAndWork_AsInProcessStrings()
+    {
+        // 读字符串的运算把量长度时取出的文本接着交给运算，从 JSON 文本读来的值不再取第二遍：当数字、时间、文本、下标与要找的值读，结果与工作量都与进程内构造的字符串相同
+        const string Json = """{"n":" 12.50 ","p":"1","t":"2026-01-02T03:04:05+08:00","u":"2026-01-02T03:04:06+08:00","s":"aé😀\n","e":"","i":"1","k":"b","items":[10,20],"fields":{"b":"x"},"words":["x","aé😀\n"]}""";
+        var parsed = (JsonObject)JsonNode.Parse(Json)!;
+        var constructed = new JsonObject
+        {
+            ["n"] = " 12.50 ",
+            ["p"] = "1",
+            ["t"] = "2026-01-02T03:04:05+08:00",
+            ["u"] = "2026-01-02T03:04:06+08:00",
+            ["s"] = "aé😀\n",
+            ["e"] = string.Empty,
+            ["i"] = "1",
+            ["k"] = "b",
+            ["items"] = new JsonArray(10, 20),
+            ["fields"] = new JsonObject { ["b"] = "x" },
+            ["words"] = new JsonArray("x", "aé😀\n"),
+        };
+        string[] expressions =
+        [
+            "n < p", "n >= p", "t < u", "s < e", "n == 12.5", "s == s", "s != e",
+            "n + 1", "n - p", "n * 2", "n / p", "n % p", "-n",
+            "items[i]", "fields[k]", "contains(words, s)", "contains(s, 'é')", "startsWith(s, 'a')", "endsWith(s, e)",
+            "len(s)", "len(n)", "isNullOrEmpty(s)", "isNullOrEmpty(e)", "upper(s)", "lower(s)", "trim(n)", "toString(s)", "date(t)", "s + e + n",
+            "toNumber(n)", "abs(n)", "min(n, p)", "max(n, p)", "round(n, p)", "format(n, p)",
+        ];
+
+        foreach (var expression in expressions)
+        {
+            var fromJson = _evaluator.Evaluate(expression, new ExpressionScope((JsonObject)parsed.DeepClone(), TimeProvider.System), out var fromJsonWork).ValueOrThrow().OrNull();
+            var inProcess = _evaluator.Evaluate(expression, new ExpressionScope((JsonObject)constructed.DeepClone(), TimeProvider.System), out var inProcessWork).ValueOrThrow().OrNull();
+            Assert.Equal((expression, inProcess?.ToJsonString(), inProcessWork), (expression, fromJson?.ToJsonString(), fromJsonWork));
+        }
+
+        // 渲染时占位的字符串同样只取一次，写进结果的文本与工作量相同
+        const string Template = "{{ s }}|{{ n }}|{{ fields }}";
+        var rendered = _evaluator.Render(Template, new ExpressionScope(parsed, TimeProvider.System), out var renderedWork).ValueOrThrow();
+        Assert.Equal((_evaluator.Render(Template, new ExpressionScope(constructed, TimeProvider.System), out var expectedWork).ValueOrThrow(), expectedWork), (rendered, renderedWork));
     }
 
     /// <summary>

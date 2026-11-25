@@ -14,7 +14,7 @@ namespace XiHan.Framework.Workflow.Abstractions.Expressions;
 /// 一次求值或一次渲染的状态：作用域与累计的工作量
 /// </summary>
 /// <remarks>
-/// 工作量的规则来自 RFC-0021「表达式」的「长度与上限」（ADR-0296、ADR-0303、ADR-0309）：每开始求值一个节点记 <see cref="StepWork"/>；运算读到的字符串记它的长度（<c>isNullOrEmpty</c> 只读到能判定为止），读到的数字记它的写法的长度（从 JSON 文本读来的是原文，别的是写成 JSON 的文本），读到的数组与对象记它里面每个值 <see cref="StepWork"/>（它自己也算一个）加上全部字符串、数字与成员名的长度；累计超过 <see cref="MaxWork"/> 即以 <see cref="WorkflowMessages.ExpressionBudgetExceeded"/> 失败。工作量只取决于表达式、值与求值的次序，与平台和机器的快慢无关，所以能写进向量。一次 <c>Render</c> 的全部占位共用一个实例
+/// 工作量的规则来自 RFC-0021「表达式」的「长度与上限」（ADR-0296、ADR-0303、ADR-0309）：每开始求值一个节点记 <see cref="StepWork"/>；运算读到的字符串记它的长度（<c>isNullOrEmpty</c> 只读到能判定为止），读到的数字记它的写法的长度（从 JSON 文本读来的是原文，别的是写成 JSON 的文本），读到的数组与对象记它里面每个值 <see cref="StepWork"/>（它自己也算一个）加上全部字符串、数字与成员名的长度；累计超过 <see cref="MaxWork"/> 即以 <see cref="WorkflowMessages.ExpressionBudgetExceeded"/> 失败。工作量只取决于表达式、值与求值的次序，与平台和机器的快慢无关，所以能写进向量。读标量的方法交回运算接着用的值或文本，一次运算里同一个字符串只取出一次。一次 <c>Render</c> 的全部占位共用一个实例
 /// </remarks>
 internal sealed class ExpressionRun
 {
@@ -75,13 +75,53 @@ internal sealed class ExpressionRun
     /// 读一个值，只在它是字符串或数字时记它的长度
     /// </summary>
     /// <remarks>
-    /// 算术、比较与数字函数把字符串当数字文本读、把数字从它的写法读出值：容器不读，它们在核对时就是错误；布尔与 null 的读取量本来是零。<c>len</c> 同样读（ADR-0309）：字符串要取出全文才数得出 UTF-16 码元，数字要从写法读出值再写成数字的文本；容器的长度是个数，不读
+    /// 算术、比较与数字函数把字符串当数字文本读、把数字从它的写法读出值：容器不读，它们在核对时就是错误；布尔与 null 的读取量本来是零。量字符串的长度要取出全文，取出的这份文本经返回值交给运算（<see cref="Materialize"/>），运算不再取第二遍
     /// </remarks>
-    public void ReadScalar(JsonNode? node)
+    /// <param name="node">值</param>
+    /// <returns>运算接着用的值：从 JSON 文本读来的字符串换成已取出的文本，别的原样</returns>
+    public JsonNode? ReadScalar(JsonNode? node)
     {
-        if (node is JsonValue value)
+        if (node is not JsonValue value)
+        {
+            return node;
+        }
+
+        if (value.GetValueKind() != JsonValueKind.String)
         {
             Add(MeasureScalar(value));
+            return value;
+        }
+
+        var text = WorkflowValues.AsString(value);
+        Add(text.Length);
+        return Materialize(value, text);
+    }
+
+    /// <summary>
+    /// 读一个值并取出它的文本
+    /// </summary>
+    /// <remarks>
+    /// 读取量与 <see cref="Read"/> 相同，文本与 <see cref="WorkflowValueText.Of"/> 相同。字符串只取出一次，同一份文本既量长度又交给运算：<c>len</c>（ADR-0309）、<c>upper</c> 等文本函数、拼接与渲染以前各取两遍，从 JSON 文本读来的值每取一遍都要解码全文。数字先记它的写法的长度再写成文本，读先于运算
+    /// </remarks>
+    /// <param name="node">值</param>
+    /// <returns>值的文本形式</returns>
+    public string ReadText(JsonNode? node)
+    {
+        switch (node)
+        {
+            case null:
+                return string.Empty;
+            case JsonValue value when value.GetValueKind() == JsonValueKind.String:
+                var text = WorkflowValues.AsString(value);
+                Add(text.Length);
+                return text;
+            case JsonValue value:
+                Add(MeasureScalar(value));
+                return WorkflowValues.AsString(value);
+            default:
+                // 数组与对象先量规模再写成文本：量到超过上限即停，几十万个值的容器不必先写出来
+                Read(node);
+                return WorkflowValueText.Of(node);
         }
     }
 
@@ -108,24 +148,40 @@ internal sealed class ExpressionRun
     /// 把一个值读 <paramref name="times"/> 次
     /// </summary>
     /// <remarks>
-    /// <c>contains</c> 在数组里找时，每个元素都与要找的值比一次：按元素个数乘以它的读取量记。次数为零不读，结果相同（零乘以任何数都是零）
+    /// <c>contains</c> 在数组里找时，每个元素都与要找的值比一次：按元素个数乘以它的读取量记。次数为零不读，结果相同（零乘以任何数都是零）。要找的是字符串时只取出一次，经返回值交给每一次比较（<see cref="Materialize"/>）
     /// </remarks>
-    public void ReadTimes(JsonNode? node, int times)
+    /// <param name="node">值</param>
+    /// <param name="times">次数</param>
+    /// <returns>比较时用的值：从 JSON 文本读来的字符串换成已取出的文本，别的原样</returns>
+    public JsonNode? ReadTimes(JsonNode? node, int times)
     {
         if (times <= 0)
         {
-            return;
+            return node;
         }
 
         // 先按剩下的额度除以次数量：一次的读取量超过它，乘起来一定超过上限，不必量完整个值
         var share = (MaxWork - Work) / times;
-        var amount = Measure(node, share);
+        long amount;
+        var compared = node;
+        if (node is JsonValue value && value.GetValueKind() == JsonValueKind.String)
+        {
+            var text = WorkflowValues.AsString(value);
+            amount = text.Length;
+            compared = Materialize(value, text);
+        }
+        else
+        {
+            amount = Measure(node, share);
+        }
+
         if (amount > share)
         {
             Add(MaxWork - Work + 1);
         }
 
         Add(amount * times);
+        return compared;
     }
 
     /// <summary>
@@ -209,6 +265,17 @@ internal sealed class ExpressionRun
         JsonValueKind.Number => NumberLength(value),
         _ => 0,
     };
+
+    /// <summary>
+    /// 量过长度的字符串交给运算接着用的值
+    /// </summary>
+    /// <remarks>
+    /// 由 JSON 文本读来的值每取一次文本都要解码全文、分配一个新的字符串：换成已取出的文本，运算再当数字、时间或文本读都不再解码，结果相同（两者当数字读都是按这段文本过数字的文法）。进程内的字符串取出来是同一个实例，不必换；由 <see cref="Guid"/>、<see cref="DateTimeOffset"/> 等构造的值文本很短，换成字符串之后当数字读的规则也不同（<see cref="WorkflowValues.TryDecimal"/> 不把它们当数字文本读），留原样
+    /// </remarks>
+    /// <param name="value">JSON 类型是字符串的标量</param>
+    /// <param name="text">已取出的文本</param>
+    private static JsonValue Materialize(JsonValue value, string text)
+        => value.TryGetValue<JsonElement>(out _) ? JsonValue.Create(text) : value;
 
     /// <summary>
     /// 一个 JSON 类型是字符串的标量是不是空串
