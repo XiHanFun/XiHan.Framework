@@ -26,14 +26,14 @@
 - 对象键、查询前缀与保存的文件名的长度按 UTF-8 字节计（键与前缀不超过 1024 字节，文件名不超过 255 字节）：`BlobKey.MaxLength` → `MaxBytes`、`BlobUrlRequest.MaxDownloadFileNameLength` → `MaxDownloadFileNameBytes`，与它们比较的 `text.Length` 换成 `Encoding.UTF8.GetByteCount(text)`；含非 ASCII 字符的长键与长文件名按字节重新核对
 - S3 的写入与分片上传的发起遇到 AWS SDK 写不出原值的内容类型（`text/plain;` 这类空参数，`text/plain;charset=utf-8` 这类 `;` 两侧空格与 `; ` 不同的，`text/plain;  charset=utf-8` 这类多了连续空格的）返回 `OBJECTSTORAGE_VALIDATION_007`，不发请求：改成 `text/plain; charset=utf-8` 这种写法
 - 以空格结尾的内容类型（`text/plain; `、`text/plain; charset=utf-8 `）不再合法，构造 `BlobPutOptions` 或 `BlobUrlRequest.ForUpload` 抛 `ArgumentException`：去掉结尾的空格；文件系统存储里已有的这类内容类型照旧读出，写回之前先去掉结尾的空格
-- 宿主代收的上传经不去掉请求头首尾空白的服务器（如进程内的测试服务器）时，以空格结尾的 `Content-Type` 回 400（`OBJECTSTORAGE_VALIDATION_006`），经 Kestrel 不受影响：测试里改发不以空格结尾的值
+- 宿主代收的上传只把首尾的空格与制表符当空白去掉，只有不换行空格等别的空白的 `Content-Type` 回 400（`OBJECTSTORAGE_VALIDATION_006`），不再存成缺省类型：客户端改发合法的值，或不带这个头
 - S3 命名实例的设置里配了代理（`ProxyHost` 等）的，由运营方在配置节写 `XiHan:ObjectStorage:S3:NamedInstancesAllowProxy: true`，否则登记失败（`OBJECTSTORAGE_VALIDATION_003`）
 - S3 缺省实例只给 `AccessKey` 或 `SecretKey` 其中一项时启动失败（以前悄悄走默认凭据链）：两项都给，或两项都删
 - S3 的 `ServiceUrl`（配置节或命名实例的设置）与绑定 `objectstorage` 的主值带用户信息时，缺省实例启动失败、命名实例登记失败（`OBJECTSTORAGE_VALIDATION_003`）：去掉 `user:pass@`，凭据写进 `AccessKey` / `SecretKey`（绑定写属性 `accessKey` / `secretKey`）
 - 消息信封的 `time` 与 binary 模式的 `ce-time` 只认带 `T`、秒与偏移的 RFC 3339 时刻（`2026-01-02T03:04:05Z`、`…+08:00`），空格代替 `T`、没有偏移、没有秒、只有日期、`+0800`、首尾空白、HTTP 日期都是信封不合法：自己写结构化 JSON 或 `ce-time` 的发送方逐个核对
 - 信封里重复的成员（含 `data` 内部）、`data` 与 `data_base64` 同时出现、值为对象或数组的扩展属性现在是信封不合法，竞争订阅进死信、广播订阅丢弃：升级前带这类信封的队列先排空
 - 读出的 `MessageEnvelope.Time` 一律是 UTC（`Offset` 为零），值为 `null` 的扩展属性读成没有这个扩展：取 `Offset` 的处理器改为按时刻使用，扩展的有无用 `Extension(name)` 判断
-- `CloudEventsFormat.Encode` 对带重复成员或孤立代理项的 JSON 数据抛出 `MESSAGING_VALIDATION_002`：发布之前改正数据
+- `CloudEventsFormat.Encode` 对带重复成员或孤立代理项的 JSON 数据、字符串属性（含扩展属性）有孤立代理项的信封抛出 `MESSAGING_VALIDATION_002`：发布之前改正数据与属性
 - 名为 `id`、`source`、`type`、`time`、`subject`、`data`、`data_base64`、`specversion`、`datacontenttype`、`dataschema` 的扩展属性，构造信封或 `WithExtension` 时就抛 `ArgumentException`：改名（如加 `xihan` 前缀）
 - 下发给插件的绑定有属性名不在 `[A-Za-z0-9._-]` 之内（1–253 个字符、不以 `.` 开头）、属性多于 64 个或名与值合计超过 256 KiB 时，这个插件配置失败并按重启策略重试：把多余的文件挪出绑定目录或改属性名
 - 绑定目录里单个文件超过 512 KiB、或一个绑定目录的文件合计超过 1 MiB 时应用启动失败（`KERNEL_HOSTING_005`）：把不属于绑定的文件移出绑定目录
@@ -45,6 +45,7 @@
 - 绑定根目录下以 `.` 开头的子目录不再读成绑定：放在这类目录里的绑定改成不以 `.` 开头的名字
 - 插件发布的信封 `time` 只认带秒与偏移的 RFC 3339，不合的那一项以 `messaging.envelope.invalid_time` 不发布：插件作者改用 `2026-11-25T03:25:00Z` 或带 `±HH:MM` 偏移的写法
 - Wasm 插件写来的消息有非法的 UTF-8 字节序列时，响应按崩溃处理（`PLUGINS_UNEXPECTED_001`）、导入函数的请求以 `PLUGINS_VALIDATION_005` 应答，不再换成 U+FFFD 读入：自己拼消息的插件改写合法的 UTF-8，按 SDK 写的不受影响
+- 不经 SDK 手写的进程外与 Wasm 插件，交回的操作应答必须是合法的 JSON 文本（无重复成员、合法 UTF-8、不超过 64 层），否则这次调用是 `PLUGINS_UNEXPECTED_001`：修插件的输出
 - 把整个 stderr 当一行 JSON 解析的命令行脚本，调用弃用的操作且失败时会多读到一行提示，取最后一行；按行匹配 `.proto` 里以分号结束的 `rpc` 的脚本要认带花括号的形式（只影响已声明弃用的操作）
 - 照抄 `Caching.Remote` 消息目录的远程缓存插件，把 `caching.remote.key_invalid` 改成同样的「按 UTF-8 编码后不超过 512 字节」（10 个区域），否则与宿主的目录冲突（`LOCALIZATION_CONFLICT_001`）
 - Nacos 文档里展平后同一个键出现两次（含只差大小写的）整份文档不合法（`CONFIGURATION_VALIDATION_001`）：升级前在 Nacos 里把重复的键删到只剩一个
@@ -63,6 +64,8 @@
 - 工作流表达式的 `upper('ı')` 是 `I`、`lower('İ')` 是 `i`（与关键字的折叠同一份 Unicode 简单大小写映射）：要保留这两个字符原样的在流程之外处理
 - 列表查询关键字的折叠改成逐个码位的 Unicode 简单小写映射（`İ` 折成 `i`，平面以外的字母同样折叠）：`Workflow.Database` 的应用升级之后为平台与每个租户调用一次 `DatabaseWorkflowBackfill.RunAsync` 重新算出已有行的查询列，`Busy` 不为零时再跑一次
 - `Delay.Until`、`UserTask.DueAt` 与 `WorkflowValues.TryConvert<DateTimeOffset>` / `<DateTime>` 只认表达式的时间文法，`12:30`、`01/02/2026`、`Jan 2, 2026` 不再被接受：写成 `2026-01-02T12:30` 这类完整的时刻；读出的时刻是 UTC，任务视图的 `DueAt` 不再保留属性里写的偏移
+- `Security.InMemory` 的 API Key 不能有孤立的代理项，有这种 key 的配置装载时报 `ArgumentException`：换成合法的 key
+- JWT 的 `Secret` 与 `XiHan:ObjectStorage:SignedUrls:Secret` 按严格的 UTF-8 计长与编码，有孤立代理项的密钥启动时报 `ArgumentException`：换成合法的密钥
 :::
 
 ### 版本与兼容
@@ -121,6 +124,9 @@
 - **调整** `invoke --json` 的文本有孤立代理项时是用法错误（退出码 64），不再换成 U+FFFD 照常调用（ADR-0312）
 - **调整** `McpStdioTransport.RunAsync` 的读取器交来带孤立代理项的一行时答复解析错误（-32700），继续下一行（ADR-0312）
 - **修复** `xihan setup` 要合并的配置不是合法的 UTF-8 时报 `CLI_VALIDATION_006`、一个文件都不写，不再换成 U+FFFD 后改写用户文件（ADR-0312）
+- **调整** 进程外与 Wasm 插件交回的操作应答载荷不为空时先过 JSON 文本的共同检查，没过时这次调用是 `PLUGINS_UNEXPECTED_001`（`reason` 带路径），不再原样交给调用方；不按崩溃处理（ADR-0315）
+- **调整** `invoke` 的字段选项名字或值有孤立代理项时是用法错误（退出码 64），不再写成 U+FFFD 照常调用（ADR-0315）
+- **调整** 插件配置节的键或值有孤立代理项时插件配置失败、按退避重试，不再写成 U+FFFD 下发（ADR-0315）
 
 ### 配置
 
@@ -135,6 +141,8 @@
 - **调整** `SecurityContext`、`TenantContext`、`PermissionGrant`、`AuthorizationRequirement` 改为初始化成员（`Principal`、`Id`、`Subject` 与 `Permission`、`Policy` 标 `required`），位置构造、构造重载与解构删除；原先只读的成员可以经 `with` 换，校验异常的 `ParamName` 变成 `value`（ADR-0288）
 - **调整** `SecurityContext.Tenant` 是必填成员，可为 `null`（ADR-0290）
 - **修复** `Security.WebAuthn` 的 `WebAuthnAttestationResponse.Transports` 与 `WebAuthnAssertionResponse.UserHandle` 的构造参数缺省为 `null`，严格绑定也接受省略它们的 JSON（ADR-0289）
+- **修复** `Security.InMemory` 按严格的 UTF-8 字节比较 API Key，两个只差在孤立代理项上的 key 不再被当成同一个
+- **修复** JWT 的 `Secret` 按严格的 UTF-8 计长与编码，几个孤立代理项不再换成 U+FFFD 凑够 32 字节
 
 ### 持久化与消息
 
@@ -164,6 +172,7 @@
 - **优化** Redis 上被停止打断的条目，别的实例下一次维护就接手，不用等满 `ClaimIdleTimeSeconds`（ADR-0298）
 - **新增** `MessageEnvelope.DataSchema` 承载 CloudEvents 的 `dataschema`：structured 的成员、binary 的 `ce-dataschema` 头、插件协议的 `Envelope.data_schema` 原样收发，空串或只有空白抛 `ArgumentException`（ADR-0305）
 - **调整** 结构化 JSON 里 `dataschema` 为空串、只有空白或不是字符串时信封不合法（`MESSAGING_VALIDATION_002`）（ADR-0305）
+- **调整** `CloudEventsFormat.Encode` 在规范属性或扩展属性的字符串值有孤立代理项时抛出 `MESSAGING_VALIDATION_002`（消息带属性名），RabbitMQ、Kafka、Redis、发件箱与 CloudEvents 的 structured / batch 写出在发布时即拒绝（ADR-0315）
 
 ### 缓存
 
@@ -199,6 +208,7 @@
 - **调整** 表达式的 `len` 读字符串也按长度计入工作量，`isNullOrEmpty` 只读到能判定为止（非空的字符串记 1，空串、数字、布尔与容器不读）（ADR-0309）
 - **调整** 表达式算出的数字写进变量时不再带结尾的零（`1.5 + 1.5` 存成 `3`），数值不变（ADR-0303）
 - **新增** `DatabaseWorkflowBackfill`、`DatabaseWorkflowBackfillReport`（Preview）：按分区分批回填已有行的查询列，可以重复运行、与引擎互斥（ADR-0304）
+- **优化** 表达式里读字符串的运算（`len`、`upper` 等文本函数、拼接、比较、相等、算术、下标与渲染）只取一次文本，从 JSON 读来的长字符串求值更快，结果与工作量不变
 
 ### AI
 
@@ -227,6 +237,13 @@
 - **新增** 命令行工具的配置索引收进 S3 的两个运营方开关，MCP tool `xihan_framework_config` 查得到，由 Provider 读取的键带 `readBy`（ADR-0302）
 - **调整** 内容类型不能以空格结尾（`text/plain; `、`text/plain; charset=utf-8 ` 不合法，`text/plain ;` 照收），对所有存储生效；`BlobPutOptions.ContentType` 与 `BlobUrlRequest.ForUpload` 的异常消息写明这一条（ADR-0308）
 - **修复** S3 上传分片的应答没有可用的 `ETag`、列出分片的应答里分片没有可用的编号或 `ETag`、长度为负时返回 `OBJECTSTORAGE_UNAVAILABLE_001`，不再抛异常（ADR-0308）
+- **修复** S3 列出分片的应答截断却不给能前进的续页标记、或累计超过 10000 片时返回 `OBJECTSTORAGE_UNAVAILABLE_001`，不再循环不止（ADR-0313）
+- **修复** S3 列举的应答截断却没有新的续页标记、或对象缺 `ETag`、修改时间时返回 `OBJECTSTORAGE_UNAVAILABLE_001`，不再交出看似列完的一页（ADR-0313）
+- **修复** S3 批量删除的应答有认不出键的错误项时，这一批要删的项各报 `OBJECTSTORAGE_UNAVAILABLE_001`，不再抛 `ArgumentNullException`（ADR-0313）
+- **修复** S3 读取与 `Head` 的应答缺 `ETag` 或修改时间、写入的应答缺 `ETag` 时返回 `OBJECTSTORAGE_UNAVAILABLE_001`，不再填空串与最小时刻（ADR-0313）
+- **修复** S3 条件写入探测拿到没有上传标识的发起应答时按尚未确认处理、`reason` 写明这一步，不再发出不带标识的上传分片（ADR-0313）
+- **调整** 宿主代收的上传先去掉 `Content-Type` 首尾的空格与制表符再与签名比较、核对与写入，测试服务器与 Kestrel 结果一致；只有不换行空格等别的空白的值回 400（ADR-0314）
+- **修复** 预签名地址的 `XiHan:ObjectStorage:SignedUrls:Secret` 按严格的 UTF-8 读取，几个孤立代理项不再换成 U+FFFD 凑够 32 字节
 
 ### 可观测
 
