@@ -24,7 +24,9 @@
 - `MapXiHanHealth()`、`MapXiHanBlobs()` 返回 `IEndpointConventionBuilder`：把别的 `Map*` 链在它们后面的写法拆成两条语句
 - 配置里写成空串的键不再当作没写，枚举键不再接受数字写法：启动时报 `ArgumentException` 并带完整配置键，按提示改配置
 - 对象键、查询前缀与保存的文件名的长度按 UTF-8 字节计（键与前缀不超过 1024 字节，文件名不超过 255 字节）：`BlobKey.MaxLength` → `MaxBytes`、`BlobUrlRequest.MaxDownloadFileNameLength` → `MaxDownloadFileNameBytes`，与它们比较的 `text.Length` 换成 `Encoding.UTF8.GetByteCount(text)`；含非 ASCII 字符的长键与长文件名按字节重新核对
-- S3 的写入与分片上传的发起遇到 AWS SDK 写不出原值的内容类型（`text/plain;` 这类空参数，`text/plain;charset=utf-8` 这类 `;` 两侧空格与 `; ` 不同的）返回 `OBJECTSTORAGE_VALIDATION_007`，不发请求：改成 `text/plain; charset=utf-8` 这种写法
+- S3 的写入与分片上传的发起遇到 AWS SDK 写不出原值的内容类型（`text/plain;` 这类空参数，`text/plain;charset=utf-8` 这类 `;` 两侧空格与 `; ` 不同的，`text/plain;  charset=utf-8` 这类多了连续空格的）返回 `OBJECTSTORAGE_VALIDATION_007`，不发请求：改成 `text/plain; charset=utf-8` 这种写法
+- 以空格结尾的内容类型（`text/plain; `、`text/plain; charset=utf-8 `）不再合法，构造 `BlobPutOptions` 或 `BlobUrlRequest.ForUpload` 抛 `ArgumentException`：去掉结尾的空格；文件系统存储里已有的这类内容类型照旧读出，写回之前先去掉结尾的空格
+- 宿主代收的上传经不去掉请求头首尾空白的服务器（如进程内的测试服务器）时，以空格结尾的 `Content-Type` 回 400（`OBJECTSTORAGE_VALIDATION_006`），经 Kestrel 不受影响：测试里改发不以空格结尾的值
 - S3 命名实例的设置里配了代理（`ProxyHost` 等）的，由运营方在配置节写 `XiHan:ObjectStorage:S3:NamedInstancesAllowProxy: true`，否则登记失败（`OBJECTSTORAGE_VALIDATION_003`）
 - S3 缺省实例只给 `AccessKey` 或 `SecretKey` 其中一项时启动失败（以前悄悄走默认凭据链）：两项都给，或两项都删
 - S3 的 `ServiceUrl`（配置节或命名实例的设置）与绑定 `objectstorage` 的主值带用户信息时，缺省实例启动失败、命名实例登记失败（`OBJECTSTORAGE_VALIDATION_003`）：去掉 `user:pass@`，凭据写进 `AccessKey` / `SecretKey`（绑定写属性 `accessKey` / `secretKey`）
@@ -38,9 +40,11 @@
 - 插件清单声明的绑定没写 `required`（缺省必需）、部署里又没给或只给了类型时，进程外与 Wasm 插件配置失败，进程内插件加载失败：补上绑定，或在清单写 `"required": false`
 - 来源声明的绑定类型与插件清单不同时插件配置或加载失败（以前下发来源的类型）：改正或去掉来源的 `type`
 - 特性声明的必需绑定只给了类型，或可选绑定给了内容而 `type` 与清单不同时，应用启动失败（`KERNEL_HOSTING_001`）：补上主值或属性，改正或去掉 `type`；按消息文本匹配的改认 `Feature '<清单 ID>' is not configured: <reason>.`
-- 一个绑定目录多于 128 个文件（以 `.` 开头的不计），或绑定根目录下多于 128 个子目录时应用启动失败（`KERNEL_HOSTING_005`），插件的绑定多于 128 个文件时插件配置或加载失败：挪走不属于绑定的文件与目录，或改正 `SERVICE_BINDING_ROOT`
+- 一个绑定目录多于 128 个文件（以 `.` 开头的不计），或绑定根目录下多于 128 个绑定（以 `.` 开头的子目录不计）时应用启动失败（`KERNEL_HOSTING_005`），插件的绑定多于 128 个文件时插件配置或加载失败：挪走不属于绑定的文件与目录，或改正 `SERVICE_BINDING_ROOT`
 - 用了 `UseServiceBindingRoot` 又用进程内插件的，把同一个值作 `InProcessPluginHost` 的第三个参数；插件里 `BindingResolver.Resolve(context.Configuration)` 改成 `Resolve(context.Configuration, context.ServiceBindingRoot)`
+- 绑定根目录下以 `.` 开头的子目录不再读成绑定：放在这类目录里的绑定改成不以 `.` 开头的名字
 - 插件发布的信封 `time` 只认带秒与偏移的 RFC 3339，不合的那一项以 `messaging.envelope.invalid_time` 不发布：插件作者改用 `2026-11-25T03:25:00Z` 或带 `±HH:MM` 偏移的写法
+- Wasm 插件写来的消息有非法的 UTF-8 字节序列时，响应按崩溃处理（`PLUGINS_UNEXPECTED_001`）、导入函数的请求以 `PLUGINS_VALIDATION_005` 应答，不再换成 U+FFFD 读入：自己拼消息的插件改写合法的 UTF-8，按 SDK 写的不受影响
 - 把整个 stderr 当一行 JSON 解析的命令行脚本，调用弃用的操作且失败时会多读到一行提示，取最后一行；按行匹配 `.proto` 里以分号结束的 `rpc` 的脚本要认带花括号的形式（只影响已声明弃用的操作）
 - 照抄 `Caching.Remote` 消息目录的远程缓存插件，把 `caching.remote.key_invalid` 改成同样的「按 UTF-8 编码后不超过 512 字节」（10 个区域），否则与宿主的目录冲突（`LOCALIZATION_CONFLICT_001`）
 - Nacos 文档里展平后同一个键出现两次（含只差大小写的）整份文档不合法（`CONFIGURATION_VALIDATION_001`）：升级前在 Nacos 里把重复的键删到只剩一个
@@ -55,6 +59,7 @@
 - 工作流表达式的成员名与变量名一律区分大小写，不随 `JsonObject` 的选项：靠大小写不敏感取成员的表达式改成准确的名字
 - 工作流表达式一次求值（一次渲染的全部占位合计）的工作量上限是 16777216，超过是 `WORKFLOW_VALIDATION_003`（`workflow.expression.budget_exceeded`）：整个渲染几十万个值的变量、在很大的数组里 `contains`、比两个很大的容器，这类写法改在活动里处理
 - 工作流表达式读数字按它的写法的长度计入工作量，反复读几十万位以上数字的表达式可能以 `budget_exceeded` 失败：这类数据改在活动里处理
+- 工作流表达式的 `len` 读字符串按长度计入工作量，一次求值里对百万码元的字符串求十几次、对四百万码元的求四次就以 `budget_exceeded` 失败：这类数据改在活动里处理，或只取需要的部分
 - 工作流表达式的 `upper('ı')` 是 `I`、`lower('İ')` 是 `i`（与关键字的折叠同一份 Unicode 简单大小写映射）：要保留这两个字符原样的在流程之外处理
 - 列表查询关键字的折叠改成逐个码位的 Unicode 简单小写映射（`İ` 折成 `i`，平面以外的字母同样折叠）：`Workflow.Database` 的应用升级之后为平台与每个租户调用一次 `DatabaseWorkflowBackfill.RunAsync` 重新算出已有行的查询列，`Busy` 不为零时再跑一次
 - `Delay.Until`、`UserTask.DueAt` 与 `WorkflowValues.TryConvert<DateTimeOffset>` / `<DateTime>` 只认表达式的时间文法，`12:30`、`01/02/2026`、`Jan 2, 2026` 不再被接受：写成 `2026-01-02T12:30` 这类完整的时刻；读出的时刻是 UTC，任务视图的 `DueAt` 不再保留属性里写的偏移
@@ -76,12 +81,13 @@
 - **新增** `TimestampText`：RFC 3339 时间戳文本的解析，截止时间的文本与消息信封的 `time` 共用（ADR-0283）
 - **新增** 内核的 `JsonText`（`FindProblem`）、`JsonTextProblem` 与 `JsonTextProblemKind` 公开（Stable）：读取 JSON 文本的共同检查，操作载荷、清单与消息信封共用，问题带种类（语法、嵌套过深、非法 UTF-8、孤立代理项、重复成员）（ADR-0283、ADR-0291）
 - **新增** 绑定目录的文件大小上限 `BindingResolver.MaxFileBytes`（512 KiB）与 `MaxBindingBytes`（1 MiB）：读到上限即停，超限以 `KERNEL_HOSTING_005`（`KernelErrors.BindingTooLarge`）启动失败（ADR-0292）
-- **新增** `PluginBindingRules`（Preview）：插件宿主共用的绑定核对（ADR-0292）
-- **调整** 装配特性时的绑定核对改用 `PluginBindingRules`，与插件宿主同一套规则：只给了类型的必需绑定算没给，可选绑定也核对类型，`KERNEL_HOSTING_001` 的消息改为 `Feature '<清单 ID>' is not configured: <reason>.`（ADR-0301）
+- **新增** `BindingRules`（`Kernel.Hosting`，Preview）：插件宿主共用的绑定核对（ADR-0292、ADR-0311）
+- **调整** 装配特性时的绑定核对改用 `BindingRules`，与插件宿主同一套规则：只给了类型的必需绑定算没给，可选绑定也核对类型，`KERNEL_HOSTING_001` 的消息改为 `Feature '<清单 ID>' is not configured: <reason>.`（ADR-0301）
 - **新增** 绑定目录的条目数上限 `BindingResolver.MaxBindingFiles`（一个绑定 128 个文件）与 `MaxBindings`（根目录下 128 个绑定）：先数后读，超限以 `KERNEL_HOSTING_005` 启动失败（ADR-0301）
 - **新增** `PluginContext.ServiceBindingRoot`：宿主解析绑定所用的根目录，进程内插件读绑定时交给 `BindingResolver.Resolve`（ADR-0301）
 - **新增** `UnreadableDeadlineLog`（Preview）：调用方给的截止时间读不出时的限频告警，内核登记为单例，自写载体读不出截止时间时经它报告（ADR-0279）
 - **调整** `BindingValue.ToString()` 的 `Properties` 只列属性名，属性值不打印（ADR-0285）
+- **调整** 绑定根目录下以 `.` 开头的子目录不是绑定，解析全部与点名都不读、不计入 128 个；Kubernetes 把 projected volume 直接挂到根目录时的 `..data` 与带时间戳的目录不再出现在解析结果里（ADR-0311）
 
 ### 宿主、协议与插件
 
@@ -110,6 +116,11 @@
 - **新增** `InProcessPluginHost` 构造的可选参数 `serviceBindingRoot`：加载前按它解析绑定，插件经 `PluginContext.ServiceBindingRoot` 拿到同一个值，不给时取环境变量（ADR-0301）
 - **调整** 插件的绑定目录多于 128 个文件时配置失败，`reason` 为 `binding '<绑定名>' has more than 128 files`（ADR-0301）
 - **修复** 插件写来的错误细节里有孤立代理项时当作没有细节，不再换成 U+FFFD（ADR-0301）
+- **新增** 规范的 `plugin` 档新增向量 `plugin/sdk-envelope-times.json`（SDK 按四种时间类型精度读写信封 `time` 的期望值），`plugin/envelope-times.json` 也进 `plugin` 档；框架不认领 `plugin` 档，行为不变（ADR-0310）
+- **调整** Wasm 宿主按严格的 UTF-8 解码客体写来的消息：有非法字节序列的响应按崩溃处理，导入函数的请求以 `PLUGINS_VALIDATION_005` 应答，不再换成 U+FFFD（ADR-0312）
+- **调整** `invoke --json` 的文本有孤立代理项时是用法错误（退出码 64），不再换成 U+FFFD 照常调用（ADR-0312）
+- **调整** `McpStdioTransport.RunAsync` 的读取器交来带孤立代理项的一行时答复解析错误（-32700），继续下一行（ADR-0312）
+- **修复** `xihan setup` 要合并的配置不是合法的 UTF-8 时报 `CLI_VALIDATION_006`、一个文件都不写，不再换成 U+FFFD 后改写用户文件（ADR-0312）
 
 ### 配置
 
@@ -184,7 +195,8 @@
 - **调整** 列表关键字的折叠改成逐个码位的 Unicode 简单小写映射，`İ` 与平面以外的大写字母也折叠（ADR-0296）
 - **调整** `Delay.Until`、`UserTask.DueAt` 与按时间读的值改用表达式的时间文法、读成 UTC，不再随机器的日子与时区变（ADR-0296）
 - **调整** 表达式的 `upper` / `lower` 改用与关键字折叠同一份的 Unicode 简单大小写映射，`İ` 与 `ı` 也转换（ADR-0303）
-- **调整** 表达式读数字按它的写法的长度计入工作量，`len`、`isNullOrEmpty` 读数字也计入（ADR-0303）
+- **调整** 表达式读数字按它的写法的长度计入工作量，`len` 读数字也计入（ADR-0303）
+- **调整** 表达式的 `len` 读字符串也按长度计入工作量，`isNullOrEmpty` 只读到能判定为止（非空的字符串记 1，空串、数字、布尔与容器不读）（ADR-0309）
 - **调整** 表达式算出的数字写进变量时不再带结尾的零（`1.5 + 1.5` 存成 `3`），数值不变（ADR-0303）
 - **新增** `DatabaseWorkflowBackfill`、`DatabaseWorkflowBackfillReport`（Preview）：按分区分批回填已有行的查询列，可以重复运行、与引擎互斥（ADR-0304）
 
@@ -213,6 +225,8 @@
 - **调整** S3 的 `ServiceUrl` 与绑定 `objectstorage` 的主值不再收用户信息，凭据只走密钥配置，报错只写键名（ADR-0302）
 - **修复** S3 发起分片上传时服务回成功却没有可用的上传标识，返回 `OBJECTSTORAGE_UNAVAILABLE_001`，不再抛异常（ADR-0302）
 - **新增** 命令行工具的配置索引收进 S3 的两个运营方开关，MCP tool `xihan_framework_config` 查得到，由 Provider 读取的键带 `readBy`（ADR-0302）
+- **调整** 内容类型不能以空格结尾（`text/plain; `、`text/plain; charset=utf-8 ` 不合法，`text/plain ;` 照收），对所有存储生效；`BlobPutOptions.ContentType` 与 `BlobUrlRequest.ForUpload` 的异常消息写明这一条（ADR-0308）
+- **修复** S3 上传分片的应答没有可用的 `ETag`、列出分片的应答里分片没有可用的编号或 `ETag`、长度为负时返回 `OBJECTSTORAGE_UNAVAILABLE_001`，不再抛异常（ADR-0308）
 
 ### 可观测
 
@@ -228,7 +242,7 @@
 - **新增** `MessageBrokerConformance.ReadDeadLettersAsync`（抽象，继承代理套件的测试类要实现）与两条用例：用完尝试次数进死信、停止打断的投递不进死信（ADR-0275）
 - **新增** 消息一致性套件的用例「最后一次尝试被停止打断，重新开始消费后再处理一次」与 `DeliveryLog.BlockingAttempts`：靠代理一侧的计数得出尝试号的自写 Provider 要在放弃时退回这一次（ADR-0284）
 - **新增** `MessageLocalizerConformance` 的用例：取文案先按区域、再按目录，先按目录查的自写本地化器过不了（ADR-0286）
-- **新增** `BlobStoreConformance` 的用例「内容类型原样存取」：写不出原值的存储要在写入之前以 `OBJECTSTORAGE_VALIDATION_007` 拒绝（ADR-0295）
+- **新增** `BlobStoreConformance` 的用例「内容类型原样存取」：写不出原值的存储要在写入之前以 `OBJECTSTORAGE_VALIDATION_007` 拒绝；空格之后还有字符的 `text/plain ;`、`text/plain; charset=utf-8 ;` 同样核对（ADR-0295、ADR-0308）
 - **新增** 一致性套件的用例：`BlobStoreConformance` 的批量放弃、`OutboxConformance` 的死信重投、`CacheStoreConformance` 的恰好 512 字节的多字节键（给键加前缀的夹具覆写 `KeyPrefixBytes`）（ADR-0266、ADR-0272、ADR-0274）
 
 ## v5.0.0-rc.7（2026-11-23）
