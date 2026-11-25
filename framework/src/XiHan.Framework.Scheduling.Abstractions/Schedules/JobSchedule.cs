@@ -4,6 +4,7 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using XiHan.Framework.Primitives;
+using XiHan.Framework.Scheduling.Abstractions.Jobs;
 
 namespace XiHan.Framework.Scheduling.Abstractions.Schedules;
 
@@ -11,7 +12,7 @@ namespace XiHan.Framework.Scheduling.Abstractions.Schedules;
 /// 作业的计划
 /// </summary>
 /// <remarks>
-/// 手动、固定间隔（可限次数）、cron（可指定时区）或一次；任何计划可带起止窗口与排除日历。文本形式可往返（<see cref="ToString"/> / <see cref="Parse"/>），存储以文本持久化
+/// 手动、固定间隔（可限次数）、cron（可指定时区）或一次；任何计划可带起止窗口与排除日历。文本形式可往返（<see cref="ToString"/> / <see cref="Parse"/>），存储以文本持久化；文法见规范 RFC-0013「计划的文本形式」（ADR-0297）
 /// </remarks>
 [ApiLevel(Stability.Stable, "5.0")]
 public sealed record JobSchedule
@@ -35,6 +36,24 @@ public sealed record JobSchedule
     /// 文本里的时区选项（只对 cron）
     /// </summary>
     private const string TimeZoneOption = "tz=";
+
+    /// <summary>
+    /// 文本里各部分之间的分隔：正好一个空格
+    /// </summary>
+    private const char Separator = ' ';
+
+    /// <summary>
+    /// 间隔里天数的最多位数
+    /// </summary>
+    /// <remarks>
+    /// <see cref="TimeSpan.MaxValue"/> 是 10675199 天多
+    /// </remarks>
+    private const int MaxDayDigits = 8;
+
+    /// <summary>
+    /// 间隔里不足一秒的部分的位数（100 纳秒为单位）
+    /// </summary>
+    private const int FractionDigits = 7;
 
     /// <summary>
     /// 由种类与参数创建
@@ -81,7 +100,7 @@ public sealed record JobSchedule
     public CronExpression? Cron { get; }
 
     /// <summary>
-    /// cron 的时区 ID（<see cref="TimeZoneInfo"/> 的 ID）
+    /// cron 的时区名（IANA tz 数据库的名字）
     /// </summary>
     /// <remarks>
     /// 空为 UTC
@@ -149,7 +168,7 @@ public sealed record JobSchedule
     /// cron 表达式
     /// </summary>
     /// <remarks>
-    /// 不合法抛出 <see cref="ArgumentException"/>。<c>timeZoneId</c> 为 <see cref="TimeZoneInfo"/> 的 ID（IANA 或 Windows），空为 UTC；找不到的时区抛出 <see cref="ArgumentException"/>
+    /// 不合法抛出 <see cref="ArgumentException"/>；时区为 UTC
     /// <c>timeZoneId</c> 取 <c>null</c>
     /// </remarks>
     public static JobSchedule FromCron(string expression)
@@ -159,14 +178,14 @@ public sealed record JobSchedule
     /// cron 表达式
     /// </summary>
     /// <remarks>
-    /// 不合法抛出 <see cref="ArgumentException"/>。<paramref name="timeZoneId"/> 为 <see cref="TimeZoneInfo"/> 的 ID（IANA 或 Windows），空为 UTC；找不到的时区抛出 <see cref="ArgumentException"/>
+    /// 不合法抛出 <see cref="ArgumentException"/>。<paramref name="timeZoneId"/> 是 IANA tz 数据库的名字（<c>Asia/Shanghai</c>、<c>UTC</c>），空为 UTC；不合时区名的文法、本机的时区库里找不到或不是 IANA 的名字（Windows 的时区 ID 等）都抛出 <see cref="ArgumentException"/>：写进计划文本的名字必须读得回来（RFC-0013「计划的文本形式」，ADR-0297）
     /// </remarks>
     public static JobSchedule FromCron(string expression, string? timeZoneId)
     {
         var cron = CronExpression.Parse(expression);
-        if (!string.IsNullOrWhiteSpace(timeZoneId))
+        if (!string.IsNullOrWhiteSpace(timeZoneId) && !TryResolveIanaTimeZone(timeZoneId, out _))
         {
-            _ = ResolveTimeZone(timeZoneId);
+            throw new ArgumentException($"Time zone '{timeZoneId}' is invalid: it must be an IANA time zone name that the local time zone database knows.", nameof(timeZoneId));
         }
 
         return new JobSchedule(JobScheduleKind.Cron, null, null, cron, string.IsNullOrWhiteSpace(timeZoneId) ? null : timeZoneId, null);
@@ -216,59 +235,43 @@ public sealed record JobSchedule
     /// <summary>
     /// 尝试解析 <see cref="ToString"/> 产生的文本
     /// </summary>
+    /// <remarks>
+    /// 文法见规范 RFC-0013「计划的文本形式」：各部分之间正好一个空格，种类之后是种类自己的部分，再按 <c>tz=</c>（只跟在 cron 后面）、<c>start=</c>、<c>end=</c>、<c>calendar=</c> 的次序接选项，每个至多一次；间隔、次数与 cron 的写法与 <see cref="ToString"/> 写出的相同，时刻按 RFC-0003 规则 8 的读法（<see cref="TimestampText"/>）。时区名在本机的时区库里找不到时也返回 <see langword="false"/>
+    /// </remarks>
     public static bool TryParse([NotNullWhen(true)] string? text, [NotNullWhen(true)] out JobSchedule? schedule)
     {
         schedule = null;
-        if (string.IsNullOrWhiteSpace(text))
+
+        // 只认单个空格分隔：开头、结尾与连着的空格分出空的部分，不合法。制表符是 cron 自己认的分隔符，
+        // 放进去会被 cron 当成两段，在这里先挡掉；别的空白落在某一部分里，由那一部分的文法拒绝
+        if (string.IsNullOrEmpty(text) || text.Contains('\t', StringComparison.Ordinal))
         {
             return false;
         }
 
-        var tokens = text.Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-        // 尾部形如 k=v 的词是选项；cron 表达式本身不含 '='，所以从尾部剥离不会误伤
-        DateTimeOffset? startAt = null;
-        DateTimeOffset? endAt = null;
-        string? calendar = null;
-        string? timeZoneId = null;
-        var end = tokens.Length;
-        while (end > 1 && tokens[end - 1].Contains('=', StringComparison.Ordinal))
+        var parts = text.Split(Separator);
+        if (Array.Exists(parts, static part => part.Length == 0))
         {
-            var option = tokens[end - 1];
-            if (option.StartsWith(StartOption, StringComparison.Ordinal) && TryParseTime(option[StartOption.Length..], out var start))
-            {
-                startAt = start;
-            }
-            else if (option.StartsWith(EndOption, StringComparison.Ordinal) && TryParseTime(option[EndOption.Length..], out var endTime))
-            {
-                endAt = endTime;
-            }
-            else if (option.StartsWith(CalendarOption, StringComparison.Ordinal) && option.Length > CalendarOption.Length)
-            {
-                calendar = option[CalendarOption.Length..];
-            }
-            else if (option.StartsWith(TimeZoneOption, StringComparison.Ordinal) && option.Length > TimeZoneOption.Length)
-            {
-                timeZoneId = option[TimeZoneOption.Length..];
-            }
-            else
-            {
-                return false;
-            }
-
-            end--;
+            return false;
         }
 
-        JobSchedule? parsed;
-        switch (tokens[0])
+        var index = 1;
+        JobSchedule parsed;
+        switch (parts[0])
         {
-            case "manual" when end == 1:
+            case "manual":
                 parsed = Manual;
                 break;
-            case "every" when end is 2 or 3 && TimeSpan.TryParseExact(tokens[1], "c", CultureInfo.InvariantCulture, out var interval) && interval > TimeSpan.Zero:
-                int? repeat = null;
-                if (end == 3)
+            case "every":
+                if (index >= parts.Length || !TryParseInterval(parts[index++], out var interval))
                 {
-                    if (tokens[2].Length < 2 || tokens[2][0] != 'x' || !int.TryParse(tokens[2].AsSpan(1), NumberStyles.None, CultureInfo.InvariantCulture, out var count) || count < 1)
+                    return false;
+                }
+
+                int? repeat = null;
+                if (index < parts.Length && parts[index].StartsWith('x'))
+                {
+                    if (!TryParseRepeatCount(parts[index++], out var count))
                     {
                         return false;
                     }
@@ -278,24 +281,79 @@ public sealed record JobSchedule
 
                 parsed = Every(interval, repeat);
                 break;
-            case "cron" when end >= 2:
-                if (!CronExpression.TryParse(string.Join(' ', tokens, 1, end - 1), out var cron))
+            case "cron":
+                // cron 的各段不含 '='，选项都含：表达式到第一个含 '=' 的部分为止
+                var first = index;
+                while (index < parts.Length && !parts[index].Contains('=', StringComparison.Ordinal))
+                {
+                    index++;
+                }
+
+                if (!CronExpression.TryParse(string.Join(Separator, parts, first, index - first), out var cron))
                 {
                     return false;
                 }
 
-                if (timeZoneId is not null && !TryResolveTimeZone(timeZoneId, out _))
+                string? timeZoneId = null;
+                if (index < parts.Length && parts[index].StartsWith(TimeZoneOption, StringComparison.Ordinal))
                 {
-                    return false;
+                    timeZoneId = parts[index++][TimeZoneOption.Length..];
+                    if (!TryResolveIanaTimeZone(timeZoneId, out _))
+                    {
+                        return false;
+                    }
                 }
 
                 parsed = new JobSchedule(JobScheduleKind.Cron, null, null, cron, timeZoneId, null);
                 break;
-            case "once" when end == 2 && TryParseTime(tokens[1], out var at):
+            case "once":
+                if (index >= parts.Length || !TimestampText.TryParse(parts[index++], out var at))
+                {
+                    return false;
+                }
+
                 parsed = Once(at);
                 break;
             default:
                 return false;
+        }
+
+        // 选项按固定次序、每个至多一次：次序不对、重复与不认得的选项都会剩下没读完的部分
+        DateTimeOffset? startAt = null;
+        if (index < parts.Length && parts[index].StartsWith(StartOption, StringComparison.Ordinal))
+        {
+            if (!TimestampText.TryParse(parts[index++][StartOption.Length..], out var start))
+            {
+                return false;
+            }
+
+            startAt = start;
+        }
+
+        DateTimeOffset? endAt = null;
+        if (index < parts.Length && parts[index].StartsWith(EndOption, StringComparison.Ordinal))
+        {
+            if (!TimestampText.TryParse(parts[index++][EndOption.Length..], out var end))
+            {
+                return false;
+            }
+
+            endAt = end;
+        }
+
+        string? calendar = null;
+        if (index < parts.Length && parts[index].StartsWith(CalendarOption, StringComparison.Ordinal))
+        {
+            calendar = parts[index++][CalendarOption.Length..];
+            if (!JobName.IsValid(calendar))
+            {
+                return false;
+            }
+        }
+
+        if (index != parts.Length)
+        {
+            return false;
         }
 
         schedule = parsed with { StartAt = startAt, EndAt = endAt, Calendar = calendar };
@@ -354,13 +412,137 @@ public sealed record JobSchedule
     }
 
     /// <summary>
+    /// 按 IANA 的名字找时区
+    /// </summary>
+    /// <remarks>
+    /// 名字合时区名的文法、本机的时区库里找得到、且是 IANA 的名字（Windows 的时区 ID 不收：别的机器与别的语言读不出）
+    /// </remarks>
+    private static bool TryResolveIanaTimeZone(string timeZoneId, [NotNullWhen(true)] out TimeZoneInfo? zone)
+    {
+        zone = null;
+        return IsTimeZoneName(timeZoneId) && TimeZoneInfo.TryFindSystemTimeZoneById(timeZoneId, out zone) && zone.HasIanaId;
+    }
+
+    /// <summary>
+    /// 是否合时区名的文法
+    /// </summary>
+    /// <remarks>
+    /// 以 <c>/</c> 分开的一到多个部分，每部分是一个以上的 ASCII 字母、数字、<c>_</c>、<c>+</c> 或 <c>-</c>：<c>^[A-Za-z0-9_+-]+(/[A-Za-z0-9_+-]+)*$</c>
+    /// </remarks>
+    private static bool IsTimeZoneName(string text)
+    {
+        if (text.Length == 0 || text[0] == '/' || text[^1] == '/')
+        {
+            return false;
+        }
+
+        for (var index = 0; index < text.Length; index++)
+        {
+            var character = text[index];
+            if (character == '/')
+            {
+                // 部分不能为空：不能有连着的两个 '/'
+                if (text[index - 1] == '/')
+                {
+                    return false;
+                }
+            }
+            else if (!char.IsAsciiLetterOrDigit(character) && character is not ('_' or '+' or '-'))
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /// <summary>
+    /// 解析间隔：<c>[d.]hh:mm:ss[.fffffff]</c>
+    /// </summary>
+    /// <remarks>
+    /// 与 <see cref="TimeSpan"/> 的 <c>c</c> 格式对正值写出的形状相同：天数不带前导 0、不足一天不写，时 00 到 23、分秒 00 到 59 各两位，不足一秒的部分正好七位、为 0 时不写；间隔大于 0、不超过 <see cref="TimeSpan.MaxValue"/>
+    /// </remarks>
+    private static bool TryParseInterval(string text, out TimeSpan interval)
+    {
+        interval = default;
+        var span = text.AsSpan();
+        long days = 0;
+        var colon = span.IndexOf(':');
+        var dot = span.IndexOf('.');
+        if (dot >= 0 && (colon < 0 || dot < colon))
+        {
+            // 天数：一到八位、不带前导 0
+            var dayText = span[..dot];
+            if (dayText.Length is 0 or > MaxDayDigits || dayText[0] == '0' || !TryDigits(dayText, out days))
+            {
+                return false;
+            }
+
+            span = span[(dot + 1)..];
+        }
+
+        if (span.Length < 8 || span[2] != ':' || span[5] != ':'
+            || !TryDigits(span[0..2], out var hours) || !TryDigits(span[3..5], out var minutes) || !TryDigits(span[6..8], out var seconds)
+            || hours > 23 || minutes > 59 || seconds > 59)
+        {
+            return false;
+        }
+
+        long fraction = 0;
+        span = span[8..];
+        if (span.Length > 0)
+        {
+            // 不足一秒的部分：正好七位，为 0 时写法里不出现
+            if (span.Length != FractionDigits + 1 || span[0] != '.' || !TryDigits(span[1..], out fraction) || fraction == 0)
+            {
+                return false;
+            }
+        }
+
+        // 天数最多八位，乘出来装得下 long；与不足一天的部分相加之前先核对上限
+        var dayTicks = days * TimeSpan.TicksPerDay;
+        var rest = (((((hours * 60L) + minutes) * 60L) + seconds) * TimeSpan.TicksPerSecond) + fraction;
+        if (dayTicks > TimeSpan.MaxValue.Ticks - rest)
+        {
+            return false;
+        }
+
+        interval = TimeSpan.FromTicks(dayTicks + rest);
+        return interval > TimeSpan.Zero;
+    }
+
+    /// <summary>
+    /// 解析总运行次数：<c>x</c> 接 1 到 2147483647、不带前导 0 的十进制整数
+    /// </summary>
+    private static bool TryParseRepeatCount(string text, out int count)
+    {
+        count = 0;
+        return text.Length > 1 && text[0] == 'x' && text[1] != '0'
+            && int.TryParse(text.AsSpan(1), NumberStyles.None, CultureInfo.InvariantCulture, out count);
+    }
+
+    /// <summary>
+    /// 只由 ASCII 数字组成的十进制数
+    /// </summary>
+    private static bool TryDigits(ReadOnlySpan<char> text, out long value)
+    {
+        value = 0;
+        foreach (var character in text)
+        {
+            if (!char.IsAsciiDigit(character))
+            {
+                return false;
+            }
+
+            value = (value * 10) + (character - '0');
+        }
+
+        return true;
+    }
+
+    /// <summary>
     /// 时刻的往返格式
     /// </summary>
     private static string Format(DateTimeOffset value) => value.ToUniversalTime().ToString("O", CultureInfo.InvariantCulture);
 
-    /// <summary>
-    /// 解析往返格式的时刻
-    /// </summary>
-    private static bool TryParseTime(string text, out DateTimeOffset value)
-        => DateTimeOffset.TryParseExact(text, "O", CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal, out value);
 }
