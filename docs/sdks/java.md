@@ -200,6 +200,7 @@ Java 的写法与差异：
 - 成熟度：Experimental。已有钉在规范 rc 标签上的预发布版，到 Stable 还要钉在规范正式版标签上的发布版。
 - 尚未提供：流式操作（操作契约还没有流式形态，`InvokeStream` 读第一帧后以 `InvalidArgument` 或 `Unimplemented` 结束）、Wasm 载体与远程 Provider 的插件侧（如 `caching.distributed@1`）。
 - 怎样验证：测试直接读取 `spec/conformance/vectors`，期望值逐字相等；`VectorCoverageTest` 按档表核对认领的档要求的每个向量要么有测试回放、要么列为缺口；`EchoConformanceTest` 用 submodule 里的黑盒运行器跑示例插件的全部用例。CI 在 Linux 与 Windows 上都跑。
+- 信封的 `time`：回放 `plugin/sdk-envelope-times.json` 的纳秒一列（ADR-0310）。写出的文本与 `text.nanoseconds` 逐字相同，读出的时刻与 `utc.nanoseconds` 相等，`unreadable` 的每一条投递都以 `INVALID_ARGUMENT` 拒绝。`Instant` 是纳秒精度，不截断，没有跳过的用例。`plugin/envelope-times.json` 现在同在 `plugin` 档。
 
 ## 破坏性改动与迁移
 

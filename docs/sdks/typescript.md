@@ -200,6 +200,7 @@ TypeScript 的写法与差异：
 - 成熟度：Experimental。已有钉在规范 rc 标签上的预发布版，到 Stable 还要钉在规范正式版标签上的发布版。
 - 尚未提供：流式操作（操作契约还没有流式形态，`InvokeStream` 读第一帧后以 `InvalidArgument` 或 `Unimplemented` 结束）、Wasm 载体与远程 Provider 的插件侧（如 `caching.distributed@1`）。
 - 怎样验证：[`test/conformance-vectors.test.ts`](https://github.com/XiHanFun/framework-sdk-typescript/blob/main/test/conformance-vectors.test.ts) 按档表核对认领的档要求的每个向量要么被测试回放、要么列为缺口；[`test/plugin-conformance.test.ts`](https://github.com/XiHanFun/framework-sdk-typescript/blob/main/test/plugin-conformance.test.ts) 用黑盒运行器跑示例插件 echo。CI 在 Windows 与 Linux 上都跑。
+- 信封的 `time`：回放 `plugin/sdk-envelope-times.json` 的毫秒一列（ADR-0310）。写出的文本与 `text.milliseconds` 逐字相同；读出的时刻与 `utc.milliseconds` 相等，纪元之前的时刻向下截到毫秒；`unreadable` 的每一条投递都以 `InvalidArgument` 拒绝。`plugin/envelope-times.json` 现在同在 `plugin` 档。
 
 ## 破坏性改动与迁移
 

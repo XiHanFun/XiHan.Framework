@@ -267,6 +267,7 @@ RFC-0010「模板」。模板参数与错误细节是 `serde_json::Value`：
 - 成熟度：Experimental。已有钉在规范 rc 标签上的预发布版，到 Stable 还要钉在规范正式版标签上的发布版。
 - 尚未提供（不在认领的档里）：流式操作（操作契约还没有流式形态，`InvokeStream` 读第一帧后以 `InvalidArgument` 或 `Unimplemented` 结束）、Wasm 插件（RFC-0018，见 [Wasm 插件](/plugins/wasm)）与远程 Provider 的操作集（RFC-0019，首个是 `caching.distributed@1`）。
 - 怎样验证：测试直接读取 `spec/conformance/vectors/`；[`tests/conformance_vectors.rs`](https://github.com/XiHanFun/framework-sdk-rust/blob/main/tests/conformance_vectors.rs) 按档表核对认领的档要求的每个向量要么被回放、要么列为缺口；[`tests/plugin_conformance.rs`](https://github.com/XiHanFun/framework-sdk-rust/blob/main/tests/plugin_conformance.rs) 构建示例 echo，用黑盒运行器跑全部用例。CI 在 ubuntu 与 windows 上跑这些测试，另以最低 Rust 版本编译库、测试与示例。
+- 信封的 `time`：回放 `plugin/sdk-envelope-times.json` 里本平台 `SystemTime` 精度的一列（ADR-0310）：Windows 取 `hundredNanoseconds`，其余平台取 `nanoseconds`。写出的文本与 `text` 逐字相同，读出的时刻与 `utc` 相等，`unreadable` 的每一条投递都以 `InvalidArgument` 拒绝。Windows 的 `SystemTime` 从 1601 年起，表示不了更早的时刻：换算成 UTC 早于 1601 年的两条写出用例（0001 年）跳过，读入里「最早的时刻之后 100 纳秒」按读不出核对，投递以 `InvalidArgument` 拒绝。`plugin/envelope-times.json` 现在同在 `plugin` 档。
 
 ## 破坏性改动与迁移
 

@@ -218,6 +218,7 @@ Go 自己的文本（日期、`Duration`、结构体）不跨语言：插件的�
 - 成熟度：Experimental。已有钉在规范 rc 标签上的预发布版，到 Stable 还要钉在规范正式版标签上的发布版。
 - 范围外：流式操作（操作契约还没有流式形态，`InvokeStream` 读第一帧后以 `InvalidArgument` 或 `Unimplemented` 结束）与 Wasm 载体。
 - 怎样验证：各包的测试经一致性模块读取内嵌的向量并回放，仓库根的 [`vectors_test.go`](https://github.com/XiHanFun/framework-sdk-go/blob/main/vectors_test.go) 按档表核对认领的档要求的每个向量要么有测试回放、要么列为缺口；两个示例的测试构建插件，用 `go.mod` 里同一版本的 `xihan-conformance` 跑全部用例。CI 在 Linux 与 Windows 上都跑。用 Go 实现的分布式缓存另经远程 Provider 适配器通过 .NET 的缓存一致性套件（`framework/samples/CacheGoPlugin`）。
+- 信封的 `time`：回放 `plugin/sdk-envelope-times.json` 的纳秒一列（ADR-0310）。作者给的时刻经 `ToProtoEnvelope` 写出的文本与 `text.nanoseconds` 逐字相同，宿主写来的文本经 `FromProtoEnvelope` 读出的时刻与 `utc.nanoseconds` 相等，`unreadable` 的每一条投递都以 `InvalidArgument` 拒绝。`time.Time` 是纳秒精度，不截断，没有跳过的用例。`plugin/envelope-times.json` 现在同在 `plugin` 档。
 
 ## 破坏性改动与迁移
 
