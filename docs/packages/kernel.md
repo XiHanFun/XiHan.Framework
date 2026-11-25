@@ -19,7 +19,7 @@
 
 | 命名空间 | 职责 |
 | --- | --- |
-| `Kernel.Hosting` | `AddXiHan`、`AppBuilder`、`App`、`IFeature`、`IHostedFeature`、`FeatureContext`、`KernelOptions`、`StartupBannerOptions`、资源绑定、健康快照与 `IHealthContributor`、`PeriodicHealthContributor` |
+| `Kernel.Hosting` | `AddXiHan`、`AppBuilder`、`App`、`IFeature`、`IHostedFeature`、`FeatureContext`、`KernelOptions`、`StartupBannerOptions`、资源绑定（`BindingResolver`、`BindingValue` 与内核装配特性、插件宿主共用的绑定核对 `BindingRules`）、健康快照与 `IHealthContributor`、`PeriodicHealthContributor` |
 | `Kernel.Capabilities` | `ResolvedGraph`、`ResolvedNode`（能力求解的结果）、`ManifestReader`（读写 `xihan.manifest.json`） |
 | `Kernel.Pipeline` | `IPipelineMiddleware`、`PipelineBuilder`、`PipelineStep`、`Placement`、`DeadlineMiddleware`、`IInvocationAccessor`、调用来源 `InvocationOrigin`、上下文扩展 |
 | `Kernel.Operations` | `[Operation]`、`IOperation<TRequest, TResponse>`、`OperationContract`、`OperationDescriptor`、`OperationSchema`、`OperationRegistry`、`IOperationInvoker` |
@@ -28,7 +28,7 @@
 | `Kernel.Resilience` | `ResilienceMiddleware`、`ResilienceOptions`、`ResiliencePolicy` |
 | `Kernel.Diagnostics` | `ObserveMiddleware`、`ActivitySource` 与 `Meter` 桥、`IAuditSink`、`UnreadableDeadlineLog`（截止时间读不出时的限频告警） |
 | `Kernel.Security` | `Principal`、`TenantContext`、`SecurityContext`、`ResourceName`、`IPolicy`（`EvaluateAsync` → `Result<AuthorizationDecision>`：成功是允许或拒绝，失败是无法判定）、`AuthorizationDecision`、`PermissionDefinition`、`PermissionRegistry` |
-| `Kernel.Plugins` | `IPlugin`、`IPluginHost`、`PluginContext`、`PluginPermissions` 抽象，内核装配特性与插件宿主共用的绑定核对 `PluginBindingRules` |
+| `Kernel.Plugins` | `IPlugin`、`IPluginHost`、`PluginContext`、`PluginPermissions` 抽象 |
 | `Kernel.Localization` | 内核自己的消息目录 |
 
 `AddXiHan` 收集特性、求解能力图谱、按拓扑顺序调用 `Configure`，然后把 `App`、内置中间件、权限表、操作登记表、`IInvocationAccessor` 与一个宿主服务注册进容器；容器由宿主构建，内核只配置 `IServiceCollection`。宿主服务随 .NET 通用宿主启动与停止应用。
@@ -91,8 +91,8 @@ await builder.Build().RunAsync();
 | `IFeature` / `IHostedFeature` | 特性：`Manifest` + `Configure`；托管特性另有 `StartAsync` / `StopAsync` |
 | `IShadowAwareFeature` | 能力全部被顶替时内核改调 `ConfigureShadowed`，只登记与能力选择无关的服务（命名存储实例的 Provider）；不注册契约、不贡献中间件、不启动 |
 | `FeatureContext` | `Configure` 的入口：`Services`、`Configuration`、`Node`、`AddMiddleware`、`AddPermission`（归属为本特性的清单 ID）、`AddOperation`、`AddStartupCheck`（启动核对：容器建好之后、任何特性启动之前执行，抛出即终止启动，不归失败策略管，ADR-0085）、`GetBinding` / `FindBinding`、`Bindings`（装配时解析好的一份，此后不变）、`ServiceBindingRoot`（应用经 `UseServiceBindingRoot` 指定的根目录，没有指定时为 `null`；装配之后还要按同一套来源解析绑定的特性把它与 `Configuration` 交给 `BindingResolver.Resolve`，ADR-0268） |
-| `BindingResolver` / `BindingValue` | 资源绑定的解析与结果：`Resolve(configuration, serviceBindingRoot)` 先读 Service Binding 目录、再读 `XiHan:Bindings`；绑定目录里一个文件最多 `MaxFileBytes`（524288）字节、一个绑定的文件合计最多 `MaxBindingBytes`（1048576）字节，按原始字节计、读到上限就停；一个绑定目录里读的文件最多 `MaxBindingFiles`（128）个，解析全部绑定时根目录下最多 `MaxBindings`（128）个绑定，先数、后读，点了名的解析只数被点名的绑定的文件；超过即抛出 `KERNEL_HOSTING_005`（消息只带绑定名、文件名与上限，条目数超限时不带文件名），配置来源不受限；`BindingValue` 是初始化器记录，`Name`、`Type`、`Value`、`Properties` 都是 `required` 成员，`Property(key)` 取单个属性，`ToString()` 遮蔽主值、属性只列名字（按序数排序，如 `Properties = [password, username]`），值不打印 |
-| `PluginBindingRules` | 清单声明的绑定的核对（Preview），内核装配特性与进程外、Wasm、进程内三种插件宿主共用同一处，名字里的 Plugin 是最初的使用方：`HasContent(binding)` 判断解析出的绑定有没有能交给插件或特性的内容（主值或至少一个属性，只给了类型的没有）；`FindViolation(declared, resolved)` 返回写进错误 `reason` 的固定英文文本，必需（`required` 缺省 `true`）的绑定没有内容为 `binding '<名>' is required but not provided`，来源声明的类型与清单不同（按序数比较，必需与可选都核对）为 `binding '<名>' is of type '<来源的类型>' but the manifest declares '<清单的类型>'`，主值与属性都不出现。内核装配特性时按清单的顺序对每个声明的绑定调用它，第一处不合即抛 `KERNEL_HOSTING_001`，消息 `Feature '<清单 ID>' is not configured: <reason>.`，见[资源绑定](/configuration/bindings#必需绑定与启动期失败) |
+| `BindingResolver` / `BindingValue` | 资源绑定的解析与结果：`Resolve(configuration, serviceBindingRoot)` 先读 Service Binding 目录、再读 `XiHan:Bindings`；根目录下以 `.` 开头的子目录不是绑定（解析全部与点名都不读、不计），绑定目录里的子目录不是属性，目录项可以是符号链接（名字取目录项自己的，内容与大小按链接最终指向的计，Kubernetes 的 projected volume 挂到根目录、Secret 卷挂到绑定目录都读得出）；绑定目录里一个文件最多 `MaxFileBytes`（524288）字节、一个绑定的文件合计最多 `MaxBindingBytes`（1048576）字节，按原始字节计、读到上限就停；一个绑定目录里读的文件最多 `MaxBindingFiles`（128）个，解析全部绑定时根目录下最多 `MaxBindings`（128）个绑定，先数、后读，点了名的解析只数被点名的绑定的文件；超过即抛出 `KERNEL_HOSTING_005`（消息只带绑定名、文件名与上限，条目数超限时不带文件名），配置来源不受限；`BindingValue` 是初始化器记录，`Name`、`Type`、`Value`、`Properties` 都是 `required` 成员，`Property(key)` 取单个属性，`ToString()` 遮蔽主值、属性只列名字（按序数排序，如 `Properties = [password, username]`），值不打印 |
+| `BindingRules` | 清单声明的绑定的核对（Preview，`Kernel.Hosting`），内核装配特性与进程外、Wasm、进程内三种插件宿主共用同一处：`HasContent(binding)` 判断解析出的绑定有没有能交给插件或特性的内容（主值或至少一个属性，只给了类型的没有）；`FindViolation(declared, resolved)` 返回写进错误 `reason` 的固定英文文本，必需（`required` 缺省 `true`）的绑定没有内容为 `binding '<名>' is required but not provided`，来源声明的类型与清单不同（按序数比较，必需与可选都核对）为 `binding '<名>' is of type '<来源的类型>' but the manifest declares '<清单的类型>'`，主值与属性都不出现。内核装配特性时按清单的顺序对每个声明的绑定调用它，第一处不合即抛 `KERNEL_HOSTING_001`，消息 `Feature '<清单 ID>' is not configured: <reason>.`，见[资源绑定](/configuration/bindings#必需绑定与启动期失败) |
 | `PluginContext` | 插件 `Configure` 的入口：`Manifest`、`Services`、`Configuration`、`Permissions`、`Pipeline`、`ServiceBindingRoot`（宿主构造时给的绑定根目录，没给时为 `null`、根目录取环境变量；进程内插件自己读绑定时写 `BindingResolver.Resolve(context.Configuration, context.ServiceBindingRoot)`，读到的与宿主加载前核对的是同一套来源，ADR-0301）。构造的最后一个参数 `serviceBindingRoot` 可选 |
 | `KernelOptions` / `FailurePolicy` | 内核选项与失败策略 |
 | `ConfigurationValues` | 从配置逐键读标量：`ReadSeconds`、`ReadInt32`、`ReadInt64`、`ReadBoolean`、`ReadEnum<TEnum>`。键不存在返回 `null`；写了值（含空串）就必须合法，否则抛 `ArgumentException`，消息是 `'<完整配置键>' must be …, but was '<原值>'.`。各包的选项类都用它，自己写选项类时也用它，不要各写一份解析 |

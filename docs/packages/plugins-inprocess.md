@@ -15,7 +15,7 @@
 
 ## 概述
 
-`InProcessPluginHost` 实现内核的 `IPluginHost`。`LoadAsync(PluginSource)` 的顺序是：读插件目录里的 `xihan.manifest.json`，要求 `kind: plugin` 与 `isolation: in-process`；核对清单 `permissions` 都在 `PluginSource.Permissions` 里；要求 `package` 与 `entry` 都有值且 `<package>.dll` 存在；核对清单声明的绑定（与内核装配特性、进程外与 Wasm 宿主同一条规则，规则在内核的 `PluginBindingRules`）：按宿主配置与构造时给的绑定根目录（没给时取环境变量 `SERVICE_BINDING_ROOT`）解析，必需（`required` 缺省 `true`）的绑定两种来源都没给或只给了类型、来源声明的类型与清单不同（必需与可选都核对），即加载失败、插件程序集不加载；宿主不向插件下发绑定，插件自己经 `BindingResolver.Resolve(context.Configuration, context.ServiceBindingRoot)` 读；在一个新的可收集加载上下文里加载程序集，按 `entry` 类型名实例化，要求它实现 `IPlugin` 且自带清单的 ID 与文件一致；调用 `IPlugin.Configure(PluginContext)`，构建插件专属的 `ServiceProvider`，再调用 `StartAsync`。成功后状态为 `Ready`。
+`InProcessPluginHost` 实现内核的 `IPluginHost`。`LoadAsync(PluginSource)` 的顺序是：读插件目录里的 `xihan.manifest.json`，要求 `kind: plugin` 与 `isolation: in-process`；核对清单 `permissions` 都在 `PluginSource.Permissions` 里；要求 `package` 与 `entry` 都有值且 `<package>.dll` 存在；核对清单声明的绑定（与内核装配特性、进程外与 Wasm 宿主同一条规则，规则在内核 `Kernel.Hosting` 的 `BindingRules`）：按宿主配置与构造时给的绑定根目录（没给时取环境变量 `SERVICE_BINDING_ROOT`）解析，必需（`required` 缺省 `true`）的绑定两种来源都没给或只给了类型、来源声明的类型与清单不同（必需与可选都核对），即加载失败、插件程序集不加载；宿主不向插件下发绑定，插件自己经 `BindingResolver.Resolve(context.Configuration, context.ServiceBindingRoot)` 读；在一个新的可收集加载上下文里加载程序集，按 `entry` 类型名实例化，要求它实现 `IPlugin` 且自带清单的 ID 与文件一致；调用 `IPlugin.Configure(PluginContext)`，构建插件专属的 `ServiceProvider`，再调用 `StartAsync`。成功后状态为 `Ready`。
 
 加载上下文把名字以 `XiHan.Framework.`、`Microsoft.Extensions.`、`System.`、`netstandard`、`mscorlib` 开头的程序集交给默认上下文，保证 `IPlugin` 等类型与宿主是同一个类型；插件的私有托管与原生依赖按它自己的 `.deps.json` 在插件目录里解析。
 

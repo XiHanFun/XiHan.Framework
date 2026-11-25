@@ -23,14 +23,14 @@
 
 `BindingResolver.Resolve` 按下面的顺序收集：
 
-1. 环境变量 `SERVICE_BINDING_ROOT` 指向的目录。每个子目录是一个绑定，目录名是绑定名；目录里每个文件是一个属性，文件名是属性名、内容修剪首尾空白后是值；`type` 文件是类型，`uri` 文件既是主值也保留为属性；以 `.` 开头的文件跳过。`AppBuilder.UseServiceBindingRoot(directory)` 可以在代码里改用别的目录。
+1. 环境变量 `SERVICE_BINDING_ROOT` 指向的目录。不以 `.` 开头的每个子目录是一个绑定，目录名是绑定名；以 `.` 开头的子目录不是绑定，不读、不计，点了名也不读。目录里每个文件是一个属性，文件名是属性名、内容修剪首尾空白后是值；`type` 文件是类型，`uri` 文件既是主值也保留为属性；以 `.` 开头的文件跳过，子目录不是属性、也不读。目录项可以是符号链接：名字取目录项自己的，内容、大小与条目数按链接最终指向的计。`AppBuilder.UseServiceBindingRoot(directory)` 可以在代码里改用别的目录。
 2. 配置节 `XiHan:Bindings:<name>`。节本身的标量值或子键 `value` 是主值，子键 `type` 是类型，其余子键是属性。绑定名与 `type`、`value` 两个子键按字面比，区分大小写：写成 `XiHan:Bindings:Db:Value` 读不到绑定 `db` 的主值，得到的是另一个没有主值的绑定 `Db`，`Value` 只是它的一个属性。
 
 同名时配置整体覆盖目录来源，不逐属性合并。
 
 目录来源的文件有大小上限：一个文件最多 524288 字节（512 KiB，`BindingResolver.MaxFileBytes`），一个绑定目录里读的文件（`type`、`uri` 与其余属性文件，以 `.` 开头的不读也不计）合计最多 1048576 字节（1 MiB，`BindingResolver.MaxBindingBytes`，与 Kubernetes 一个 Secret 的上限相同），都按文件的原始字节计。读的时候到上限就停，不先把整个文件读进内存；超过即装配时启动失败（`KERNEL_HOSTING_005`，消息只带绑定名、文件名与上限，不带内容），把不属于绑定的文件（日志、备份、证书归档）挪出绑定目录。
 
-条目数同样有上限：一个绑定目录里读的文件（以 `.` 开头的不计）最多 128 个（`BindingResolver.MaxBindingFiles`），根目录下的子目录（每个都算一个绑定）最多 128 个（`BindingResolver.MaxBindings`）。先数、后读：多出一项时这一层一个文件也不读，装配时启动失败（`KERNEL_HOSTING_005`，消息为 `Binding '<绑定名>' has more than 128 files.` 或 `The service binding root contains more than 128 bindings.`，不带路径与文件名）。`SERVICE_BINDING_ROOT` 指错到日志目录、家目录这类大目录树时就是这样失败的：改正根目录，或把不属于绑定的文件与目录挪走。配置来源不受这两道上限。目录布局长这样：
+条目数同样有上限：一个绑定目录里读的文件（以 `.` 开头的不计）最多 128 个（`BindingResolver.MaxBindingFiles`），根目录下的绑定（以 `.` 开头的子目录不计）最多 128 个（`BindingResolver.MaxBindings`）。先数、后读：多出一项时这一层一个文件也不读，装配时启动失败（`KERNEL_HOSTING_005`，消息为 `Binding '<绑定名>' has more than 128 files.` 或 `The service binding root contains more than 128 bindings.`，不带路径与文件名）。`SERVICE_BINDING_ROOT` 指错到日志目录、家目录这类大目录树时就是这样失败的：改正根目录，或把不属于绑定的文件与目录挪走。配置来源不受这两道上限。目录布局长这样：
 
 ```text
 /bindings/
@@ -39,6 +39,8 @@
    ├─ uri         # Host=db;Database=ledger;Username=app;Password=...
    └─ password    # 可选的单独属性
 ```
+
+Kubernetes 的两种挂法都读得出卷里当前的内容。把 projected volume 直接挂到根目录时，根目录下是 `..data`（指向带时间戳的目录的符号链接）、带时间戳的 `..<时间>` 目录，以及每个绑定名一个、指向 `..data/<绑定名>` 的符号链接：前两个以 `.` 开头，不是绑定，也不占 128 个绑定的名额。把 Secret 卷挂到一个绑定目录时，目录里的 `..data` 与带时间戳的目录是子目录、不是属性，每个属性文件是指向 `..data/<键>` 的符号链接。卷更新时 Kubernetes 换掉 `..data` 的指向，下一次解析读到的就是新内容。
 
 同一份信息用配置节表达：
 
@@ -142,7 +144,7 @@ app.MapGet("/ledger", (LedgerConnection ledger) => ledger.ConnectionString.Lengt
 
 ## 必需绑定与启动期失败
 
-清单声明的每个绑定都在 `AddXiHan` 构建时按清单的顺序核对，报第一处不合的；规则与插件宿主是同一处（内核的 `PluginBindingRules`）：
+清单声明的每个绑定都在 `AddXiHan` 构建时按清单的顺序核对，报第一处不合的；规则与插件宿主是同一处（内核 `Kernel.Hosting` 的 `BindingRules`）：
 
 | 情形 | 结果 |
 | --- | --- |
