@@ -1,6 +1,6 @@
 # XiHan.Framework.Testing
 
-测试基座：没有 HTTP 的内存测试宿主、可注入行为的特性桩、按能力 ID 文本构造清单与独立调用上下文的工具，可以切换成后端不可达的缓存包装，以及把日志、Span 与指标收进内存的收集器和规范向量的严格读取。供框架自身、Provider 与应用的测试项目引用，也是各一致性套件装配宿主的基础。
+测试基座：没有 HTTP 的内存测试宿主、可注入行为的特性桩、按能力 ID 文本构造清单与独立调用上下文的工具，可以切换成后端不可达的缓存包装，以及把日志、Span 与指标收进内存的收集器。供框架自身、Provider 与应用的测试项目引用，也是各一致性套件装配宿主的基础。
 
 | 项 | 内容 |
 | --- | --- |
@@ -11,7 +11,7 @@
 | 配置节 | — |
 | 依赖 | `XiHan.Framework.Kernel`、`XiHan.Framework.Caching.Abstractions`、`XiHan.Framework.Persistence.Abstractions`、`XiHan.Framework.Security.WebAuthn`；`Microsoft.Extensions.Configuration`、`Microsoft.Extensions.DependencyInjection`、`System.Formats.Cbor` |
 | AOT | 兼容 |
-| 稳定性 | Stable；`FaultyCache`、`ScriptedUnitOfWork`、`ScriptedRepository<TEntity, TKey>`、`LogCapture`、`LogCaptureEntry`、`SpanCapture`、`SpanSamplingRequest`、`MetricCapture`、`MetricCaptureEntry`、`SpecVectors`、`FrameworkWorkspace` 为 Preview |
+| 稳定性 | Stable；`FaultyCache`、`ScriptedUnitOfWork`、`ScriptedRepository<TEntity, TKey>`、`LogCapture`、`LogCaptureEntry`、`SpanCapture`、`SpanSamplingRequest`、`MetricCapture`、`MetricCaptureEntry`、`WebAuthnTestAuthenticator`、`WebAuthnTestCeremony` 为 Preview |
 
 ## 概述
 
@@ -28,7 +28,7 @@
 - 测自己开工作单元的代码（[管道外的单例存储、后台循环](/persistence/unit-of-work#在管道外开工作单元)）在数据库故障时怎样收尾：用 `ScriptedUnitOfWork` 与 `ScriptedRepository<TEntity, TKey>`。
 - 断言组件写了哪条日志（告警有没有记、异常有没有随日志带出、敏感文本有没有进消息）：用 `LogCapture`。
 - 断言组件开了哪条 Span、记了哪个指标（名字、标签、状态、采样器看到的创建）：用 `SpanCapture` 与 `MetricCapture`。
-- 在框架仓库（或带着规范子模块的 Provider、SDK 仓库）里回放规范的一致性向量：用 `SpecVectors` 严格读成对象模型。应用自己的测试用不上它。
+- 在框架仓库里回放规范的一致性向量：不在本包，用仓库里不发包的 `XiHan.Framework.Testing.Workspace`，见[一致性套件与门禁](/testing/conformance#回放规范向量)。
 
 ## 安装与启用
 
@@ -57,8 +57,6 @@ dotnet add package XiHan.Framework.Testing --prerelease
 | `SpanSamplingRequest` | 采样器被询问的一次创建：`Source`、`Name`、`Kind`、`TraceId`、`Tags`（创建时给出的标签） |
 | `MetricCapture` | 只打开给定 Meter 名的仪表的 `MeterListener`，创建时启动、释放时停止：`Entries` 是测量值的快照，`RestrictToCurrentFlow()` 之后只收当前异步流（及由它派生的流）里记下的；`Capacity`（缺省 `DefaultCapacity` = 10000，构造时可给） |
 | `MetricCaptureEntry` | 一个测量值：`Meter`、`Instrument`、`Value`（换成 `double`）、`Tags`（重复的标签键取最后一个） |
-| `SpecVectors` | 规范一致性向量的读取：`Directory` 是 `<工作区>/spec/conformance/vectors`；`PathOf(area, fileName)` 只拼路径，给要按 `JsonDocument` 自己读的测试；`Read<T>(area, fileName)` 按反射严格读，`Read<T>(area, fileName, resolver)` 按源生成的上下文严格读 |
-| `FrameworkWorkspace` | `Root`：从测试的输出目录逐级向上第一个含 `XiHan.Framework.slnx` 的目录（仓库里的 `framework/`），第一次读取时找、之后缓存，找不到抛 `InvalidOperationException` |
 
 ## 使用示例
 
@@ -230,33 +228,6 @@ public sealed class InvocationTelemetryTests
 }
 ```
 
-`SpecVectors` 回放规范的一致性向量。读取是严格的：对象模型要认得文件里的每个成员（顶层的 `$comment` 除外），没有缺省值的构造参数与 `required` 成员都要出现。下面回放缓存键的向量（`caching/cache-keys.json`）：
-
-```csharp
-using XiHan.Framework.Caching.Abstractions.Stores;
-using XiHan.Framework.Testing;
-using Xunit;
-
-public sealed class CacheKeyVectorTests
-{
-    private static readonly CacheKeyVectors _vectors = SpecVectors.Read<CacheKeyVectors>("caching", "cache-keys.json");
-
-    [Fact]
-    public void MaxBytes_IsTheOneInTheVectors() => Assert.Equal(CacheKey.MaxBytes, _vectors.MaxBytes);
-
-    [Fact]
-    public void IsValid_AcceptsTheValidKeys()
-        => Assert.All(_vectors.Keys.Valid, static key => Assert.True(CacheKey.IsValid(key.Text), key.Name));
-
-    // 文件里的每个成员都要在模型里：utf8Bytes 与 utf16Units 这里不用，也得写上
-    private sealed record CacheKeyVectors(int MaxBytes, CacheKeyCases Keys, CacheKeyCases Prefixes);
-
-    private sealed record CacheKeyCases(CacheKeyCase[] Valid, CacheKeyCase[] Invalid);
-
-    private sealed record CacheKeyCase(string Name, string Text, int Utf8Bytes, int Utf16Units);
-}
-```
-
 ## 行为与限制
 
 - 每次 `InvokeAsync` / `InvokeOperation*Async` 一个独立的服务作用域；释放后再调用抛 `ObjectDisposedException`。
@@ -268,8 +239,6 @@ public sealed class CacheKeyVectorTests
 - `LogCapture` 全部级别都启用，不支持作用域（`BeginScope` 返回空）；最多留 `Capacity` 条，满了丢掉最早的。`Entries` 每次读取是一份新副本，可以多线程同时写入与读取。`AddProvider` 抛出 `NotSupportedException`（日志只收在这里，不转发）；释放之后写入的日志照样记下。
 - `SpanCapture` 与 `MetricCapture` 的监听器是进程级的：同一进程里并行的测试经过同一个源或 Meter 时，它们的 Span 与测量值也收在这里。Span 用 `Spans(traceId)` 只取本用例那条链路的；指标在 `RestrictToCurrentFlow()` 之后只收当前异步流里记下的，同一条流可以绑几个收集器，另起的后台线程、不带执行上下文的回调记下的这时收不到。源的采样结果取全部监听器里最宽的那个，靠采样结果断言的用例与别的挂监听器的用例放进同一个不并行的集合。
 - 两个收集器每样最多留 `Capacity` 条（Span 的开始、结束与采样询问各算各的），满了丢掉最早的；读到的都是快照，可以多线程同时写入与读取。释放之后不再收，正在途中的回调也不收，已经收到的仍可读取（与释放后照样收的 `LogCapture` 不同）。
-- `SpecVectors` 与 `FrameworkWorkspace` 只在框架仓库的检出里（或带着规范子模块、目录布局相同的仓库里）找得到目标。读法一律严格：成员名按 Web 缺省（camelCase、不区分大小写），文件里有、模型里没有的成员失败，同一对象里重名的成员失败，没有缺省值的构造参数与 `required` 成员缺了失败，只去掉顶层的 `$comment`（别处的 `$comment` 是向量的内容）。同一个文件由几个测试类分别回放时，各自把别的类回放的成员写成 `JsonElement`，可以不出现的成员给缺省值。
-- `SpecVectors.Read` 的报错都带文件路径：文件不存在抛 `FileNotFoundException`（多半是没有检出规范子模块，`git submodule update --init framework/spec`），内容为空、只有 `null` 或顶层不是对象抛 `InvalidOperationException`，与模型对不上抛 `JsonException`；目录名与文件名必须是单独一段，空白、`.`、`..`、含 `/` 或 `\` 抛 `ArgumentException`。按反射读的重载标了 `RequiresUnreferencedCode` / `RequiresDynamicCode`，AOT 的测试项目改用带 `resolver` 的重载。
 
 ## 相关
 

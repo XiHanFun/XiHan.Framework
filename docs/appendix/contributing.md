@@ -46,7 +46,7 @@ Provider 的实测用例靠环境变量门控，没有设置时跳过：`XIHAN_T
    ├─ Directory.Packages.props 中央包版本
    ├─ spec/                   XiHan Spec（framework-spec 仓库的子模块）
    ├─ src/                    正式包，物理目录扁平，包名由术语表与文法推出
-   ├─ test/                   单元、架构、集成测试
+   ├─ test/                   单元、架构、集成测试；另有给测试项目引用、不打包的 XiHan.Framework.Testing.Workspace
    ├─ samples/                示例
    ├─ benchmarks/             基准
    ├─ incubator/              实验包，只能标 Experimental
@@ -77,6 +77,7 @@ Provider 的实测用例靠环境变量门控，没有设置时跳过：`XIHAN_T
 | 本地化 | 消息键常量与 `en-US.json` 一一对应，十种区域文件齐全、占位符一致，调用点只用常量 |
 | 公开 API | 公开类型有 `[ApiLevel]` 与 XML 文档；`PublicAPI.Unshipped.txt` 同步更新；`Stable` 的已发布行不改，`Preview` / `Experimental` 的破坏登记包验证豁免并写进更新日志（ADR-0131） |
 | XML 文档 | 所有类型与成员（含私有）写中文 `<summary>`，三行、只写一句，细节进 `<remarks>` |
+| 测试工具 | 测试里定位工作区、收 Span 与指标只用 `FrameworkWorkspace`、`SpanCapture` 与 `MetricCapture`，不手写解决方案文件的查找与 `ActivityListener` / `MeterListener`（`TestToolingTests`）；回放规范向量用 `SpecVectors`，见[回放规范向量](/testing/conformance#回放规范向量) |
 
 ## 代码规范
 

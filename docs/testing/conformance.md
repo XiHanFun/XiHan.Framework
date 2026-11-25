@@ -14,7 +14,7 @@
 - 给出特性：持久化、消息的 `CreateFeature()`，调度、工作流、AI 的 `StartAsync(...)` 返回套件的宿主句柄。这类套件自己用 `TestHost` 装配并走完整管道，验证的是 Provider 在真实管道里的行为，不只是接口方法。
 - 给出插件的构建产物目录：`Plugins.Conformance` 的 `PluginDirectory`，见下文。
 
-套件之外，规范仓库还有数据驱动的一致性向量（`spec/conformance/vectors/`，见[规范与多语言](/appendix/spec#一致性测试)），收文法、换算与判定表这类输入输出确定的规则。框架的 .NET 测试经 [Testing](/packages/testing) 的 `SpecVectors` 严格回放：文件里有、模型里没有的成员，缺了的必需成员，同一对象里重名的成员，都让读取失败，向量改了写法时回放随之失败，不会漏掉字段还照样通过。
+套件之外，规范仓库还有数据驱动的一致性向量（`spec/conformance/vectors/`，见[规范与多语言](/appendix/spec#一致性测试)），收文法、换算与判定表这类输入输出确定的规则。框架的 .NET 测试经仓库里不发包的 `framework/test/XiHan.Framework.Testing.Workspace` 的 `SpecVectors` 严格回放：文件里有、模型里没有的成员，缺了的必需成员，同一对象里重名的成员，落到不可空成员上的 `null`，都让读取失败，向量改了写法时回放随之失败，不会漏掉字段还照样通过。写法见下文[回放规范向量](#回放规范向量)。
 
 ## 最小示例
 
@@ -120,6 +120,51 @@ xihan-conformance vectors
 
 两份套件都不提供宿主回调服务，`Host.Invoke` / `Host.Publish` 的令牌与权限、崩溃重启由宿主实现的测试覆盖。
 
+## 回放规范向量
+
+这一节面向向框架仓库提交代码的人。`framework/test/XiHan.Framework.Testing.Workspace` 是给测试项目引用的类库：不打包、不发布，没有公开面文件，也不当测试运行；它只在框架仓库的检出里有用，框架仓库之外的测试不引用它。测试项目加上 `<ProjectReference Include="../XiHan.Framework.Testing.Workspace/XiHan.Framework.Testing.Workspace.csproj" />` 与 `using XiHan.Framework.Testing.Workspace;`。
+
+| 类型 | 说明 |
+| --- | --- |
+| `FrameworkWorkspace` | `Root`：从测试的输出目录逐级向上第一个含 `XiHan.Framework.slnx` 的目录（仓库里的 `framework/`），第一次读取时找、之后缓存，找不到抛 `InvalidOperationException`。读规范、示例与别的项目的构建产物都以它为起点 |
+| `SpecVectors` | `Directory` 是 `<工作区>/spec/conformance/vectors`；`PathOf(area, fileName)` 只拼路径，给要按 `JsonDocument` 自己读的测试；`Read<T>(area, fileName)` 按反射严格读，`Read<T>(area, fileName, resolver)` 按源生成的上下文严格读 |
+
+下面回放缓存键的向量（`caching/cache-keys.json`）：
+
+```csharp
+using XiHan.Framework.Caching.Abstractions.Stores;
+using XiHan.Framework.Testing.Workspace;
+using Xunit;
+
+public sealed class CacheKeyVectorTests
+{
+    private static readonly CacheKeyVectors _vectors = SpecVectors.Read<CacheKeyVectors>("caching", "cache-keys.json");
+
+    [Fact]
+    public void MaxBytes_IsTheOneInTheVectors() => Assert.Equal(CacheKey.MaxBytes, _vectors.MaxBytes);
+
+    [Fact]
+    public void IsValid_AcceptsTheValidKeys()
+        => Assert.All(_vectors.Keys.Valid, static key => Assert.True(CacheKey.IsValid(key.Text), key.Name));
+
+    // 文件里的每个成员都要在模型里：utf8Bytes 与 utf16Units 这里不用，也得写上
+    private sealed record CacheKeyVectors(int MaxBytes, CacheKeyCases Keys, CacheKeyCases Prefixes);
+
+    private sealed record CacheKeyCases(CacheKeyCase[] Valid, CacheKeyCase[] Invalid);
+
+    private sealed record CacheKeyCase(string Name, string Text, int Utf8Bytes, int Utf16Units);
+}
+```
+
+读法与报错：
+
+- 读法一律严格：成员名按 Web 缺省（camelCase、不区分大小写），文件里有、模型里没有的成员失败，同一对象里重名的成员失败，没有缺省值的构造参数与 `required` 成员缺了失败，只去掉顶层的 `$comment`（别处的 `$comment` 是向量的内容）。
+- `null` 只能落到声明为可空的成员上（属性、字段与构造参数，反射与源生成两条路都按可空性注解核对），落到不可空的成员上同样失败；集合的元素与字典的值不核对（System.Text.Json 不看泛型实参的可空性）。向量里会出现 `null` 的成员在模型里写成可空。
+- 同一个文件由几个测试类分别回放时，各自把别的类回放的成员写成 `JsonElement`，可以不出现的成员给缺省值。
+- 报错都带文件路径：文件不存在抛 `FileNotFoundException`（多半是没有检出规范子模块，`git submodule update --init framework/spec`），内容为空、只有 `null` 或顶层不是对象抛 `InvalidOperationException`，与模型对不上抛 `JsonException`（带成员与位置）；目录名与文件名必须是单独一段，空白、`.`、`..`、含 `/` 或 `\` 抛 `ArgumentException`。按反射读的重载标了 `RequiresUnreferencedCode` / `RequiresDynamicCode`，AOT 的测试项目改用带 `resolver` 的重载。
+
+架构测试 `SpecVectorCoverageTests` 核对认领的档里每个向量都有回放或登记为缺口。它认的回放是 `SpecVectors.Read<…>("<目录>", "<文件>")` 与 `SpecVectors.PathOf("<目录>", "<文件>")` 的调用，前两个参数都要是字符串字面量（可以跨行），按（目录, 文件）成对识别：参数是常量或变量的调用、文件名出现在注释或数组里都不算回放；调用处的 `<目录>/<文件>` 不存在即失败（`VectorCalls_NameAFileOfThatDirectory`），报错列出别的目录里的同名文件，多半是目录写错。
+
 ## 架构测试与门禁
 
 这一节面向向框架仓库提交扩展的人（[贡献指南](/appendix/contributing)）：`framework/` 下的每个正式包都要通过下列门禁，CI 全部是必过项，不放宽、不绕过、不加 `NoWarn`。
@@ -152,6 +197,8 @@ xihan-conformance vectors
 | `SourceProjects_DoNotCallSingleItemMethodsInsideLoops` | 批量优先：不在循环里调用仓储、缓存存储、消息发布的单条方法，改用批量方法 |
 | `DatabaseRecords_DeclareEveryStringColumnLength` | 数据库记录的字符串列都声明 `[StringLength(n)]` 或 `[LongText]` |
 | `RecordsCarryingCredentials_MaskThemInToString` | 携带凭据的记录在 `ToString` 里遮蔽凭据 |
+| `EveryVectorOfTheClaimedProfiles_IsReplayedOrAGap`、`VectorCalls_NameAFileOfThatDirectory`（`SpecVectorCoverageTests`） | 认领的档里每个规范向量都有回放或登记为缺口，回放的调用按（目录, 文件）成对识别、目录下要有那个文件，见上文[回放规范向量](#回放规范向量) |
+| `TestSources_UseTheSharedWorkspaceAndTelemetryEntries`（`TestToolingTests`） | `framework/test` 下的源码不手写工作区查找与遥测监听：解决方案文件名 `XiHan.Framework.slnx` 只许出现在 `FrameworkWorkspace` 里，不许构造 `ActivityListener` 与 `MeterListener`（含目标类型的 `new()`），定位工作区、收 Span 与指标只用 `FrameworkWorkspace`、`SpanCapture` 与 `MetricCapture` |
 
 ## 常见问题
 
