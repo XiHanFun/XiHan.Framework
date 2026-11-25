@@ -15,7 +15,7 @@ internal static class EnvelopeAssert
     /// </summary>
     public static void Same(MessageEnvelope expected, MessageEnvelope actual)
     {
-        Assert.Equal((expected.Id, expected.Source, expected.Type, expected.Time, expected.Subject, expected.DataContentType), (actual.Id, actual.Source, actual.Type, actual.Time, actual.Subject, actual.DataContentType));
+        Assert.Equal((expected.Id, expected.Source, expected.Type, expected.Time, expected.Subject, expected.DataSchema, expected.DataContentType), (actual.Id, actual.Source, actual.Type, actual.Time, actual.Subject, actual.DataSchema, actual.DataContentType));
         Assert.Equal(expected.Data.ToArray(), actual.Data.ToArray());
         Assert.Equal(expected.Extensions.OrderBy(static e => e.Key, StringComparer.Ordinal), actual.Extensions.OrderBy(static e => e.Key, StringComparer.Ordinal));
     }

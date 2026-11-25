@@ -68,6 +68,18 @@ public sealed record MessageEnvelope
     public string? Subject { get; init; }
 
     /// <summary>
+    /// 数据遵循的模式（CloudEvents <c>dataschema</c>）
+    /// </summary>
+    /// <remarks>
+    /// 取值是 URI，如 <c>https://example.com/schemas/order.json</c>。可选，<see langword="null"/> 表示没有；给了就不能为空或只有空白，否则抛出 <see cref="ArgumentException"/>。与 <see cref="Source"/> 一样只核对非空，不核对 URI 语法，框架也不按它取模式或校验数据；四个代理、CloudEvents 协议绑定与插件协议都原样收发（RFC-0009「信封」，ADR-0305）
+    /// </remarks>
+    public string? DataSchema
+    {
+        get => field;
+        init => field = value is null || !string.IsNullOrWhiteSpace(value) ? value : throw new ArgumentException("The data schema must not be empty.", nameof(value));
+    }
+
+    /// <summary>
     /// 数据内容类型
     /// </summary>
     /// <remarks>

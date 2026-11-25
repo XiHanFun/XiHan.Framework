@@ -51,6 +51,15 @@ internal sealed class CloudEventDocument
     public string? Subject { get; set; }
 
     /// <summary>
+    /// 数据模式 <c>dataschema</c>
+    /// </summary>
+    /// <remarks>
+    /// 规范属性，不落进 <see cref="Extensions"/>（ADR-0305）
+    /// </remarks>
+    [JsonPropertyName("dataschema")]
+    public string? DataSchema { get; set; }
+
+    /// <summary>
     /// 数据内容类型 <c>datacontenttype</c>
     /// </summary>
     [JsonPropertyName("datacontenttype")]

@@ -7,6 +7,8 @@ XiHan.Framework.Messaging.Abstractions.Envelopes.MessageEnvelope.Data.get -> Sys
 XiHan.Framework.Messaging.Abstractions.Envelopes.MessageEnvelope.Data.init -> void
 XiHan.Framework.Messaging.Abstractions.Envelopes.MessageEnvelope.DataContentType.get -> string!
 XiHan.Framework.Messaging.Abstractions.Envelopes.MessageEnvelope.DataContentType.init -> void
+XiHan.Framework.Messaging.Abstractions.Envelopes.MessageEnvelope.DataSchema.get -> string?
+XiHan.Framework.Messaging.Abstractions.Envelopes.MessageEnvelope.DataSchema.init -> void
 XiHan.Framework.Messaging.Abstractions.Envelopes.MessageEnvelope.Equals(XiHan.Framework.Messaging.Abstractions.Envelopes.MessageEnvelope? other) -> bool
 XiHan.Framework.Messaging.Abstractions.Envelopes.MessageEnvelope.Extension(string! name) -> XiHan.Framework.Primitives.Maybe<string!>
 XiHan.Framework.Messaging.Abstractions.Envelopes.MessageEnvelope.Extensions.get -> System.Collections.Generic.IReadOnlyDictionary<string!, string!>!

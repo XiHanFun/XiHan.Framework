@@ -14,7 +14,7 @@ namespace XiHan.Framework.Messaging.Abstractions.CloudEvents;
 /// CloudEvents 1.0 结构化 JSON 编码（<c>application/cloudevents+json</c>）
 /// </summary>
 /// <remarks>
-/// JSON 数据内联在 <c>data</c>，其他数据放在 <c>data_base64</c>，扩展属性是顶层成员。读取的规则在 RFC-0009「信封」逐条写明（ADR-0283）：文档先过 RFC-0001「JSON 文本」的共同检查，<c>time</c> 只认 RFC 3339 的一条文法，<c>data</c> 与 <c>data_base64</c> 互斥，扩展属性的值是字符串、数字或布尔。写出的文档一定读得回来
+/// JSON 数据内联在 <c>data</c>，其他数据放在 <c>data_base64</c>，<c>dataschema</c> 有则写成同名的成员（ADR-0305），扩展属性是顶层成员。读取的规则在 RFC-0009「信封」逐条写明（ADR-0283）：文档先过 RFC-0001「JSON 文本」的共同检查，<c>time</c> 只认 RFC 3339 的一条文法，<c>data</c> 与 <c>data_base64</c> 互斥，扩展属性的值是字符串、数字或布尔。写出的文档一定读得回来
 /// </remarks>
 [ApiLevel(Stability.Stable, "5.0")]
 public static class CloudEventsFormat
@@ -56,6 +56,7 @@ public static class CloudEventsFormat
             Type = envelope.Type,
             Time = envelope.Time?.ToString("O", CultureInfo.InvariantCulture),
             Subject = envelope.Subject,
+            DataSchema = envelope.DataSchema,
             DataContentType = envelope.DataContentType,
         };
 
@@ -124,7 +125,7 @@ public static class CloudEventsFormat
     /// 解码
     /// </summary>
     /// <remarks>
-    /// 文档不合法返回 <see cref="MessagingErrors.InvalidEnvelope"/>（RFC-0009「信封」）：没过 RFC-0001「JSON 文本」的共同检查（不是 JSON、嵌套超过 64 层、字符串不是合法的 Unicode、任何一层有重复的成员名，含 <c>data</c> 内部）；不是 JSON 对象；<c>specversion</c> 不是 <c>1.0</c>；<c>id</c>、<c>source</c>、<c>type</c> 缺失或为空；<c>time</c> 不合 <see cref="TimestampText"/> 的文法；<c>data</c> 与 <c>data_base64</c> 同时出现；<c>data_base64</c> 不是 Base64；扩展属性名不合文法或是保留名（带 <c>dataschema</c> 的文档因此不合法：信封不承载这个规范属性，ADR-0298），或值是对象、数组。
+    /// 文档不合法返回 <see cref="MessagingErrors.InvalidEnvelope"/>（RFC-0009「信封」）：没过 RFC-0001「JSON 文本」的共同检查（不是 JSON、嵌套超过 64 层、字符串不是合法的 Unicode、任何一层有重复的成员名，含 <c>data</c> 内部）；不是 JSON 对象；<c>specversion</c> 不是 <c>1.0</c>；<c>id</c>、<c>source</c>、<c>type</c> 缺失或为空；<c>dataschema</c> 不是字符串或为空（它是信封承载的规范属性，不落进扩展属性，ADR-0305）；<c>time</c> 不合 <see cref="TimestampText"/> 的文法；<c>data</c> 与 <c>data_base64</c> 同时出现；<c>data_base64</c> 不是 Base64；扩展属性名不合文法或是保留名（ADR-0298），或值是对象、数组。
     /// 读出的 <c>time</c> 是 UTC 时刻。文档带 <c>data_base64</c> 而不写 <c>datacontenttype</c> 时数据内容类型是 <c>application/octet-stream</c>，否则缺省 <c>application/json</c>。扩展属性的值：字符串照原样，数字与布尔保留 JSON 原文，<c>null</c> 视为没有这个属性
     /// </remarks>
     public static Result<MessageEnvelope> Decode(ReadOnlyMemory<byte> json)
@@ -225,6 +226,8 @@ public static class CloudEventsFormat
                 Type = document.Type,
                 Time = time,
                 Subject = document.Subject,
+                // 空串与只有空白的 dataschema 由信封的 init 拒绝，与 datacontenttype 为空同一条路（ADR-0305）
+                DataSchema = document.DataSchema,
                 // 数据在 data_base64 里而文档没写内容类型：不是 JSON，按二进制读；读成缺省的 application/json 会得到一个写不回去的信封
                 DataContentType = document.DataContentType ?? (document.DataBase64 is not null ? BinaryDataContentType : DefaultDataContentType),
                 Data = data,

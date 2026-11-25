@@ -101,6 +101,9 @@ public abstract class MessageBrokerConformance
     /// <summary>
     /// 用例 1：信封的属性、扩展与数据完整到达处理器
     /// </summary>
+    /// <remarks>
+    /// 属性含 <c>dataschema</c>：经线上编码的代理把它写成结构化 JSON 的成员，读回来必须是同一个值（RFC-0009「信封」，ADR-0305）
+    /// </remarks>
     [Fact]
     public async Task Publish_DeliversEnvelope_WithAttributesExtensionsAndData()
     {
@@ -110,6 +113,7 @@ public abstract class MessageBrokerConformance
         {
             Time = new DateTimeOffset(2026, 10, 21, 8, 0, 0, TimeSpan.Zero),
             Subject = "order/42",
+            DataSchema = "https://example.com/schemas/order.json",
             Data = Encoding.UTF8.GetBytes("{\"orderId\":42}"),
             Extensions = new Dictionary<string, string>(StringComparer.Ordinal) { ["region"] = "cn" },
         };
@@ -124,6 +128,7 @@ public abstract class MessageBrokerConformance
         Assert.Equal("orders.placed", received.Delivery.Envelope.Type);
         Assert.Equal(envelope.Time, received.Delivery.Envelope.Time);
         Assert.Equal("order/42", received.Delivery.Envelope.Subject);
+        Assert.Equal("https://example.com/schemas/order.json", received.Delivery.Envelope.DataSchema);
         Assert.Equal("application/json", received.Delivery.Envelope.DataContentType);
         Assert.Equal("{\"orderId\":42}", Encoding.UTF8.GetString(received.Delivery.Envelope.Data.Span));
         Assert.Equal("cn", received.Delivery.Envelope.Extensions["region"]);
@@ -463,7 +468,7 @@ public abstract class MessageBrokerConformance
     /// 用例 15：竞争订阅的投递用完尝试次数后进死信
     /// </summary>
     /// <remarks>
-    /// 死信里是原消息的信封，只进一次；处理成功的消息与别的主题不受牵连（RFC-0009「投递」第 3 条）
+    /// 死信里是原消息的信封（属性含 <c>dataschema</c>，ADR-0305），只进一次；处理成功的消息与别的主题不受牵连（RFC-0009「投递」第 3 条）
     /// </remarks>
     [Fact]
     public async Task ExhaustedCompetingDelivery_IsDeadLettered_WithItsEnvelope()
@@ -472,7 +477,7 @@ public abstract class MessageBrokerConformance
         log.FailingIds["dead-1"] = 0;
         await using var host = await StartAsync(log).ConfigureAwait(false);
 
-        (await PublishAsync(host, OrdersTopic, Envelope("dead-1", "orders.dead") with { Subject = "order/13" }).ConfigureAwait(false)).ThrowIfFailure();
+        (await PublishAsync(host, OrdersTopic, Envelope("dead-1", "orders.dead") with { Subject = "order/13", DataSchema = "urn:example:schemas:order:1" }).ConfigureAwait(false)).ThrowIfFailure();
         (await PublishAsync(host, OrdersTopic, Envelope("alive-1", "orders.alive")).ConfigureAwait(false)).ThrowIfFailure();
 
         var attempts = await log.WaitAsync(static r => r.Delivery.Envelope.Id == "dead-1", MaxAttempts, DeliveryTimeout).ConfigureAwait(false);
@@ -482,7 +487,7 @@ public abstract class MessageBrokerConformance
         // 死信写入在最后一次尝试之后，等到它出现；之后按同一份快照断言
         var deadLetters = await WaitForDeadLetterAsync(host, OrdersTopic, "dead-1", DeliveryTimeout).ConfigureAwait(false);
         var dead = Assert.Single(deadLetters, static e => e.Id == "dead-1");
-        Assert.Equal(("/conformance", "orders.dead", "order/13"), (dead.Source, dead.Type, dead.Subject));
+        Assert.Equal(("/conformance", "orders.dead", "order/13", "urn:example:schemas:order:1"), (dead.Source, dead.Type, dead.Subject, dead.DataSchema));
         Assert.DoesNotContain(deadLetters, static e => e.Id == "alive-1");
         Assert.Empty(await ReadDeadLettersAsync(host, ShipmentsTopic, CancellationToken.None).ConfigureAwait(false));
     }

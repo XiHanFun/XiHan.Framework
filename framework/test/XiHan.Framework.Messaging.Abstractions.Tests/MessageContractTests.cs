@@ -134,6 +134,53 @@ public sealed class MessageContractTests
     }
 
     [Fact]
+    public void Envelope_DataSchema_IsOptional_AndMustNotBeBlank()
+    {
+        var envelope = new MessageEnvelope { Id = "1", Source = "/orders", Type = "orders.placed" };
+
+        // 可选、照原样保存，与 Source 一样只核对非空、不核对 URI 语法（ADR-0305）
+        Assert.Null(envelope.DataSchema);
+        Assert.Equal("schemas/order.json", (envelope with { DataSchema = "schemas/order.json" }).DataSchema);
+        Assert.Equal("https://example.com/schemas/order.json", (envelope with { DataSchema = "https://example.com/schemas/order.json" }).WithExtension("region", "cn").DataSchema);
+        Assert.Null((envelope with { DataSchema = "urn:x" } with { DataSchema = null }).DataSchema);
+        Assert.Throws<ArgumentException>(() => envelope with { DataSchema = string.Empty });
+        Assert.Throws<ArgumentException>(() => envelope with { DataSchema = " \t" });
+
+        // 信封承载它之后它照旧是保留名，不能再以扩展属性出现
+        Assert.Throws<ArgumentException>(() => envelope.WithExtension("dataschema", "https://example.com/schemas/order.json"));
+    }
+
+    [Fact]
+    public void CloudEventsFormat_CarriesTheDataSchema_AsAContextAttribute()
+    {
+        var envelope = new MessageEnvelope { Id = "1", Source = "/o", Type = "t", DataSchema = "https://example.com/schemas/order.json" };
+
+        // 写成同名的顶层成员，没有时不写
+        using (var written = JsonDocument.Parse(CloudEventsFormat.Encode(envelope)))
+        {
+            Assert.Equal("https://example.com/schemas/order.json", written.RootElement.GetProperty("dataschema").GetString());
+        }
+
+        using (var without = JsonDocument.Parse(CloudEventsFormat.Encode(envelope with { DataSchema = null })))
+        {
+            Assert.False(without.RootElement.TryGetProperty("dataschema", out _));
+        }
+
+        // 读回是规范属性，不落进扩展属性：ADR-0298 时这份文档以 invalid_extension 被拒
+        var read = CloudEventsFormat.Decode(Document("\"dataschema\":\"https://example.com/schemas/order.json\"")).ValueOrThrow();
+        Assert.Equal("https://example.com/schemas/order.json", read.DataSchema);
+        Assert.Empty(read.Extensions);
+        Assert.Null(CloudEventsFormat.Decode(Document("\"subject\":\"s\"")).ValueOrThrow().DataSchema);
+
+        // 空串与 datacontenttype 为空同一条路，不是字符串的与别的规范属性类型不对同一条路
+        var empty = CloudEventsFormat.Decode(Document("\"dataschema\":\"\"")).Error;
+        var number = CloudEventsFormat.Decode(Document("\"dataschema\":42")).Error;
+        Assert.Equal((MessagingErrors.InvalidEnvelope, MessagingMessages.EnvelopeInvalid), (empty?.Code, empty?.MessageKey));
+        Assert.NotNull(number);
+        Assert.Equal((MessagingErrors.InvalidEnvelope, MessagingMessages.EnvelopeInvalidJson, "$.dataschema"), (number.Code, number.MessageKey, (string?)number.Details?["reason"]));
+    }
+
+    [Fact]
     public void CloudEventsFormat_RoundTripsJsonAndBinaryData()
     {
         var json = new MessageEnvelope

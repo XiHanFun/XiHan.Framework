@@ -47,7 +47,10 @@ public static class CloudEventsHttpBinding
     /// <summary>
     /// 不作为扩展属性的核心属性名
     /// </summary>
-    private static readonly string[] _coreAttributes = ["specversion", "id", "source", "type", "time", "subject", "datacontenttype"];
+    /// <remarks>
+    /// <c>dataschema</c> 是信封承载的规范属性（ADR-0305），不在这里就会被当成名字是保留名的扩展属性
+    /// </remarks>
+    private static readonly string[] _coreAttributes = ["specversion", "id", "source", "type", "time", "subject", "dataschema", "datacontenttype"];
 
     /// <summary>
     /// 判断请求的内容模式
@@ -164,6 +167,11 @@ public static class CloudEventsHttpBinding
                     request.Headers.TryAddWithoutValidation(HeaderPrefix + "subject", EncodeHeaderValue(subject));
                 }
 
+                if (envelope.DataSchema is { } dataSchema)
+                {
+                    request.Headers.TryAddWithoutValidation(HeaderPrefix + "dataschema", EncodeHeaderValue(dataSchema));
+                }
+
                 foreach (var (name, value) in envelope.Extensions)
                 {
                     request.Headers.TryAddWithoutValidation(HeaderPrefix + name, EncodeHeaderValue(value));
@@ -266,7 +274,7 @@ public static class CloudEventsHttpBinding
     /// binary
     /// </summary>
     /// <remarks>
-    /// <c>ce-specversion</c>、<c>ce-id</c>、<c>ce-source</c>、<c>ce-type</c> 必填，<c>ce-time</c>（<see cref="TimestampText"/> 的文法，读出 UTC 时刻）、<c>ce-subject</c> 可选，其余 <c>ce-*</c> 是扩展属性（名字不能是保留名，<c>ce-dataschema</c>、<c>ce-data</c> 因此不合法，ADR-0298）；数据内容类型取 <c>Content-Type</c>，数据取请求体
+    /// <c>ce-specversion</c>、<c>ce-id</c>、<c>ce-source</c>、<c>ce-type</c> 必填，<c>ce-time</c>（<see cref="TimestampText"/> 的文法，读出 UTC 时刻）、<c>ce-subject</c>、<c>ce-dataschema</c>（ADR-0305）可选，值为空与没有这个头相同，其余 <c>ce-*</c> 是扩展属性（名字不能是保留名，<c>ce-data</c> 因此不合法，ADR-0298）；数据内容类型取 <c>Content-Type</c>，数据取请求体
     /// </remarks>
     private static Result<IReadOnlyList<MessageEnvelope>> ReadBinary(HttpRequest request, byte[] body)
     {
@@ -298,6 +306,7 @@ public static class CloudEventsHttpBinding
         }
 
         var subject = HeaderValue(headers, "subject");
+        var dataSchema = HeaderValue(headers, "dataschema");
         // 规范要求 binary 模式用 Content-Type 承载数据内容类型；给了 ce-datacontenttype 也接受
         var explicitContentType = HeaderValue(headers, "datacontenttype");
         var contentType = explicitContentType.Length > 0 ? explicitContentType : request.ContentType;
@@ -333,6 +342,8 @@ public static class CloudEventsHttpBinding
                 Type = type,
                 Time = time,
                 Subject = subject.Length > 0 ? subject : null,
+                // 头值为空按没有读，与 ce-subject、ce-time 相同；只有空白的由信封的 init 拒绝
+                DataSchema = dataSchema.Length > 0 ? dataSchema : null,
                 Data = body,
                 Extensions = extensions,
             };

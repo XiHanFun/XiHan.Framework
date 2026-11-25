@@ -63,7 +63,7 @@ public static partial class EnvelopeExtensions
     /// 不能用作扩展属性名的保留名（按序数升序）
     /// </summary>
     /// <remarks>
-    /// CloudEvents 1.0 的规范属性名与结构化 JSON 格式的成员名：用作扩展属性名，写出来与规范属性是重复的成员，读回时扩展属性的值顶掉规范属性。<c>dataschema</c> 是 CloudEvents 的可选属性，信封不承载它，同样不能用作扩展属性名；<c>data_base64</c> 本来就不合文法，列进来是为了清单完整（RFC-0009「信封」，ADR-0298）
+    /// CloudEvents 1.0 的规范属性名与结构化 JSON 格式的成员名：用作扩展属性名，写出来与规范属性是重复的成员，读回时扩展属性的值顶掉规范属性。<c>dataschema</c> 由 <see cref="MessageEnvelope.DataSchema"/> 承载（ADR-0305），照旧是保留名；<c>data_base64</c> 本来就不合文法，列进来是为了清单完整（RFC-0009「信封」，ADR-0298）
     /// </remarks>
     public static IReadOnlyList<string> ReservedNames { get; } =
     [

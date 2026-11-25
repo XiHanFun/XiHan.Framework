@@ -15,7 +15,7 @@ namespace XiHan.Framework.Messaging.Abstractions.Tests;
 /// 回放 <c>cloudevents-envelopes.json</c>：信封的结构化 JSON 编码
 /// </summary>
 /// <remarks>
-/// <c>messaging/cloudevents-envelopes.json</c>（RFC-0009「信封」，<c>spec/protocol/cloudevents.md</c>「信封映射」与「入站」，ADR-0277、ADR-0283）。读得出的文档经 <see cref="CloudEventsFormat.Decode"/> 与向量给的信封逐项比较，再把向量给的信封 <see cref="CloudEventsFormat.Encode"/> 之后解码回来，读出的信封同样写出再读回；必须拒绝的文档都以同一个错误码拒绝
+/// <c>messaging/cloudevents-envelopes.json</c>（RFC-0009「信封」，<c>spec/protocol/cloudevents.md</c>「信封映射」与「入站」，ADR-0277、ADR-0283、ADR-0305）。读得出的文档经 <see cref="CloudEventsFormat.Decode"/> 与向量给的信封逐项比较，再把向量给的信封 <see cref="CloudEventsFormat.Encode"/> 之后解码回来，读出的信封同样写出再读回；必须拒绝的文档都以同一个错误码拒绝
 /// </remarks>
 public sealed class CloudEventsEnvelopeVectorTests
 {
@@ -66,7 +66,11 @@ public sealed class CloudEventsEnvelopeVectorTests
             var root = document.RootElement;
             var inline = root.TryGetProperty("data", out var data);
             var binary = root.TryGetProperty("data_base64", out var base64);
+            // dataschema 有则写成同名的字符串成员，没有则不写（ADR-0305）
+            var schema = root.TryGetProperty("dataschema", out var dataSchema);
             if (root.GetProperty("specversion").GetString() != MessageEnvelope.SpecVersion
+                || schema != (expected.DataSchema is not null)
+                || (expected.DataSchema is not null && (dataSchema.ValueKind != JsonValueKind.String || dataSchema.GetString() != expected.DataSchema))
                 || inline != (expected.Data is not null)
                 || (expected.Data is { } expectedData && !JsonElement.DeepEquals(expectedData, data))
                 || binary != (expected.DataBase64 is not null)
@@ -157,6 +161,12 @@ public sealed class CloudEventsEnvelopeVectorTests
 
         // 不是 JSON 对象的文本也要有
         Assert.Contains(_vectors.Invalid, static vector => MemberNames(vector.Text).Count == 0);
+
+        // dataschema 的有、没有与不合法三种都要有（ADR-0305）：读得出的带与不带，空串与不是字符串的拒绝
+        Assert.Contains(_vectors.Valid, static vector => vector.Expected.DataSchema is not null && Member(vector.Text, "dataschema") is { ValueKind: JsonValueKind.String });
+        Assert.Contains(_vectors.Valid, static vector => vector.Expected.DataSchema is null && Member(vector.Text, "dataschema") is null);
+        Assert.Contains(_vectors.Invalid, static vector => Member(vector.Text, "dataschema") is { ValueKind: JsonValueKind.String } schema && schema.GetString() == string.Empty);
+        Assert.Contains(_vectors.Invalid, static vector => Member(vector.Text, "dataschema") is { ValueKind: not JsonValueKind.String and not JsonValueKind.Null });
     }
 
     [Fact]
@@ -194,6 +204,7 @@ public sealed class CloudEventsEnvelopeVectorTests
         Type = expected.Type,
         Time = expected.Time,
         Subject = expected.Subject,
+        DataSchema = expected.DataSchema,
         DataContentType = expected.DataContentType,
         Data = expected.Data is { } data ? Encoding.UTF8.GetBytes(data.GetRawText()) : expected.DataBase64 is { } base64 ? Convert.FromBase64String(base64) : default(ReadOnlyMemory<byte>),
         Extensions = expected.Extensions,
@@ -222,6 +233,11 @@ public sealed class CloudEventsEnvelopeVectorTests
         if (actual.Subject != expected.Subject)
         {
             return $"read subject '{actual.Subject}', the vector has '{expected.Subject}'";
+        }
+
+        if (actual.DataSchema != expected.DataSchema)
+        {
+            return $"read dataschema '{actual.DataSchema}', the vector has '{expected.DataSchema}'";
         }
 
         if (actual.DataContentType != expected.DataContentType)
@@ -338,6 +354,7 @@ public sealed class CloudEventsEnvelopeVectorTests
     /// <param name="Type">事件类型</param>
     /// <param name="Time">发生时间（UTC 时刻）；<see langword="null"/> 表示没有</param>
     /// <param name="Subject">主题标识；<see langword="null"/> 表示没有</param>
+    /// <param name="DataSchema">数据模式；<see langword="null"/> 表示没有</param>
     /// <param name="DataContentType">数据内容类型</param>
     /// <param name="Extensions">扩展属性，名字到字符串值</param>
     /// <param name="Data">内联的 JSON 数据；与 <paramref name="DataBase64"/> 都没有表示没有数据</param>
@@ -348,6 +365,7 @@ public sealed class CloudEventsEnvelopeVectorTests
         string Type,
         DateTimeOffset? Time,
         string? Subject,
+        string? DataSchema,
         string DataContentType,
         Dictionary<string, string> Extensions,
         JsonElement? Data = null,
