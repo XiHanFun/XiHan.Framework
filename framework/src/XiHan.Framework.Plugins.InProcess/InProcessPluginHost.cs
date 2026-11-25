@@ -18,7 +18,8 @@ namespace XiHan.Framework.Plugins.InProcess;
 /// </summary>
 /// <remarks>
 /// 每个插件拥有自己的可收集加载上下文与服务容器；失败以 <see cref="Result"/> 返回，不影响宿主。
-/// 宿主不向插件下发绑定（插件读整个宿主配置），但在加载插件代码之前按与进程外、Wasm 宿主相同的规则核对清单声明的绑定：必需的没有能下发的内容、来源声明的类型与清单不同即加载失败（<see cref="PluginBindingRules"/>，<c>spec/plugin/lifecycle.md</c> §2，ADR-0292）
+/// 宿主不向插件下发绑定（插件读整个宿主配置），但在加载插件代码之前按与进程外、Wasm 宿主相同的规则核对清单声明的绑定：必需的没有能用的内容、来源声明的类型与清单不同即加载失败（<see cref="PluginBindingRules"/>，<c>spec/plugin/lifecycle.md</c> §2，ADR-0292）。
+/// 绑定按构造时给的 Service Binding 根目录解析，插件经 <see cref="PluginContext.ServiceBindingRoot"/> 拿到同一个值：应用经 <see cref="AppBuilder.UseServiceBindingRoot"/> 指定了根目录时把同一个值交给构造函数，宿主核对的、插件读到的与内核读的才是同一个目录（ADR-0301）
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed partial class InProcessPluginHost : IPluginHost, IAsyncDisposable
@@ -30,6 +31,14 @@ public sealed partial class InProcessPluginHost : IPluginHost, IAsyncDisposable
     /// 以只读视图传给每个插件的 <see cref="PluginContext"/>
     /// </remarks>
     private readonly IConfiguration _configuration;
+
+    /// <summary>
+    /// 解析绑定所用的 Service Binding 根目录
+    /// </summary>
+    /// <remarks>
+    /// <see langword="null"/> 即取环境变量 <c>SERVICE_BINDING_ROOT</c>；原样交给每个插件的 <see cref="PluginContext"/>
+    /// </remarks>
+    private readonly string? _serviceBindingRoot;
 
     /// <summary>
     /// 宿主日志
@@ -57,12 +66,14 @@ public sealed partial class InProcessPluginHost : IPluginHost, IAsyncDisposable
     /// </remarks>
     /// <param name="configuration">宿主配置（只读视图传给插件）</param>
     /// <param name="loggerFactory">日志工厂</param>
+    /// <param name="serviceBindingRoot">Service Binding 根目录：加载前核对的绑定按它与 <paramref name="configuration"/> 解析，插件经 <see cref="PluginContext.ServiceBindingRoot"/> 拿到同一个值。应用经 <see cref="AppBuilder.UseServiceBindingRoot"/> 指定了根目录时传同一个值；<see langword="null"/> 时取环境变量 <c>SERVICE_BINDING_ROOT</c></param>
     [RequiresUnreferencedCode("In-process plugins load assemblies and instantiate entry types by the names in the manifest; trimmed types may not be found.")]
     [RequiresDynamicCode("In-process plugins instantiate entry types by the names in the manifest, which requires runtime reflection.")]
-    public InProcessPluginHost(IConfiguration configuration, ILoggerFactory loggerFactory)
+    public InProcessPluginHost(IConfiguration configuration, ILoggerFactory loggerFactory, string? serviceBindingRoot = null)
     {
         _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
         _logger = (loggerFactory ?? throw new ArgumentNullException(nameof(loggerFactory))).CreateLogger<InProcessPluginHost>();
+        _serviceBindingRoot = serviceBindingRoot;
     }
 
     /// <inheritdoc />
@@ -243,7 +254,8 @@ public sealed partial class InProcessPluginHost : IPluginHost, IAsyncDisposable
 
             // 插件拥有独立的服务容器，不能解析宿主服务；管道暂不开放给插件
             var services = new ServiceCollection();
-            plugin.Configure(new PluginContext(manifest, services, _configuration, source.Permissions, pipeline: null));
+            // 插件拿到宿主核对绑定时用的同一个根目录：它自己解析出的与核对过的是同一套来源
+            plugin.Configure(new PluginContext(manifest, services, _configuration, source.Permissions, pipeline: null, _serviceBindingRoot));
             provider = services.BuildServiceProvider();
 
             await plugin.StartAsync(provider, cancellationToken).ConfigureAwait(false);
@@ -266,14 +278,14 @@ public sealed partial class InProcessPluginHost : IPluginHost, IAsyncDisposable
     /// 核对清单声明的绑定
     /// </summary>
     /// <remarks>
-    /// 解析与插件自己经 <see cref="BindingResolver.Resolve(IConfiguration)"/> 读到的相同（根目录取环境变量）；按清单的顺序报第一处不合的，与进程外、Wasm 宿主的 <c>reason</c> 相同。读不出时原因只写异常类型（消息带着挂载路径，完整异常进日志），文件超过大小上限时原因是内核的消息（只带绑定名、文件名与上限）。都合格时为 <see langword="null"/>
+    /// 解析与插件自己经 <see cref="BindingResolver.Resolve(IConfiguration, string?)"/> 读到的相同（构造时给的根目录，没给时取环境变量，ADR-0301）；按清单的顺序报第一处不合的，与进程外、Wasm 宿主的 <c>reason</c> 相同。读不出时原因只写异常类型（消息带着挂载路径，完整异常进日志），绑定目录超过大小或条目数的上限时原因是内核的消息（只带绑定名、文件名与上限）。都合格时为 <see langword="null"/>
     /// </remarks>
     private Error? FindBindingViolation(Manifest manifest)
     {
         IReadOnlyDictionary<string, BindingValue> resolved;
         try
         {
-            resolved = BindingResolver.Resolve(_configuration);
+            resolved = BindingResolver.Resolve(_configuration, _serviceBindingRoot);
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
         {

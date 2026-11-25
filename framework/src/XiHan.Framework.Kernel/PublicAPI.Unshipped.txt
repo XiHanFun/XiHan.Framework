@@ -423,7 +423,8 @@ XiHan.Framework.Kernel.Plugins.PluginContext.Configuration.get -> Microsoft.Exte
 XiHan.Framework.Kernel.Plugins.PluginContext.Manifest.get -> XiHan.Framework.Primitives.Manifests.Manifest!
 XiHan.Framework.Kernel.Plugins.PluginContext.Permissions.get -> XiHan.Framework.Kernel.Plugins.PluginPermissions!
 XiHan.Framework.Kernel.Plugins.PluginContext.Pipeline.get -> XiHan.Framework.Kernel.Pipeline.PipelineBuilder?
-XiHan.Framework.Kernel.Plugins.PluginContext.PluginContext(XiHan.Framework.Primitives.Manifests.Manifest! manifest, Microsoft.Extensions.DependencyInjection.IServiceCollection! services, Microsoft.Extensions.Configuration.IConfiguration! configuration, XiHan.Framework.Kernel.Plugins.PluginPermissions! permissions, XiHan.Framework.Kernel.Pipeline.PipelineBuilder? pipeline) -> void
+XiHan.Framework.Kernel.Plugins.PluginContext.PluginContext(XiHan.Framework.Primitives.Manifests.Manifest! manifest, Microsoft.Extensions.DependencyInjection.IServiceCollection! services, Microsoft.Extensions.Configuration.IConfiguration! configuration, XiHan.Framework.Kernel.Plugins.PluginPermissions! permissions, XiHan.Framework.Kernel.Pipeline.PipelineBuilder? pipeline, string? serviceBindingRoot = null) -> void
+XiHan.Framework.Kernel.Plugins.PluginContext.ServiceBindingRoot.get -> string?
 XiHan.Framework.Kernel.Plugins.PluginContext.Services.get -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
 XiHan.Framework.Kernel.Plugins.PluginPermissions
 XiHan.Framework.Kernel.Plugins.PluginPermissions.Granted.get -> System.Collections.Generic.IReadOnlySet<string!>!

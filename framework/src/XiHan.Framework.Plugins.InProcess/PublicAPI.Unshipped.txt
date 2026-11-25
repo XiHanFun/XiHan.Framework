@@ -1,7 +1,7 @@
 #nullable enable
 XiHan.Framework.Plugins.InProcess.InProcessPluginHost
 XiHan.Framework.Plugins.InProcess.InProcessPluginHost.DisposeAsync() -> System.Threading.Tasks.ValueTask
-XiHan.Framework.Plugins.InProcess.InProcessPluginHost.InProcessPluginHost(Microsoft.Extensions.Configuration.IConfiguration! configuration, Microsoft.Extensions.Logging.ILoggerFactory! loggerFactory) -> void
+XiHan.Framework.Plugins.InProcess.InProcessPluginHost.InProcessPluginHost(Microsoft.Extensions.Configuration.IConfiguration! configuration, Microsoft.Extensions.Logging.ILoggerFactory! loggerFactory, string? serviceBindingRoot = null) -> void
 XiHan.Framework.Plugins.InProcess.InProcessPluginHost.LoadAsync(XiHan.Framework.Kernel.Plugins.PluginSource! source, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<XiHan.Framework.Primitives.Result<XiHan.Framework.Kernel.Plugins.PluginStatus!>>!
 XiHan.Framework.Plugins.InProcess.InProcessPluginHost.Plugins.get -> System.Collections.Generic.IReadOnlyList<XiHan.Framework.Kernel.Plugins.PluginStatus!>!
 XiHan.Framework.Plugins.InProcess.InProcessPluginHost.UnloadAsync(string! manifestId, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<XiHan.Framework.Primitives.Result>!

@@ -3,6 +3,7 @@
 
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging.Abstractions;
+using XiHan.Framework.Kernel.Capabilities;
 using XiHan.Framework.Kernel.Plugins;
 using XiHan.Framework.Primitives;
 using XiHan.Framework.Testing.Workspace;
@@ -238,18 +239,120 @@ public sealed class InProcessPluginHostTests
         }
     }
 
+    [Fact]
+    public async Task Load_ChecksTheBindingsUnderTheServiceBindingRootItWasGiven()
+    {
+        // 绑定只挂在应用指定的根目录下（ADR-0301）：修之前宿主只认环境变量 SERVICE_BINDING_ROOT，核对时找不到这个必需的绑定
+        var directory = CopyWithBindings("""{ "name": "db", "type": "connection:relational" }""");
+        var root = MountedRoot("postgres://mounted/app");
+        try
+        {
+            await using var given = CreateHost(string.Empty, root);
+            var loaded = await given.LoadAsync(new PluginSource(directory, _granted), CancellationToken.None);
+            Assert.True(loaded.IsSuccess, loaded.ToString());
+            Assert.True((await given.UnloadAsync("xihan.samples.plugin", CancellationToken.None)).IsSuccess);
+
+            // 没给根目录时仍取环境变量：那里没有这个绑定
+            await using var defaults = CreateHost(string.Empty);
+            var rejected = await defaults.LoadAsync(new PluginSource(directory, _granted), CancellationToken.None);
+            Assert.Equal("binding 'db' is required but not provided", rejected.Error!.Details!["reason"]);
+        }
+        finally
+        {
+            DeleteQuietly(directory);
+            DeleteQuietly(root);
+        }
+    }
+
+    [Fact]
+    public async Task Plugin_ResolvesItsBindings_UnderTheSameRootAsTheHost()
+    {
+        // 插件经 PluginContext.ServiceBindingRoot 拿到宿主的根目录，自己解析出的与宿主核对的是同一份
+        var directory = ProbeDirectory();
+        var root = MountedRoot("postgres://mounted/app");
+        var slot = "xihan.tests.probe." + Guid.NewGuid().ToString("N");
+        try
+        {
+            await using var host = CreateHost(BindingProbePlugin.SlotKey + "=" + slot, root);
+
+            var loaded = await host.LoadAsync(new PluginSource(directory, PluginPermissions.Empty), CancellationToken.None);
+
+            Assert.True(loaded.IsSuccess, loaded.ToString());
+            Assert.Equal(root + "|postgres://mounted/app", AppContext.GetData(slot));
+            Assert.True((await host.UnloadAsync(BindingProbePlugin.Id, CancellationToken.None)).IsSuccess);
+        }
+        finally
+        {
+            AppContext.SetData(slot, null);
+            DeleteQuietly(directory);
+            DeleteQuietly(root);
+        }
+    }
+
+    [Fact]
+    public async Task Plugin_WithoutAServiceBindingRoot_SeesNone()
+    {
+        // 没给根目录时插件拿到 null，交给解析器即取环境变量，与宿主相同
+        var directory = ProbeDirectory();
+        var slot = "xihan.tests.probe." + Guid.NewGuid().ToString("N");
+        try
+        {
+            await using var host = CreateHost(BindingProbePlugin.SlotKey + "=" + slot + ";XiHan:Bindings:db:value=Host=configured");
+
+            var loaded = await host.LoadAsync(new PluginSource(directory, PluginPermissions.Empty), CancellationToken.None);
+
+            Assert.True(loaded.IsSuccess, loaded.ToString());
+            Assert.Equal("|Host=configured", AppContext.GetData(slot));
+            Assert.True((await host.UnloadAsync(BindingProbePlugin.Id, CancellationToken.None)).IsSuccess);
+        }
+        finally
+        {
+            AppContext.SetData(slot, null);
+            DeleteQuietly(directory);
+        }
+    }
+
     /// <summary>
     /// 以这些配置项创建宿主
     /// </summary>
     /// <remarks>
     /// <paramref name="values"/> 是以 <c>;</c> 分隔的 <c>键=值</c>，空串表示没有；值里可以再有 <c>=</c>
     /// </remarks>
-    private static InProcessPluginHost CreateHost(string values)
+    /// <param name="values">配置项</param>
+    /// <param name="serviceBindingRoot">交给宿主的 Service Binding 根目录；<see langword="null"/> 时宿主取环境变量</param>
+    private static InProcessPluginHost CreateHost(string values, string? serviceBindingRoot = null)
     {
         var pairs = values.Split(';', StringSplitOptions.RemoveEmptyEntries).Select(static pair => pair.Split('=', 2)).Select(static pair => new KeyValuePair<string, string?>(pair[0], pair[1]));
         #pragma warning disable IL2026, IL3050 // 测试进程不裁剪、不 AOT
-        return new(new ConfigurationBuilder().AddInMemoryCollection(pairs).Build(), NullLoggerFactory.Instance);
+        return new(new ConfigurationBuilder().AddInMemoryCollection(pairs).Build(), NullLoggerFactory.Instance, serviceBindingRoot);
         #pragma warning restore IL2026, IL3050
+    }
+
+    /// <summary>
+    /// 一个临时的 Service Binding 根目录，里面挂着绑定 <c>db</c>
+    /// </summary>
+    private static string MountedRoot(string uri)
+    {
+        var root = Path.Combine(Path.GetTempPath(), "xihan-plugin-root-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(Path.Combine(root, "db"));
+        File.WriteAllText(Path.Combine(root, "db", "uri"), uri + "\n");
+        return root;
+    }
+
+    /// <summary>
+    /// <see cref="BindingProbePlugin"/> 的插件目录
+    /// </summary>
+    /// <remarks>
+    /// 本程序集的副本与按它的清单写出的 <c>xihan.manifest.json</c>
+    /// </remarks>
+    private static string ProbeDirectory()
+    {
+        var directory = Path.Combine(Path.GetTempPath(), "xihan-plugin-probe-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(directory);
+        var assembly = typeof(BindingProbePlugin).Assembly.Location;
+        File.Copy(assembly, Path.Combine(directory, Path.GetFileName(assembly)));
+        File.WriteAllText(Path.Combine(directory, ManifestReader.FileName), ManifestReader.Write(new BindingProbePlugin().Manifest));
+        return directory;
     }
 
     /// <summary>
