@@ -12,7 +12,7 @@ Wasm 插件是在宿主进程内、由 wasmtime 沙箱运行的 WebAssembly 模�
 
 ## ABI v1：核心模块、线性内存与 JSON
 
-插件是 WASI preview 1（`wasi_snapshot_preview1`）的 reactor 模块：导出线性内存 `memory`，可选导出 `_initialize`，导出 `_start` 的命令式模块不被接受。消息与进程外插件相同，按 proto3 JSON 映射编码为 UTF-8 文本（字段名 lowerCamelCase，`bytes` 为 base64，枚举为名字），经导出函数与线性内存传递。宿主按严格的 UTF-8 解码客体写来的消息：有非法字节序列的（含未知字段里的）与不是合法 JSON 的同样处理，不换成 U+FFFD 再读：
+插件是 WASI preview 1（`wasi_snapshot_preview1`）的 reactor 模块：导出线性内存 `memory`，可选导出 `_initialize`，导出 `_start` 的命令式模块不被接受。消息与进程外插件相同，按 proto3 JSON 映射编码为 UTF-8 文本（字段名 lowerCamelCase，`bytes` 为 base64，枚举为名字），经导出函数与线性内存传递。宿主按严格的 UTF-8 解码客体写来的消息：有非法字节序列的（含未知字段里的）与不是合法 JSON 的同样处理，不换成 U+FFFD 再读。导出函数的响应整条不合法才按崩溃处理；响应合法而成功应答的 `payload`（消息里的 `bytes` 字段）过不了 JSON 文本的检查时，只让这次调用失败，见下文「沙箱边界」的表：
 
 - 传入：宿主调用 `xihan_alloc(len)` 取得偏移，写入请求，再调用导出函数 `(ptr, len)`；写入的内存由插件处理完请求后自行回收。
 - 传出：导出函数返回 `i64`，`(ptr << 32) | len` 指向客体内存里的响应；宿主复制后调用 `xihan_free(ptr, len)`。返回 `0` 表示插件无法给出响应，宿主按崩溃处理。
@@ -180,7 +180,7 @@ Wasm 插件清单 `contributes.pipeline` 的每一项在对应阶段插入一个
 
 每个插件一个实例，调用串行，并发到达的调用排队，排队时间计入截止时间。配置节 `XiHan:Plugins:Wasm` 里，`Directories` 列出插件目录，`Grants:<清单 ID>` 授予 `capability:` 权限与清单要读的宿主配置节、绑定，`Mounts:<清单 ID>:<客体路径>` 把客体路径映射到宿主目录（清单的 `fs.read:` / `fs.write:` 只有映射了才算授予，没有映射时加载以 `PLUGINS_DENIED_001` 拒绝）；沙箱的上限是 `MemoryLimitBytes`（缺省 64 MiB）、`StackLimitBytes`（缺省 1 MiB）、`CallTimeoutSeconds`（缺省 30）与 `MiddlewareTimeoutMilliseconds`（缺省 100）。全部键、类型与缺省值见[包参考](/packages/plugins-wasm#配置)。
 
-清单声明并授予的资源绑定随 `xihan_configure` 下发，来源与宿主自己的特性相同（Service Binding 目录与 `XiHan:Bindings`），每次配置插件时重新解析，带名字、清单声明的类型、主值与全部属性（只挂属性文件、没有主值的绑定照常下发、主值为空）。下发之前宿主按清单核对：必需（`required` 缺省 `true`）的绑定没给或只给了类型、来源声明的类型与清单不同、属性名或大小不合下发的上限、绑定目录多于 128 个文件（`reason` 为 `binding '<绑定名>' has more than 128 files`）、整个请求按 protobuf 二进制编码超过 2 MiB（写进客体内存的 JSON 更长，核对仍按二进制的大小），这一次配置都失败；可以没有的绑定在清单写 `"required": false`。规则与 `reason` 见[资源绑定](/configuration/bindings#下发给插件的绑定)。宿主为每次调用插件的操作与每次事件投递记一条 Span `xihan.plugin.invoke`（`xihan.invoke` 的子 Span，标签 `xihan.plugin.id`，操作调用另带 `xihan.operation`），见[日志与可观测性](/common/observability#内核发出什么)。
+清单声明并授予的资源绑定随 `xihan_configure` 下发，来源与宿主自己的特性相同（Service Binding 目录与 `XiHan:Bindings`），每次配置插件时重新解析，带名字、清单声明的类型、主值与全部属性（只挂属性文件、没有主值的绑定照常下发、主值为空）。下发之前宿主按清单核对：必需（`required` 缺省 `true`）的绑定没给或只给了类型、来源声明的类型与清单不同、属性名或大小不合下发的上限、绑定目录多于 128 个文件（`reason` 为 `binding '<绑定名>' has more than 128 files`）、整个请求按 protobuf 二进制编码超过 2 MiB（写进客体内存的 JSON 更长，核对仍按二进制的大小），这一次配置都失败；可以没有的绑定在清单写 `"required": false`。规则与 `reason` 见[资源绑定](/configuration/bindings#下发给插件的绑定)。插件自己的配置节（清单 `contributes.config.section`）的键或值里有孤立的代理项时同样不调用 `xihan_configure`，这一次配置失败（`reason` 为 `the configuration has a lone surrogate and cannot be encoded as UTF-8`，不带键与值），排在绑定的核对之前，按退避重建时再试（ADR-0315）。宿主为每次调用插件的操作与每次事件投递记一条 Span `xihan.plugin.invoke`（`xihan.invoke` 的子 Span，标签 `xihan.plugin.id`，操作调用另带 `xihan.operation`），见[日志与可观测性](/common/observability#内核发出什么)。
 
 取值不合类型与范围时，`WasmPluginOptions.FromConfiguration` 以带配置键的 `ArgumentException` 拒绝启动。CPU 按 epoch 中断强制截止：操作与事件用调用上下文的剩余时间（没有时取 `CallTimeout`），中间件用 `MiddlewareTimeout`，生命周期调用用 `CallTimeout`。
 
@@ -188,6 +188,7 @@ Wasm 插件清单 `contributes.pipeline` 的每一项在对应阶段插入一个
 | --- | --- |
 | 陷阱、导出返回 `0` | 插件 `Failed`（`PLUGINS_UNEXPECTED_002`，细节只写陷阱种类，原文进日志），按 1 秒起翻倍、上限 60 秒退避重建实例，重建后的握手声明必须与首次一致 |
 | 导出的响应不是合法的 JSON 消息（含非法的 UTF-8 字节序列） | 调用方得到 `PLUGINS_UNEXPECTED_001`（`reason` 为 `the response is not a valid JSON message`），实例按崩溃重建 |
+| 响应是合法的消息，成功应答的 `payload` 不为空却过不了 JSON 文本的共同检查（语法、64 层、合法的 UTF-8 与 Unicode、重复成员） | 这次调用 `PLUGINS_UNEXPECTED_001`（`reason` 为 `the response payload is not valid JSON text at '<路径>'`），载荷不交给调用方；实例不重建、仍是 `Ready`，与进程外插件同一处核对（ADR-0315） |
 | 导入 `invoke`、`publish` 的请求不是合法的 JSON 消息（含非法的 UTF-8 字节序列） | 以 `PLUGINS_VALIDATION_005` 应答，实例不变 |
 | 调用超过截止时间 | 调用方得到 `KERNEL_TIMEOUT_001`，实例按崩溃重建 |
 | 内存超过上限 | `memory.grow` 失败或陷阱，按崩溃重建 |

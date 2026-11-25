@@ -109,14 +109,15 @@ static bool IsTransient(Error error)
 | `ResourceExhausted` | `PLUGINS_UNAVAILABLE_002` | Wasm 沙箱资源不足：回调嵌套超限、客体内存分配失败 |
 | `HostUnsupported` | `PLUGINS_UNAVAILABLE_003` | 宿主进程不满足载体要求：Windows 强制用户态影子栈时 Wasm 陷阱会终止进程 |
 | `Timeout` | `PLUGINS_TIMEOUT_001` | 握手、配置、启动或停止超时 |
-| `Unexpected` | `PLUGINS_UNEXPECTED_001` | 配置、启动、停止或调用时发生未预期的失败；清单声明的绑定读不出、超过大小上限或下发前的核对不合，`Configure` 请求超过总上限 |
+| `Unexpected` | `PLUGINS_UNEXPECTED_001` | 配置、启动、停止或调用时发生未预期的失败；清单声明的绑定读不出、超过大小上限或下发前的核对不合，配置节有孤立的代理项，`Configure` 请求超过总上限；插件交回的应答载荷不是合法的 JSON 文本 |
 | `Crashed` | `PLUGINS_UNEXPECTED_002` | 插件进程异常退出，或 Wasm 实例陷阱、导出函数返回 0 |
 
 `PLUGINS_UNAVAILABLE_003` 是配置错误，以 `FrameworkException` 抛出、不本地化；其余错误以 `Result` 返回，文案按调用方区域翻译。进程内宿主有自己的一组错误码常量，见 [Plugins.InProcess](./plugins-inprocess)。
 
-两个载体共用的另两处规则也在本包（ADR-0292、ADR-0293）：
+两个载体共用的另几处规则也在本包（ADR-0292、ADR-0293、ADR-0315）：
 
-- 组装 `Configure` 请求：按清单的顺序逐个绑定核对有没有、类型与属性，逐个都合格之后整个请求按 protobuf 二进制编码不超过 2097152 字节；下发的 `type` 总是清单声明的类型。不合即不发，`PLUGINS_UNEXPECTED_001` + `plugins.process.failed`（`phase` 为 `configure`），`reason` 是只带绑定名、类型名与上限的固定英文文本（全文见[资源绑定](/configuration/bindings#下发给插件的绑定)），并记一条 Error：`The configure request of plugin <清单 ID> is not sent: <reason>; the plugin is not configured.`。
+- 核对插件交回的应答：代理操作把载体的运行时包一层，成功应答的载荷不为空时先过内核 `JsonText.FindProblem` 的共同检查，没过即 `PLUGINS_UNEXPECTED_001` + `plugins.process.failed`（`phase` 为操作 ID，`reason` 为 `the response payload is not valid JSON text at '<路径>'`），载荷不交出；核对在 `xihan.plugin.invoke` Span 之内，两种载体结论相同、都不按崩溃处理。幂等回放（`DecodeResponse`）做同一道检查，没过返回 `KERNEL_VALIDATION_001`（`reason` 是问题的路径）。空的载荷不查。
+- 组装 `Configure` 请求：清单声明的配置节先写成 JSON，键或值里有孤立的代理项即不发（`reason` 为 `the configuration has a lone surrogate and cannot be encoded as UTF-8`，不带键与值）；再按清单的顺序逐个绑定核对有没有、类型与属性，逐个都合格之后整个请求按 protobuf 二进制编码不超过 2097152 字节；下发的 `type` 总是清单声明的类型。不合即不发，`PLUGINS_UNEXPECTED_001` + `plugins.process.failed`（`phase` 为 `configure`），`reason` 是只带绑定名、类型名与上限的固定英文文本（全文见[资源绑定](/configuration/bindings#下发给插件的绑定)），并记一条 Error：`The configure request of plugin <清单 ID> is not sent: <reason>; the plugin is not configured.`。
 - 读插件写来的信封：`time` 是空串或带秒与偏移的 RFC 3339 时刻（原语层 `TimestampText` 的文法，与消息信封、截止时间相同），读成 UTC；不合文法即那一项 `MESSAGING_VALIDATION_002` + `messaging.envelope.invalid_time`（参数 `time` 是原文），其余属性不合法时仍是 `messaging.envelope.invalid`。写给插件的信封是 UTC、七位小数、`+00:00`，没有时间写空串。
 
 ## 相关

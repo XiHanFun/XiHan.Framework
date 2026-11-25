@@ -117,7 +117,7 @@ greetings.create	Experimental	Mcp, CommandLine	-
 | --- | --- | --- |
 | `--json` | `--json '{"name":"Ada","times":2}'` | 必须是 JSON 对象；文本严格编码成 UTF-8，有孤立的代理项是用法错误，不换成 U+FFFD 照常调用（只在 Windows 上会遇到：别的系统上命令行参数是字节，.NET 解码时已换掉） |
 | `--data` | `--data request.json` 或 `--data @request.json` | 文件内容必须是 JSON 对象 |
-| 字段选项 | `--name Ada --times 2` | 其余非保留选项拼成对象：值按操作的请求 Schema 写成对应类型，重复的选项成数组，没有字段时为 `{}` |
+| 字段选项 | `--name Ada --times 2` | 其余非保留选项拼成对象：值按操作的请求 Schema 写成对应类型，重复的选项成数组，没有字段时为 `{}`；选项的名字或值有孤立的代理项时是与 `--json` 同一个用法错误，不写成 U+FFFD 照常调用（同样只在 Windows 上会遇到） |
 
 保留选项不进载荷：`json`、`data`、`authorization`、`tenant`、`correlation`、`locale`、`timeout`、`help`。
 
@@ -166,7 +166,7 @@ dotnet run -- invoke greetings.create --json '{"name":"Ada","times":99}'; echo $
 
 退出码按错误码的 KIND 段决定（`CommandLineExitCodes.For`），KIND 到退出码的对照表见[结果与错误处理](/web/errors#错误码)。`CommandLineExitCodes` 的常量与 KIND 同名（`Validation`、`NotFound`、`Denied`、`Conflict`、`Unavailable`、`Timeout`、`Cancelled`），另有 `Success`（0）、`Unexpected`（1，其他 KIND）与 `Usage`（64，用法错误）；Ctrl+C 按 `Cancelled` 返回 8。
 
-用法错误包括：没有命令、未知命令（`HOSTING_NOTFOUND_002`）、`invoke` 缺操作 ID、`--json` 不是 JSON 对象或有孤立的代理项、`--data` 文件不存在、`--timeout` 或 `--authorization` 格式不对（都是 `HOSTING_VALIDATION_001`）。认证失败与缺少权限都是 `DENIED`，退出码 4，不区分 HTTP 上的 401 与 403。错误码与 KIND 的全貌见[结果与错误处理](/web/errors)。
+用法错误包括：没有命令、未知命令（`HOSTING_NOTFOUND_002`）、`invoke` 缺操作 ID、`--json` 不是 JSON 对象或有孤立的代理项、字段选项的名字或值有孤立的代理项（`reason` 为 `the value of option '--<名字>' has a lone surrogate and cannot be encoded as UTF-8`，名字本身坏了时为 `an option name has a lone surrogate and cannot be encoded as UTF-8`，不把坏的名字写进原因；沿用 `--json` 的消息键 `hosting.commandline.invoke_json_invalid`，ADR-0315）、`--data` 文件不存在、`--timeout` 或 `--authorization` 格式不对（都是 `HOSTING_VALIDATION_001`）。认证失败与缺少权限都是 `DENIED`，退出码 4，不区分 HTTP 上的 401 与 403。错误码与 KIND 的全貌见[结果与错误处理](/web/errors)。
 
 ## 自定义命令
 
