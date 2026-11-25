@@ -6,6 +6,7 @@ using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
 using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -203,27 +204,78 @@ public sealed class HostedBlobUrlTests : IDisposable
         Assert.Equal("text/plain; charset=utf-8;", (await store.HeadAsync(new ContainerName(Container), new BlobKey("inbox/dangling.txt"), CancellationToken.None)).ValueOrThrow().ContentType);
     }
 
-    [Fact]
-    public async Task Uploads_WithoutASignedContentType_RejectATrailingSpaceThatReachesTheEndpoint()
+    [Theory]
+    [InlineData("text/plain; ", "text/plain;")]
+    [InlineData("text/plain; charset=utf-8; ", "text/plain; charset=utf-8;")]
+    [InlineData("\ttext/plain;\t", "text/plain;")]
+    [InlineData("  text/plain \t ", "text/plain")]
+    public async Task Uploads_WithoutASignedContentType_DropTheWhitespaceAroundTheRequestContentType(string sent, string stored)
     {
         await using var app = await StartAsync();
-        using var client = app.GetTestClient();
         var store = app.Services.GetRequiredService<IBlobStore>();
         var signer = app.Services.GetRequiredService<IBlobUrlSigner>();
-        var upload = (await signer.SignAsync(new ContainerName(Container), new BlobKey("inbox/trailing.txt"), BlobUrlRequest.ForUpload(), CancellationToken.None)).ValueOrThrow();
+        var upload = (await signer.SignAsync(new ContainerName(Container), new BlobKey("inbox/trimmed.txt"), BlobUrlRequest.ForUpload(), CancellationToken.None)).ValueOrThrow();
 
-        // 以空格结尾的内容类型不合文法（ADR-0308）。Kestrel 照 RFC 9110 先去掉请求头首尾的空白，这样的值到不了端点；
-        // 进程内的测试服务器原样转交请求头，端点照文法回 400、不写入。测试用的 HttpClient 会把 .NET 解析得了的值改写后再发
-        // （text/plain; charset=utf-8 发出去去掉了结尾的空格），所以只用它解析不了、原样发出的值
-        foreach (var contentType in new[] { "text/plain; ", "text/plain; charset=utf-8; " })
+        // RFC 9110 §5.5：字段值不含首尾的空白（空格与制表符），收的一方先去掉它（ADR-0314）。Kestrel 交给应用之前已经去掉，
+        // 进程内的测试服务器原样转交，端点自己去掉，两种宿主结果一致；以前测试服务器上以空格结尾的回 400（ADR-0308）
+        var (status, _) = await SendRawAsync(app, HttpMethods.Put, upload.Url, sent);
+
+        Assert.Equal(StatusCodes.Status200OK, status);
+        Assert.Equal(stored, (await store.HeadAsync(new ContainerName(Container), new BlobKey("inbox/trimmed.txt"), CancellationToken.None)).ValueOrThrow().ContentType);
+    }
+
+    [Fact]
+    public async Task Uploads_WithASignedContentType_CompareItWithoutTheSurroundingWhitespace()
+    {
+        await using var app = await StartAsync();
+        var store = app.Services.GetRequiredService<IBlobStore>();
+        var signer = app.Services.GetRequiredService<IBlobUrlSigner>();
+        var upload = (await signer.SignAsync(new ContainerName(Container), new BlobKey("inbox/signed.md"), BlobUrlRequest.ForUpload(expiresIn: null, contentType: "text/markdown"), CancellationToken.None)).ValueOrThrow();
+
+        // 去掉首尾空白之后才与签名限定的值比较；去掉之后仍不同的照旧签名不符
+        Assert.Equal(StatusCodes.Status403Forbidden, (await SendRawAsync(app, HttpMethods.Put, upload.Url, "text/markdown;")).Status);
+        Assert.Equal(StatusCodes.Status200OK, (await SendRawAsync(app, HttpMethods.Put, upload.Url, " text/markdown\t")).Status);
+        Assert.Equal("text/markdown", (await store.HeadAsync(new ContainerName(Container), new BlobKey("inbox/signed.md"), CancellationToken.None)).ValueOrThrow().ContentType);
+    }
+
+    [Fact]
+    public async Task Uploads_WithoutASignedContentType_DropOnlySpacesAndTabs()
+    {
+        await using var app = await StartAsync();
+        var store = app.Services.GetRequiredService<IBlobStore>();
+        var signer = app.Services.GetRequiredService<IBlobUrlSigner>();
+
+        // 只有空格与制表符：去掉之后为空，同没给内容类型，存缺省值
+        var blank = (await signer.SignAsync(new ContainerName(Container), new BlobKey("inbox/blank.bin"), BlobUrlRequest.ForUpload(), CancellationToken.None)).ValueOrThrow();
+        Assert.Equal(StatusCodes.Status200OK, (await SendRawAsync(app, HttpMethods.Put, blank.Url, " \t ")).Status);
+        Assert.Equal(BlobPutOptions.DefaultContentType, (await store.HeadAsync(new ContainerName(Container), new BlobKey("inbox/blank.bin"), CancellationToken.None)).ValueOrThrow().ContentType);
+
+        // 别的空白（不换行空格）不是 HTTP 的空白，不去掉：不合内容类型文法，400 且不写入。以前只有它时按没给内容类型写入
+        var other = (await signer.SignAsync(new ContainerName(Container), new BlobKey("inbox/other.txt"), BlobUrlRequest.ForUpload(), CancellationToken.None)).ValueOrThrow();
+        foreach (var contentType in new[] { "\u00a0", "text/plain\u00a0" })
         {
-            using var trailing = new ByteArrayContent(Encoding.UTF8.GetBytes("x"));
-            Assert.True(trailing.Headers.TryAddWithoutValidation("Content-Type", contentType));
-            using var rejected = await client.PutAsync(upload.Url, trailing);
-            Assert.Equal((HttpStatusCode.BadRequest, ObjectStorageErrors.ContentTypeInvalid), (rejected.StatusCode, await CodeOf(rejected)));
+            Assert.Equal((StatusCodes.Status400BadRequest, ObjectStorageErrors.ContentTypeInvalid), await SendRawAsync(app, HttpMethods.Put, other.Url, contentType));
         }
 
-        Assert.False((await store.ExistsAsync(new ContainerName(Container), new BlobKey("inbox/trailing.txt"), CancellationToken.None)).ValueOrThrow());
+        Assert.False((await store.ExistsAsync(new ContainerName(Container), new BlobKey("inbox/other.txt"), CancellationToken.None)).ValueOrThrow());
+    }
+
+    [Fact]
+    public async Task RangedDownloads_ReadTheRangeHeaderWithoutItsSurroundingWhitespace()
+    {
+        // 下载读的 Range 头经 ASP.NET Core 的头解析器，本来就照 RFC 9110 去掉首尾空白：测试服务器原样转交也一样
+        await using var app = await StartAsync();
+        var store = app.Services.GetRequiredService<IBlobStore>();
+        var signer = app.Services.GetRequiredService<IBlobUrlSigner>();
+        Assert.True((await store.PutAsync(new ContainerName(Container), new BlobKey("docs/range.txt"), Encoding.UTF8.GetBytes("0123456789"), BlobPutOptions.Default, CancellationToken.None)).IsSuccess);
+        var url = (await signer.SignAsync(new ContainerName(Container), new BlobKey("docs/range.txt"), BlobUrlRequest.ForDownload(), CancellationToken.None)).ValueOrThrow().Url;
+
+        var context = await Raw(app, HttpMethods.Get, url, static request => request.Headers.Range = " bytes=2-4\t");
+
+        Assert.Equal(StatusCodes.Status206PartialContent, context.Response.StatusCode);
+        Assert.Equal("bytes 2-4/10", context.Response.Headers.ContentRange.ToString());
+        using var reader = new StreamReader(context.Response.Body);
+        Assert.Equal("234", await reader.ReadToEndAsync());
     }
 
     [Fact]
@@ -431,6 +483,45 @@ public sealed class HostedBlobUrlTests : IDisposable
         using var response = await client.SendAsync(request);
         Assert.Equal(expected, response.StatusCode);
         return (await response.Content.ReadAsStringAsync(), response.Content.Headers.ContentRange?.ToString());
+    }
+
+    /// <summary>
+    /// 经测试服务器原样发一个带 <c>Content-Type</c> 的请求
+    /// </summary>
+    /// <remarks>
+    /// 返回状态码与 Problem Details 的错误码（200 时为空）。不经 HttpClient：它会把 .NET 解析得了的头改写后再发、拒收首尾的空白与制表符；这里直接填请求，请求头的值原样到达端点
+    /// </remarks>
+    private static async Task<(int Status, string? Code)> SendRawAsync(WebApplication app, string method, Uri url, string contentType)
+    {
+        var context = await Raw(app, method, url, request =>
+        {
+            request.Headers.ContentType = contentType;
+            request.Body = new MemoryStream(Encoding.UTF8.GetBytes("x"));
+            request.ContentLength = 1;
+        });
+        if (context.Response.StatusCode == StatusCodes.Status200OK)
+        {
+            return (context.Response.StatusCode, null);
+        }
+
+        using var document = await JsonDocument.ParseAsync(context.Response.Body);
+        return (context.Response.StatusCode, document.RootElement.GetProperty("code").GetString());
+    }
+
+    /// <summary>
+    /// 经测试服务器原样发一个请求，<paramref name="configure"/> 填请求头与请求体
+    /// </summary>
+    private static Task<HttpContext> Raw(WebApplication app, string method, Uri url, Action<HttpRequest> configure)
+    {
+        var target = url.OriginalString;
+        var query = target.IndexOf('?', StringComparison.Ordinal);
+        return app.GetTestServer().SendAsync(context =>
+        {
+            context.Request.Method = method;
+            context.Request.Path = query < 0 ? target : target[..query];
+            context.Request.QueryString = query < 0 ? QueryString.Empty : new QueryString(target[query..]);
+            configure(context.Request);
+        });
     }
 
     /// <summary>

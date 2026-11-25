@@ -39,6 +39,14 @@ public static class BlobEndpointRouteBuilderExtensions
     private const string SandboxPolicy = "sandbox; default-src 'none'; img-src 'self' data:; media-src 'self'; style-src 'unsafe-inline'";
 
     /// <summary>
+    /// HTTP 字段值首尾可能出现的空白
+    /// </summary>
+    /// <remarks>
+    /// RFC 9110 的 OWS：只有空格与制表符（§5.6.3），别的空白不算
+    /// </remarks>
+    private static readonly char[] _fieldWhitespace = [' ', '\t'];
+
+    /// <summary>
     /// 映射端点
     /// </summary>
     /// <remarks>
@@ -168,7 +176,7 @@ public static class BlobEndpointRouteBuilderExtensions
     /// 上传
     /// </summary>
     /// <remarks>
-    /// 验签（地址限定了内容类型时请求必须一致），整个对象经 <see cref="IBlobStore"/> 写入，分片经 <see cref="IBlobMultipartStore"/> 上传
+    /// 验签（地址限定了内容类型时请求必须一致），整个对象经 <see cref="IBlobStore"/> 写入，分片经 <see cref="IBlobMultipartStore"/> 上传。读的请求头只有 <c>Content-Type</c>，先照 RFC 9110 §5.5 去掉首尾的空白再比较、核对与取用（ADR-0314）
     /// </remarks>
     private static async Task UploadAsync(HttpContext http, HostedBlobUrlSigner signer, string container, string key)
     {
@@ -189,7 +197,9 @@ public static class BlobEndpointRouteBuilderExtensions
             return;
         }
 
-        var requestType = http.Request.ContentType;
+        // 字段值不含首尾的空白，收的一方先去掉它（RFC 9110 §5.5）：Kestrel 交给应用之前已经去掉，别的宿主（进程内的测试服务器）原样转交，
+        // 端点自己再去一次，各宿主结果一致；只去空格与制表符，去掉之后为空即当作没给（ADR-0314）
+        var requestType = FieldValue(http.Request.ContentType);
         if (grant.ContentType is { } required && !string.Equals(required, requestType, StringComparison.OrdinalIgnoreCase))
         {
             context.SetOutcome(Error.Denied(ObjectStorageErrors.SignatureInvalid, ObjectStorageMessages.SignedUrlInvalid));
@@ -197,7 +207,7 @@ public static class BlobEndpointRouteBuilderExtensions
         }
 
         // 签名没限定内容类型时对象的内容类型取请求头，是客户端给的：不合文法以校验错误结束，不交给写入选项去抛异常（ADR-0214）
-        if (grant.ContentType is null && !string.IsNullOrWhiteSpace(requestType) && !BlobPutOptions.IsValidContentType(requestType))
+        if (grant.ContentType is null && requestType.Length > 0 && !BlobPutOptions.IsValidContentType(requestType))
         {
             context.SetOutcome(Error.Validation(ObjectStorageErrors.ContentTypeInvalid, ObjectStorageMessages.ContentTypeInvalid, MessageArguments.Of(("max", BlobPutOptions.MaxContentTypeLength))));
             return;
@@ -238,7 +248,7 @@ public static class BlobEndpointRouteBuilderExtensions
         }
         else
         {
-            var options = new BlobPutOptions { ContentType = grant.ContentType ?? (string.IsNullOrWhiteSpace(requestType) ? BlobPutOptions.DefaultContentType : requestType) };
+            var options = new BlobPutOptions { ContentType = grant.ContentType ?? (requestType.Length == 0 ? BlobPutOptions.DefaultContentType : requestType) };
             var put = await store.PutAsync(containerName, blobKey, http.Request.Body, options, context.CancellationToken).ConfigureAwait(false);
             if (!put.TryGetValue(out var written))
             {
@@ -252,6 +262,14 @@ public static class BlobEndpointRouteBuilderExtensions
         http.Response.StatusCode = StatusCodes.Status200OK;
         http.Response.Headers.ETag = new EntityTagHeaderValue("\"" + etag + "\"").ToString();
     }
+
+    /// <summary>
+    /// 请求头的字段值：去掉首尾的空格与制表符
+    /// </summary>
+    /// <remarks>
+    /// 没有这个头为空串。别的空白（不换行空格、控制字符）不是 HTTP 的空白，留在值里交给核对（ADR-0314）
+    /// </remarks>
+    private static string FieldValue(string? value) => value?.Trim(_fieldWhitespace) ?? string.Empty;
 
     /// <summary>
     /// 地址指向的存储
