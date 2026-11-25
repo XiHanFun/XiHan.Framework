@@ -19,6 +19,14 @@ namespace XiHan.Framework.Protocols.Mcp.Transports;
 public static class McpStdioTransport
 {
     /// <summary>
+    /// 严格的 UTF-8 编码
+    /// </summary>
+    /// <remarks>
+    /// 遇到孤立的代理项抛出，不悄悄换成 U+FFFD（ADR-0312）
+    /// </remarks>
+    private static readonly UTF8Encoding _strictUtf8 = new(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true);
+
+    /// <summary>
     /// 按 UTF-8 解码标准输入的读取器
     /// </summary>
     /// <remarks>
@@ -78,14 +86,37 @@ public static class McpStdioTransport
                 continue;
             }
 
+            // 读取器交来的是字符串：严格编码成 UTF-8，孤立的代理项与不是 JSON 同样答复解析错误，不换成 U+FFFD 再处理（RFC-0001「JSON 文本」，ADR-0312）
+            byte[] message;
+            try
+            {
+                message = _strictUtf8.GetBytes(line);
+            }
+            catch (EncoderFallbackException)
+            {
+                await WriteAsync(output, McpServer.NotJsonReply(), cancellationToken).ConfigureAwait(false);
+                continue;
+            }
+
             await using var scope = services.CreateAsyncScope();
             var context = createContext(scope.ServiceProvider);
-            var reply = await server.HandleAsync(Encoding.UTF8.GetBytes(line), context, () => createContext(scope.ServiceProvider)).ConfigureAwait(false);
+            var reply = await server.HandleAsync(message, context, () => createContext(scope.ServiceProvider)).ConfigureAwait(false);
             if (reply.TryGetValue(out var response))
             {
-                await output.WriteLineAsync(Encoding.UTF8.GetString(response.Body.Span)).ConfigureAwait(false);
-                await output.FlushAsync(cancellationToken).ConfigureAwait(false);
+                await WriteAsync(output, response, cancellationToken).ConfigureAwait(false);
             }
         }
+    }
+
+    /// <summary>
+    /// 把一个答复写成一行
+    /// </summary>
+    /// <remarks>
+    /// 答复由服务端的写出器写成，总是合法的 UTF-8
+    /// </remarks>
+    private static async Task WriteAsync(TextWriter output, McpReply reply, CancellationToken cancellationToken)
+    {
+        await output.WriteLineAsync(Encoding.UTF8.GetString(reply.Body.Span)).ConfigureAwait(false);
+        await output.FlushAsync(cancellationToken).ConfigureAwait(false);
     }
 }

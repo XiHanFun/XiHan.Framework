@@ -40,7 +40,7 @@ app.MapXiHanMcp();   // POST /mcp
 
 * `McpProtocolFeature`：特性入口
 * `McpProtocolOptions`：服务名、版本、说明与 tool 名覆盖
-* `McpStdioTransport`：stdio 传输（命令行宿主的 `mcp` 命令由特性登记）
+* `McpStdioTransport`：stdio 传输（命令行宿主的 `mcp` 命令由特性登记）；读取器交来的每一行严格编码成 UTF-8，有孤立的代理项时与不是 JSON 一样答复解析错误（-32700）
 
 ## 更多文档
 

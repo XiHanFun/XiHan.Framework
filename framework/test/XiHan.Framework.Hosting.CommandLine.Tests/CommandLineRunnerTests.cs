@@ -242,6 +242,26 @@ public sealed class CommandLineRunnerTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task Invoke_WithJsonThatCannotBeEncodedAsUtf8_IsAUsageError()
+    {
+        // --json 的文本严格编码成 UTF-8（RFC-0001「JSON 文本」，ADR-0312）：孤立的代理项编码不成，与不是 JSON 对象同样是用法错误；
+        // 修之前换成 U+FFFD 照常调用，操作收到的名字里是 U+FFFD
+        var (code, output, error) = await RunAsync("invoke", "orders.get", "--json", "{\"name\":\"wid\uD800get\"}");
+
+        Assert.Equal(CommandLineExitCodes.Usage, code);
+        Assert.Empty(output);
+        var failure = Json(error);
+        Assert.Equal(CommandLineErrors.UsageInvalid, failure.GetProperty("code").GetString());
+        Assert.Equal("The value of --json must be a JSON object: the text has a lone surrogate and cannot be encoded as UTF-8", failure.GetProperty("detail").GetString());
+        Assert.Empty(_host.Services.GetRequiredService<OriginLog>().Origins);
+
+        // 代理对是合法的 UTF-16，照常编码、照常调用
+        var (paired, pairedOutput, _) = await RunAsync("invoke", "orders.get", "--json", "{\"name\":\"wid😀get\"}");
+        Assert.Equal(CommandLineExitCodes.Success, paired);
+        Assert.Equal("wid😀get", Json(pairedOutput).GetProperty("name").GetString());
+    }
+
+    [Fact]
     public async Task Invoke_OfADeprecatedOperation_WritesOneNoticeToStderr_AndLeavesStdoutAndTheExitCodeAlone()
     {
         const string Notice = "Operation 'orders.archive' is deprecated and will be removed in a future major version.";

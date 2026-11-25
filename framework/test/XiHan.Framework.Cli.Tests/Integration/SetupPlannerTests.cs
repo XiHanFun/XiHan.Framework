@@ -76,6 +76,29 @@ public sealed class SetupPlannerTests
     }
 
     [Fact]
+    public void ReadConfig_ThatIsNotValidUtf8_IsRejected_AndApplyLeavesTheFileAsItIs()
+    {
+        // 不是合法 UTF-8 的文件不是合法 JSON（RFC 8259 §8.1、RFC-0001「JSON 文本」，ADR-0312）：报 CLI_VALIDATION_006、一个文件都不写；
+        // 修之前按 U+FFFD 读出、合并后写回，把用户文件里的那个字节悄悄改成了 EF BF BD
+        using var project = new ProjectFixture(null);
+        var action = SetupPlanner.Plan("claude", "mcp", project.Root, "5.0.0", windows: false, Skill)[0];
+        byte[] bytes = [.. "{ \"mcpServers\": { \"other\": { \"command\": \"x"u8, 0xC3, .. "\" } } }"u8];
+        File.WriteAllBytes(action.Path, bytes);
+
+        var read = SetupPlanner.ReadConfig(action.Path);
+
+        Assert.Equal(CliErrors.SetupConfigInvalid, read.Error!.Code);
+        Assert.Equal(CliMessages.SetupConfigInvalid, read.Error.MessageKey);
+        Assert.Equal("the file is not valid UTF-8", read.Error.Details!["reason"]);
+        Assert.True(SetupPlanner.Apply(action).IsFailure);
+        Assert.Equal(bytes, File.ReadAllBytes(action.Path));
+
+        // 带 UTF-8 BOM 的文件照旧读得出
+        File.WriteAllBytes(action.Path, [0xEF, 0xBB, 0xBF, .. """{ "mcpServers": {} }"""u8]);
+        Assert.True(SetupPlanner.ReadConfig(action.Path).ValueOrThrow().ContainsKey("mcpServers"));
+    }
+
+    [Fact]
     public void ReadConfig_CommentsOrNonObject_AreRejected_AndCheckReportsEachProblem()
     {
         using var project = new ProjectFixture(null);

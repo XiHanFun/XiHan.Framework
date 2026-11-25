@@ -148,6 +148,15 @@ public sealed class McpServer
     }
 
     /// <summary>
+    /// 消息不是 JSON 时的解析错误答复（<c>id</c> 为 <c>null</c>，JSON-RPC 码 -32700）
+    /// </summary>
+    /// <remarks>
+    /// stdio 传输交来的一行编码不成 UTF-8 时也用它：与不是 JSON 同一个答复（ADR-0312）
+    /// </remarks>
+    internal static McpReply NotJsonReply()
+        => new(WriteError(default, JsonRpcErrorCodes.ParseError, McpErrors.InvalidMessage, McpMessages.MessageNotJson.L()), IsMalformed: true);
+
+    /// <summary>
     /// HTTP 入口校验不过时的答复
     /// </summary>
     /// <remarks>
@@ -181,7 +190,7 @@ public sealed class McpServer
         }
         catch (JsonException)
         {
-            return Maybe.Some(new McpReply(WriteError(default, JsonRpcErrorCodes.ParseError, McpErrors.InvalidMessage, McpMessages.MessageNotJson.L()), IsMalformed: true));
+            return Maybe.Some(NotJsonReply());
         }
 
         using (document)

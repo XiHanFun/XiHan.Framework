@@ -19,6 +19,14 @@ namespace XiHan.Framework.Hosting.CommandLine.Commands;
 /// </remarks>
 internal sealed class InvokeCommand : ICommand
 {
+    /// <summary>
+    /// 严格的 UTF-8 编码
+    /// </summary>
+    /// <remarks>
+    /// 遇到孤立的代理项抛出，不悄悄换成 U+FFFD（ADR-0312）
+    /// </remarks>
+    private static readonly UTF8Encoding _strictUtf8 = new(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true);
+
     /// <inheritdoc />
     public string Name => "invoke";
 
@@ -80,7 +88,18 @@ internal sealed class InvokeCommand : ICommand
     {
         if (context.Option("json").TryGetValue(out var json))
         {
-            return ObjectOrError(Encoding.UTF8.GetBytes(json));
+            // 命令行给的是字符串，严格编码成 UTF-8：孤立的代理项与不是 JSON 对象同样是用法错误，不换成 U+FFFD 照常调用（RFC-0001「JSON 文本」，ADR-0312）
+            byte[] utf8;
+            try
+            {
+                utf8 = _strictUtf8.GetBytes(json);
+            }
+            catch (EncoderFallbackException)
+            {
+                return Error.Validation(CommandLineErrors.UsageInvalid, CommandLineMessages.InvokeJsonInvalid, MessageArguments.Of(("reason", "the text has a lone surrogate and cannot be encoded as UTF-8")));
+            }
+
+            return ObjectOrError(utf8);
         }
 
         if (context.Option("data").TryGetValue(out var data))

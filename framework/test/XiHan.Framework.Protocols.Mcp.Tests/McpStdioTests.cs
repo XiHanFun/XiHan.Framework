@@ -111,6 +111,36 @@ public sealed class McpStdioTests
         }
     }
 
+    [Fact]
+    public async Task Transport_AnswersALineThatCannotBeEncodedAsUtf8_WithAParseError()
+    {
+        // 读取器交来的一行是字符串，严格编码成 UTF-8 再解析（RFC-0001「JSON 文本」，ADR-0312）：孤立的代理项与不是 JSON 同样答复解析错误，下一行照常处理；
+        // 修之前换成 U+FFFD，tools/call 照常执行
+        using var host = await StartAsync();
+        try
+        {
+            var input = new StringReader(string.Join('\n',
+                "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"tools/call\",\"params\":{\"name\":\"orders_get\",\"arguments\":{\"id\":\"7\uD800\",\"page\":1}}}",
+                """{"jsonrpc":"2.0","id":2,"method":"tools/list"}"""));
+            var output = new StringWriter();
+
+            await McpStdioTransport.RunAsync(host.Services.GetRequiredService<McpServer>(), host.Services, input, output, CancellationToken.None);
+
+            var lines = output.ToString().Split('\n', StringSplitOptions.RemoveEmptyEntries).Select(static l => l.TrimEnd('\r')).ToList();
+            Assert.Equal(2, lines.Count);
+            using var malformed = JsonDocument.Parse(lines[0]);
+            Assert.Equal(-32700, malformed.RootElement.GetProperty("error").GetProperty("code").GetInt32());
+            Assert.Equal(JsonValueKind.Null, malformed.RootElement.GetProperty("id").ValueKind);
+            using var listed = JsonDocument.Parse(lines[1]);
+            Assert.Equal(2, listed.RootElement.GetProperty("id").GetInt32());
+            Assert.Empty(host.Services.GetRequiredService<OriginLog>().Origins);
+        }
+        finally
+        {
+            await host.StopAsync();
+        }
+    }
+
     /// <summary>
     /// 以给定的命令行参数执行 <c>mcp</c> 命令，输入是逐行拼起来的消息按 UTF-8 编码的字节
     /// </summary>

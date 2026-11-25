@@ -29,6 +29,14 @@ internal static class SetupPlanner
     public static readonly IReadOnlyList<string> Modes = ["mcp", "skill", "both"];
 
     /// <summary>
+    /// 读配置文件用的严格 UTF-8 编码
+    /// </summary>
+    /// <remarks>
+    /// 遇到非法的字节序列抛出，不悄悄换成 U+FFFD：换了的话合并之后写回去，用户文件里的那几个字节就被改掉了（ADR-0312）
+    /// </remarks>
+    private static readonly UTF8Encoding _strictUtf8 = new(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true);
+
+    /// <summary>
     /// 写 JSON 配置的选项：缩进、LF 换行、不转义中文与引号外的字符
     /// </summary>
     private static readonly JsonWriterOptions _writerOptions = new() { Indented = true, NewLine = "\n", Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping };
@@ -107,7 +115,7 @@ internal static class SetupPlanner
     /// 读一份 JSON 配置
     /// </summary>
     /// <remarks>
-    /// 文件不存在或为空时是空对象；不是合法 JSON 对象（含注释的 JSONC 也算）时返回 <see cref="CliErrors.SetupConfigInvalid"/>，文件不动，由用户按 <c>--dry-run</c> 打印的片段手工合并
+    /// 文件不存在或为空时是空对象；不是合法 JSON 对象（含注释的 JSONC 与不是合法 UTF-8 的文件也算）时返回 <see cref="CliErrors.SetupConfigInvalid"/>，文件不动，由用户按 <c>--dry-run</c> 打印的片段手工合并
     /// </remarks>
     public static Result<JsonObject> ReadConfig(string path)
     {
@@ -117,7 +125,18 @@ internal static class SetupPlanner
             return new JsonObject();
         }
 
-        var text = File.ReadAllText(path);
+        // 与 File.ReadAllText 一样按字节顺序标记识别编码（UTF-8 的 BOM 跳过），只是 UTF-8 的非法字节序列不换成 U+FFFD
+        string text;
+        try
+        {
+            using var reader = new StreamReader(path, _strictUtf8, detectEncodingFromByteOrderMarks: true);
+            text = reader.ReadToEnd();
+        }
+        catch (DecoderFallbackException)
+        {
+            return Error.Validation(CliErrors.SetupConfigInvalid, CliMessages.SetupConfigInvalid, MessageArguments.Of(("path", path), ("reason", "the file is not valid UTF-8")));
+        }
+
         if (string.IsNullOrWhiteSpace(text))
         {
             return new JsonObject();
