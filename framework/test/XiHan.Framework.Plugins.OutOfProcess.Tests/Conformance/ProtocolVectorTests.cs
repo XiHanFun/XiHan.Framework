@@ -10,8 +10,10 @@ using Google.Protobuf.Collections;
 using Grpc.Core;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using XiHan.Framework.Kernel;
 using XiHan.Framework.Kernel.Hosting;
+using XiHan.Framework.Kernel.Plugins;
 using XiHan.Framework.Plugins.Protocol;
 using XiHan.Framework.Plugins.Protocol.Handshake;
 using XiHan.Framework.Plugins.Protocol.Hosting;
@@ -278,6 +280,9 @@ public sealed class ProtocolVectorTests
         Assert.Equal(PluginBindingProperties.MaxCount, limits.GetProperty("maxProperties").GetInt32());
         Assert.Equal(PluginBindingProperties.MaxNameLength, limits.GetProperty("maxNameLength").GetInt32());
         Assert.Equal(PluginBindingProperties.MaxBytes, limits.GetProperty("maxBytes").GetInt32());
+        Assert.Equal(BindingResolver.MaxFileBytes, limits.GetProperty("maxFileBytes").GetInt32());
+        Assert.Equal(BindingResolver.MaxBindingBytes, limits.GetProperty("maxBindingFileBytes").GetInt32());
+        Assert.Equal(PluginConfigureRequests.MaxBytes, limits.GetProperty("maxRequestBytes").GetInt32());
 
         var names = document.RootElement.GetProperty("names");
         foreach (var valid in names.GetProperty("valid").EnumerateArray())
@@ -297,10 +302,19 @@ public sealed class ProtocolVectorTests
         using var document = JsonDocument.Parse(File.ReadAllText(SpecVectors.PathOf("plugin", "binding-properties.json")));
         var pluginId = document.RootElement.GetProperty("pluginId").GetString()!;
         var missingRoot = Path.Combine(Path.GetTempPath(), "xihan-no-bindings-" + Guid.NewGuid().ToString("N"));
+
+        // 绑定之外的字段：没有配置节的清单写 {}、没有授予的权限，工作目录照向量传；整个请求的大小按它们一起算
+        var fields = document.RootElement.GetProperty("request");
+        var workDirectory = fields.GetProperty("workDirectory").GetString()!;
+        Assert.Equal("{}", fields.GetProperty("configuration").GetString());
+        Assert.Equal(0, fields.GetProperty("grantedPermissions").GetArrayLength());
         foreach (var @case in document.RootElement.GetProperty("delivery").EnumerateArray())
         {
             var name = @case.GetProperty("name").GetString()!;
-            var declared = @case.GetProperty("declared").EnumerateArray().Select(static d => new ManifestBinding(d.GetProperty("name").GetString()!, d.GetProperty("type").GetString()!)).ToList();
+            // required 缺省为 true，与清单相同
+            var declared = @case.GetProperty("declared").EnumerateArray()
+                .Select(static d => new ManifestBinding(d.GetProperty("name").GetString()!, d.GetProperty("type").GetString()!) { Required = !d.TryGetProperty("required", out var required) || required.GetBoolean() })
+                .ToList();
 
             // 解析出的绑定经配置来源交给真实的组装：来源没声明类型、没给主值的就不写那个键
             var values = new List<KeyValuePair<string, string?>>();
@@ -325,7 +339,7 @@ public sealed class ProtocolVectorTests
                 TestManifests.Create(pluginId, kind: ManifestKind.Plugin, bindings: declared),
                 new ConfigurationBuilder().AddInMemoryCollection(values).Build(),
                 missingRoot,
-                "work",
+                workDirectory,
                 logs.CreateLogger("test"));
 
             if (@case.TryGetProperty("error", out var error))
@@ -341,6 +355,8 @@ public sealed class ProtocolVectorTests
             }
 
             Assert.True(built.IsSuccess, $"{name}: {built}");
+            Assert.True(built.ValueOrThrow().CalculateSize() <= PluginConfigureRequests.MaxBytes, name);
+            Assert.True((built.ValueOrThrow().Configuration, built.ValueOrThrow().GrantedPermissions.Count) == ("{}", 0), name);
             var expected = @case.GetProperty("bindings").EnumerateArray().ToList();
             var actual = built.ValueOrThrow().Bindings;
             Assert.True(expected.Count == actual.Count, $"{name}: delivered {actual.Count} bindings");
@@ -409,6 +425,45 @@ public sealed class ProtocolVectorTests
         Assert.Contains(PluginBindingProperties.FindViolation("db", new Dictionary<string, string> { ["user name"] = "v" }).ValueOrThrow(), reasons);
         Assert.Contains(PluginBindingProperties.FindViolation("db", new Dictionary<string, string> { ["blob"] = new('v', PluginBindingProperties.MaxBytes) }).ValueOrThrow(), reasons);
         Assert.False(PluginBindingProperties.FindViolation("db", new Dictionary<string, string> { ["username"] = "app" }).HasValue);
+
+        // 下发之前的核对写出的两种（lifecycle.md §2「bindings 的核对」，ADR-0292）：{type} 是来源声明的类型，{declared} 是清单声明的
+        var typed = reasons.Select(static r => r.Replace("{type}", "queue", StringComparison.Ordinal).Replace("{declared}", "connection:relational", StringComparison.Ordinal)).ToHashSet(StringComparer.Ordinal);
+        var empty = new Dictionary<string, string>(StringComparer.Ordinal);
+        Assert.Contains(PluginBindingRules.FindViolation(new ManifestBinding("db", "connection:relational"), null).ValueOrThrow(), reasons);
+        Assert.Contains(PluginBindingRules.FindViolation(new ManifestBinding("db", "connection:relational"), new BindingValue { Name = "db", Type = "queue", Value = "x", Properties = empty }).ValueOrThrow(), typed);
+
+        // 绑定目录的文件超过内核的大小上限，与整个请求超过上限：经真实的组装写出
+        var root = Directory.CreateTempSubdirectory("xihan-binding-reasons-");
+        try
+        {
+            var manifest = TestManifests.Create("xihan.test.bound", kind: ManifestKind.Plugin, bindings: [new ManifestBinding("db", "connection:relational")]);
+            var configuration = new ConfigurationBuilder().Build();
+            Directory.CreateDirectory(Path.Combine(root.FullName, "db"));
+            File.WriteAllText(Path.Combine(root.FullName, "db", "blob"), new string('v', BindingResolver.MaxFileBytes + 1));
+            Assert.Contains(ReasonOf(PluginConfigureRequests.Build(manifest, configuration, root.FullName, "work", NullLoggerFactory.Instance.CreateLogger("test"))), reasons);
+
+            File.WriteAllText(Path.Combine(root.FullName, "db", "blob"), new string('v', BindingResolver.MaxFileBytes));
+            File.WriteAllText(Path.Combine(root.FullName, "db", "blob2"), new string('v', BindingResolver.MaxFileBytes));
+            File.WriteAllText(Path.Combine(root.FullName, "db", "blob3"), "v");
+            Assert.Contains(ReasonOf(PluginConfigureRequests.Build(manifest, configuration, root.FullName, "work", NullLoggerFactory.Instance.CreateLogger("test"))), reasons);
+
+            var large = TestManifests.Create("xihan.test.bound", kind: ManifestKind.Plugin) with { Contributes = new Contributions { Config = new ConfigContribution("XiHan:Bound") } };
+            var oversized = new ConfigurationBuilder().AddInMemoryCollection([new KeyValuePair<string, string?>("XiHan:Bound:Blob", new string('v', PluginConfigureRequests.MaxBytes))]).Build();
+            Assert.Contains(ReasonOf(PluginConfigureRequests.Build(large, oversized, root.FullName, "work", NullLoggerFactory.Instance.CreateLogger("test"))), reasons);
+        }
+        finally
+        {
+            root.Delete(recursive: true);
+        }
+    }
+
+    /// <summary>
+    /// 组装失败时错误里的 <c>reason</c>
+    /// </summary>
+    private static string ReasonOf(Result<ConfigureRequest> built)
+    {
+        Assert.True(built.IsFailure, "The configure request must not be built.");
+        return (string)built.Error!.Details!["reason"]!;
     }
 
     /// <summary>

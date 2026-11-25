@@ -201,6 +201,46 @@ public sealed class OutOfProcessPluginHostTests
         }
     }
 
+    /// <summary>
+    /// 清单声明的必需绑定解析不出、或来源声明了别的类型时，宿主不发 <c>Configure</c>
+    /// </summary>
+    /// <remarks>
+    /// ADR-0292。以前照发：必需的绑定不在请求里、或带着来源的类型，插件自己决定怎么办。核对的规则由 <c>PluginConfigureRequestsTests</c> 与向量 <c>binding-properties.json</c> 核对，这里看的是进程外载体把它当成配置这一步失败
+    /// </remarks>
+    [Fact]
+    public async Task Binding_RequiredButNotProvided_OrOfAnotherType_FailsTheConfigureStep()
+    {
+        var root = Directory.CreateTempSubdirectory("xihan-plugin-bindings-");
+        try
+        {
+            using var bound = new PluginCopy(EchoPluginHost.Directory);
+            bound.EditManifest(static manifest => manifest.Replace("\"entry\": \"EchoPlugin\"", "\"bindings\": [ { \"name\": \"db\", \"type\": \"connection:relational\" } ],\n  \"entry\": \"EchoPlugin\"", StringComparison.Ordinal));
+            (string Key, string Value)[] grants = [("XiHan:Plugins:OutOfProcess:Grants:xihan.samples.echo:2", "binding:db"), ("XiHan:Plugins:OutOfProcess:RestartLimit", "0")];
+
+            await using (var missing = await EchoPluginHost.StartAsync(b => b.UseServiceBindingRoot(root.FullName), directory: bound.Directory, extra: grants))
+            {
+                var status = EchoPluginHost.PluginHost(missing).FindStatus(EchoPluginHost.PluginId).ValueOrThrow().Status;
+                Assert.Equal(LifecycleState.Failed, status.State);
+                Assert.Equal(PluginErrors.Unexpected, status.Error?.Code);
+                Assert.Equal("binding 'db' is required but not provided", status.Error?.Details?["reason"]);
+            }
+
+            Directory.CreateDirectory(Path.Combine(root.FullName, "db"));
+            await File.WriteAllTextAsync(Path.Combine(root.FullName, "db", "type"), "connection:document");
+            await File.WriteAllTextAsync(Path.Combine(root.FullName, "db", "uri"), "mongodb://mounted-db-7f3a");
+            await using var mistyped = await EchoPluginHost.StartAsync(b => b.UseServiceBindingRoot(root.FullName), directory: bound.Directory, extra: grants);
+
+            var failed = EchoPluginHost.PluginHost(mistyped).FindStatus(EchoPluginHost.PluginId).ValueOrThrow().Status;
+            Assert.Equal(LifecycleState.Failed, failed.State);
+            Assert.Equal("binding 'db' is of type 'connection:document' but the manifest declares 'connection:relational'", failed.Error?.Details?["reason"]);
+            Assert.DoesNotContain("mounted-db-7f3a", failed.Error!.ToString(), StringComparison.Ordinal);
+        }
+        finally
+        {
+            root.Delete(recursive: true);
+        }
+    }
+
     [Fact]
     public async Task Feature_HandsTheAppsServiceBindingRootToTheHost()
     {

@@ -183,6 +183,105 @@ public sealed class InProcessPluginHostTests
         }
     }
 
+    [Theory]
+    [InlineData("", "binding 'db' is required but not provided")]
+    [InlineData("""XiHan:Bindings:db:type=queue""", "binding 'db' is required but not provided")]
+    [InlineData("""XiHan:Bindings:db:type=connection:document;XiHan:Bindings:db:value=mongodb://s3cret@db""", "binding 'db' is of type 'connection:document' but the manifest declares 'connection:relational'")]
+    public async Task Load_WithABindingThatIsMissingOrOfAnotherType_IsRejected_BeforeLoadingCode(string configured, string reason)
+    {
+        // 与进程外、Wasm 宿主同一条规则（lifecycle.md §2「bindings 的核对」，ADR-0292）：进程内宿主不下发绑定，但在加载代码之前核对清单声明的
+        var directory = CopyWithBindings("""{ "name": "db", "type": "connection:relational" }""");
+        try
+        {
+            await using var host = CreateHost(configured);
+
+            var result = await host.LoadAsync(new PluginSource(directory, _granted), CancellationToken.None);
+
+            Assert.True(result.IsFailure, "A plugin whose required binding is missing or mistyped must not load.");
+            Assert.Equal(PluginErrors.LoadFailed, result.Error!.Code);
+            Assert.Equal(PluginMessages.LoadFailed, result.Error.MessageKey);
+            Assert.Equal("xihan.samples.plugin", result.Error.Details!["id"]);
+            Assert.Equal(reason, result.Error.Details["reason"]);
+            Assert.DoesNotContain("s3cret", result.Error.ToString(), StringComparison.Ordinal);
+            Assert.Empty(host.Plugins);
+            // 插件代码一行没跑：程序集没有加载进任何上下文
+            Assert.DoesNotContain(AppDomain.CurrentDomain.GetAssemblies(), a => a.Location.StartsWith(directory, StringComparison.OrdinalIgnoreCase));
+        }
+        finally
+        {
+            DeleteQuietly(directory);
+        }
+    }
+
+    [Theory]
+    [InlineData("""{ "name": "db", "type": "connection:relational" }""", "XiHan:Bindings:db:host=db.internal")]
+    [InlineData("""{ "name": "db", "type": "connection:relational" }""", "XiHan:Bindings:db:type=connection:relational;XiHan:Bindings:db:value=Host=db")]
+    [InlineData("""{ "name": "db", "type": "connection:relational", "required": false }""", "")]
+    [InlineData("""{ "name": "db", "type": "connection:relational", "required": false }""", "XiHan:Bindings:db:type=queue")]
+    public async Task Load_WithBindingsThatAreProvidedOrOptional_Succeeds(string declared, string configured)
+    {
+        // 只有属性也算给出了；可选的没有内容就不核对类型（不会下发，也就没有拿错类型去连的问题）
+        var directory = CopyWithBindings(declared);
+        try
+        {
+            await using var host = CreateHost(configured);
+
+            var result = await host.LoadAsync(new PluginSource(directory, _granted), CancellationToken.None);
+
+            Assert.True(result.IsSuccess, result.ToString());
+            Assert.Equal(LifecycleState.Ready, result.ValueOrThrow().State);
+            Assert.True((await host.UnloadAsync("xihan.samples.plugin", CancellationToken.None)).IsSuccess);
+        }
+        finally
+        {
+            DeleteQuietly(directory);
+        }
+    }
+
+    /// <summary>
+    /// 以这些配置项创建宿主
+    /// </summary>
+    /// <remarks>
+    /// <paramref name="values"/> 是以 <c>;</c> 分隔的 <c>键=值</c>，空串表示没有；值里可以再有 <c>=</c>
+    /// </remarks>
+    private static InProcessPluginHost CreateHost(string values)
+    {
+        var pairs = values.Split(';', StringSplitOptions.RemoveEmptyEntries).Select(static pair => pair.Split('=', 2)).Select(static pair => new KeyValuePair<string, string?>(pair[0], pair[1]));
+        #pragma warning disable IL2026, IL3050 // 测试进程不裁剪、不 AOT
+        return new(new ConfigurationBuilder().AddInMemoryCollection(pairs).Build(), NullLoggerFactory.Instance);
+        #pragma warning restore IL2026, IL3050
+    }
+
+    /// <summary>
+    /// 示例插件的副本，清单里加一项绑定声明
+    /// </summary>
+    private static string CopyWithBindings(string binding)
+    {
+        var directory = Path.Combine(Path.GetTempPath(), "xihan-plugin-" + Guid.NewGuid().ToString("N"));
+        CopyTree(PluginDirectory, directory);
+        var manifestPath = Path.Combine(directory, "xihan.manifest.json");
+        var json = File.ReadAllText(manifestPath);
+        var edited = json.Replace("\"permissions\": [", "\"bindings\": [ " + binding + " ],\n  \"permissions\": [", StringComparison.Ordinal);
+        Assert.NotEqual(json, edited);
+        File.WriteAllText(manifestPath, edited);
+        return directory;
+    }
+
+    /// <summary>
+    /// 删除临时目录，删不掉就留给系统清理
+    /// </summary>
+    private static void DeleteQuietly(string directory)
+    {
+        try
+        {
+            Directory.Delete(directory, recursive: true);
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+        {
+            // 插件程序集已被加载时文件仍被占用：临时目录留给系统清理，不掩盖断言本身
+        }
+    }
+
     /// <summary>
     /// 递归复制目录
     /// </summary>

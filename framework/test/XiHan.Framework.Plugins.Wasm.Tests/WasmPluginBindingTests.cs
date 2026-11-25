@@ -11,10 +11,10 @@ using XiHan.Framework.Testing;
 namespace XiHan.Framework.Plugins.Wasm.Tests;
 
 /// <summary>
-/// 宿主经 <c>Configure</c> 下发给 Wasm 插件的绑定（<c>spec/plugin/lifecycle.md</c> §2，ADR-0268）
+/// 宿主经 <c>Configure</c> 下发给 Wasm 插件的绑定
 /// </summary>
 /// <remarks>
-/// 端到端：应用经 <c>AppBuilder.UseServiceBindingRoot</c> 指定绑定根目录，特性把它交给宿主，现场生成的 WAT 插件在 <c>xihan_configure</c> 里核对收到的请求，找得到期望的主值才启动成功。组装规则本身（类型的取值、没有主值的绑定、读失败）由进程外测试项目里的 <c>PluginConfigureRequestsTests</c> 核对，两个宿主共用那一处
+/// <c>spec/plugin/lifecycle.md</c> §2，ADR-0268、ADR-0285、ADR-0292。端到端：应用经 <c>AppBuilder.UseServiceBindingRoot</c> 指定绑定根目录，特性把它交给宿主，现场生成的 WAT 插件在 <c>xihan_configure</c> 里核对收到的请求，找得到期望的主值才启动成功。组装规则本身（类型的取值、没有主值的绑定、读失败）由进程外测试项目里的 <c>PluginConfigureRequestsTests</c> 核对，两个宿主共用那一处
 /// </remarks>
 public sealed class WasmPluginBindingTests : IDisposable
 {
@@ -96,9 +96,9 @@ public sealed class WasmPluginBindingTests : IDisposable
     }
 
     [Fact]
-    public async Task Binding_ThatIsNotProvided_IsNotDelivered()
+    public async Task Binding_ThatIsRequiredButNotProvided_FailsTheConfigureStep()
     {
-        // 对照：根目录里没有这个绑定，插件在 Configure 里找不到它、报失败，停在 Failed
+        // 根目录里没有这个绑定，清单也没把它标成可选：宿主不发 Configure，插件停在 Failed（ADR-0292；以前照发、由插件自己报失败）
         Mount("cache", ("uri", "mounted-db-7f3a"));
         using var plugin = WatPlugin.ExpectingBinding("db", "connection:relational", "mounted-db-7f3a");
 
@@ -107,6 +107,22 @@ public sealed class WasmPluginBindingTests : IDisposable
         var status = EchoWasmPluginHost.PluginHost(host).FindStatus(WatPlugin.PluginId).ValueOrThrow().Status;
         Assert.Equal(LifecycleState.Failed, status.State);
         Assert.Equal(PluginErrors.Unexpected, status.Error?.Code);
+        Assert.Equal("binding 'db' is required but not provided", status.Error?.Details?["reason"]);
+    }
+
+    [Fact]
+    public async Task Binding_OfAnotherType_FailsTheConfigureStep_WithBothTypes()
+    {
+        // 挂载的绑定声明了别的类型：以前照样下发来源的类型，插件拿着文档库的连接串去连关系库
+        Mount("db", ("type", "connection:document"), ("uri", "mounted-db-7f3a"));
+        using var plugin = WatPlugin.ExpectingBinding("db", "connection:relational", "mounted-db-7f3a");
+
+        await using var host = await StartAsync(plugin, ["binding:db"]);
+
+        var status = EchoWasmPluginHost.PluginHost(host).FindStatus(WatPlugin.PluginId).ValueOrThrow().Status;
+        Assert.Equal(LifecycleState.Failed, status.State);
+        Assert.Equal("binding 'db' is of type 'connection:document' but the manifest declares 'connection:relational'", status.Error?.Details?["reason"]);
+        Assert.DoesNotContain("mounted-db-7f3a", status.Error!.ToString(), StringComparison.Ordinal);
     }
 
     [Fact]

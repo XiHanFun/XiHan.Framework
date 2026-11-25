@@ -8,6 +8,7 @@
 
 * 插件的私有依赖隔离在自己的加载上下文，框架类型与宿主共享
 * 加载前核对清单权限，失败以 `Result` 返回、不抛到宿主
+* 加载前核对清单声明的绑定，与进程外、Wasm 宿主同一条规则：必需的绑定（`required` 缺省为 `true`）在宿主配置与 Service Binding 目录（根目录取环境变量 `SERVICE_BINDING_ROOT`）里都没有能用的内容，或来源声明的类型与清单不同，即加载失败（`PLUGINS_UNEXPECTED_001`）；宿主不向插件下发绑定，插件自己经 `BindingResolver.Resolve(Configuration)` 读
 * 进程内插件不能贡献中间件，需要时用 Wasm 插件
 
 ## 如何使用

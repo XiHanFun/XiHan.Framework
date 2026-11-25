@@ -41,7 +41,8 @@ await builder.Build().RunAsync();
 * `AppBuilder`、`App`：装配入口与运行中的应用
 * `KernelOptions`、`StartupBannerOptions`：内核选项与启动 Banner 的选项
 * `IFeature`、`IHostedFeature`、`FeatureContext`：特性与它的装配入口
-* `BindingResolver`、`BindingValue`：资源绑定的解析与结果（主值与其余属性；打印时主值遮蔽、属性只列名字）；`FeatureContext.Bindings` 是装配时解析好的一份，`FeatureContext.ServiceBindingRoot` 是应用指定的绑定根目录，装配之后还要按同样的来源解析时用它
+* `BindingResolver`、`BindingValue`：资源绑定的解析与结果（主值与其余属性；打印时主值遮蔽、属性只列名字）；`FeatureContext.Bindings` 是装配时解析好的一份，`FeatureContext.ServiceBindingRoot` 是应用指定的绑定根目录，装配之后还要按同样的来源解析时用它。绑定目录里一个文件最多 `MaxFileBytes`（524288）字节、一个绑定的文件合计最多 `MaxBindingBytes`（1048576）字节，读的时候到上限就停，超过即启动失败（`KERNEL_HOSTING_005`，消息只带绑定名、文件名与上限）
+* `PluginBindingRules`：插件宿主对清单声明的绑定的核对（必需的绑定没有能下发的内容、来源声明的类型与清单不同），进程外、Wasm 与进程内三种宿主共用
 * `PipelineBuilder`、`IPipelineMiddleware`、`PipelineStage`：执行管道
 * `OperationAttribute`、`IOperation<TRequest, TResponse>`、`IOperationInvoker`：操作契约与调用
 * `FrameworkDiagnostics`：内核的 ActivitySource 与 Meter（名字都是 `XiHan.Framework`）。Span `xihan.invoke` 与指标 `xihan.invocations`、`xihan.invocation.duration` 带 `xihan.outcome`；操作调用另带 `xihan.operation`（操作 ID），不是操作调用时没有这个标签

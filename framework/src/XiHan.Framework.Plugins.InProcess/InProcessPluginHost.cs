@@ -6,6 +6,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using XiHan.Framework.Kernel.Capabilities;
+using XiHan.Framework.Kernel.Hosting;
 using XiHan.Framework.Kernel.Plugins;
 using XiHan.Framework.Primitives;
 using XiHan.Framework.Primitives.Manifests;
@@ -16,7 +17,8 @@ namespace XiHan.Framework.Plugins.InProcess;
 /// 进程内插件宿主
 /// </summary>
 /// <remarks>
-/// 每个插件拥有自己的可收集加载上下文与服务容器；失败以 <see cref="Result"/> 返回，不影响宿主
+/// 每个插件拥有自己的可收集加载上下文与服务容器；失败以 <see cref="Result"/> 返回，不影响宿主。
+/// 宿主不向插件下发绑定（插件读整个宿主配置），但在加载插件代码之前按与进程外、Wasm 宿主相同的规则核对清单声明的绑定：必需的没有能下发的内容、来源声明的类型与清单不同即加载失败（<see cref="PluginBindingRules"/>，<c>spec/plugin/lifecycle.md</c> §2，ADR-0292）
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed partial class InProcessPluginHost : IPluginHost, IAsyncDisposable
@@ -124,6 +126,12 @@ public sealed partial class InProcessPluginHost : IPluginHost, IAsyncDisposable
         if (!File.Exists(assemblyPath))
         {
             return Error.NotFound(PluginErrors.NotFound, PluginMessages.AssemblyMissing, MessageArguments.Of(("path", assemblyPath)));
+        }
+
+        // 绑定同样在加载任何代码之前核对：插件带着缺的或错了类型的连接启动，比加载失败更难查
+        if (manifest.Bindings.Count > 0 && FindBindingViolation(manifest) is { } rejected)
+        {
+            return rejected;
         }
 
         await _gate.WaitAsync(cancellationToken).ConfigureAwait(false);
@@ -253,6 +261,51 @@ public sealed partial class InProcessPluginHost : IPluginHost, IAsyncDisposable
             return Error.Unexpected(PluginErrors.LoadFailed, PluginMessages.LoadFailed, MessageArguments.Of(("id", manifest.Id), ("reason", exception.Message)), exception is FrameworkException framework ? framework.ToError() : null);
         }
     }
+
+    /// <summary>
+    /// 核对清单声明的绑定
+    /// </summary>
+    /// <remarks>
+    /// 解析与插件自己经 <see cref="BindingResolver.Resolve(IConfiguration)"/> 读到的相同（根目录取环境变量）；按清单的顺序报第一处不合的，与进程外、Wasm 宿主的 <c>reason</c> 相同。读不出时原因只写异常类型（消息带着挂载路径，完整异常进日志），文件超过大小上限时原因是内核的消息（只带绑定名、文件名与上限）。都合格时为 <see langword="null"/>
+    /// </remarks>
+    private Error? FindBindingViolation(Manifest manifest)
+    {
+        IReadOnlyDictionary<string, BindingValue> resolved;
+        try
+        {
+            resolved = BindingResolver.Resolve(_configuration);
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+        {
+            LogPluginFailed(_logger, exception, manifest.Id);
+            return Error.Unexpected(PluginErrors.LoadFailed, PluginMessages.LoadFailed, MessageArguments.Of(("id", manifest.Id), ("reason", exception.GetType().FullName)));
+        }
+        catch (FrameworkException exception)
+        {
+            LogPluginFailed(_logger, exception, manifest.Id);
+            return Error.Unexpected(PluginErrors.LoadFailed, PluginMessages.LoadFailed, MessageArguments.Of(("id", manifest.Id), ("reason", exception.Message)), exception.ToError());
+        }
+
+        foreach (var binding in manifest.Bindings)
+        {
+            if (PluginBindingRules.FindViolation(binding, resolved.TryGetValue(binding.Name, out var value) ? value : null).TryGetValue(out var reason))
+            {
+                LogBindingRejected(_logger, manifest.Id, reason);
+                return Error.Unexpected(PluginErrors.LoadFailed, PluginMessages.LoadFailed, MessageArguments.Of(("id", manifest.Id), ("reason", reason)));
+            }
+        }
+
+        return null;
+    }
+
+    /// <summary>
+    /// 记录清单声明的绑定不合、插件不加载
+    /// </summary>
+    /// <remarks>
+    /// <c>reason</c> 是 <see cref="PluginBindingRules.FindViolation"/> 给出的固定文本，只带绑定名与类型名
+    /// </remarks>
+    [LoggerMessage(Level = LogLevel.Error, Message = "Plugin {PluginId} is not loaded: {Reason}.")]
+    private static partial void LogBindingRejected(ILogger logger, string pluginId, string reason);
 
     /// <summary>
     /// 记录插件进入某个生命周期状态

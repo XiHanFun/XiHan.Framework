@@ -21,7 +21,7 @@ namespace XiHan.Framework.Plugins.OutOfProcess.Tests;
 /// 两个宿主共用的 <c>Configure</c> 请求组装：下发给插件的绑定与内核按同一套来源解析
 /// </summary>
 /// <remarks>
-/// 规则出自 <c>spec/plugin/lifecycle.md</c> §2、RFC-0016、ADR-0268 与 ADR-0285：先读 Service Binding 目录、再读配置节，同名时配置整体覆盖目录；只下发清单声明的绑定；绑定连同属性一起下发，属性名有文法、数量与字节数有上限，属性值不进日志与错误。每个用例用自己的临时目录作绑定根，不碰环境变量
+/// 规则出自 <c>spec/plugin/lifecycle.md</c> §2、RFC-0016、ADR-0268、ADR-0285 与 ADR-0292：先读 Service Binding 目录、再读配置节，同名时配置整体覆盖目录；只下发清单声明的绑定；绑定连同属性一起下发，属性名有文法、数量与字节数有上限，属性值不进日志与错误；必需的绑定解析不出、来源声明的类型与清单不同、整个请求超过上限都让配置失败。每个用例用自己的临时目录作绑定根，不碰环境变量
 /// </remarks>
 public sealed class PluginConfigureRequestsTests : IDisposable
 {
@@ -97,7 +97,7 @@ public sealed class PluginConfigureRequestsTests : IDisposable
     }
 
     [Fact]
-    public void Bindings_TakeTheirTypeFromTheSource_AndFallBackToTheManifest()
+    public void Bindings_CarryTheManifestType_WhetherTheSourceDeclaresTheSameTypeOrNone()
     {
         Mount("typed", ("type", "cache:distributed"), ("uri", "mounted:6379"));
         Mount("untyped", ("uri", "postgres://db/app"));
@@ -120,7 +120,7 @@ public sealed class PluginConfigureRequestsTests : IDisposable
         // 与内核同一个解析器：绑定名与 type / value 子键区分大小写（RFC-0016「资源绑定与配置节」第 4 条）。
         // 全大写环境变量写出来的键内核读不到主值，下发给插件时也一样；原先这里经配置的索引器读、不区分大小写
         var request = Build(
-            Manifest(new Binding("db", "connection:relational"), new Binding("cache", "cache:distributed"), new Binding("queue", "queue")),
+            Manifest(new Binding("db", "connection:relational") { Required = false }, new Binding("cache", "cache:distributed"), new Binding("queue", "queue")),
             Configuration(
                 ("XiHan:Bindings:DB:value", "Host=upper-name"),
                 ("XiHan:Bindings:cache:VALUE", "upper-key:6379"),
@@ -166,8 +166,9 @@ public sealed class PluginConfigureRequestsTests : IDisposable
         Mount("empty");
         Mount("cache", ("uri", "mounted:6379"), ("password", "s3cret"));
 
+        // 可选的绑定这样才只是不下发；必需的见 Bindings_RequiredButWithoutContent_FailTheRequest
         var request = Build(
-            Manifest(new Binding("db", "connection:relational"), new Binding("empty", "queue"), new Binding("cache", "cache:distributed"), new Binding("typed", "blob")),
+            Manifest(Optional("db", "connection:relational"), Optional("empty", "queue"), new Binding("cache", "cache:distributed"), Optional("typed", "blob")),
             Configuration(("XiHan:Bindings:typed:type", "blob")));
 
         Assert.Equal(["cache"], request.Bindings.Select(static b => b.Name));
@@ -176,6 +177,120 @@ public sealed class PluginConfigureRequestsTests : IDisposable
         Assert.Equal(_logs.Entries.Count, warnings.Count);
         Assert.All(["'db'", "'empty'", "'typed'"], name => Assert.Contains(warnings, w => w.Message.Contains(name, StringComparison.Ordinal) && w.Message.Contains(PluginId, StringComparison.Ordinal)));
         Assert.DoesNotContain("s3cret", string.Join('\n', _logs.Entries.Select(static e => e.Message)), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Bindings_RequiredButWithoutContent_FailTheRequest()
+    {
+        // 清单没写 required 即必需（RFC-0002）：两种来源都没给，或只给了类型，插件拿不到任何内容，带着缺的连接启动比配置失败更难查
+        Mount("queue", ("type", "queue"));
+
+        var absent = Rejected(Manifest(new Binding("db", "connection:relational")), Configuration());
+        var typeOnly = Rejected(Manifest(new Binding("queue", "queue")), Configuration());
+        var emptyDirectory = Rejected(Manifest(new Binding("empty", "queue")), Configuration(), () => Mount("empty"));
+
+        Assert.Equal("binding 'db' is required but not provided", absent);
+        Assert.Equal("binding 'queue' is required but not provided", typeOnly);
+        Assert.Equal("binding 'empty' is required but not provided", emptyDirectory);
+        // 必需的绑定只有属性、没有主值照常下发：有内容可交
+        Assert.Equal(["db"], Build(Manifest(new Binding("db", "connection:relational")), Configuration(("XiHan:Bindings:db:host", "db.internal"))).Bindings.Select(static b => b.Name));
+    }
+
+    [Fact]
+    public void Bindings_OfAnotherTypeThanTheManifestDeclares_FailTheRequest_WithoutNamingAnyValue()
+    {
+        // 以前照样下发来源的类型，插件拿着文档库的连接串去连关系库（ADR-0268 的待定之一，ADR-0292）
+        Mount("db", ("type", "connection:document"), ("uri", "mongodb://mounted/app"), ("password", "s3cret"));
+
+        var mounted = Rejected(Manifest(new Binding("db", "connection:relational")), Configuration());
+        var configured = Rejected(
+            Manifest(new Binding("cache", "cache:distributed")),
+            Configuration(("XiHan:Bindings:cache:type", "queue"), ("XiHan:Bindings:cache:value", "amqp://s3cret@mq")));
+        // 可选的绑定也核对：它一旦下发，插件就会拿它去连
+        var optional = Rejected(Manifest(Optional("cache", "cache:distributed")), Configuration(("XiHan:Bindings:cache:type", "Cache:Distributed"), ("XiHan:Bindings:cache:value", "x")));
+
+        Assert.Equal("binding 'db' is of type 'connection:document' but the manifest declares 'connection:relational'", mounted);
+        Assert.Equal("binding 'cache' is of type 'queue' but the manifest declares 'cache:distributed'", configured);
+        Assert.Equal("binding 'cache' is of type 'Cache:Distributed' but the manifest declares 'cache:distributed'", optional);
+    }
+
+    [Fact]
+    public void Bindings_AreCheckedOneAfterAnother_InManifestOrder()
+    {
+        // 一个绑定核对完（有没有、类型、属性）再核对下一个：前一个的属性超过数量，后一个必需而缺失，报前一个
+        (string, string)[] tooMany = [.. Enumerable.Range(0, PluginBindingProperties.MaxCount + 1).Select(static i => ($"XiHan:Bindings:cache:p{i:D2}", "v"))];
+        Assert.Equal("binding 'cache' has more than 64 properties", Rejected(Manifest(new Binding("cache", "cache:distributed"), new Binding("db", "connection:relational")), Configuration(tooMany)));
+
+        // 有没有与类型先于属性：类型不对的绑定另有 65 个属性，报类型
+        (string, string)[] wrongTypeTooMany = [("XiHan:Bindings:cache:type", "queue"), .. tooMany];
+        Assert.Equal("binding 'cache' is of type 'queue' but the manifest declares 'cache:distributed'", Rejected(Manifest(new Binding("cache", "cache:distributed")), Configuration(wrongTypeTooMany)));
+
+        // 前一个必需而缺失、后一个类型不对：报前一个
+        Assert.Equal("binding 'cache' is required but not provided", Rejected(Manifest(new Binding("cache", "cache:distributed"), new Binding("db", "connection:relational")), Configuration(("XiHan:Bindings:db:type", "blob"), ("XiHan:Bindings:db:value", "x"))));
+    }
+
+    [Fact]
+    public void Request_OverTheTotalLimit_FailsInsteadOfFailingInTheTransport()
+    {
+        // 每个绑定都在 262144 字节之内，九个加起来超过 2 MiB：以前照发，失败在 gRPC 的 4 MiB 消息上限或客体内存上
+        var manifest = Manifest([.. Enumerable.Range(1, 9).Select(static i => new Binding($"b{i}", "queue"))]);
+        var configuration = Configuration([.. Enumerable.Range(1, 9).Select(static i => ($"XiHan:Bindings:b{i}:blob", new string('v', PluginBindingProperties.MaxBytes - 4)))]);
+
+        Assert.Equal("the configure request exceeds 2097152 bytes", Rejected(manifest, configuration));
+        Assert.DoesNotContain("vvvv", _logs.Entries[^1].Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Request_AtTheTotalLimit_IsSent_AndTheLimitCountsTheWholeEncodedRequest()
+    {
+        // 八个绑定、第八个的属性调到整个请求正好 2097152 字节（与向量 binding-properties.json 同一组数）：按 protobuf 二进制编码计，工作目录与配置节都在里面
+        var manifest = Manifest([.. Enumerable.Range(1, 8).Select(static i => new Binding($"b{i}", "queue"))]);
+        (string, string)[] values = [.. Enumerable.Range(1, 8).Select(static i => ($"XiHan:Bindings:b{i}:blob", new string('v', i < 8 ? 262140 : 261930)))];
+
+        var request = Build(manifest, Configuration(values));
+
+        Assert.Equal(PluginConfigureRequests.MaxBytes, request.CalculateSize());
+        Assert.Equal(PluginConfigureRequests.MaxBytes, request.ToByteArray().Length);
+        values[^1] = (values[^1].Item1, values[^1].Item2 + "v");
+        Assert.Equal("the configure request exceeds 2097152 bytes", Rejected(manifest, Configuration(values)));
+    }
+
+    [Fact]
+    public void Request_WithoutBindings_IsCheckedToo()
+    {
+        // 配置节本身也可能很大：没有声明绑定的插件同样核对
+        var manifest = TestManifests.Create(PluginId, kind: ManifestKind.Plugin) with { Contributes = new Contributions { Config = new ConfigContribution("XiHan:Bound") } };
+
+        Assert.Equal("the configure request exceeds 2097152 bytes", Rejected(manifest, Configuration(("XiHan:Bound:Blob", new string('v', PluginConfigureRequests.MaxBytes)))));
+    }
+
+    [Theory]
+    [InlineData(false, "a file of binding 'db' exceeds 524288 bytes")]
+    [InlineData(true, "the files of binding 'db' exceed 1048576 bytes")]
+    public void Bindings_WithFilesOverTheKernelLimits_FailTheRequest_WithoutNamingTheFile(bool total, string reason)
+    {
+        // 内核读绑定目录时到上限就停（RFC-0016 第 9 条）：与读失败同样按配置失败处理；原因只带绑定名与上限，文件名就是属性名，不写出来
+        if (total)
+        {
+            Mount("db", ("ca-part-a", new string('a', 524288)), ("ca-part-b", new string('b', 524288)), ("s3cret-file", "x"));
+        }
+        else
+        {
+            Mount("db", ("s3cret-file", new string('x', 524289)));
+        }
+
+        Assert.Equal(reason, Rejected(Manifest(new Binding("db", "connection:relational")), Configuration()));
+        Assert.DoesNotContain("s3cret-file", _logs.Entries[^1].Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Bindings_ThePluginDidNotDeclare_AreNotLimitedForIt()
+    {
+        // 别的绑定超过大小上限同样不关这个插件的事：没点名的目录不打开
+        Mount("db", ("uri", "postgres://db/app"));
+        Mount("other", ("blob", new string('x', 524289)));
+
+        Assert.Equal(["db"], Build(Manifest(new Binding("db", "connection:relational")), Configuration()).Bindings.Select(static b => b.Name));
     }
 
     [Fact]
@@ -367,7 +482,7 @@ public sealed class PluginConfigureRequestsTests : IDisposable
         Assert.False(Directory.Exists(_root));
 
         var built = PluginConfigureRequests.Build(
-            Manifest(new Binding("db", "connection:relational"), new Binding("cache", "cache:distributed")),
+            Manifest(Optional("db", "connection:relational"), new Binding("cache", "cache:distributed")),
             Configuration(("XiHan:Bindings:cache:value", "configured:6379")),
             _root,
             "work",
@@ -508,6 +623,42 @@ public sealed class PluginConfigureRequestsTests : IDisposable
 
         return bindings;
     }
+
+    /// <summary>
+    /// 以本用例的绑定根组装请求，要求失败，返回 <c>reason</c>
+    /// </summary>
+    /// <remarks>
+    /// 失败是 <c>PLUGINS_UNEXPECTED_001</c> + <c>plugins.process.failed</c>，阶段 <c>configure</c>；宿主只记一条带原因与插件 ID 的 Error，错误、细节与日志里都没有属性值与主值。<paramref name="arrange"/> 在组装之前执行
+    /// </remarks>
+    private string Rejected(Manifest manifest, IConfiguration configuration, Action? arrange = null)
+    {
+        arrange?.Invoke();
+        var before = _logs.Entries.Count;
+        var built = PluginConfigureRequests.Build(manifest, configuration, _root, "work", _logs.CreateLogger("test"));
+
+        Assert.True(built.IsFailure, "The configure request must not be built.");
+        Assert.Equal(PluginErrors.Unexpected, built.Error!.Code);
+        Assert.Equal(PluginMessages.ProcessFailed, built.Error.MessageKey);
+        Assert.Equal(PluginId, built.Error.Details!["id"]);
+        Assert.Equal("configure", built.Error.Details["phase"]);
+        var reason = Assert.IsType<string>(built.Error.Details["reason"]);
+        var logged = Assert.Single(_logs.Entries.Skip(before));
+        Assert.Equal(LogLevel.Error, logged.Level);
+        Assert.Contains(reason, logged.Message, StringComparison.Ordinal);
+        Assert.Contains(PluginId, logged.Message, StringComparison.Ordinal);
+        foreach (var secret in new[] { "s3cret", "mongodb://", "amqp://" })
+        {
+            Assert.DoesNotContain(secret, logged.Message, StringComparison.Ordinal);
+            Assert.DoesNotContain(secret, PluginJson.SerializeDetails(built.Error.Details), StringComparison.Ordinal);
+        }
+
+        return reason;
+    }
+
+    /// <summary>
+    /// 可选的绑定声明
+    /// </summary>
+    private static Binding Optional(string name, string type) => new(name, type) { Required = false };
 
     /// <summary>
     /// 以本用例的绑定根组装请求，要求成功

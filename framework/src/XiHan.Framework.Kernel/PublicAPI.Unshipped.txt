@@ -417,6 +417,7 @@ XiHan.Framework.Kernel.Plugins.IPluginHost
 XiHan.Framework.Kernel.Plugins.IPluginHost.LoadAsync(XiHan.Framework.Kernel.Plugins.PluginSource! source, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<XiHan.Framework.Primitives.Result<XiHan.Framework.Kernel.Plugins.PluginStatus!>>!
 XiHan.Framework.Kernel.Plugins.IPluginHost.Plugins.get -> System.Collections.Generic.IReadOnlyList<XiHan.Framework.Kernel.Plugins.PluginStatus!>!
 XiHan.Framework.Kernel.Plugins.IPluginHost.UnloadAsync(string! manifestId, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<XiHan.Framework.Primitives.Result>!
+XiHan.Framework.Kernel.Plugins.PluginBindingRules
 XiHan.Framework.Kernel.Plugins.PluginContext
 XiHan.Framework.Kernel.Plugins.PluginContext.Configuration.get -> Microsoft.Extensions.Configuration.IConfiguration!
 XiHan.Framework.Kernel.Plugins.PluginContext.Manifest.get -> XiHan.Framework.Primitives.Manifests.Manifest!
@@ -601,6 +602,8 @@ abstract XiHan.Framework.Kernel.Operations.OperationDescriptor.ExecuteAsync(XiHa
 const XiHan.Framework.Kernel.Capabilities.ManifestReader.FileName = "xihan.manifest.json" -> string!
 const XiHan.Framework.Kernel.Diagnostics.FrameworkDiagnostics.SourceName = "XiHan.Framework" -> string!
 const XiHan.Framework.Kernel.Hosting.BindingResolver.ConfigurationSection = "XiHan:Bindings" -> string!
+const XiHan.Framework.Kernel.Hosting.BindingResolver.MaxBindingBytes = 1048576 -> int
+const XiHan.Framework.Kernel.Hosting.BindingResolver.MaxFileBytes = 524288 -> int
 const XiHan.Framework.Kernel.Hosting.BindingResolver.ServiceBindingRootVariable = "SERVICE_BINDING_ROOT" -> string!
 const XiHan.Framework.Kernel.Hosting.ConfigurationDirectory.BaseFileName = "appsettings.json" -> string!
 const XiHan.Framework.Kernel.Hosting.ConfigurationDirectory.Variable = "XIHAN_CONFIG_PATH" -> string!
@@ -616,6 +619,7 @@ const XiHan.Framework.Kernel.KernelCapabilities.Security = "kernel.security" -> 
 const XiHan.Framework.Kernel.KernelCapabilities.Version = 1 -> int
 const XiHan.Framework.Kernel.KernelErrors.AmbiguousProvider = "KERNEL_CAPABILITY_004" -> string!
 const XiHan.Framework.Kernel.KernelErrors.AuthorizationMissing = "KERNEL_VALIDATION_006" -> string!
+const XiHan.Framework.Kernel.KernelErrors.BindingTooLarge = "KERNEL_HOSTING_005" -> string!
 const XiHan.Framework.Kernel.KernelErrors.Cancelled = "KERNEL_CANCELLED_001" -> string!
 const XiHan.Framework.Kernel.KernelErrors.CapabilityVersionConflict = "KERNEL_CAPABILITY_003" -> string!
 const XiHan.Framework.Kernel.KernelErrors.CircuitOpen = "KERNEL_UNAVAILABLE_004" -> string!
@@ -897,6 +901,8 @@ static XiHan.Framework.Kernel.Pipeline.InvocationOrigin.operator !=(XiHan.Framew
 static XiHan.Framework.Kernel.Pipeline.InvocationOrigin.operator ==(XiHan.Framework.Kernel.Pipeline.InvocationOrigin? left, XiHan.Framework.Kernel.Pipeline.InvocationOrigin? right) -> bool
 static XiHan.Framework.Kernel.Pipeline.MiddlewareDescriptor.operator !=(XiHan.Framework.Kernel.Pipeline.MiddlewareDescriptor? left, XiHan.Framework.Kernel.Pipeline.MiddlewareDescriptor? right) -> bool
 static XiHan.Framework.Kernel.Pipeline.MiddlewareDescriptor.operator ==(XiHan.Framework.Kernel.Pipeline.MiddlewareDescriptor? left, XiHan.Framework.Kernel.Pipeline.MiddlewareDescriptor? right) -> bool
+static XiHan.Framework.Kernel.Plugins.PluginBindingRules.FindViolation(XiHan.Framework.Primitives.Manifests.Binding! declared, XiHan.Framework.Kernel.Hosting.BindingValue? resolved) -> XiHan.Framework.Primitives.Maybe<string!>
+static XiHan.Framework.Kernel.Plugins.PluginBindingRules.HasContent(XiHan.Framework.Kernel.Hosting.BindingValue! binding) -> bool
 static XiHan.Framework.Kernel.Plugins.PluginPermissions.Empty.get -> XiHan.Framework.Kernel.Plugins.PluginPermissions!
 static XiHan.Framework.Kernel.Plugins.PluginSource.operator !=(XiHan.Framework.Kernel.Plugins.PluginSource? left, XiHan.Framework.Kernel.Plugins.PluginSource? right) -> bool
 static XiHan.Framework.Kernel.Plugins.PluginSource.operator ==(XiHan.Framework.Kernel.Plugins.PluginSource? left, XiHan.Framework.Kernel.Plugins.PluginSource? right) -> bool
