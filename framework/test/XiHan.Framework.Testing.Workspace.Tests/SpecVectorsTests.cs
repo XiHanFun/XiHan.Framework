@@ -104,6 +104,29 @@ public sealed class SpecVectorsTests : IDisposable
         Assert.Throws<JsonException>(() => Read<OuterVector>("""{"inner":{"name":"orders","count":1,"count":2}}""", sourceGenerated));
     }
 
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void Read_RejectsNullForAMemberThatIsNotNullable(bool sourceGenerated)
+    {
+        // 构造参数、required 成员与嵌着的对象：不按可空性读时它们都收下 null
+        var error = Assert.Throws<JsonException>(() => Read<ConstructorVector>("""{"name":null,"count":2}""", sourceGenerated));
+
+        Assert.Contains("name", error.Message, StringComparison.OrdinalIgnoreCase);
+        Assert.Throws<JsonException>(() => Read<RequiredMemberVector>("""{"name":null}""", sourceGenerated));
+        Assert.Throws<JsonException>(() => Read<OuterVector>("""{"inner":null}""", sourceGenerated));
+        Assert.Throws<JsonException>(() => Read<NullableMemberVector>("""{"name":null,"note":"x"}""", sourceGenerated));
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void Read_TakesNullForANullableMember(bool sourceGenerated)
+    {
+        Assert.Equal(new NullableMemberVector("orders", null), Read<NullableMemberVector>("""{"name":"orders","note":null,"tag":null}""", sourceGenerated));
+        Assert.Equal(new NullableMemberVector("orders", "x") { Tag = "y" }, Read<NullableMemberVector>("""{"name":"orders","note":"x","tag":"y"}""", sourceGenerated));
+    }
+
     [Fact]
     public void Read_ReportsAMissingFile_AnEmptyFile_AndADocumentThatIsNotAnObject()
     {

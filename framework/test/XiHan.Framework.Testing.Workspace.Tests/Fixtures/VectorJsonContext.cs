@@ -15,4 +15,5 @@ namespace XiHan.Framework.Testing.Workspace.Tests.Fixtures;
 [JsonSerializable(typeof(RequiredMemberVector))]
 [JsonSerializable(typeof(OuterVector))]
 [JsonSerializable(typeof(ErrorCodeVectors))]
+[JsonSerializable(typeof(NullableMemberVector))]
 internal sealed partial class VectorJsonContext : JsonSerializerContext;

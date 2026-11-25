@@ -14,7 +14,7 @@ namespace XiHan.Framework.Testing.Workspace;
 /// 定位并严格读取规范的一致性向量
 /// </summary>
 /// <remarks>
-/// 向量在框架工作区的 <c>spec/conformance/vectors/&lt;目录&gt;/&lt;文件&gt;</c>（规范子模块，RFC-0024），参考实现与各语言 SDK 回放同一份文件，测试只回放、不另存副本。读取一律严格：成员名按 Web 缺省（camelCase、不区分大小写），对象模型要认得文件里的每个成员（顶层给人看的 <c>$comment</c> 除外），模型里没有缺省值的构造参数与 <see langword="required"/> 成员都要出现在文件里，同一对象里的成员不能重名。向量改了写法时读取就失败，不会漏掉字段还照样通过。向量只在框架仓库的检出里找得到，所以放在不发包的测试类库里（ADR-0300）
+/// 向量在框架工作区的 <c>spec/conformance/vectors/&lt;目录&gt;/&lt;文件&gt;</c>（规范子模块，RFC-0024），参考实现与各语言 SDK 回放同一份文件，测试只回放、不另存副本。读取一律严格：成员名按 Web 缺省（camelCase、不区分大小写），对象模型要认得文件里的每个成员（顶层给人看的 <c>$comment</c> 除外），模型里没有缺省值的构造参数与 <see langword="required"/> 成员都要出现在文件里，同一对象里的成员不能重名，<see langword="null"/> 只能落到声明为可空的成员上（属性、字段与构造参数；集合的元素不在此列，STJ 不看泛型实参的可空性）。向量改了写法时读取就失败，不会漏掉字段还照样通过。向量只在框架仓库的检出里找得到，所以放在不发包的测试类库里（ADR-0300）
 /// </remarks>
 public static class SpecVectors
 {
@@ -151,6 +151,8 @@ public static class SpecVectors
             TypeInfoResolver = resolver,
             UnmappedMemberHandling = JsonUnmappedMemberHandling.Disallow,
             RespectRequiredConstructorParameters = true,
+            // 向量里的 null 落到不可空的成员上就失败：模型的可空性按向量的事实写，测试不会把 null 当成字符串或对象往下用
+            RespectNullableAnnotations = true,
             AllowDuplicateProperties = false,
         };
         options.MakeReadOnly();
