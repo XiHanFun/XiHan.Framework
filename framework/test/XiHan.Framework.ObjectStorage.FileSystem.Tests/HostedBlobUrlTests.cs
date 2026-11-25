@@ -271,7 +271,12 @@ public sealed class HostedBlobUrlTests : IDisposable
 
         Assert.Throws<ArgumentException>(static () => HostedBlobUrlOptions.FromConfiguration(Build()));
         Assert.Throws<ArgumentException>(static () => HostedBlobUrlOptions.FromConfiguration(Build(("XiHan:ObjectStorage:SignedUrls:Secret", "short"))));
-        var absolute = HostedBlobUrlOptions.FromConfiguration(Build(("XiHan:ObjectStorage:SignedUrls:Secret", Secret), ("XiHan:ObjectStorage:SignedUrls:BaseUrl", "https://files.example.com/dl/")));
+        // 宽松的 UTF-8 把孤立的代理项都换成 U+FFFD：以前十一个孤立的代理项按 33 字节过了最小长度，实际的密钥是公开的十一个 U+FFFD
+        Assert.Throws<ArgumentException>(static () => HostedBlobUrlOptions.FromConfiguration(Build(("XiHan:ObjectStorage:SignedUrls:Secret", new string('\uD800', 11)))));
+        Assert.Throws<ArgumentException>(static () => HostedBlobUrlOptions.FromConfiguration(Build(("XiHan:ObjectStorage:SignedUrls:Secret", Secret + "\uDC00"))));
+        // 成对的代理项是一个字符，按它的四个字节计：八个 emoji 正好 32 字节
+        Assert.Equal(32, HostedBlobUrlOptions.FromConfiguration(Build(("XiHan:ObjectStorage:SignedUrls:Secret", string.Concat(Enumerable.Repeat("😀", 8))))).Secret.Length);
+        var absolute =HostedBlobUrlOptions.FromConfiguration(Build(("XiHan:ObjectStorage:SignedUrls:Secret", Secret), ("XiHan:ObjectStorage:SignedUrls:BaseUrl", "https://files.example.com/dl/")));
         Assert.Equal(("https://files.example.com/dl", "/dl"), (absolute.BaseUrl, absolute.BasePath));
         Assert.Throws<ArgumentException>(static () => new HostedBlobUrlOptions { Secret = Encoding.UTF8.GetBytes(Secret), BaseUrl = "files" });
         Assert.Throws<ArgumentOutOfRangeException>(static () => BlobUrlRequest.ForDownload(TimeSpan.FromDays(8)));

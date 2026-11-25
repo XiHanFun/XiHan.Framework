@@ -1190,7 +1190,7 @@
           "type": "string",
           "required": true,
           "sample": "replace-with-a-random-secret-of-32-bytes",
-          "summary": "预签名地址的 HMAC-SHA256 密钥，UTF-8 至少 32 字节；多实例部署须一致"
+          "summary": "预签名地址的 HMAC-SHA256 密钥，UTF-8 至少 32 字节、不能有孤立的代理项；多实例部署须一致"
         },
         {
           "key": "BaseUrl",

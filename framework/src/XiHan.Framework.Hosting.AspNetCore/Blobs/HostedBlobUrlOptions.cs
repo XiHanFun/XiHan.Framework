@@ -11,7 +11,7 @@ namespace XiHan.Framework.Hosting.AspNetCore.Blobs;
 /// 宿主代收发的预签名地址选项
 /// </summary>
 /// <remarks>
-/// 从配置节 <c>XiHan:ObjectStorage:SignedUrls</c> 显式读取：<c>BaseUrl</c>（缺省 <c>/blobs</c>）、<c>Secret</c>（必填，UTF-8 至少 32 字节；多实例部署须一致）
+/// 从配置节 <c>XiHan:ObjectStorage:SignedUrls</c> 显式读取：<c>BaseUrl</c>（缺省 <c>/blobs</c>）、<c>Secret</c>（必填，严格编码成 UTF-8 至少 32 字节、不能有孤立的代理项；多实例部署须一致）
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed record HostedBlobUrlOptions
@@ -25,6 +25,11 @@ public sealed record HostedBlobUrlOptions
     /// 签名密钥的最小字节数
     /// </summary>
     public const int MinSecretBytes = 32;
+
+    /// <summary>
+    /// 严格的 UTF-8：遇到孤立的代理项抛出，不换成 U+FFFD
+    /// </summary>
+    private static readonly UTF8Encoding _strictUtf8 = new(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true);
 
     /// <summary>
     /// 地址前缀
@@ -62,19 +67,37 @@ public sealed record HostedBlobUrlOptions
     /// 从配置读取
     /// </summary>
     /// <remarks>
-    /// <c>Secret</c> 缺失或太短时抛出
+    /// <c>Secret</c> 缺失、太短或有孤立的代理项时抛出：按严格的 UTF-8 编码成密钥字节，宽松的编码把孤立的代理项都换成 U+FFFD，十一个孤立的代理项就按 33 字节过了最小长度，实际的密钥却是公开的十一个 U+FFFD
     /// </remarks>
     public static HostedBlobUrlOptions FromConfiguration(IConfiguration configuration)
     {
         ArgumentNullException.ThrowIfNull(configuration);
         var secret = configuration[$"{ConfigurationSection}:Secret"];
-        if (string.IsNullOrEmpty(secret) || Encoding.UTF8.GetByteCount(secret) < MinSecretBytes)
+        // 编码不成与缺失、太短是同一个配置错误：都不是至少 32 字节的 UTF-8 文本
+        var key = string.IsNullOrEmpty(secret) ? null : Encode(secret);
+        if (key is null || key.Length < MinSecretBytes)
         {
             throw new ArgumentException($"{ConfigurationSection}:Secret is required and must be at least {MinSecretBytes} bytes of UTF-8 text.");
         }
 
-        var options = new HostedBlobUrlOptions { Secret = Encoding.UTF8.GetBytes(secret) };
+        var options = new HostedBlobUrlOptions { Secret = key };
         return configuration[$"{ConfigurationSection}:BaseUrl"] is { } baseUrl && !string.IsNullOrWhiteSpace(baseUrl) ? options with { BaseUrl = baseUrl } : options;
+    }
+
+    /// <summary>
+    /// 按严格的 UTF-8 编码密钥文本
+    /// </summary>
+    /// <returns>密钥字节；有孤立的代理项编码不成时为 <see langword="null"/></returns>
+    private static byte[]? Encode(string secret)
+    {
+        try
+        {
+            return _strictUtf8.GetBytes(secret);
+        }
+        catch (EncoderFallbackException)
+        {
+            return null;
+        }
     }
 
     /// <summary>
