@@ -141,7 +141,7 @@ public sealed class PackagerTests
         var secrets = files["kustomize/bindings.example.yaml"];
         Assert.Contains("uri: \"<cache connection string>\"\n  # username: <cache username>\n  # password: <cache password>\n", secrets, StringComparison.Ordinal);
         Assert.Contains("uri: \"<queue connection string>\"\n  # username: <queue username>\n  # password: <queue password>\n", secrets, StringComparison.Ordinal);
-        Assert.Contains("uri: \"<blob connection string>\"\n  # accessKey: <blob accessKey>\n  # secretKey: <blob secretKey>\n", secrets, StringComparison.Ordinal);
+        Assert.Contains("uri: \"<blob connection string>\"\n  # accessKey: <blob accessKey>\n  # secretKey: <blob secretKey>\n  # sessionToken: <blob sessionToken>\n", secrets, StringComparison.Ordinal);
         Assert.DoesNotContain("<db username>", secrets, StringComparison.Ordinal);
         var kustomization = files["kustomize/kustomization.yaml"];
         Assert.Contains("resources:\n  - deployment.yaml\n  - service.yaml\n  - configmap.yaml\n  - hpa.yaml\n  - pdb.yaml\n  - rbac.yaml\n", kustomization, StringComparison.Ordinal);

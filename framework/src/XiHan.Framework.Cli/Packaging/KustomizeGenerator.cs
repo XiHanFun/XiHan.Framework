@@ -420,12 +420,12 @@ internal static class KustomizeGenerator
     /// 绑定类型可单独给出的凭据属性
     /// </summary>
     /// <remarks>
-    /// 与各 Provider 读取的绑定属性一致；关系型数据库的凭据在连接串里，没有单独的键
+    /// 与各 Provider 读取的绑定属性一致；关系型数据库的凭据在连接串里，没有单独的键。<c>blob</c> 的会话令牌随临时凭据一起下发（ADR-0281、ADR-0294）
     /// </remarks>
     private static string[] CredentialKeys(string type) => type switch
     {
         "cache:distributed" or "queue" or "configuration:remote" => ["username", "password"],
-        "blob" => ["accessKey", "secretKey"],
+        "blob" => ["accessKey", "secretKey", "sessionToken"],
         "stream" => ["security.protocol", "sasl.mechanism", "sasl.username", "sasl.password"],
         _ => [],
     };
