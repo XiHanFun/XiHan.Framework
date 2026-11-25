@@ -130,7 +130,7 @@ public sealed record UserTask
             AssigneeId = bookmark.Key ?? string.Empty,
             ClaimedBy = Text(bookmark.Payload, UserTaskPayloadKeys.ClaimedBy),
             Priority = bookmark.Payload.TryGetPropertyValue(UserTaskPayloadKeys.Priority, out var priority) && WorkflowValues.TryConvert<int>(priority, out var priorityValue) ? priorityValue : null,
-            DueAt = Text(bookmark.Payload, UserTaskPayloadKeys.DueAt) is { } due && DateTimeOffset.TryParse(due, System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.AssumeUniversal, out var dueValue) ? dueValue : null,
+            DueAt = Text(bookmark.Payload, UserTaskPayloadKeys.DueAt) is { } due && WorkflowTimeText.TryParse(due, out var dueValue) ? dueValue : null,
             FormKey = Text(bookmark.Payload, UserTaskPayloadKeys.FormKey),
             CorrelationId = bookmark.CorrelationId ?? instance.CorrelationId,
             StarterId = instance.StarterId,

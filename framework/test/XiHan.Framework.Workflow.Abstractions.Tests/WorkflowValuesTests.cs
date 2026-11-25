@@ -30,6 +30,41 @@ public sealed class WorkflowValuesTests
         Assert.Equal(9, WorkflowValues.ConvertOr(JsonValue.Create("x"), 9));
     }
 
+    [Theory]
+    [InlineData("2026-01-02", "2026-01-02T00:00:00.0000000+00:00")]
+    [InlineData("2026-01-02 03:04", "2026-01-02T03:04:00.0000000+00:00")]
+    [InlineData("2026-01-02T03:04:05+08:00", "2026-01-01T19:04:05.0000000+00:00")]
+    [InlineData("2026-01-02T03:04:05.1234567Z", "2026-01-02T03:04:05.1234567+00:00")]
+    public void TryConvert_ReadsTimesByTheExpressionGrammar_AsUtc(string text, string expected)
+    {
+        // RFC-0021「活动里的时间」（ADR-0296）：与表达式的时间同一条文法，读出的时刻换算成 UTC
+        var instant = DateTimeOffset.Parse(expected, System.Globalization.CultureInfo.InvariantCulture);
+        Assert.True(WorkflowValues.TryConvert<DateTimeOffset>(JsonValue.Create(text), out var when));
+        Assert.Equal((instant, TimeSpan.Zero), (when, when.Offset));
+        Assert.True(WorkflowValues.TryConvert<DateTime>(JsonValue.Create(text), out var utc));
+        Assert.Equal((instant.UtcDateTime, DateTimeKind.Utc), (utc, utc.Kind));
+
+        // 由 CLR 的时间构造、还没过存储的值按它的 JSON 文本读，结果相同
+        Assert.True(WorkflowValues.TryConvert<DateTimeOffset>(JsonValue.Create(instant.ToOffset(TimeSpan.FromHours(-5))), out var clr));
+        Assert.Equal(instant, clr);
+    }
+
+    [Theory]
+    [InlineData("12:30")]
+    [InlineData("01/02/2026")]
+    [InlineData("Jan 2, 2026")]
+    [InlineData("2026-1-2")]
+    [InlineData("2026-01")]
+    [InlineData(" 2026-01-02")]
+    [InlineData("2026-01-02T03")]
+    public void TryConvert_RejectsTimesTheGrammarDoesNotRead(string text)
+    {
+        // 以前交给平台的日期解析：只有时间的补上机器当天的日期，斜线日期、月份名、不补零的都读得出
+        Assert.False(WorkflowValues.TryConvert<DateTimeOffset>(JsonValue.Create(text), out _));
+        Assert.False(WorkflowValues.TryConvert<DateTime>(JsonValue.Create(text), out _));
+        Assert.False(WorkflowValues.TryConvert<DateTimeOffset>(JsonValue.Create(20260102), out _));
+    }
+
     [Fact]
     public void ToStringList_IsTruthy_AndAsString()
     {

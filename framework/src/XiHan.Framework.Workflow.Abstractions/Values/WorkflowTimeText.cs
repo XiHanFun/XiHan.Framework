@@ -1,15 +1,17 @@
 // Copyright (c) XiHanFun Contributors. Licensed under the MIT License.
 // See the LICENSE file in the project root for full license text.
 
+using System.Text.Json;
+using System.Text.Json.Nodes;
 using XiHan.Framework.Primitives;
 
 namespace XiHan.Framework.Workflow.Abstractions.Values;
 
 /// <summary>
-/// 表达式里时间文本的读入与写出
+/// 工作流里时间文本的读入与写出
 /// </summary>
 /// <remarks>
-/// 规则来自 RFC-0021「表达式」的「时间」（ADR-0287），不交给 <see cref="DateTimeOffset.TryParse(string?, out DateTimeOffset)"/>：它接受月份名、斜线日期、只有时间（补上机器当天的日期）等写法，同一段文本在不同的日子读出不同的时刻，别的语言也做不到同样宽松。文法是截止时间文本（RFC-0003 规则 8）的超集：可以只有日期，时间可以不写秒，偏移可以不写（当作 UTC），日期与时间之间可以是空格；写出与截止时间相同
+/// 规则来自 RFC-0021「表达式」的「时间」（ADR-0287），不交给 <see cref="DateTimeOffset.TryParse(string?, out DateTimeOffset)"/>：它接受月份名、斜线日期、只有时间（补上机器当天的日期）等写法，同一段文本在不同的日子读出不同的时刻，别的语言也做不到同样宽松。文法是截止时间文本（RFC-0003 规则 8）的超集：可以只有日期，时间可以不写秒，偏移可以不写（当作 UTC），日期与时间之间可以是空格；写出与截止时间相同。活动的时刻属性（<c>Delay.Until</c>、<c>UserTask.DueAt</c>）、书签载荷里的时刻与 <see cref="WorkflowValues.TryConvert{T}"/> 读时间也经这里（ADR-0296）
 /// </remarks>
 internal static class WorkflowTimeText
 {
@@ -55,6 +57,20 @@ internal static class WorkflowTimeText
         var hasOffset = rest.IndexOfAny("Zz+-") >= 0;
         var complete = string.Concat(text.AsSpan(0, DateLength), "T", text.AsSpan(DateLength + 1, MinuteLength - DateLength - 1), hasSeconds ? string.Empty : ":00");
         return DeadlineText.TryParse(string.Concat(complete, rest, hasOffset ? string.Empty : "Z"), out time);
+    }
+
+    /// <summary>
+    /// 按文法读一个值里的时间
+    /// </summary>
+    /// <remarks>
+    /// 只认 JSON 的字符串（含由 <see cref="DateTimeOffset"/> 等构造、写成 JSON 是字符串的值），按 <see cref="TryParse"/> 读；<see langword="null"/>、数字、布尔与容器都不是时间
+    /// </remarks>
+    /// <param name="node">值</param>
+    /// <param name="time">读出的时刻（UTC）；读不出时为 <c>default</c></param>
+    public static bool TryRead(JsonNode? node, out DateTimeOffset time)
+    {
+        time = default;
+        return node is JsonValue value && value.GetValueKind() == JsonValueKind.String && TryParse(WorkflowValues.AsString(value), out time);
     }
 
     /// <summary>

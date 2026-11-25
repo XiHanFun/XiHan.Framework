@@ -234,7 +234,7 @@ public sealed class UserTaskActivity : IResumableActivity
         state[UserTaskPayloadKeys.FormData] = (context.Property(FormDataProperty) as JsonObject)?.DeepClone();
         state[UserTaskPayloadKeys.FormKey] = string.IsNullOrEmpty(formKeyText) ? null : formKeyText;
         state[UserTaskPayloadKeys.Priority] = priority is { } p ? JsonValue.Create(p) : null;
-        state[UserTaskPayloadKeys.DueAt] = dueAt is { } at ? at.ToString("O", CultureInfo.InvariantCulture) : null;
+        state[UserTaskPayloadKeys.DueAt] = dueAt is { } at ? WorkflowTimeText.Format(at) : null;
         state[UserTaskPayloadKeys.CcUserIds] = Array(ccUserIds);
 
         var targets = policy == UserTaskCompletionPolicy.Sequential ? [assignees[0]] : assignees;
@@ -476,14 +476,15 @@ public sealed class UserTaskActivity : IResumableActivity
     /// 按属性算出截止时刻
     /// </summary>
     /// <remarks>
-    /// <see cref="DueAtProperty"/> 优先（ISO-8601 字面值，否则按表达式求值），其次 <see cref="DueAfterSecondsProperty"/> 相对现在；都没有为空。属性不合法返回错误
+    /// <see cref="DueAtProperty"/> 优先（合 RFC-0021「表达式」「时间」文法的字面值，否则按表达式求值，结果同样按这条文法读；ADR-0296），其次 <see cref="DueAfterSecondsProperty"/> 相对现在；都没有为空。属性不合法返回错误
     /// </remarks>
     private static Error? DueAt(ActivityContext context, out DateTimeOffset? dueAt)
     {
         dueAt = null;
         if (context.Property(DueAtProperty) is { } dueNode)
         {
-            if (dueNode is JsonValue literal && DateTimeOffset.TryParse(WorkflowValues.AsString(literal), CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal, out var fixedAt))
+            // 字面值与求值结果都只认时间文法：平台的日期解析会给只有时间的文本补上机器当天的日期（ADR-0296）
+            if (WorkflowTimeText.TryRead(dueNode, out var fixedAt))
             {
                 dueAt = fixedAt;
                 return null;
@@ -495,7 +496,7 @@ public sealed class UserTaskActivity : IResumableActivity
                 return evaluated.Error!;
             }
 
-            if (value.OrNull() is JsonValue scalar && DateTimeOffset.TryParse(WorkflowValues.AsString(scalar), CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal, out var evaluatedAt))
+            if (WorkflowTimeText.TryRead(value.OrNull(), out var evaluatedAt))
             {
                 dueAt = evaluatedAt;
                 return null;

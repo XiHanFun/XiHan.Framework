@@ -22,7 +22,7 @@ public static class WorkflowValues
     /// 转成 <typeparamref name="T"/>
     /// </summary>
     /// <remarks>
-    /// <see langword="null"/>、转不成返回 <see langword="false"/>。支持 string、bool、int、long、double、decimal、float、DateTimeOffset、DateTime、TimeSpan、Guid、枚举、<see cref="JsonObject"/>、<see cref="JsonArray"/>、<see cref="JsonNode"/>
+    /// <see langword="null"/>、转不成返回 <see langword="false"/>。支持 string、bool、int、long、double、decimal、float、DateTimeOffset、DateTime、TimeSpan、Guid、枚举、<see cref="JsonObject"/>、<see cref="JsonArray"/>、<see cref="JsonNode"/>。DateTimeOffset 与 DateTime 只从字符串按 RFC-0021「表达式」的「时间」文法读（<c>YYYY-MM-DD</c>，可接 <c>T</c> / 空格与 <c>HH:MM</c>，秒、小数与偏移可省，没有偏移是 UTC），读出的是 UTC；以前交给平台的日期解析，<c>12:30</c> 补上机器当天的日期（ADR-0296）
     /// </remarks>
     public static bool TryConvert<T>(JsonNode? node, out T? value)
     {
@@ -124,10 +124,9 @@ public static class WorkflowValues
             return true;
         }
 
-        var text = AsString(scalar);
         if (typeof(T) == typeof(DateTimeOffset))
         {
-            if (DateTimeOffset.TryParse(text, CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal, out var when))
+            if (WorkflowTimeText.TryRead(scalar, out var when))
             {
                 value = (T)(object)when;
                 return true;
@@ -138,14 +137,16 @@ public static class WorkflowValues
 
         if (typeof(T) == typeof(DateTime))
         {
-            if (DateTime.TryParse(text, CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal, out var when))
+            if (WorkflowTimeText.TryRead(scalar, out var when))
             {
-                value = (T)(object)when;
+                value = (T)(object)when.UtcDateTime;
                 return true;
             }
 
             return false;
         }
+
+        var text = AsString(scalar);
 
         if (typeof(T) == typeof(TimeSpan))
         {

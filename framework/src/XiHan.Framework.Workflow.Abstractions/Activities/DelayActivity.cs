@@ -1,8 +1,6 @@
 // Copyright (c) XiHanFun Contributors. Licensed under the MIT License.
 // See the LICENSE file in the project root for full license text.
 
-using System.Globalization;
-using System.Text.Json.Nodes;
 using XiHan.Framework.Primitives;
 using XiHan.Framework.Scheduling.Abstractions.Schedules;
 using XiHan.Framework.Workflow.Abstractions.Instances;
@@ -14,7 +12,7 @@ namespace XiHan.Framework.Workflow.Abstractions.Activities;
 /// 延时
 /// </summary>
 /// <remarks>
-/// <c>Duration</c>（秒，或求值为秒数的表达式）、<c>Until</c>（时刻，或求值为时刻的表达式）、<c>Cron</c>（+ <c>TimeZone</c>，下一次匹配时刻）三选一，以 Timer 书签挂起到该时刻
+/// <c>Duration</c>（秒，或求值为秒数的表达式）、<c>Until</c>（求值为时刻的表达式，时刻按 RFC-0021「表达式」的「时间」文法读，ADR-0296）、<c>Cron</c>（+ <c>TimeZone</c>，下一次匹配时刻）三选一，以 Timer 书签挂起到该时刻
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class DelayActivity : IResumableActivity
@@ -103,7 +101,8 @@ public sealed class DelayActivity : IResumableActivity
                 return evaluated.Error!;
             }
 
-            if (value.OrNull() is JsonValue scalar && DateTimeOffset.TryParse(WorkflowValues.AsString(scalar), CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal, out var until))
+            // 时刻只认时间文法：平台的日期解析会给只有时间的文本补上机器当天的日期，到期时刻随日子与时区变（ADR-0296）
+            if (WorkflowTimeText.TryRead(value.OrNull(), out var until))
             {
                 return until;
             }
