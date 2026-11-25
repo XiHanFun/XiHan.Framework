@@ -127,7 +127,7 @@ dnx XiHan.Framework.Cli@<版本> --yes -- setup --client claude    # 不安装�
 | `--check` | — | 核对配置与技能是否已就绪 |
 
 - 幂等：JSON 配置只替换本服务那一项，别的服务与顶层键原样保留，重复执行得到相同的文件；技能文件整份覆盖。
-- 要合并的配置文件读不了（带注释的 JSONC、顶层不是对象）时一个文件都不写，按 `--dry-run` 打印的片段手工合并。
+- 要合并的配置文件读不了（带注释的 JSONC、顶层不是对象、不是合法的 UTF-8）时一个文件都不写，按 `--dry-run` 打印的片段手工合并。配置按严格的 UTF-8 读（UTF-8 的 BOM 跳过），非法的字节序列不换成 U+FFFD，不会改掉用户文件里的字节。
 - 版本：数据随工具版本走，`--pin` 与项目引用的版本一致时，编码助手查到的就是项目在用的那一版。
 
 ## 行为与限制
@@ -148,7 +148,7 @@ dnx XiHan.Framework.Cli@<版本> --yes -- setup --client claude    # 不安装�
 | `migrate --fixers` 有不认识的规则编号 | `CLI_VALIDATION_003` | 64 |
 | `setup` 的 `--client` 或 `--mode` 不认识 | `CLI_VALIDATION_005` | 64 |
 | `setup` 找不到项目根 | `CLI_NOTFOUND_004` | 3 |
-| `setup` 要合并的配置文件读不了（不改动任何文件） | `CLI_VALIDATION_006` | 2 |
+| `setup` 要合并的配置文件读不了（含不是合法的 UTF-8，`reason` 为 `the file is not valid UTF-8`；不改动任何文件） | `CLI_VALIDATION_006` | 2 |
 | `pack` 进 ConfigMap 的配置文件里有带值的凭据（`detail` 列出键的路径，不带值；不写任何文件） | `CLI_VALIDATION_007` | 2 |
 | `setup --check` 未就绪（`detail` 列出各项） | `CLI_CONFLICT_001` | 5 |
 | `mcp` 在 stdin 关闭后 | — | 0 |

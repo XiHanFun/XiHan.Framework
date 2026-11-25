@@ -168,6 +168,8 @@ cp target/wasm32-wasip1/release/echo_wasm_plugin.wasm plugin/echo.wasm
 | 声明了流式操作 | 握手失败 `PLUGINS_VALIDATION_004` |
 | 未声明的操作 | 插件返回 `KERNEL_NOTFOUND_001` 的失败状态 |
 | 陷阱、导出返回 `0` | 插件 `Failed`（`PLUGINS_UNEXPECTED_002`，细节 `trap` 只写陷阱种类或异常类型，陷阱原文进日志），按 1 秒起翻倍、上限 60 秒退避重建实例 |
+| 导出的响应不是合法的 JSON 消息（宿主按严格的 UTF-8 解码，非法字节序列也算，不换成 U+FFFD） | 调用以 `PLUGINS_UNEXPECTED_001` 失败（`plugins.process.failed`，`reason` 为 `the response is not a valid JSON message`），实例按崩溃重建 |
+| 导入 `invoke`、`publish` 的请求不是合法的 JSON 消息（同上，非法 UTF-8 也算） | 以 `PLUGINS_VALIDATION_005`（`plugins.module.invalid`）应答，实例不变 |
 | 调用超过截止时间 | 调用方得到 `KERNEL_TIMEOUT_001`，实例按崩溃重建 |
 | 回调嵌套超过 8 层、客体内存分配失败 | `PLUGINS_UNAVAILABLE_002` |
 | 中间件陷阱、超时或无响应 | 调用以 `PLUGINS_UNAVAILABLE_001` 失败（失败即关闭），插件按崩溃重建 |

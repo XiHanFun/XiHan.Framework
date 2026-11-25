@@ -114,7 +114,7 @@ JSON-RPC 错误的 `error.data.code` 是框架错误码。解析与入口校验�
 
 ## stdio 传输
 
-桌面 MCP 客户端常以子进程方式启动服务端，经 stdin / stdout 通信。装配了 `McpProtocolFeature` 与 `AddXiHanCommandLine()` 的命令行宿主提供 `mcp` 命令：stdin 与 stdout 每行一条 JSON-RPC 消息，日志只写 stderr，stdin 关闭即结束会话。stdin 的字节按 UTF-8 解码，与控制台代码页无关（Windows 上重定向的标准输入不按 936、437 等代码页解码，中文参数不会成乱码）；答复里的非 ASCII 字符按 JSON 转义成 `\uXXXX`，只含 ASCII，按任何控制台输出代码页写出都是合法的 UTF-8。
+桌面 MCP 客户端常以子进程方式启动服务端，经 stdin / stdout 通信。装配了 `McpProtocolFeature` 与 `AddXiHanCommandLine()` 的命令行宿主提供 `mcp` 命令：stdin 与 stdout 每行一条 JSON-RPC 消息，日志只写 stderr，stdin 关闭即结束会话。stdin 的字节按 UTF-8 解码，与控制台代码页无关（Windows 上重定向的标准输入不按 936、437 等代码页解码，中文参数不会成乱码）；答复里的非 ASCII 字符按 JSON 转义成 `\uXXXX`，只含 ASCII，按任何控制台输出代码页写出都是合法的 UTF-8。自己托管、直接调用 `McpStdioTransport.RunAsync` 时，读取器交来的每一行严格编码成 UTF-8：有孤立代理项的一行与不是 JSON 的一样答复解析错误（`id` 为 `null`、-32700、`data.code` 为 `PROTOCOLS_VALIDATION_001`），不执行，下一行照常处理；`mcp` 命令读出的行没有孤立的代理项，不受影响。
 
 ```bash
 echo '{"jsonrpc":"2.0","id":1,"method":"tools/list"}' | dotnet run --project framework/samples/SimpleCli -- mcp

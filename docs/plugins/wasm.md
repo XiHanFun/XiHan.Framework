@@ -12,7 +12,7 @@ Wasm 插件是在宿主进程内、由 wasmtime 沙箱运行的 WebAssembly 模�
 
 ## ABI v1：核心模块、线性内存与 JSON
 
-插件是 WASI preview 1（`wasi_snapshot_preview1`）的 reactor 模块：导出线性内存 `memory`，可选导出 `_initialize`，导出 `_start` 的命令式模块不被接受。消息与进程外插件相同，按 proto3 JSON 映射编码为 UTF-8 文本（字段名 lowerCamelCase，`bytes` 为 base64，枚举为名字），经导出函数与线性内存传递：
+插件是 WASI preview 1（`wasi_snapshot_preview1`）的 reactor 模块：导出线性内存 `memory`，可选导出 `_initialize`，导出 `_start` 的命令式模块不被接受。消息与进程外插件相同，按 proto3 JSON 映射编码为 UTF-8 文本（字段名 lowerCamelCase，`bytes` 为 base64，枚举为名字），经导出函数与线性内存传递。宿主按严格的 UTF-8 解码客体写来的消息：有非法字节序列的（含未知字段里的）与不是合法 JSON 的同样处理，不换成 U+FFFD 再读：
 
 - 传入：宿主调用 `xihan_alloc(len)` 取得偏移，写入请求，再调用导出函数 `(ptr, len)`；写入的内存由插件处理完请求后自行回收。
 - 传出：导出函数返回 `i64`，`(ptr << 32) | len` 指向客体内存里的响应；宿主复制后调用 `xihan_free(ptr, len)`。返回 `0` 表示插件无法给出响应，宿主按崩溃处理。
@@ -187,6 +187,8 @@ Wasm 插件清单 `contributes.pipeline` 的每一项在对应阶段插入一个
 | 情形 | 结果 |
 | --- | --- |
 | 陷阱、导出返回 `0` | 插件 `Failed`（`PLUGINS_UNEXPECTED_002`，细节只写陷阱种类，原文进日志），按 1 秒起翻倍、上限 60 秒退避重建实例，重建后的握手声明必须与首次一致 |
+| 导出的响应不是合法的 JSON 消息（含非法的 UTF-8 字节序列） | 调用方得到 `PLUGINS_UNEXPECTED_001`（`reason` 为 `the response is not a valid JSON message`），实例按崩溃重建 |
+| 导入 `invoke`、`publish` 的请求不是合法的 JSON 消息（含非法的 UTF-8 字节序列） | 以 `PLUGINS_VALIDATION_005` 应答，实例不变 |
 | 调用超过截止时间 | 调用方得到 `KERNEL_TIMEOUT_001`，实例按崩溃重建 |
 | 内存超过上限 | `memory.grow` 失败或陷阱，按崩溃重建 |
 | 回调嵌套超过 8 层、客体内存分配失败 | `PLUGINS_UNAVAILABLE_002`，实例不变 |
