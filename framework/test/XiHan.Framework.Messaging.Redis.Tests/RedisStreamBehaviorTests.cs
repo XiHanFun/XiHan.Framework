@@ -316,6 +316,37 @@ public sealed class RedisStreamBehaviorTests : IAsyncDisposable
     }
 
     [Fact]
+    public async Task DeliveryAbandonedByStop_IsTakenOverAtOnce_WithoutWaitingForTheClaimThreshold()
+    {
+        var database = RedisTestServer.Database();
+        // 回收阈值 60 秒，比等待的上限长得多：接手的实例要是还得等满阈值，这个用例就等不到
+        (string, string) claimIdle = ("XiHan:Messaging:Redis:ClaimIdleTimeSeconds", "60");
+        var first = new DeliveryLog();
+        var host = await StartAsync(first, [new(Topic, SubscriptionMode.Competing)], typeof(BlockingHandler), claimIdle);
+        try
+        {
+            (await PublishAsync(host, Topic, [Envelope("slow-1")]))[0].ThrowIfFailure();
+            Assert.Single(await first.WaitAsync(static r => r.Delivery.Envelope.Id == "slow-1", 1, _timeout));
+        }
+        finally
+        {
+            await host.DisposeAsync();
+        }
+
+        // 退回投递次数时空闲时间设到了回收阈值（ADR-0298）：以前照原样写回，只有处理器等着的那一小会儿
+        var pending = Assert.Single(await database.StreamPendingMessagesAsync(Key, Group, 10, RedisValue.Null));
+        Assert.Equal(0, pending.DeliveryCount);
+        Assert.True(pending.IdleTimeInMilliseconds >= 60_000, $"The idle time is {pending.IdleTimeInMilliseconds} ms.");
+
+        // 接手的实例启动时的第一次维护就回收它，仍是第 1 次尝试
+        var second = new DeliveryLog();
+        await using var next = await StartAsync(second, [new(Topic, SubscriptionMode.Competing)], typeof(RecordingHandler), claimIdle);
+        var received = Assert.Single(await second.WaitAsync(static r => r.Delivery.Envelope.Id == "slow-1", 1, _timeout));
+        Assert.Equal(1, received.Delivery.Attempt);
+        await WaitUntilAsync(async () => (await database.StreamPendingAsync(Key, Group)).PendingMessageCount == 0);
+    }
+
+    [Fact]
     public async Task Stop_RemovesTheBroadcastGroupAndItsStream_AndTheCompetingConsumer_ButKeepsTheCompetingGroup()
     {
         var database = RedisTestServer.Database();
@@ -413,17 +444,24 @@ public sealed class RedisStreamBehaviorTests : IAsyncDisposable
     /// <summary>
     /// 装配并启动宿主，处理器类型由调用方给出
     /// </summary>
+    /// <remarks>
+    /// <paramref name="settings"/> 覆盖同名的缺省配置
+    /// </remarks>
     private Task<TestHost> StartAsync(DeliveryLog log, IReadOnlyList<MessageSubscription> subscriptions, Type handler, params (string Key, string Value)[] settings)
     {
-        var configuration = new List<KeyValuePair<string, string?>>
+        var configuration = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase)
         {
-            new("XiHan:Messaging:Redis:Configuration", RedisTestServer.RequireConfiguration()),
-            new("XiHan:Messaging:Redis:KeyPrefix", _prefix),
-            new("XiHan:Messaging:Redis:ClaimIdleTimeSeconds", "1"),
-            new("XiHan:Messaging:Redis:PollIntervalSeconds", "0.05"),
-            new($"{MessagingOptions.ConfigurationSection}:MaxAttempts", "2"),
+            ["XiHan:Messaging:Redis:Configuration"] = RedisTestServer.RequireConfiguration(),
+            ["XiHan:Messaging:Redis:KeyPrefix"] = _prefix,
+            ["XiHan:Messaging:Redis:ClaimIdleTimeSeconds"] = "1",
+            ["XiHan:Messaging:Redis:PollIntervalSeconds"] = "0.05",
+            [$"{MessagingOptions.ConfigurationSection}:MaxAttempts"] = "2",
         };
-        configuration.AddRange(settings.Select(static s => new KeyValuePair<string, string?>(s.Key, s.Value)));
+        foreach (var (key, value) in settings)
+        {
+            configuration[key] = value;
+        }
+
         return TestHost.StartAsync(
             static b => b.UseFeature<RedisMessagingFeature>(),
             configuration,

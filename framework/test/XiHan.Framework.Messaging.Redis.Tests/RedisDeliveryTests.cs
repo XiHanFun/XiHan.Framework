@@ -19,7 +19,7 @@ namespace XiHan.Framework.Messaging.Redis.Tests;
 /// 消费循环怎么了结一次投递（RFC-0009「投递」第 3、5 条，ADR-0261、ADR-0275）
 /// </summary>
 /// <remarks>
-/// 对打桩的数据库验证新条目的投递：成功确认，失败认领后原位重试、到上限竞争订阅写死信流再确认、广播订阅确认掉，无法解码的条目不派发、按订阅方式了结，停止打断的不确认并退回这一次的投递次数（ADR-0284），停止信号到达之后不再认领与读取（ADR-0298），应用排空期间不接着原位重试。不需要 Redis；回收与投递次数由 <see cref="RedisStreamBehaviorTests"/> 在真实 Redis 上验证
+/// 对打桩的数据库验证新条目的投递：成功确认，失败认领后原位重试、到上限竞争订阅写死信流再确认、广播订阅确认掉，无法解码的条目不派发、按订阅方式了结，停止打断的不确认并退回这一次的投递次数（ADR-0284）、空闲时间设到回收阈值，停止信号到达之后不再认领与读取（ADR-0298），应用排空期间不接着原位重试。不需要 Redis；回收与投递次数由 <see cref="RedisStreamBehaviorTests"/> 在真实 Redis 上验证
 /// </remarks>
 public sealed class RedisDeliveryTests
 {
@@ -293,6 +293,40 @@ public sealed class RedisDeliveryTests
     }
 
     [Fact]
+    public async Task RestoringTheDeliveryCount_SetsTheIdleTimeToTheClaimThreshold()
+    {
+        await using var host = await TestHost.StartAsync(static _ => { });
+        var (database, fake) = FakeRedisDatabase.Create(Entry("1-1", "slow"), Entry("1-2", "next"));
+        var consumer = Consumer(host, database, SubscriptionMode.Competing, claimIdleTime: TimeSpan.FromSeconds(45));
+        var entered = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        using var stopping = new CancellationTokenSource();
+
+        var loop = consumer.RunAsync(
+            async (_, cancellationToken) =>
+            {
+                entered.TrySetResult();
+                try
+                {
+                    await Task.Delay(Timeout.Infinite, cancellationToken);
+                }
+                catch (OperationCanceledException)
+                {
+                    // 由下面的失败结果代替
+                }
+
+                return Result.Failure(new Error(KernelErrors.Cancelled, KernelMessages.Cancelled));
+            },
+            stopping.Token);
+        await entered.Task.WaitAsync(_patience);
+        await StopAsync(stopping, loop);
+
+        // 被打断的一条与还没派发的一条分两次退回，每次都把回收阈值交给脚本：空闲时间设到它，别的实例下一次回收就接手（ADR-0298）
+        // 以前空闲时间照原样写回，要再等满一个回收阈值才有人处理
+        Assert.Equal([("1-1", 1), ("1-2", 1)], fake.Restored);
+        Assert.Equal([45_000L, 45_000L], fake.RestoreIdleMilliseconds);
+    }
+
+    [Fact]
     public async Task StopSignalledDuringMaintenance_StartsNoReclaimAndNoRead()
     {
         await using var host = await TestHost.StartAsync(static _ => { });
@@ -415,12 +449,12 @@ public sealed class RedisDeliveryTests
     /// 在打桩数据库上建一个订阅的消费：最多投递 2 次
     /// </summary>
     /// <remarks>
-    /// <paramref name="logger"/> 为空时不收日志
+    /// <paramref name="logger"/> 为空时不收日志；<paramref name="claimIdleTime"/> 为空时用缺省的回收阈值
     /// </remarks>
-    private static RedisStreamConsumer Consumer(TestHost host, IDatabase database, SubscriptionMode mode, ILogger? logger = null)
+    private static RedisStreamConsumer Consumer(TestHost host, IDatabase database, SubscriptionMode mode, ILogger? logger = null, TimeSpan? claimIdleTime = null)
         => new(
             database,
-            new RedisMessagingOptions { Configuration = "unused:6379", PollInterval = TimeSpan.FromMilliseconds(20) },
+            new RedisMessagingOptions { Configuration = "unused:6379", PollInterval = TimeSpan.FromMilliseconds(20), ClaimIdleTime = claimIdleTime ?? TimeSpan.FromSeconds(60) },
             new MessagingOptions { MaxAttempts = 2 },
             new MessagingInstance(new MessagingOptions()),
             host.App,

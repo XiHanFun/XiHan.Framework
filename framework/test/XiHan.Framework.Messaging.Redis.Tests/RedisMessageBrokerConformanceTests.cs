@@ -15,7 +15,7 @@ namespace XiHan.Framework.Messaging.Redis.Tests;
 /// 让 <see cref="RedisMessagingFeature"/> 对真实 Redis 跑完整套队列用例
 /// </summary>
 /// <remarks>
-/// 未设置 <c>XIHAN_TEST_REDIS</c> 时跳过。每个用例一个独立的键前缀，结束时删掉前缀下的流。回收阈值调到 5 秒：被停止打断的投递留在待确认列表里，要空闲过回收阈值才重新投递，缺省的 60 秒会让那条用例等一分多钟
+/// 未设置 <c>XIHAN_TEST_REDIS</c> 时跳过。每个用例一个独立的键前缀，结束时删掉前缀下的流。回收阈值用缺省的 60 秒：被停止打断的投递退回投递次数时空闲时间已设到回收阈值，重新开始消费后的第一次维护就回收它（ADR-0298），不用等满阈值
 /// </remarks>
 public sealed class RedisMessageBrokerConformanceTests : MessageBrokerConformance, IAsyncDisposable
 {
@@ -26,7 +26,7 @@ public sealed class RedisMessageBrokerConformanceTests : MessageBrokerConformanc
 
     /// <inheritdoc />
     /// <remarks>
-    /// 回收在条目空闲过阈值（5 秒）之后的下一次维护（每 5 秒一次）进行，最迟十秒出头，留足余量
+    /// 重新开始消费时立即维护一次，被停止打断的投递在这次维护里就回收；上限比回收阈值（60 秒）短，接手的实例要是还得等满阈值，用例就失败
     /// </remarks>
     protected override TimeSpan RedeliveryTimeout => TimeSpan.FromSeconds(30);
 
@@ -35,7 +35,6 @@ public sealed class RedisMessageBrokerConformanceTests : MessageBrokerConformanc
     [
         new("XiHan:Messaging:Redis:Configuration", RedisTestServer.Configuration),
         new("XiHan:Messaging:Redis:KeyPrefix", _prefix),
-        new("XiHan:Messaging:Redis:ClaimIdleTimeSeconds", "5"),
     ];
 
     /// <inheritdoc />

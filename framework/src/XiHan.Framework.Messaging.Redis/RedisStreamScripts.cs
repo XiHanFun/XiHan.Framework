@@ -112,17 +112,20 @@ internal static class RedisStreamScripts
     /// 把没有执行完的投递从待确认条目的投递次数里退掉
     /// </summary>
     /// <remarks>
-    /// <c>KEYS[1]</c> 流，<c>ARGV[1]</c> 组名，<c>ARGV[2]</c> 消费者名，之后每两项一对：条目 ID 与本实例看到的投递次数。
+    /// <c>KEYS[1]</c> 流，<c>ARGV[1]</c> 组名，<c>ARGV[2]</c> 消费者名，<c>ARGV[3]</c> 回收阈值（毫秒），之后每两项一对：条目 ID 与本实例看到的投递次数。
     /// 读取与认领都让投递次数加一，被停止打断的那一次并没有执行完（或根本没有派发），不该算进尝试上限：把次数设回减一后的值（<c>XCLAIM … RETRYCOUNT … JUSTID</c> 只改计数，不再加一）。
-    /// 只动仍在本消费者名下、次数与看到的相同的条目：已被别的实例认领（处理得比回收阈值久）、已确认或已被裁剪的不碰。空闲时间照原样写回（<c>IDLE</c>），什么时候轮到回收不因为这次改动而变。返回退回的条目数
+    /// 只动仍在本消费者名下、次数与看到的相同的条目：已被别的实例认领（处理得比回收阈值久）、已确认或已被裁剪的不碰。
+    /// 空闲时间设到回收阈值（原来已经更久的保留原值）：停下的实例不会再处理它们，别的实例下一次回收就能接手，不用再等一个阈值（ADR-0298）。返回退回的条目数
     /// </remarks>
     public const string RestoreDeliveryCounts = """
         local restored = 0
-        for i = 3, #ARGV, 2 do
+        local threshold = tonumber(ARGV[3])
+        for i = 4, #ARGV, 2 do
           local count = tonumber(ARGV[i + 1])
           local pending = redis.call('XPENDING', KEYS[1], ARGV[1], ARGV[i], ARGV[i], 1, ARGV[2])
           if #pending == 1 and tonumber(pending[1][4]) == count then
-            redis.call('XCLAIM', KEYS[1], ARGV[1], ARGV[2], 0, ARGV[i], 'IDLE', pending[1][3], 'RETRYCOUNT', count - 1, 'JUSTID')
+            local idle = math.max(tonumber(pending[1][3]), threshold)
+            redis.call('XCLAIM', KEYS[1], ARGV[1], ARGV[2], 0, ARGV[i], 'IDLE', idle, 'RETRYCOUNT', count - 1, 'JUSTID')
             restored = restored + 1
           end
         end

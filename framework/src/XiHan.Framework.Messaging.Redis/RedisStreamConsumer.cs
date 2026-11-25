@@ -17,7 +17,7 @@ namespace XiHan.Framework.Messaging.Redis;
 /// <remarks>
 /// 竞争订阅在消费组 <see cref="RedisMessagingOptions.ConsumerGroup"/> 里，广播订阅在本实例独占的组 <c>&lt;ConsumerGroup&gt;@&lt;InstanceId&gt;</c> 里，消费者名都是实例标识。消费循环单线程：取新条目、依次派发、成功即确认；失败在原位重试，到上限进死信流（广播丢弃）。每个维护周期清理遗留的组与消费者、整理已确认的条目，并以 <c>XAUTOCLAIM</c> 回收超时未确认的条目。
 /// 尝试号就是待确认列表里的投递次数。被停止打断的投递不计尝试（RFC-0009「投递」第 3 条）：停止时把没有执行完的那一次、以及读到或认领到却还没派发的条目的投递次数退回一次（ADR-0284），回收之后仍是原来的尝试号；来不及退回（进程被强行终止、Redis 不可达）的那一次照旧计入，所以让进程崩溃的消息仍然会进死信。
-/// 停止信号一到就不再发起新的认领与读取，没读走的条目留在流里由别的实例直接读到（ADR-0298）
+/// 退回时空闲时间设到回收阈值，别的实例下一次回收就接手；停止信号一到就不再发起新的认领与读取，没读走的条目留在流里由别的实例直接读到（ADR-0298）
 /// </remarks>
 internal sealed partial class RedisStreamConsumer
 {
@@ -464,7 +464,7 @@ internal sealed partial class RedisStreamConsumer
     /// 把被停止打断、没有执行完的投递从投递次数里退掉
     /// </summary>
     /// <remarks>
-    /// 每项是条目 ID 与本实例看到的投递次数（它的尝试号）；脚本只动仍在本消费者名下、次数没变的条目。不随停止信号取消：正是停止时才要做。
+    /// 每项是条目 ID 与本实例看到的投递次数（它的尝试号）；脚本只动仍在本消费者名下、次数没变的条目，并把它们的空闲时间设到回收阈值，别的实例下一次回收就接手（ADR-0298）。不随停止信号取消：正是停止时才要做。
     /// 失败只记日志、不抛出：这些条目的那一次照旧计入，回收之后尝试号多一，最坏是少处理一次就进死信（与进程被强行终止时相同），不会丢消息，也不会让停止流程卡住
     /// </remarks>
     private async Task RestoreDeliveryCountsAsync(IReadOnlyList<(RedisValue Id, int DeliveryCount)> entries)
@@ -474,13 +474,14 @@ internal sealed partial class RedisStreamConsumer
             return;
         }
 
-        var arguments = new RedisValue[2 + (entries.Count * 2)];
+        var arguments = new RedisValue[3 + (entries.Count * 2)];
         arguments[0] = _group;
         arguments[1] = _consumer;
+        arguments[2] = ClaimIdleMilliseconds;
         for (var index = 0; index < entries.Count; index++)
         {
-            arguments[2 + (index * 2)] = entries[index].Id;
-            arguments[3 + (index * 2)] = entries[index].DeliveryCount;
+            arguments[3 + (index * 2)] = entries[index].Id;
+            arguments[4 + (index * 2)] = entries[index].DeliveryCount;
         }
 
         try

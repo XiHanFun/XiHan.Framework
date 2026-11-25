@@ -10,7 +10,7 @@ namespace XiHan.Framework.Messaging.Redis.Tests;
 /// 打桩的 <see cref="IDatabase"/>：一条流上预置的新条目，记录确认、认领、写入与退回的投递次数
 /// </summary>
 /// <remarks>
-/// 以 <see cref="DispatchProxy"/> 生成，只实现消费循环用到的成员：<c>StreamReadGroupAsync</c> 把预置的条目一次交出、之后为空；<c>StreamAcknowledgeAsync</c>、<c>StreamClaimAsync</c> 与 <c>StreamAddAsync</c> 记下调用；退回投递次数的脚本记下每一对条目 ID 与次数，别的脚本（维护）返回空数组，设了 <see cref="MaintenanceGate"/> 时等它放行；<c>StreamAutoClaimAsync</c> 没有可回收的条目。读取与回收各记下调用的次数。其余成员抛 <see cref="NotSupportedException"/>。不模拟待确认列表与投递次数，回收的行为只在真实 Redis 上验证
+/// 以 <see cref="DispatchProxy"/> 生成，只实现消费循环用到的成员：<c>StreamReadGroupAsync</c> 把预置的条目一次交出、之后为空；<c>StreamAcknowledgeAsync</c>、<c>StreamClaimAsync</c> 与 <c>StreamAddAsync</c> 记下调用；退回投递次数的脚本记下回收阈值与每一对条目 ID 与次数，别的脚本（维护）返回空数组，设了 <see cref="MaintenanceGate"/> 时等它放行；<c>StreamAutoClaimAsync</c> 没有可回收的条目。读取与回收各记下调用的次数。其余成员抛 <see cref="NotSupportedException"/>。不模拟待确认列表与投递次数，回收的行为只在真实 Redis 上验证
 /// </remarks>
 public class FakeRedisDatabase : DispatchProxy
 {
@@ -41,6 +41,14 @@ public class FakeRedisDatabase : DispatchProxy
     /// 停止打断的投递与停止时还没派发的条目，脚本把它们的次数设回减一后的值（ADR-0284）
     /// </remarks>
     public List<(string Id, int DeliveryCount)> Restored { get; } = [];
+
+    /// <summary>
+    /// 退回投递次数时交给脚本的回收阈值（毫秒），每次调用一项
+    /// </summary>
+    /// <remarks>
+    /// 脚本把退回的条目的空闲时间设到它（ADR-0298）
+    /// </remarks>
+    public List<long> RestoreIdleMilliseconds { get; } = [];
 
     /// <summary>
     /// <c>StreamReadGroupAsync</c> 被调用的次数
@@ -103,13 +111,14 @@ public class FakeRedisDatabase : DispatchProxy
             switch (targetMethod.Name)
             {
                 case "ScriptEvaluateAsync" when args[0] is RedisStreamScripts.RestoreDeliveryCounts && args[2] is RedisValue[] pairs:
-                    // 前两项是组名与消费者名，之后每两项一对：条目 ID 与投递次数
-                    for (var index = 2; index + 1 < pairs.Length; index += 2)
+                    // 前三项是组名、消费者名与回收阈值，之后每两项一对：条目 ID 与投递次数
+                    RestoreIdleMilliseconds.Add((long)pairs[2]);
+                    for (var index = 3; index + 1 < pairs.Length; index += 2)
                     {
                         Restored.Add((pairs[index].ToString(), (int)pairs[index + 1]));
                     }
 
-                    return Task.FromResult(RedisResult.Create((RedisValue)((pairs.Length - 2) / 2)));
+                    return Task.FromResult(RedisResult.Create((RedisValue)((pairs.Length - 3) / 2)));
                 case "ScriptEvaluateAsync":
                     // 维护脚本：没有清理或整理任何东西；有闸门时等它放行，不在锁里等
                     MaintenanceEntered.TrySetResult();
