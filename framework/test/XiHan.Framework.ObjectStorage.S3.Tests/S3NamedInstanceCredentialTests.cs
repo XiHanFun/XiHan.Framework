@@ -44,6 +44,22 @@ public sealed class S3NamedInstanceCredentialTests
         await DisposeAsync(created);
     }
 
+    [Theory]
+    [InlineData(null)]
+    [InlineData("false")]
+    public async Task TheOperatorSwitch_ReadFromConfiguration_IsOffUnlessSetToTrue(string? configured)
+    {
+        // 缺省（不写）与 false 等价：经带配置的公开构造建 Provider，没给密钥的定义照样被拒，配置索引里登记的缺省 false 由这里核对（ADR-0302）
+        var configuration = new ConfigurationBuilder().AddInMemoryCollection(configured is null ? [] : [new KeyValuePair<string, string?>(S3BlobStoreProvider.AmbientCredentialsKey, configured)]).Build();
+        var provider = new S3BlobStoreProvider(TimeProvider.System, NullLoggerFactory.Instance, new OutboundAddressPolicy(new OutboundAddressOptions(), NullLoggerFactory.Instance), configuration);
+        var settings = new Dictionary<string, string> { ["ServiceUrl"] = "http://tenant-store:9000", ["ConditionalWrites"] = "false" };
+
+        var created = await provider.CreateAsync(new BlobStoreDefinition("tenant-a", S3BlobStoreProvider.ProviderName, settings), CancellationToken.None);
+
+        Assert.Equal(ObjectStorageErrors.StoreDefinitionInvalid, created.Error?.Code);
+        Assert.Contains(S3BlobStoreProvider.AmbientCredentialsKey, created.Error!.Details?["reason"]?.ToString(), StringComparison.Ordinal);
+    }
+
     [Fact]
     public void TheOperatorSwitch_MustBeABoolean()
     {

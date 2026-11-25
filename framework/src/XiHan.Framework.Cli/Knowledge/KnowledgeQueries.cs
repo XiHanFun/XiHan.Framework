@@ -347,7 +347,7 @@ internal static class KnowledgeQueries
                 m.Section.Options,
                 m.Section.Package,
                 m.Section.Binding,
-                m.Keys.Select(k => new KeyView(PathOf(m.Section.Section, k), k.Type, k.Default, k.Required, k.Minimum, k.ExclusiveMinimum, k.Maximum, k.Values, k.Summary)).ToList(),
+                m.Keys.Select(k => new KeyView(PathOf(m.Section.Section, k), k.Type, k.Default, k.Required, k.Minimum, k.ExclusiveMinimum, k.Maximum, k.Values, k.Summary, k.ReadBy)).ToList(),
                 Appsettings(m.Section.Section, m.Keys)))
             .ToList();
         return new ConfigResponse(FrameworkKnowledge.Version, views, null);

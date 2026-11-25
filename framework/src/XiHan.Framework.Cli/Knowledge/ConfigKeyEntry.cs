@@ -60,6 +60,14 @@ internal sealed record ConfigKeyEntry
     public string? Sample { get; set; }
 
     /// <summary>
+    /// 读取它的类型，不是节的 Options 类时才有
+    /// </summary>
+    /// <remarks>
+    /// 由 Provider 读取的键（如 S3 的运营方开关）：节的 Options 类的 <c>FromConfiguration</c> 不读它，读它的是这个类型（完全限定名，与 Options 类同包）带 <c>IConfiguration</c> 参数的公开构造（ADR-0302）。为空时由 Options 类读取
+    /// </remarks>
+    public string? ReadBy { get; set; }
+
+    /// <summary>
     /// 一句说明
     /// </summary>
     public string Summary { get; set; } = string.Empty;

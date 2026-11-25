@@ -15,4 +15,5 @@ namespace XiHan.Framework.Cli.Knowledge;
 /// <param name="Maximum">闭区间上限</param>
 /// <param name="Values">枚举允许的取值</param>
 /// <param name="Summary">说明</param>
-internal sealed record KeyView(string Path, string Type, string? Default, bool Required, double? Minimum, double? ExclusiveMinimum, double? Maximum, IReadOnlyList<string>? Values, string Summary);
+/// <param name="ReadBy">读取它的类型：由 Provider 读取的键才有，其余由节的 Options 类读取</param>
+internal sealed record KeyView(string Path, string Type, string? Default, bool Required, double? Minimum, double? ExclusiveMinimum, double? Maximum, IReadOnlyList<string>? Values, string Summary, string? ReadBy);

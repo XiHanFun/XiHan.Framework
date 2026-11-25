@@ -5,15 +5,19 @@ using System.Globalization;
 using System.Reflection;
 using System.Runtime.ExceptionServices;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using XiHan.Framework.Cli.Knowledge;
+using XiHan.Framework.Kernel.Security;
 
 namespace XiHan.Framework.Cli.Tests.Knowledge;
 
 /// <summary>
-/// 配置节索引与各 Options 类的 <c>FromConfiguration</c> 一致
+/// 配置节索引与各 Options 类的 <c>FromConfiguration</c>、各 Provider 的构造一致
 /// </summary>
 /// <remarks>
-/// 以记录读取的配置调用每个 Options 类：键都被读到、节内读到的路径都在索引里、必填键缺了就失败、缺省值与不写等价、上下限与枚举取值按索引接受或拒绝
+/// 以记录读取的配置调用每个 Options 类：键都被读到、节内读到的路径都在索引里、必填键缺了就失败、缺省值与不写等价、上下限与枚举取值按索引接受或拒绝。标了 <see cref="ConfigKeyEntry.ReadBy"/> 的键（由 Provider 读取，ADR-0302）不归 Options 类，改以记录读取的配置调用那个类型带 <see cref="IConfiguration"/> 的公开构造，同样核对读到、登记、必填与取值；Provider 不公开读到的值，缺省值与不写等价不在这里核对
 /// </remarks>
 public sealed class KnowledgeConfigurationTests
 {
@@ -32,15 +36,33 @@ public sealed class KnowledgeConfigurationTests
     /// </summary>
     public static TheoryData<string> Sections => new(_knowledge.Value.Sections.Select(static s => s.Section));
 
+    /// <summary>
+    /// 有由 Provider 读取的键的配置节与读取它们的类型
+    /// </summary>
+    public static TheoryData<string, string> ProviderReaders
+    {
+        get
+        {
+            var data = new TheoryData<string, string>();
+            foreach (var (section, reader) in _knowledge.Value.Sections.SelectMany(static s => s.Keys.Where(static k => k.ReadBy is not null).Select(k => (s.Section, k.ReadBy!))).Distinct())
+            {
+                data.Add(section, reader);
+            }
+
+            return data;
+        }
+    }
+
     [Theory]
     [MemberData(nameof(Sections))]
     public void Section_MatchesWhatItsOptionsRead(string section)
     {
         var entry = _knowledge.Value.Sections.Single(s => s.Section == section);
         var failures = new List<string>();
-        var reader = Reader(entry.Options);
-        var keys = entry.Keys.Select(k => (Entry: k, Path: PathOf(entry, k))).ToList();
-        foreach (var (key, _) in keys.Where(static k => k.Entry.Default is null && k.Entry.Sample is null))
+        var reader = FromConfiguration(Reader(entry.Options));
+        // 由 Provider 读取的键不归 Options 类：Options 类读到它们同样算没登记
+        var keys = entry.Keys.Where(static k => k.ReadBy is null).Select(k => (Entry: k, Path: PathOf(entry, k))).ToList();
+        foreach (var key in entry.Keys.Where(static k => k.Default is null && k.Sample is null))
         {
             failures.Add($"'{key.Key}' needs a default or a sample.");
         }
@@ -59,18 +81,7 @@ public sealed class KnowledgeConfigurationTests
                 failures.Add($"'{key.Key}' ({path}) is indexed but never read.");
             }
 
-            var regions = Regions(entry);
-            var nested = _knowledge.Value.Sections.Where(s => s != entry && s.Section.StartsWith(entry.Section + ":", StringComparison.OrdinalIgnoreCase)).Select(static s => s.Section + ":").ToList();
-            foreach (var read in log.Reads.Order(StringComparer.Ordinal))
-            {
-                var inRegion = regions.Any(r => read.StartsWith(r + ":", StringComparison.OrdinalIgnoreCase));
-                var inNested = nested.Any(n => read.StartsWith(n, StringComparison.OrdinalIgnoreCase));
-                var documented = keys.Any(k => string.Equals(k.Path, read, StringComparison.OrdinalIgnoreCase) || k.Path.StartsWith(read + ":", StringComparison.OrdinalIgnoreCase));
-                if (inRegion && !inNested && !documented)
-                {
-                    failures.Add($"'{read}' is read but not indexed.");
-                }
-            }
+            failures.AddRange(UnindexedReads(entry, [.. keys.Select(static k => k.Path)], log).Select(static read => $"'{read}' is read but not indexed."));
         }
 
         // 只有必填键：读取成功；去掉任何一个必填键：读取失败
@@ -102,6 +113,44 @@ public sealed class KnowledgeConfigurationTests
         Assert.True(failures.Count == 0, $"{entry.Section} ({entry.Options}):{Environment.NewLine}{string.Join(Environment.NewLine, failures)}");
     }
 
+    [Theory]
+    [MemberData(nameof(ProviderReaders))]
+    public void ProviderKeys_MatchWhatTheirProviderReads(string section, string readBy)
+    {
+        var entry = _knowledge.Value.Sections.Single(s => s.Section == section);
+        Assert.NotEqual(entry.Options, readBy);
+        var reader = Construct(ProviderConstructor(entry.Package, readBy));
+        var keys = entry.Keys.Where(k => k.ReadBy == readBy).Select(k => (Entry: k, Path: PathOf(entry, k))).ToList();
+        var failures = new List<string>();
+        var full = keys.ToDictionary(static k => k.Path, static k => k.Entry.Default ?? k.Entry.Sample, StringComparer.OrdinalIgnoreCase);
+        var required = keys.Where(static k => k.Entry.Required).ToDictionary(static k => k.Path, static k => k.Entry.Sample ?? k.Entry.Default, StringComparer.OrdinalIgnoreCase);
+
+        // 全量配置：每个键都被构造读到，构造在节内读到的路径都登记为它读的键
+        var log = new ReadLog();
+        if (Invoke(reader, full, log, failures, "all keys set") is not null)
+        {
+            foreach (var (key, path) in keys.Where(k => !log.Reads.Contains(k.Path)))
+            {
+                failures.Add($"'{key.Key}' ({path}) is indexed as read by '{readBy}', but its constructor never reads it.");
+            }
+
+            failures.AddRange(UnindexedReads(entry, [.. keys.Select(static k => k.Path)], log).Select(read => $"'{read}' is read by '{readBy}' but not indexed as read by it."));
+        }
+
+        Invoke(reader, required, null, failures, "only required keys");
+        foreach (var (key, path) in keys.Where(static k => k.Entry.Required))
+        {
+            ExpectFailure(reader, Without(required, path), failures, $"'{key.Key}' is marked required, but constructing without it succeeded.");
+        }
+
+        foreach (var (key, path) in keys)
+        {
+            CheckRange(reader, full, key, path, failures);
+        }
+
+        Assert.True(failures.Count == 0, $"{entry.Section} ({readBy}):{Environment.NewLine}{string.Join(Environment.NewLine, failures)}");
+    }
+
     [Fact]
     public void EveryOptionsClassWithFromConfiguration_IsIndexed()
     {
@@ -126,6 +175,28 @@ public sealed class KnowledgeConfigurationTests
             var type = Reader(entry.Options).DeclaringType!;
             Assert.Equal(entry.Section, (string)type.GetField("ConfigurationSection")!.GetRawConstantValue()!);
             Assert.Equal(entry.Package, type.Assembly.GetName().Name);
+        }
+    }
+
+    /// <summary>
+    /// 一次读取在节内读到、却不在给定键里的路径
+    /// </summary>
+    /// <remarks>
+    /// 只看节与绝对键的固定前缀之下（<see cref="Regions"/>），另有索引条目的嵌套节归它自己；给定键的父路径（按名字展开的子节）算登记过
+    /// </remarks>
+    private static IEnumerable<string> UnindexedReads(ConfigSectionEntry entry, IReadOnlyList<string> paths, ReadLog log)
+    {
+        var regions = Regions(entry);
+        var nested = _knowledge.Value.Sections.Where(s => s != entry && s.Section.StartsWith(entry.Section + ":", StringComparison.OrdinalIgnoreCase)).Select(static s => s.Section + ":").ToList();
+        foreach (var read in log.Reads.Order(StringComparer.Ordinal))
+        {
+            var inRegion = regions.Any(r => read.StartsWith(r + ":", StringComparison.OrdinalIgnoreCase));
+            var inNested = nested.Any(n => read.StartsWith(n, StringComparison.OrdinalIgnoreCase));
+            var documented = paths.Any(p => string.Equals(p, read, StringComparison.OrdinalIgnoreCase) || p.StartsWith(read + ":", StringComparison.OrdinalIgnoreCase));
+            if (inRegion && !inNested && !documented)
+            {
+                yield return read;
+            }
         }
     }
 
@@ -161,7 +232,7 @@ public sealed class KnowledgeConfigurationTests
     /// <summary>
     /// 上下限与枚举取值
     /// </summary>
-    private static void CheckRange(MethodInfo reader, Dictionary<string, string?> full, ConfigKeyEntry key, string path, List<string> failures)
+    private static void CheckRange(Func<IConfiguration, object> reader, Dictionary<string, string?> full, ConfigKeyEntry key, string path, List<string> failures)
     {
         static string Number(double value) => value.ToString(CultureInfo.InvariantCulture);
         if (key.Minimum is { } minimum)
@@ -217,9 +288,73 @@ public sealed class KnowledgeConfigurationTests
     }
 
     /// <summary>
+    /// 找 Provider 带 <see cref="IConfiguration"/> 参数的公开构造
+    /// </summary>
+    /// <remarks>
+    /// 类型与节的 Options 类同包，带这种参数的公开构造恰好一个：容器按它建 Provider
+    /// </remarks>
+    private static ConstructorInfo ProviderConstructor(string package, string readBy)
+    {
+        var type = Assembly.Load(new AssemblyName(package)).GetType(readBy, throwOnError: false)
+            ?? throw new Xunit.Sdk.XunitException($"'{readBy}' is not a type of package '{package}'.");
+        var constructors = type.GetConstructors().Where(static c => c.GetParameters().Any(static p => p.ParameterType == typeof(IConfiguration))).ToList();
+        return constructors.Count == 1
+            ? constructors[0]
+            : throw new Xunit.Sdk.XunitException($"'{readBy}' must have exactly one public constructor taking '{nameof(IConfiguration)}', but has {constructors.Count.ToString(CultureInfo.InvariantCulture)}.");
+    }
+
+    /// <summary>
+    /// 调用 Options 类 <c>FromConfiguration</c> 的委托
+    /// </summary>
+    /// <remarks>
+    /// 第一个参数是配置，其余（绑定等）取缺省
+    /// </remarks>
+    private static Func<IConfiguration, object> FromConfiguration(MethodInfo reader) => configuration =>
+    {
+        var arguments = reader.GetParameters().Select((p, i) => i == 0 ? configuration : p.ParameterType.IsValueType ? Activator.CreateInstance(p.ParameterType) : null).ToArray();
+        return Unwrapped(() => reader.Invoke(null, arguments)!);
+    };
+
+    /// <summary>
+    /// 调用 Provider 构造的委托
+    /// </summary>
+    /// <remarks>
+    /// 配置之外的参数从一个只有宿主缺省服务的容器里取：内核 <c>AppBuilder</c> 总会补上的时钟、日志与出站地址策略（缺省放行项）。构造要的别的服务取不到时失败，信息里写明是哪个类型
+    /// </remarks>
+    private static Func<IConfiguration, object> Construct(ConstructorInfo constructor) => configuration =>
+    {
+        using var services = new ServiceCollection()
+            .AddSingleton(TimeProvider.System)
+            .AddSingleton<ILoggerFactory>(NullLoggerFactory.Instance)
+            .AddSingleton(new OutboundAddressOptions())
+            .AddSingleton<OutboundAddressPolicy>()
+            .BuildServiceProvider();
+        var arguments = constructor.GetParameters().Select(p => p.ParameterType == typeof(IConfiguration)
+            ? configuration
+            : services.GetService(p.ParameterType) ?? throw new Xunit.Sdk.XunitException($"The test container has no '{p.ParameterType}' for '{constructor.DeclaringType}'.")).ToArray();
+        return Unwrapped(() => constructor.Invoke(arguments));
+    };
+
+    /// <summary>
+    /// 执行反射调用，抛出被调用方自己的异常而不是包装
+    /// </summary>
+    private static object Unwrapped(Func<object> call)
+    {
+        try
+        {
+            return call();
+        }
+        catch (TargetInvocationException exception) when (exception.InnerException is not null)
+        {
+            ExceptionDispatchInfo.Throw(exception.InnerException);
+            throw;
+        }
+    }
+
+    /// <summary>
     /// 以给定的键值调用，失败时记下原因并返回空
     /// </summary>
-    private static object? Invoke(MethodInfo reader, IReadOnlyDictionary<string, string?> values, ReadLog? log, List<string> failures, string label)
+    private static object? Invoke(Func<IConfiguration, object> reader, IReadOnlyDictionary<string, string?> values, ReadLog? log, List<string> failures, string label)
     {
         try
         {
@@ -235,7 +370,7 @@ public sealed class KnowledgeConfigurationTests
     /// <summary>
     /// 以给定的键值调用，期望失败
     /// </summary>
-    private static void ExpectFailure(MethodInfo reader, IReadOnlyDictionary<string, string?> values, List<string> failures, string message)
+    private static void ExpectFailure(Func<IConfiguration, object> reader, IReadOnlyDictionary<string, string?> values, List<string> failures, string message)
     {
         try
         {
@@ -249,9 +384,12 @@ public sealed class KnowledgeConfigurationTests
     }
 
     /// <summary>
-    /// 调用：第一个参数是配置，其余（绑定等）取缺省
+    /// 以给定的键值建配置并交给读取委托
     /// </summary>
-    private static object Call(MethodInfo reader, IReadOnlyDictionary<string, string?> values, ReadLog? log)
+    /// <remarks>
+    /// 给了 <paramref name="log"/> 时包一层记录读取的配置
+    /// </remarks>
+    private static object Call(Func<IConfiguration, object> reader, IReadOnlyDictionary<string, string?> values, ReadLog? log)
     {
         IConfiguration configuration = new ConfigurationBuilder().AddInMemoryCollection(values).Build();
         if (log is not null)
@@ -259,16 +397,7 @@ public sealed class KnowledgeConfigurationTests
             configuration = new RecordingConfiguration(configuration, log);
         }
 
-        var arguments = reader.GetParameters().Select((p, i) => i == 0 ? configuration : p.ParameterType.IsValueType ? Activator.CreateInstance(p.ParameterType) : null).ToArray();
-        try
-        {
-            return reader.Invoke(null, arguments)!;
-        }
-        catch (TargetInvocationException exception) when (exception.InnerException is not null)
-        {
-            ExceptionDispatchInfo.Throw(exception.InnerException);
-            throw;
-        }
+        return reader(configuration);
     }
 
     /// <summary>

@@ -129,6 +129,21 @@ public sealed class KnowledgeQueriesTests
     }
 
     [Fact]
+    public void Config_KeysReadByAProvider_NameTheTypeThatReadsThem()
+    {
+        // 运营方开关登记在 Options 类的节下，读它的是 Provider 的构造（ADR-0302）
+        var section = Assert.Single(KnowledgeQueries.Config(Knowledge, "XiHan:ObjectStorage:S3:NamedInstancesAllowProxy").ValueOrThrow().Sections!);
+        var key = Assert.Single(section.Keys);
+        Assert.Equal("XiHan.Framework.ObjectStorage.S3.S3ObjectStorageOptions", section.Options);
+        Assert.Equal("XiHan.Framework.ObjectStorage.S3.S3BlobStoreProvider", key.ReadBy);
+        Assert.Equal(("boolean", "false"), (key.Type, key.Default));
+
+        // Options 类自己读的键不带它
+        var own = Assert.Single(KnowledgeQueries.Config(Knowledge, "XiHan:ObjectStorage:S3:ServiceUrl").ValueOrThrow().Sections!);
+        Assert.Null(Assert.Single(own.Keys).ReadBy);
+    }
+
+    [Fact]
     public void Config_ByPackageOrOptions_AndAppsettingsFromDefaults()
     {
         var byPackage = Assert.Single(KnowledgeQueries.Config(Knowledge, "Messaging.Kafka").ValueOrThrow().Sections!);

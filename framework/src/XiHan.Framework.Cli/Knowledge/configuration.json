@@ -1163,6 +1163,20 @@
           "type": "string",
           "sample": "proxy-password",
           "summary": "代理的口令，可选；必须与 ProxyUserName 同时给出"
+        },
+        {
+          "key": "NamedInstancesUseAmbientCredentials",
+          "type": "boolean",
+          "default": "false",
+          "readBy": "XiHan.Framework.ObjectStorage.S3.S3BlobStoreProvider",
+          "summary": "运营方开关：命名实例可以不给 AccessKey 与 SecretKey、改用宿主的 AWS 凭据链；没打开时不给密钥即登记失败（OBJECTSTORAGE_VALIDATION_003）。不在实例设置的键里，缺省实例不受约束；不是布尔值时建 Provider 即失败"
+        },
+        {
+          "key": "NamedInstancesAllowProxy",
+          "type": "boolean",
+          "default": "false",
+          "readBy": "XiHan.Framework.ObjectStorage.S3.S3BlobStoreProvider",
+          "summary": "运营方开关：命名实例可以在设置里配 ProxyHost 等四项；没打开时配了代理即登记失败（OBJECTSTORAGE_VALIDATION_003），不建客户端。不在实例设置的键里，缺省实例不受约束；不是布尔值时建 Provider 即失败"
         }
       ]
     },

@@ -7,7 +7,7 @@ namespace XiHan.Framework.Cli.Knowledge;
 /// 配置节索引文件 <c>configuration.json</c>
 /// </summary>
 /// <remarks>
-/// 逐条整理自各包 Options 类的 <c>FromConfiguration</c>；测试以记录读取的配置调用它们，核对键、缺省值、必填与取值范围与代码一致
+/// 逐条整理自各包 Options 类的 <c>FromConfiguration</c>，以及由 Provider 的构造读取的键（<see cref="ConfigKeyEntry.ReadBy"/>，ADR-0302）；测试以记录读取的配置调用它们，核对键、缺省值、必填与取值范围与代码一致
 /// </remarks>
 internal sealed record ConfigurationDocument
 {
