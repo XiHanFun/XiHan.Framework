@@ -173,6 +173,121 @@ public sealed class S3MultipartPartResponseTests
     }
 
     [Fact]
+    public async Task OnTheWire_ATruncatedListingWithoutANextMarker_ReturnsStoreUnavailable_AfterOneRequest()
+    {
+        // 对端说截断了却不给 NextPartNumberMarker（ADR-0313）：以前从头重新请求，循环不止、列表一直增长，直到调用方取消
+        const string body = """
+            <?xml version="1.0" encoding="UTF-8"?>
+            <ListPartsResult xmlns="http://s3.amazonaws.com/doc/2006-03-01/"><Bucket>uploads</Bucket><Key>video.mp4</Key><UploadId>upload-1</UploadId><IsTruncated>true</IsTruncated><Part><PartNumber>1</PartNumber><LastModified>2026-11-26T00:00:00.000Z</LastModified><ETag>"a"</ETag><Size>5</Size></Part></ListPartsResult>
+            """;
+        await using var endpoint = RecordingHttpListener.AnsweringWithBody("200 OK", body, "Content-Type: application/xml");
+        var logs = new LogCapture();
+        using var client = S3ObjectStorageFeature.CreateClient(Options(endpoint.Port));
+        var store = new S3BlobStore(client, Options(endpoint.Port), TimeProvider.System, logs);
+        using var deadline = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+
+        var listed = await store.ListPartsAsync(Upload(), deadline.Token);
+
+        Assert.Equal(ObjectStorageErrors.StoreUnavailable, listed.Error?.Code);
+        Assert.Contains("NextPartNumberMarker", listed.Error!.Details?["reason"]?.ToString(), StringComparison.Ordinal);
+        Assert.Single(endpoint.Requests);
+        var warning = Assert.Single(logs.Entries, static entry => entry.Level == LogLevel.Warning);
+        Assert.Contains(Bucket, warning.Message, StringComparison.Ordinal);
+        Assert.Contains(ListPartsRequest, warning.Message, StringComparison.Ordinal);
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData(0)]
+    [InlineData(1)]
+    [InlineData(-1)]
+    public async Task ATruncatedPageWhoseNextMarkerDoesNotAdvance_FailsTheListing(int? next)
+    {
+        // 第一页给出标记 1，第二页从 1 开始，又说截断了而标记缺失、不比 1 大：再请求只会回到原处（ADR-0313）
+        var fake = FakeS3Client.Create(Bucket);
+        var markers = new List<string?>();
+        fake.PartPages = (request, _) =>
+        {
+            markers.Add(request.PartNumberMarker);
+            return request.PartNumberMarker is null
+                ? Page(true, 1, 1)
+                : new ListPartsResponse { Parts = [Part(2)], IsTruncated = true, NextPartNumberMarker = next };
+        };
+        var store = Store(fake);
+        var upload = (await store.StartAsync(new ContainerName(Bucket), new BlobKey(Key), BlobPutOptions.Default, CancellationToken.None)).ValueOrThrow();
+        using var deadline = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+
+        var listed = await store.ListPartsAsync(upload, deadline.Token);
+
+        Assert.Equal(ObjectStorageErrors.StoreUnavailable, listed.Error?.Code);
+        Assert.Contains("NextPartNumberMarker", listed.Error!.Details?["reason"]?.ToString(), StringComparison.Ordinal);
+        Assert.Equal([null, "1"], markers);
+    }
+
+    [Theory]
+    [InlineData(BlobMultipart.MaxPartNumber)]
+    [InlineData(BlobMultipart.MaxPartNumber + 1)]
+    public async Task ATruncatedPageEndingAtTheLastPartNumber_FailsTheListing(int next)
+    {
+        // 截断说明后面还有编号更大的分片，标记到了 10000 就不可能还有下一页
+        var fake = FakeS3Client.Create(Bucket);
+        fake.PartPages = (_, _) => new ListPartsResponse { Parts = [Part(BlobMultipart.MaxPartNumber)], IsTruncated = true, NextPartNumberMarker = next };
+        var store = Store(fake);
+        var upload = (await store.StartAsync(new ContainerName(Bucket), new BlobKey(Key), BlobPutOptions.Default, CancellationToken.None)).ValueOrThrow();
+        using var deadline = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+
+        var listed = await store.ListPartsAsync(upload, deadline.Token);
+
+        Assert.Equal(ObjectStorageErrors.StoreUnavailable, listed.Error?.Code);
+        Assert.Contains("NextPartNumberMarker", listed.Error!.Details?["reason"]?.ToString(), StringComparison.Ordinal);
+        Assert.Single(fake.Requests, static request => request == ListPartsRequest);
+    }
+
+    [Fact]
+    public async Task MorePartsThanAnUploadHolds_FailTheListing()
+    {
+        // 标记每页都前进、每页 1000 片而编号重复：一个上传最多 10000 片，列到第 11 页即失败，不把 12000 片交给调用方
+        var fake = FakeS3Client.Create(Bucket);
+        fake.PartPages = static (request, _) =>
+        {
+            var page = request.PartNumberMarker is { } marker ? int.Parse(marker, CultureInfo.InvariantCulture) : 0;
+            return new ListPartsResponse { Parts = [.. Enumerable.Range(1, 1000).Select(Part)], IsTruncated = page < 11, NextPartNumberMarker = page + 1 };
+        };
+        var store = Store(fake);
+        var upload = (await store.StartAsync(new ContainerName(Bucket), new BlobKey(Key), BlobPutOptions.Default, CancellationToken.None)).ValueOrThrow();
+
+        var listed = await store.ListPartsAsync(upload, CancellationToken.None);
+
+        Assert.Equal(ObjectStorageErrors.StoreUnavailable, listed.Error?.Code);
+        Assert.Contains("10000", listed.Error!.Details?["reason"]?.ToString(), StringComparison.Ordinal);
+        Assert.Equal(11, fake.Requests.Count(static request => request == ListPartsRequest));
+    }
+
+    [Fact]
+    public async Task APagedListing_FollowsEachNextMarker_AndListsEveryPart()
+    {
+        var fake = FakeS3Client.Create(Bucket);
+        var markers = new List<string?>();
+        fake.PartPages = (request, _) =>
+        {
+            markers.Add(request.PartNumberMarker);
+            return request.PartNumberMarker switch
+            {
+                null => Page(true, 2, 1, 2),
+                "2" => Page(true, 4, 3, 4),
+                _ => Page(false, null, 5),
+            };
+        };
+        var store = Store(fake);
+        var upload = (await store.StartAsync(new ContainerName(Bucket), new BlobKey(Key), BlobPutOptions.Default, CancellationToken.None)).ValueOrThrow();
+
+        var parts = (await store.ListPartsAsync(upload, CancellationToken.None)).ValueOrThrow();
+
+        Assert.Equal([1, 2, 3, 4, 5], parts.Select(static part => part.PartNumber));
+        Assert.Equal([null, "2", "4"], markers);
+    }
+
+    [Fact]
     public async Task ListedParts_WithoutASize_AreListedWithLengthZero()
     {
         // 长度只用于说明、完成时不核对：缺失照旧当作 0，不算不合规
@@ -201,6 +316,17 @@ public sealed class S3MultipartPartResponseTests
 
         Assert.Equal(new[] { (1, "a", 1L), (BlobMultipart.MaxPartNumber, "b", 2L) }, parts.Select(static part => (part.PartNumber, part.ETag, part.Length)));
     }
+
+    /// <summary>
+    /// 列出分片的一页应答
+    /// </summary>
+    private static ListPartsResponse Page(bool truncated, int? next, params int[] numbers)
+        => new() { Parts = [.. numbers.Select(Part)], IsTruncated = truncated, NextPartNumberMarker = next };
+
+    /// <summary>
+    /// 一个可用的分片
+    /// </summary>
+    private static PartDetail Part(int number) => new() { PartNumber = number, ETag = "\"p\"", Size = 1 };
 
     /// <summary>
     /// 线上用例的句柄

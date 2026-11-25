@@ -22,7 +22,7 @@ namespace XiHan.Framework.ObjectStorage.S3;
 /// S3 对象存储
 /// </summary>
 /// <remarks>
-/// 容器即桶，键即对象键。不覆盖写入用条件请求（<c>If-None-Match: *</c>）保证原子，已存在返回 <see cref="ObjectStorageErrors.BlobExists"/>；服务是否认条件写入要先探明（ADR-0089、ADR-0090）：特性启动或命名实例建出时探一次，没探明就在后台重试，这期间不覆盖的写入与分片上传返回 <see cref="ObjectStorageErrors.ConditionalWriteUnconfirmed"/>，探明不认或选项关闭条件写入时一律返回 <see cref="ObjectStorageErrors.ConditionalWriteUnavailable"/>；批量删除先逐键 HEAD 得知是否存在，再一次 <c>DeleteObjects</c>；列举经 <c>ListObjectsV2</c>，条目只有键、长度、ETag 与修改时间（内容类型为默认值、自定义元数据为空，需要时再 HEAD）。范围读取经 <c>Range</c> 请求头；分片上传直接映射 S3 的 multipart（不覆盖的完成带 <c>If-None-Match: *</c>）；预签名地址由 SDK 本地签出（签名 V4），客户端直连存储。不存在的键与桶映射为 <see cref="ObjectStorageErrors.BlobNotFound"/>，其余服务端与网络错误映射为 <see cref="ObjectStorageErrors.StoreUnavailable"/>，服务应答成功却缺了必需的内容同此（发起分片上传的应答没有可用的上传标识，ADR-0302；上传分片的应答没有可用的 ETag、列出的分片没有可用的编号或 ETag 或长度为负，ADR-0308）。内容类型原样存取：SDK 写不出原值的（<see cref="S3ContentTypeHeader"/>）写入与分片上传的发起返回 <see cref="ObjectStorageErrors.ContentTypeUnsupported"/>，不发请求；读取时 SDK 按 .NET 的写法交出它解析得了的值（ADR-0295）。没有公开构造（ADR-0266，公开面不出现 SDK 的类型）：缺省实例由 <see cref="S3ObjectStorageFeature"/> 建出，客户端归容器所有，释放实例什么都不做；命名实例由 <see cref="S3BlobStoreProvider"/> 按定义建出（经 <c>BlobStores</c>，或直接调它的 <c>CreateAsync</c>），自己建客户端并在后台重试探测，释放实例即停止重试、释放客户端
+/// 容器即桶，键即对象键。不覆盖写入用条件请求（<c>If-None-Match: *</c>）保证原子，已存在返回 <see cref="ObjectStorageErrors.BlobExists"/>；服务是否认条件写入要先探明（ADR-0089、ADR-0090）：特性启动或命名实例建出时探一次，没探明就在后台重试，这期间不覆盖的写入与分片上传返回 <see cref="ObjectStorageErrors.ConditionalWriteUnconfirmed"/>，探明不认或选项关闭条件写入时一律返回 <see cref="ObjectStorageErrors.ConditionalWriteUnavailable"/>；批量删除先逐键 HEAD 得知是否存在，再一次 <c>DeleteObjects</c>；列举经 <c>ListObjectsV2</c>，条目只有键、长度、ETag 与修改时间（内容类型为默认值、自定义元数据为空，需要时再 HEAD）。范围读取经 <c>Range</c> 请求头；分片上传直接映射 S3 的 multipart（不覆盖的完成带 <c>If-None-Match: *</c>）；预签名地址由 SDK 本地签出（签名 V4），客户端直连存储。不存在的键与桶映射为 <see cref="ObjectStorageErrors.BlobNotFound"/>，其余服务端与网络错误映射为 <see cref="ObjectStorageErrors.StoreUnavailable"/>，服务应答成功却缺了必需的内容同此（发起分片上传的应答没有可用的上传标识，ADR-0302；上传分片的应答没有可用的 ETag、列出的分片没有可用的编号或 ETag 或长度为负，ADR-0308；读取、HEAD 与写入的应答没有可用的 ETag，读取与 HEAD 的应答没有修改时间，列举截断却没有能前进的续页标记、列出的对象缺 ETag 或修改时间，列出分片的分页不前进或超过 10000 片，批量删除的错误项认不出是哪一项，ADR-0313）。写入结果的修改时间取本机时钟：PutObject 的应答本来就不带修改时间（ADR-0313）。内容类型原样存取：SDK 写不出原值的（<see cref="S3ContentTypeHeader"/>）写入与分片上传的发起返回 <see cref="ObjectStorageErrors.ContentTypeUnsupported"/>，不发请求；读取时 SDK 按 .NET 的写法交出它解析得了的值（ADR-0295）。没有公开构造（ADR-0266，公开面不出现 SDK 的类型）：缺省实例由 <see cref="S3ObjectStorageFeature"/> 建出，客户端归容器所有，释放实例什么都不做；命名实例由 <see cref="S3BlobStoreProvider"/> 按定义建出（经 <c>BlobStores</c>，或直接调它的 <c>CreateAsync</c>），自己建客户端并在后台重试探测，释放实例即停止重试、释放客户端
 /// </remarks>
 [ApiLevel(Stability.Stable, "5.0")]
 public sealed partial class S3BlobStore : IBlobStore, IBlobMultipartStore, IBlobUrlSigner, IDisposable, IAsyncDisposable
@@ -89,6 +89,72 @@ public sealed partial class S3BlobStore : IBlobStore, IBlobMultipartStore, IBlob
     /// 固定文本，不带应答里的值（ADR-0308）
     /// </remarks>
     private const string ListedPartSizeNegativeReason = "ListParts returned a part with a negative Size";
+
+    /// <summary>
+    /// 列出分片的应答截断了却没有能前进的续页标记时 <c>reason</c> 的文本
+    /// </summary>
+    /// <remarks>
+    /// 标记缺失、不比这一页的起点大，或不小于 <see cref="BlobMultipart.MaxPartNumber"/>（ADR-0313）
+    /// </remarks>
+    private const string NextPartNumberMarkerMissingReason = "ListParts was truncated without a usable NextPartNumberMarker";
+
+    /// <summary>
+    /// 列出的分片超过一个上传能有的片数时 <c>reason</c> 的文本
+    /// </summary>
+    /// <remarks>
+    /// 一个上传最多 <see cref="BlobMultipart.MaxPartNumber"/> 片（ADR-0313）
+    /// </remarks>
+    private const string TooManyPartsReason = "ListParts returned more than 10000 parts";
+
+    /// <summary>
+    /// 列举的应答截断了却没有能前进的续页标记时 <c>reason</c> 的文本
+    /// </summary>
+    /// <remarks>
+    /// 标记缺失、为空，或与本次请求带的相同（ADR-0313）
+    /// </remarks>
+    private const string NextContinuationTokenMissingReason = "ListObjectsV2 was truncated without a usable NextContinuationToken";
+
+    /// <summary>
+    /// 列出的对象没有可用的 ETag 时 <c>reason</c> 的文本
+    /// </summary>
+    /// <remarks>
+    /// 固定文本，不带应答里的值（ADR-0313）
+    /// </remarks>
+    private const string ListedObjectETagMissingReason = "ListObjectsV2 returned an object without a usable ETag";
+
+    /// <summary>
+    /// 列出的对象没有修改时间时 <c>reason</c> 的文本
+    /// </summary>
+    /// <remarks>
+    /// 固定文本，不带应答里的值（ADR-0313）
+    /// </remarks>
+    private const string ListedObjectLastModifiedMissingReason = "ListObjectsV2 returned an object without a LastModified";
+
+    /// <summary>
+    /// 写入的应答没有可用的 ETag 时 <c>reason</c> 的文本
+    /// </summary>
+    /// <remarks>
+    /// 固定文本，不带应答里的值（ADR-0313）
+    /// </remarks>
+    private const string PutETagMissingReason = "PutObject returned no usable ETag";
+
+    /// <summary>
+    /// 批量删除的应答有认不出是哪一项的错误项时 <c>reason</c> 的文本
+    /// </summary>
+    /// <remarks>
+    /// 错误项没有键，或带的键不在这一批里（ADR-0313）
+    /// </remarks>
+    private const string DeleteErrorKeyMissingReason = "DeleteObjects returned an error without a usable Key";
+
+    /// <summary>
+    /// 读取的应答
+    /// </summary>
+    private static readonly ObjectAnswer _getObjectAnswer = new("GetObject", "GetObject returned no usable ETag", "GetObject returned no Last-Modified");
+
+    /// <summary>
+    /// HEAD 的应答
+    /// </summary>
+    private static readonly ObjectAnswer _headObjectAnswer = new("HeadObject", "HeadObject returned no usable ETag", "HeadObject returned no Last-Modified");
 
     /// <summary>
     /// S3 客户端
@@ -215,15 +281,12 @@ public sealed partial class S3BlobStore : IBlobStore, IBlobMultipartStore, IBlob
         try
         {
             response = await _client.GetObjectAsync(new GetObjectRequest { BucketName = container.Value, Key = key.Value }, cancellationToken).ConfigureAwait(false);
-            var metadata = new BlobMetadata
+            var described = DescribeObject(container, key, _getObjectAnswer, response.ContentLength, response.Headers.ContentType, response.ETag, response.LastModified, response.Metadata);
+            if (!described.TryGetValue(out var metadata))
             {
-                Key = key,
-                Length = response.ContentLength,
-                ContentType = response.Headers.ContentType ?? BlobPutOptions.DefaultContentType,
-                ETag = Unquote(response.ETag),
-                LastModified = ToTimestamp(response.LastModified),
-                Metadata = ReadMetadata(response.Metadata),
-            };
+                return described.Error!;
+            }
+
             var content = new BlobContent(metadata, new S3ObjectStream(response));
             response = null;
             return Result.Success(content);
@@ -246,27 +309,10 @@ public sealed partial class S3BlobStore : IBlobStore, IBlobMultipartStore, IBlob
     /// <inheritdoc />
     public async ValueTask<Result<BlobMetadata>> HeadAsync(ContainerName container, BlobKey key, CancellationToken cancellationToken)
     {
-        try
-        {
-            var response = await _client.GetObjectMetadataAsync(new GetObjectMetadataRequest { BucketName = container.Value, Key = key.Value }, cancellationToken).ConfigureAwait(false);
-            return Result.Success(new BlobMetadata
-            {
-                Key = key,
-                Length = response.ContentLength,
-                ContentType = response.Headers.ContentType ?? BlobPutOptions.DefaultContentType,
-                ETag = Unquote(response.ETag),
-                LastModified = ToTimestamp(response.LastModified),
-                Metadata = ReadMetadata(response.Metadata),
-            });
-        }
-        catch (AmazonS3Exception exception) when (IsNotFound(exception))
-        {
-            return NotFound(container, key);
-        }
-        catch (Exception exception) when (IsStoreFailure(exception, cancellationToken))
-        {
-            return Unavailable(exception);
-        }
+        var head = await HeadObjectAsync(container, key, cancellationToken).ConfigureAwait(false);
+        return head.TryGetValue(out var response)
+            ? DescribeObject(container, key, _headObjectAnswer, response.ContentLength, response.Headers.ContentType, response.ETag, response.LastModified, response.Metadata)
+            : head.Error!;
     }
 
     /// <inheritdoc />
@@ -285,22 +331,19 @@ public sealed partial class S3BlobStore : IBlobStore, IBlobMultipartStore, IBlob
         for (var index = 0; index < keys.Count; index++)
         {
             cancellationToken.ThrowIfCancellationRequested();
-            var head = await HeadAsync(container, keys[index], cancellationToken).ConfigureAwait(false);
-            if (head.IsSuccess)
+            var exists = await HeadExistsAsync(container, keys[index], cancellationToken).ConfigureAwait(false);
+            if (!exists.TryGetValue(out var found))
             {
-                if (claimed.Add(keys[index].Value))
-                {
-                    toDelete.Add(keys[index].Value);
-                    outcomes[index] = Result.Success(true);
-                }
-                else
-                {
-                    outcomes[index] = Result.Success(false);
-                }
+                outcomes[index] = Result.Failure<bool>(exists.Error!);
+            }
+            else if (found && claimed.Add(keys[index].Value))
+            {
+                toDelete.Add(keys[index].Value);
+                outcomes[index] = Result.Success(true);
             }
             else
             {
-                outcomes[index] = head.Error!.Code == ObjectStorageErrors.BlobNotFound ? Result.Success(false) : Result.Failure<bool>(head.Error);
+                outcomes[index] = Result.Success(false);
             }
         }
 
@@ -316,7 +359,22 @@ public sealed partial class S3BlobStore : IBlobStore, IBlobMultipartStore, IBlob
                     Objects = [.. batch.Select(static key => new KeyVersion { Key = key })],
                     Quiet = true,
                 }, cancellationToken).ConfigureAwait(false);
-                foreach (var error in response.DeleteErrors ?? [])
+                var errors = response.DeleteErrors ?? [];
+                var members = new HashSet<string>(batch, StringComparer.Ordinal);
+                // 静默模式的应答只列错误项：有一项认不出是哪个键（没有键，或键不在这一批里），这一批里哪些删成了就说不清，
+                // 同这一批的请求整个失败，各项报同一个错误，不以空键写进结果（ADR-0313）
+                if (errors.Any(error => string.IsNullOrEmpty(error.Key) || !members.Contains(error.Key)))
+                {
+                    var unusable = UnusableAnswer(container, "DeleteObjects", DeleteErrorKeyMissingReason);
+                    foreach (var key in batch)
+                    {
+                        failed[key] = unusable;
+                    }
+
+                    continue;
+                }
+
+                foreach (var error in errors)
                 {
                     // 服务端给的文字不进错误，错误码足够区分
                     failed[error.Key] = Unavailable(error.Code);
@@ -371,26 +429,48 @@ public sealed partial class S3BlobStore : IBlobStore, IBlobMultipartStore, IBlob
             var items = new List<BlobMetadata>(response.KeyCount ?? 0);
             foreach (var entry in response.S3Objects ?? [])
             {
-                // 不符合键文法的对象不是本契约的对象，跳过：以 / 结尾的"目录"占位，以及保留前缀下框架自己的对象（如条件写入探测键，ADR-0090）
-                if (BlobKey.IsValid(entry.Key))
+                // 不符合键文法的对象不是本契约的对象，跳过：以 / 结尾的"目录"占位，以及保留前缀下框架自己的对象（如条件写入探测键，ADR-0090）；
+                // 跳过的对象缺什么都不影响这一页
+                if (!BlobKey.IsValid(entry.Key))
                 {
-                    items.Add(new BlobMetadata
-                    {
-                        Key = new BlobKey(entry.Key),
-                        Length = entry.Size ?? 0,
-                        ContentType = BlobPutOptions.DefaultContentType,
-                        ETag = Unquote(entry.ETag),
-                        LastModified = ToTimestamp(entry.LastModified),
-                        Metadata = EmptyMetadata,
-                    });
+                    continue;
+                }
+
+                // 要交出的对象缺 ETag 或修改时间是不合规的应答：整页失败，不跳过它（跳过之后这一页少一个对象，调用方看不出来，ADR-0313）
+                var etag = Unquote(entry.ETag);
+                if (!IsUsableETag(etag))
+                {
+                    return UnusableAnswer(container, "ListObjectsV2", ListedObjectETagMissingReason);
+                }
+
+                if (entry.LastModified is not { } modified)
+                {
+                    return UnusableAnswer(container, "ListObjectsV2", ListedObjectLastModifiedMissingReason);
+                }
+
+                items.Add(new BlobMetadata
+                {
+                    Key = new BlobKey(entry.Key),
+                    Length = entry.Size ?? 0,
+                    ContentType = BlobPutOptions.DefaultContentType,
+                    ETag = etag,
+                    LastModified = ToTimestamp(modified),
+                    Metadata = EmptyMetadata,
+                });
+            }
+
+            string? next = null;
+            if (response.IsTruncated == true)
+            {
+                // 截断了却没有能前进的续页标记：交出空的标记调用方以为列完了，交出本次带来的那个标记调用方再列只会回到原处（ADR-0313）
+                next = response.NextContinuationToken;
+                if (string.IsNullOrEmpty(next) || string.Equals(next, query.ContinuationToken, StringComparison.Ordinal))
+                {
+                    return UnusableAnswer(container, "ListObjectsV2", NextContinuationTokenMissingReason);
                 }
             }
 
-            return Result.Success(new BlobPage
-            {
-                Items = items,
-                ContinuationToken = response.IsTruncated == true ? response.NextContinuationToken : null,
-            });
+            return Result.Success(new BlobPage { Items = items, ContinuationToken = next });
         }
         catch (AmazonS3Exception exception) when (IsNotFound(exception))
         {
@@ -419,25 +499,22 @@ public sealed partial class S3BlobStore : IBlobStore, IBlobMultipartStore, IBlob
                 return Unavailable("the server ignored the range request");
             }
 
-            var metadata = new BlobMetadata
+            var described = DescribeObject(container, key, _getObjectAnswer, resolved.TotalLength, response.Headers.ContentType, response.ETag, response.LastModified, response.Metadata);
+            if (!described.TryGetValue(out var metadata))
             {
-                Key = key,
-                Length = resolved.TotalLength,
-                ContentType = response.Headers.ContentType ?? BlobPutOptions.DefaultContentType,
-                ETag = Unquote(response.ETag),
-                LastModified = ToTimestamp(response.LastModified),
-                Metadata = ReadMetadata(response.Metadata),
-            };
+                return described.Error!;
+            }
+
             var content = new BlobContent(metadata, new S3ObjectStream(response), resolved);
             response = null;
             return Result.Success(content);
         }
         catch (AmazonS3Exception exception) when (exception.StatusCode == HttpStatusCode.RequestedRangeNotSatisfiable)
         {
-            // 起点不在对象内：再 HEAD 一次拿总长写进错误参数（对象此间被删时如实报告不存在）
-            var head = await HeadAsync(container, key, cancellationToken).ConfigureAwait(false);
+            // 起点不在对象内：再 HEAD 一次拿总长写进错误参数（对象此间被删时如实报告不存在）；只取总长，不看 ETag 与修改时间
+            var head = await HeadObjectAsync(container, key, cancellationToken).ConfigureAwait(false);
             return head.TryGetValue(out var found)
-                ? Error.Validation(ObjectStorageErrors.RangeNotSatisfiable, ObjectStorageMessages.RangeNotSatisfiable, MessageArguments.Of(("offset", range.Offset), ("length", found.Length)))
+                ? Error.Validation(ObjectStorageErrors.RangeNotSatisfiable, ObjectStorageMessages.RangeNotSatisfiable, MessageArguments.Of(("offset", range.Offset), ("length", found.ContentLength)))
                 : Result.Failure<BlobContent>(head.Error!);
         }
         catch (AmazonS3Exception exception) when (IsNotFound(exception))
@@ -472,15 +549,15 @@ public sealed partial class S3BlobStore : IBlobStore, IBlobMultipartStore, IBlob
 
         if (!options.Overwrite)
         {
-            var existing = await HeadAsync(container, key, cancellationToken).ConfigureAwait(false);
-            if (existing.IsSuccess)
+            var existing = await HeadExistsAsync(container, key, cancellationToken).ConfigureAwait(false);
+            if (!existing.TryGetValue(out var found))
             {
-                return Exists(container, key);
+                return Result.Failure<BlobMultipartUpload>(existing.Error!);
             }
 
-            if (existing.Error!.Code != ObjectStorageErrors.BlobNotFound)
+            if (found)
             {
-                return Result.Failure<BlobMultipartUpload>(existing.Error);
+                return Exists(container, key);
             }
         }
 
@@ -551,7 +628,7 @@ public sealed partial class S3BlobStore : IBlobStore, IBlobMultipartStore, IBlob
             // 服务回了成功却没给当得了分片的 ETag，是不合规的应答：按服务端错误返回，不让分片的构造把 ArgumentException 抛给调用方。
             // 不重发：这一片可能已在服务端，调用方重传同一编号即覆盖它，或从列出分片里取它的 ETag（ADR-0308）
             var etag = Unquote(response.ETag);
-            if (!IsUsablePartETag(etag))
+            if (!IsUsableETag(etag))
             {
                 return UnusableAnswer(upload.Container, "UploadPart", PartETagMissingReason);
             }
@@ -582,7 +659,8 @@ public sealed partial class S3BlobStore : IBlobStore, IBlobMultipartStore, IBlob
         try
         {
             var parts = new List<BlobPart>();
-            int? marker = null;
+            // 这一页的起点：第一页不带标记，按 0 计
+            var marker = 0;
             while (true)
             {
                 cancellationToken.ThrowIfCancellationRequested();
@@ -591,7 +669,7 @@ public sealed partial class S3BlobStore : IBlobStore, IBlobMultipartStore, IBlob
                     BucketName = upload.Container.Value,
                     Key = upload.Key.Value,
                     UploadId = upload.UploadId,
-                    PartNumberMarker = marker?.ToString(CultureInfo.InvariantCulture),
+                    PartNumberMarker = marker == 0 ? null : marker.ToString(CultureInfo.InvariantCulture),
                 }, cancellationToken).ConfigureAwait(false);
                 foreach (var part in response.Parts ?? [])
                 {
@@ -603,7 +681,7 @@ public sealed partial class S3BlobStore : IBlobStore, IBlobMultipartStore, IBlob
                     }
 
                     var etag = Unquote(part.ETag);
-                    if (!IsUsablePartETag(etag))
+                    if (!IsUsableETag(etag))
                     {
                         return UnusableAnswer(upload.Container, "ListParts", ListedPartETagMissingReason);
                     }
@@ -611,6 +689,12 @@ public sealed partial class S3BlobStore : IBlobStore, IBlobMultipartStore, IBlob
                     if (part.Size is < 0)
                     {
                         return UnusableAnswer(upload.Container, "ListParts", ListedPartSizeNegativeReason);
+                    }
+
+                    // 一个上传最多 10000 片：再多就是应答重复交出了分片，照收下去列表无界增长（ADR-0313）
+                    if (parts.Count == BlobMultipart.MaxPartNumber)
+                    {
+                        return UnusableAnswer(upload.Container, "ListParts", TooManyPartsReason);
                     }
 
                     // 长度只用于说明、完成时不核对：缺失照旧当作 0
@@ -622,7 +706,14 @@ public sealed partial class S3BlobStore : IBlobStore, IBlobMultipartStore, IBlob
                     break;
                 }
 
-                marker = response.NextPartNumberMarker;
+                // 截断时续页标记是这一页的最后一片：不比起点大，再请求只会回到原处；不小于 10000，后面不可能还有分片。
+                // 标记每页严格增大且小于 10000，一次列出至多请求 10000 页（ADR-0313）
+                if (response.NextPartNumberMarker is not { } next || next <= marker || next >= BlobMultipart.MaxPartNumber)
+                {
+                    return UnusableAnswer(upload.Container, "ListParts", NextPartNumberMarkerMissingReason);
+                }
+
+                marker = next;
             }
 
             return Result.Success<IReadOnlyList<BlobPart>>([.. parts.OrderBy(static p => p.PartNumber)]);
@@ -655,15 +746,15 @@ public sealed partial class S3BlobStore : IBlobStore, IBlobMultipartStore, IBlob
         // 不覆盖：先 HEAD（已存在时不必拼接），再带 If-None-Match 完成，由服务端保证原子（服务认条件完成已由上面的放行确认）
         if (!upload.Overwrite)
         {
-            var existing = await HeadAsync(upload.Container, upload.Key, cancellationToken).ConfigureAwait(false);
-            if (existing.IsSuccess)
+            var existing = await HeadExistsAsync(upload.Container, upload.Key, cancellationToken).ConfigureAwait(false);
+            if (!existing.TryGetValue(out var found))
             {
-                return Exists(upload.Container, upload.Key);
+                return Result.Failure<BlobMetadata>(existing.Error!);
             }
 
-            if (existing.Error!.Code != ObjectStorageErrors.BlobNotFound)
+            if (found)
             {
-                return Result.Failure<BlobMetadata>(existing.Error);
+                return Exists(upload.Container, upload.Key);
             }
         }
 
@@ -700,7 +791,7 @@ public sealed partial class S3BlobStore : IBlobStore, IBlobMultipartStore, IBlob
             return Unavailable(exception);
         }
 
-        // 完成的响应只有 ETag：再 HEAD 一次拿长度、内容类型与自定义元数据
+        // 完成的响应只有 ETag：再 HEAD 一次拿长度、内容类型、自定义元数据与修改时间，按 HEAD 的应答判定（缺内容时对象已经拼成，ADR-0313）
         return await HeadAsync(upload.Container, upload.Key, cancellationToken).ConfigureAwait(false);
     }
 
@@ -803,24 +894,24 @@ public sealed partial class S3BlobStore : IBlobStore, IBlobMultipartStore, IBlob
     /// 应答里的上传标识当得了句柄
     /// </summary>
     /// <remarks>
-    /// 照 <see cref="BlobMultipartUpload"/> 构造的公开前置条件先判：1 到 <see cref="MaxUploadIdLength"/> 个字符，不含空白与控制字符
+    /// 照 <see cref="BlobMultipartUpload"/> 构造的公开前置条件先判：1 到 <see cref="MaxUploadIdLength"/> 个字符，不含空白与控制字符。条件写入探测的发起同用它（ADR-0313）
     /// </remarks>
-    private static bool IsUsableUploadId([NotNullWhen(true)] string? uploadId)
+    internal static bool IsUsableUploadId([NotNullWhen(true)] string? uploadId)
         => uploadId is { Length: > 0 and <= MaxUploadIdLength } && !uploadId.Any(static ch => char.IsWhiteSpace(ch) || char.IsControl(ch));
 
     /// <summary>
-    /// 去掉引号之后的 ETag 当得了分片的 ETag
+    /// 去掉引号之后的 ETag 可用
     /// </summary>
     /// <remarks>
-    /// 照 <see cref="BlobPart"/> 构造的公开前置条件先判：不为空、不只有空白
+    /// 照 <see cref="BlobPart"/> 构造的公开前置条件判：不为空、不只有空白。对象的 ETag 同用它：<see cref="BlobMetadata.ETag"/> 要能随内容变化，空串与空白做不到（ADR-0313）
     /// </remarks>
-    private static bool IsUsablePartETag(string etag) => !string.IsNullOrWhiteSpace(etag);
+    private static bool IsUsableETag(string etag) => !string.IsNullOrWhiteSpace(etag);
 
     /// <summary>
     /// 服务应答成功却缺了必需的内容
     /// </summary>
     /// <remarks>
-    /// 记一条 Warning（只带请求名与桶名，不带应答里的值），按服务端错误返回 <see cref="ObjectStorageErrors.StoreUnavailable"/>（ADR-0302、ADR-0308）
+    /// 记一条 Warning（只带请求名与桶名，不带应答里的值），按服务端错误返回 <see cref="ObjectStorageErrors.StoreUnavailable"/>（ADR-0302、ADR-0308、ADR-0313）
     /// </remarks>
     private Error UnusableAnswer(ContainerName container, string operation, string reason)
     {
@@ -861,15 +952,15 @@ public sealed partial class S3BlobStore : IBlobStore, IBlobMultipartStore, IBlob
 
         if (!upload.Options.Overwrite)
         {
-            var existing = await HeadAsync(container, upload.Key, cancellationToken).ConfigureAwait(false);
-            if (existing.IsSuccess)
+            var existing = await HeadExistsAsync(container, upload.Key, cancellationToken).ConfigureAwait(false);
+            if (!existing.TryGetValue(out var found))
             {
-                return Exists(container, upload.Key);
+                return Result.Failure<BlobMetadata>(existing.Error!);
             }
 
-            if (existing.Error!.Code != ObjectStorageErrors.BlobNotFound)
+            if (found)
             {
-                return Result.Failure<BlobMetadata>(existing.Error);
+                return Exists(container, upload.Key);
             }
         }
 
@@ -911,12 +1002,20 @@ public sealed partial class S3BlobStore : IBlobStore, IBlobMultipartStore, IBlob
                     }
 
                     var response = await _client.PutObjectAsync(request, cancellationToken).ConfigureAwait(false);
+                    // PutObject 的应答本该带 ETag：缺了是不合规的应答，按服务端错误返回。不重发、不回滚：对象可能已经写进去了，调用方可以 Head 或重写（ADR-0313）
+                    var etag = Unquote(response.ETag);
+                    if (!IsUsableETag(etag))
+                    {
+                        return UnusableAnswer(container, "PutObject", PutETagMissingReason);
+                    }
+
+                    // 应答本来就不带修改时间：取本机收到应答时的时钟，不另发 HEAD（多一个请求，HEAD 失败会把写成的报成失败，并发覆盖时还可能读到别的版本）
                     return Result.Success(new BlobMetadata
                     {
                         Key = upload.Key,
                         Length = length,
                         ContentType = upload.Options.ContentType,
-                        ETag = Unquote(response.ETag),
+                        ETag = etag,
                         LastModified = _clock.GetUtcNow(),
                         Metadata = new Dictionary<string, string>(upload.Options.Metadata, StringComparer.Ordinal),
                     });
@@ -993,10 +1092,78 @@ public sealed partial class S3BlobStore : IBlobStore, IBlobMultipartStore, IBlob
     /// 把 SDK 的修改时间（UTC）转成带偏移的时刻
     /// </summary>
     /// <remarks>
-    /// 缺失时为最小值
+    /// 缺失的修改时间到不了这里：调用方先判，缺了按不合规的应答返回（ADR-0313）
     /// </remarks>
-    private static DateTimeOffset ToTimestamp(DateTime? value)
-        => value is { } time ? new DateTimeOffset(DateTime.SpecifyKind(time, DateTimeKind.Utc)) : DateTimeOffset.MinValue;
+    private static DateTimeOffset ToTimestamp(DateTime value) => new(DateTime.SpecifyKind(value, DateTimeKind.Utc));
+
+    /// <summary>
+    /// 由读取或 HEAD 的应答组成元数据
+    /// </summary>
+    /// <remarks>
+    /// GetObject 与 HeadObject 的应答本该带 ETag 与 Last-Modified（Amazon S3 API Reference）：缺了是不合规的应答，按服务端错误返回，不以空串与最小时刻填进元数据（ADR-0313）
+    /// </remarks>
+    private Result<BlobMetadata> DescribeObject(ContainerName container, BlobKey key, ObjectAnswer answer, long length, string? contentType, string? etag, DateTime? lastModified, MetadataCollection metadata)
+    {
+        var tag = Unquote(etag);
+        if (!IsUsableETag(tag))
+        {
+            return UnusableAnswer(container, answer.Operation, answer.ETagMissingReason);
+        }
+
+        if (lastModified is not { } modified)
+        {
+            return UnusableAnswer(container, answer.Operation, answer.LastModifiedMissingReason);
+        }
+
+        return Result.Success(new BlobMetadata
+        {
+            Key = key,
+            Length = length,
+            ContentType = contentType ?? BlobPutOptions.DefaultContentType,
+            ETag = tag,
+            LastModified = ToTimestamp(modified),
+            Metadata = ReadMetadata(metadata),
+        });
+    }
+
+    /// <summary>
+    /// HEAD 一个对象，原样交出应答
+    /// </summary>
+    /// <remarks>
+    /// 不存在为 <see cref="ObjectStorageErrors.BlobNotFound"/>，其余服务端与网络错误为 <see cref="ObjectStorageErrors.StoreUnavailable"/>。不看 ETag 与修改时间：只判存在与否、只取总长的调用方用不到它们（ADR-0313）
+    /// </remarks>
+    private async ValueTask<Result<GetObjectMetadataResponse>> HeadObjectAsync(ContainerName container, BlobKey key, CancellationToken cancellationToken)
+    {
+        try
+        {
+            return Result.Success(await _client.GetObjectMetadataAsync(new GetObjectMetadataRequest { BucketName = container.Value, Key = key.Value }, cancellationToken).ConfigureAwait(false));
+        }
+        catch (AmazonS3Exception exception) when (IsNotFound(exception))
+        {
+            return NotFound(container, key);
+        }
+        catch (Exception exception) when (IsStoreFailure(exception, cancellationToken))
+        {
+            return Unavailable(exception);
+        }
+    }
+
+    /// <summary>
+    /// 经 HEAD 判定对象在不在
+    /// </summary>
+    /// <remarks>
+    /// 在为真，不存在为假，其余失败原样返回。只看应答的状态，应答缺 ETag 或修改时间不影响判定（ADR-0313）
+    /// </remarks>
+    private async ValueTask<Result<bool>> HeadExistsAsync(ContainerName container, BlobKey key, CancellationToken cancellationToken)
+    {
+        var head = await HeadObjectAsync(container, key, cancellationToken).ConfigureAwait(false);
+        if (head.IsSuccess)
+        {
+            return Result.Success(true);
+        }
+
+        return head.Error!.Code == ObjectStorageErrors.BlobNotFound ? Result.Success(false) : Result.Failure<bool>(head.Error);
+    }
 
     /// <summary>
     /// 对象或桶不存在
@@ -1075,11 +1242,22 @@ public sealed partial class S3BlobStore : IBlobStore, IBlobMultipartStore, IBlob
     private static partial void LogUploadIdMissing(ILogger logger, string bucket);
 
     /// <summary>
-    /// 上传分片或列出分片的应答缺了必需的内容
+    /// 服务的应答缺了必需的内容
     /// </summary>
     /// <remarks>
     /// <c>Reason</c> 是固定文本，不带应答里的值
     /// </remarks>
     [LoggerMessage(Level = LogLevel.Warning, Message = "The S3 service answered {Operation} for bucket '{Bucket}' without the content the blob store needs: {Reason}.")]
     private static partial void LogAnswerUnusable(ILogger logger, string operation, string bucket, string reason);
+
+    /// <summary>
+    /// 一种对象应答（读取或 HEAD）的请求名与缺内容时 <c>reason</c> 的文本
+    /// </summary>
+    /// <remarks>
+    /// 文本固定，不带应答里的值（ADR-0313）
+    /// </remarks>
+    /// <param name="Operation">请求名</param>
+    /// <param name="ETagMissingReason">没有可用的 ETag 时的文本</param>
+    /// <param name="LastModifiedMissingReason">没有修改时间时的文本</param>
+    private sealed record ObjectAnswer(string Operation, string ETagMissingReason, string LastModifiedMissingReason);
 }

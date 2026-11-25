@@ -163,6 +163,31 @@ public sealed class S3ConditionalWriteTests
         Assert.Equal(0, broken.OpenUploads);
     }
 
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("upload id")]
+    public async Task Probe_AnInitiateAnswerWithoutAUsableUploadId_IsAnUnusableAnswer_AndSendsNoPart(string? uploadId)
+    {
+        // 发起分片上传的应答没有可用的上传标识（ADR-0313）：以前拿着它照样发上传分片，报成上传分片那一步的服务端错误
+        var fake = FakeS3Client.Create(Bucket);
+        fake.NextUploadId = () => uploadId;
+        var reported = new List<string>();
+
+        var result = await S3ConditionalWriteProbe.RunAsync(fake.AsClient(), Options(), multipart: true, TimeProvider.System, (operation, _) => reported.Add(operation), CancellationToken.None);
+
+        // 与其余服务端错误同一类（尚未确认）：reason 写明是发起那一步的应答缺了上传标识，不带应答里的值；没有异常可报
+        Assert.Equal(ObjectStorageErrors.StoreUnavailable, result.Error?.Code);
+        var reason = (string?)result.Error!.Details!["reason"] ?? string.Empty;
+        Assert.Contains("CreateMultipartUpload", reason, StringComparison.Ordinal);
+        Assert.Contains("UploadId", reason, StringComparison.Ordinal);
+        Assert.DoesNotContain("upload id", reason, StringComparison.Ordinal);
+        Assert.Empty(reported);
+
+        // 不发上传分片，也放弃不了（没有标识）
+        Assert.Equal(["PutObject", "PutObject", "InitiateMultipartUpload"], fake.Requests);
+    }
+
     [Fact]
     public async Task Probe_CreatesTheMissingBucket_WhenEnsureBucketsIsOn_AndReportsADeniedCreation()
     {

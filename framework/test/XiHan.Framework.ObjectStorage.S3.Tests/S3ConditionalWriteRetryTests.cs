@@ -79,6 +79,31 @@ public sealed class S3ConditionalWriteRetryTests
     }
 
     [Fact]
+    public async Task Startup_WhenTheProbeGetsNoUploadId_StartsDegraded_AndRecoversInTheBackground()
+    {
+        // 发起分片上传的应答没有上传标识是不合规的应答，同其余服务端错误：照常启动、尚未确认、后台重试（ADR-0313）
+        var fake = FakeS3Client.Create(Bucket);
+        fake.NextUploadId = static () => null;
+        var clock = new FakeTimeProvider();
+        await using var host = await StartAsync(fake, clock);
+
+        var status = Connection(host);
+        Assert.Equal(LifecycleState.Degraded, status.State);
+        Assert.Equal(ObjectStorageErrors.StoreUnavailable, status.Error?.Code);
+        Assert.Contains("UploadId", (string?)status.Error!.Details!["reason"], StringComparison.Ordinal);
+        Assert.Equal("unconfirmed", status.Data["conditionalWrites"]);
+        Assert.DoesNotContain("UploadPart", fake.Requests);
+
+        // 服务恢复正常的应答后，下一次后台重试确认
+        var gate = host.Services.GetRequiredService<S3ConditionalWriteGate>();
+        await Within(gate.WhenRetryScheduledAsync(1));
+        fake.NextUploadId = static () => Guid.NewGuid().ToString("N");
+        clock.Advance(TimeSpan.FromSeconds(1));
+        await Within(gate.Settled);
+        Assert.Equal("confirmed", Connection(host).Data["conditionalWrites"]);
+    }
+
+    [Fact]
     public async Task WritesWithoutOverwrite_ShareOneOnDemandProbe_OnceTheLastAttemptIsASecondOld()
     {
         var fake = FakeS3Client.Create(Bucket);

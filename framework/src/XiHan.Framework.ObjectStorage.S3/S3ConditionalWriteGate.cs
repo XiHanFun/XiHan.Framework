@@ -15,7 +15,7 @@ namespace XiHan.Framework.ObjectStorage.S3;
 /// 一个 S3 存储实例的条件写入状态：探明服务认条件写入之前，不放行不覆盖写入
 /// </summary>
 /// <remarks>
-/// 状态只往前走：尚未确认 → 已确认，或尚未确认 → 不认；关闭条件写入时一直是关闭（ADR-0089、ADR-0090）。启动或建实例时经 <see cref="StartAsync"/> 探一次：探明不认、被拒绝、探测桶不存在都返回失败（配置问题要早暴露，调用方启动失败或不建实例，ADR-0093）；只有连不上是尚未确认，照常启动，在后台按退避重试（第一次 <see cref="InitialRetryDelay"/> 后，每次加倍，最长 <see cref="S3ObjectStorageOptions.HealthProbeInterval"/>，按注入的时钟计时），有了终态即停止。启动之后的探测才被拒绝或缺桶时仍是尚未确认、照常重试，健康项 Failed。不覆盖写入经 <see cref="RefuseAsync"/> 放行或拒绝：尚未确认时等正在进行的探测，或距上一次探测满最小间隔时就地探一次（每个实例同一时刻只有一个探测，后台重试与写入共用），仍未确认返回 <see cref="ObjectStorageErrors.ConditionalWriteUnconfirmed"/>，探明不认返回 <see cref="ObjectStorageErrors.ConditionalWriteUnavailable"/>。健康项经 <see cref="Annotate"/> 与 <see cref="Health"/> 反映当前状态
+/// 状态只往前走：尚未确认 → 已确认，或尚未确认 → 不认；关闭条件写入时一直是关闭（ADR-0089、ADR-0090）。启动或建实例时经 <see cref="StartAsync"/> 探一次：探明不认、被拒绝、探测桶不存在都返回失败（配置问题要早暴露，调用方启动失败或不建实例，ADR-0093）；只有连不上（含服务的应答不合规，ADR-0313）是尚未确认，照常启动，在后台按退避重试（第一次 <see cref="InitialRetryDelay"/> 后，每次加倍，最长 <see cref="S3ObjectStorageOptions.HealthProbeInterval"/>，按注入的时钟计时），有了终态即停止。启动之后的探测才被拒绝或缺桶时仍是尚未确认、照常重试，健康项 Failed。不覆盖写入经 <see cref="RefuseAsync"/> 放行或拒绝：尚未确认时等正在进行的探测，或距上一次探测满最小间隔时就地探一次（每个实例同一时刻只有一个探测，后台重试与写入共用），仍未确认返回 <see cref="ObjectStorageErrors.ConditionalWriteUnconfirmed"/>，探明不认返回 <see cref="ObjectStorageErrors.ConditionalWriteUnavailable"/>。健康项经 <see cref="Annotate"/> 与 <see cref="Health"/> 反映当前状态
 /// </remarks>
 internal sealed partial class S3ConditionalWriteGate : IAsyncDisposable, IDisposable
 {
@@ -248,7 +248,7 @@ internal sealed partial class S3ConditionalWriteGate : IAsyncDisposable, IDispos
     /// 启动或建实例时探一次，连不上就起后台重试
     /// </summary>
     /// <remarks>
-    /// 探明服务不认条件写入（<see cref="ObjectStorageErrors.ConditionalWriteUnavailable"/>）、探测被拒绝（<see cref="ObjectStorageErrors.ProbeDenied"/>）或探测桶不存在（<see cref="ObjectStorageErrors.BlobNotFound"/>）时返回该失败，调用方据此启动失败或不建实例，不起后台重试；只有连不上（<see cref="ObjectStorageErrors.StoreUnavailable"/>）返回成功，状态是尚未确认（ADR-0093）。调用方的取消原样抛出。重复调用不再起第二个后台重试
+    /// 探明服务不认条件写入（<see cref="ObjectStorageErrors.ConditionalWriteUnavailable"/>）、探测被拒绝（<see cref="ObjectStorageErrors.ProbeDenied"/>）或探测桶不存在（<see cref="ObjectStorageErrors.BlobNotFound"/>）时返回该失败，调用方据此启动失败或不建实例，不起后台重试；只有连不上（<see cref="ObjectStorageErrors.StoreUnavailable"/>，含服务的应答不合规，ADR-0313）返回成功，状态是尚未确认（ADR-0093）。调用方的取消原样抛出。重复调用不再起第二个后台重试
     /// </remarks>
     internal async ValueTask<Result> StartAsync(CancellationToken cancellationToken)
     {
