@@ -15,10 +15,10 @@ using XiHan.Framework.Testing;
 namespace XiHan.Framework.ObjectStorage.S3.Tests;
 
 /// <summary>
-/// S3 配置的三处加固（ADR-0294）
+/// S3 配置的加固（ADR-0294、ADR-0302）
 /// </summary>
 /// <remarks>
-/// 命名实例配代理要运营方打开开关；服务端点不合法时报错不带原值；缺省实例只给一项密钥与命名实例一样是配置错误。都不连任何服务
+/// 命名实例配代理要运营方打开开关；服务端点不合法时报错不带原值，带用户信息的端点在配置节、绑定的主值、命名实例的设置与直接构造里都被拒；缺省实例只给一项密钥与命名实例一样是配置错误。都不连任何服务
 /// </remarks>
 public sealed class S3ConfigurationHardeningTests
 {
@@ -43,6 +43,11 @@ public sealed class S3ConfigurationHardeningTests
     private const string EndpointPassword = "endp0int-Passw0rd-EXAMPLE";
 
     /// <summary>
+    /// 写进端点里的用户名
+    /// </summary>
+    private const string EndpointUser = "endp0int-user-EXAMPLE";
+
+    /// <summary>
     /// 不合法的服务端点，各自带着口令
     /// </summary>
     public static TheoryData<string> InvalidServiceUrls =>
@@ -50,6 +55,23 @@ public sealed class S3ConfigurationHardeningTests
         $"ftp://admin:{EndpointPassword}@s3.internal:9000",
         $"admin:{EndpointPassword}@s3.internal:9000",
         $"//admin:{EndpointPassword}@s3.internal:9000",
+    ];
+
+    /// <summary>
+    /// 带用户信息的合法地址
+    /// </summary>
+    /// <remarks>
+    /// 用户名都是 <see cref="EndpointUser"/>；空的 <c>@</c> 与只有冒号的也算用户信息（ADR-0302）
+    /// </remarks>
+    public static TheoryData<string> ServiceUrlsWithUserInformation =>
+    [
+        $"http://{EndpointUser}:{EndpointPassword}@s3.internal:9000",
+        $"https://{EndpointUser}@s3.internal",
+        $"HTTPS://{EndpointUser}:{EndpointPassword}@S3.INTERNAL:9000/bucket",
+        $"http://{EndpointUser}:@s3.internal:9000",
+        "http://:@s3.internal:9000",
+        "http://@s3.internal:9000",
+        $"http:\\\\{EndpointUser}:{EndpointPassword}@s3.internal:9000",
     ];
 
     /// <summary>
@@ -186,9 +208,63 @@ public sealed class S3ConfigurationHardeningTests
     [Fact]
     public void AValidServiceUrl_IsKeptAsGiven()
     {
-        // 合法的端点照旧原样保存，带用户信息也不在这里改写（不合法才报错）
+        // 合法的端点照旧原样保存；路径、查询与片段里的 @ 不是用户信息
         Assert.Equal("https://s3.example.com:9000/", S3ObjectStorageOptions.FromConfiguration(Configuration(("ServiceUrl", "https://s3.example.com:9000/"))).ServiceUrl);
         Assert.Equal("http://localhost:9000", S3ObjectStorageOptions.FromSettings(new Dictionary<string, string> { ["ServiceUrl"] = "http://localhost:9000" }).ServiceUrl);
+        foreach (var url in new[] { "http://localhost:9000/a@b", "http://localhost:9000/?a=b@c", "http://localhost:9000/#a@b", "http://[::1]:9000" })
+        {
+            Assert.Equal(url, new S3ObjectStorageOptions { ServiceUrl = url }.ServiceUrl);
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(ServiceUrlsWithUserInformation))]
+    public async Task AServiceUrlWithUserInformation_IsRejected_FromEverySource_WithoutEchoingIt(string serviceUrl)
+    {
+        // 缺省实例的配置节：报键名，指明凭据写在两项密钥里
+        var configured = Assert.Throws<ArgumentException>(() => S3ObjectStorageOptions.FromConfiguration(Configuration(("ServiceUrl", serviceUrl))));
+        Assert.Contains($"'{S3ObjectStorageOptions.ConfigurationSection}:ServiceUrl' must not contain user information", configured.Message, StringComparison.Ordinal);
+        Assert.Contains($"'{S3ObjectStorageOptions.ConfigurationSection}:AccessKey'", configured.Message, StringComparison.Ordinal);
+        AssertNotEchoed(configured.Message);
+
+        // 绑定的主值：只说是哪个绑定，凭据走绑定的属性；绑定覆盖配置节，配置节里合法的端点救不了它
+        var bound = Assert.Throws<ArgumentException>(() => S3ObjectStorageOptions.FromConfiguration(Configuration(("ServiceUrl", "http://localhost:9000")), Maybe.Some(Binding(serviceUrl, ("accessKey", "ak"), ("secretKey", "sk")))));
+        Assert.Contains($"binding '{S3ObjectStorageFeature.ConnectionBinding}' must not contain user information", bound.Message, StringComparison.Ordinal);
+        Assert.Contains("'accessKey'", bound.Message, StringComparison.Ordinal);
+        AssertNotEchoed(bound.Message);
+
+        // 命名实例的设置：读设置时拒绝，建实例返回定义不合法，客户端一个都不建
+        var settings = Assert.Throws<ArgumentException>(() => S3ObjectStorageOptions.FromSettings(new Dictionary<string, string> { ["ServiceUrl"] = serviceUrl }));
+        Assert.Contains("'ServiceUrl' must not contain user information", settings.Message, StringComparison.Ordinal);
+        AssertNotEchoed(settings.Message);
+        var logs = new LogCapture();
+        var provider = new S3BlobStoreProvider(TimeProvider.System, logs, static _ => throw new InvalidOperationException("No client may be built for an invalid definition."));
+        var created = await provider.CreateAsync(Definition(("ServiceUrl", serviceUrl)), CancellationToken.None);
+        Assert.Equal(ObjectStorageErrors.StoreDefinitionInvalid, created.Error?.Code);
+        AssertNotEchoed(created.Error!.ToString() + created.Error.Details?["reason"]);
+        Assert.All(logs.Entries, static entry => AssertNotEchoed(entry.Message + entry.Exception));
+
+        // 手工构造的选项同样拒绝
+        var direct = Assert.Throws<ArgumentException>(() => new S3ObjectStorageOptions { ServiceUrl = serviceUrl });
+        Assert.Contains("must not contain user information", direct.Message, StringComparison.Ordinal);
+        AssertNotEchoed(direct.Message);
+    }
+
+    [Fact]
+    public void TheFeature_FailsToConfigure_WithUserInformationInTheServiceUrl()
+    {
+        // 缺省实例装配失败：照成组设置的处置，抛出 ArgumentException，不带原值
+        var configuration = new ConfigurationBuilder().AddInMemoryCollection(
+        [
+            new("XiHan:ObjectStorage:S3:ServiceUrl", $"http://admin:{EndpointPassword}@localhost:9000"),
+            new("XiHan:ObjectStorage:S3:ConditionalWrites", "false"),
+        ]).Build();
+        var builder = new AppBuilder(new ServiceCollection(), configuration).UseFeature<S3ObjectStorageFeature>();
+
+        var exception = Assert.ThrowsAny<Exception>(() => builder.Build());
+
+        Assert.Contains("'XiHan:ObjectStorage:S3:ServiceUrl' must not contain user information", exception.ToString(), StringComparison.Ordinal);
+        AssertNotEchoed(exception.ToString());
     }
 
     [Theory]
@@ -237,6 +313,15 @@ public sealed class S3ConfigurationHardeningTests
         var exception = Assert.ThrowsAny<Exception>(() => builder.Build());
 
         Assert.Contains("'XiHan:ObjectStorage:S3:SecretKey'", exception.ToString(), StringComparison.Ordinal);
+    }
+
+    /// <summary>
+    /// 核对文本里没有端点里的用户名与口令
+    /// </summary>
+    private static void AssertNotEchoed(string text)
+    {
+        Assert.DoesNotContain(EndpointUser, text, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain(EndpointPassword, text, StringComparison.OrdinalIgnoreCase);
     }
 
     /// <summary>

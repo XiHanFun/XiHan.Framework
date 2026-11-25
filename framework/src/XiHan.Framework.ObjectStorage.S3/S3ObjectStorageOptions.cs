@@ -15,7 +15,7 @@ namespace XiHan.Framework.ObjectStorage.S3;
 /// <remarks>
 /// <para>从配置节 <c>XiHan:ObjectStorage:S3</c> 显式读取：<c>ServiceUrl</c>、<c>Region</c>、<c>AccessKey</c>、<c>SecretKey</c>、<c>SessionToken</c>、<c>ForcePathStyle</c>、<c>EnsureBuckets</c>、<c>HealthBucket</c>、<c>ConditionalWrites</c>、<c>HealthProbeIntervalSeconds</c>，以及客户端的设置 <c>RequestTimeoutSeconds</c>、<c>MaxAttempts</c>、<c>ProxyHost</c>、<c>ProxyPort</c>、<c>ProxyUserName</c>、<c>ProxyPassword</c>（ADR-0281）；绑定 <c>objectstorage</c> 存在时其主值与属性（<c>region</c>、<c>accessKey</c>、<c>secretKey</c>、<c>sessionToken</c>、<c>forcePathStyle</c>）逐项覆盖配置，空白的不算给出（RFC-0016「资源绑定与配置节」）。命名实例（Provider <c>s3</c>）的设置用同样的键（不含 <c>HealthProbeIntervalSeconds</c>）。</para>
 /// <para>成组的设置必须给全：两项密钥成对（ADR-0294），会话令牌要有两项密钥，代理的主机与端口、用户名与口令各自成对，用户名与口令只能跟着代理给。<see cref="FromConfiguration(IConfiguration)"/> 在绑定覆盖之后、<see cref="FromSettings"/> 读完即核对，只给了一部分抛出 <see cref="ArgumentException"/>；消息里只写键名，不带令牌、主机、用户名与口令的值。</para>
-/// <para>不合法的值同样抛出 <see cref="ArgumentException"/>，消息带键名；带出的原值只限数值与布尔值，服务端点不合法时也只报键名：写成带用户信息的地址时口令不能进异常与日志（ADR-0294）。</para>
+/// <para>不合法的值同样抛出 <see cref="ArgumentException"/>，消息带键名；带出的原值只限数值与布尔值，服务端点不合法时也只报键名：写成带用户信息的地址时口令不能进异常与日志（ADR-0294）。服务端点（含绑定的主值）不能带用户信息，凭据只走两项密钥与会话令牌（ADR-0302）。</para>
 /// </remarks>
 [ApiLevel(Stability.Stable, "5.0")]
 public sealed record S3ObjectStorageOptions
@@ -29,14 +29,12 @@ public sealed record S3ObjectStorageOptions
     /// 服务端点（如 <c>http://localhost:9000</c>、<c>https://oss-cn-hangzhou.aliyuncs.com</c>）
     /// </summary>
     /// <remarks>
-    /// 空表示按 <see cref="Region"/> 访问 Amazon S3。不合法时抛出的消息不带原值：写成带用户信息的地址（<c>http://user:pass@host</c>）时口令不会进异常与日志（ADR-0294）
+    /// 空表示按 <see cref="Region"/> 访问 Amazon S3。不能带用户信息（<c>http://user:pass@host</c>、<c>http://user@host</c>，空的 <c>@</c> 也算）：S3 的凭据只走 <see cref="AccessKey"/>、<see cref="SecretKey"/> 与 <see cref="SessionToken"/>（ADR-0302）。不合法时抛出的消息不带原值，口令不会进异常与日志（ADR-0294）
     /// </remarks>
     public string? ServiceUrl
     {
         get => field;
-        init => field = value is null || IsServiceUrl(value)
-            ? value
-            : throw new ArgumentException("The service URL must be an absolute http or https URL.", nameof(value));
+        init => field = value is null ? null : RequireServiceUrl(value, "The service URL", "'AccessKey' and 'SecretKey'", nameof(value));
     }
 
     /// <summary>
@@ -244,10 +242,11 @@ public sealed record S3ObjectStorageOptions
         {
             if (!string.IsNullOrWhiteSpace(value.Value))
             {
-                // 绑定的主值常是 Secret 里的整串地址：报错只说是哪个绑定，不带原值
-                options = IsServiceUrl(value.Value)
-                    ? options with { ServiceUrl = value.Value }
-                    : throw new ArgumentException($"The value of binding '{S3ObjectStorageFeature.ConnectionBinding}' must be an absolute http or https URL.");
+                // 绑定的主值常是 Secret 里的整串地址：报错只说是哪个绑定，不带原值；凭据走绑定的属性，不经地址里的用户信息（ADR-0302）
+                options = options with
+                {
+                    ServiceUrl = RequireServiceUrl(value.Value, $"The value of binding '{S3ObjectStorageFeature.ConnectionBinding}'", "the binding properties 'accessKey' and 'secretKey'"),
+                };
             }
 
             if (BoundText(value, "region") is { } boundRegion)
@@ -364,10 +363,8 @@ public sealed record S3ObjectStorageOptions
         };
         if (Text(read, "ServiceUrl") is { } serviceUrl)
         {
-            // 先判再赋值，报错带键名而不带原值：端点写成带用户信息的地址时口令不能出现在消息里（ADR-0294）
-            options = IsServiceUrl(serviceUrl)
-                ? options with { ServiceUrl = serviceUrl }
-                : throw new ArgumentException($"'{prefix}ServiceUrl' must be an absolute http or https URL.");
+            // 先判再赋值，报错带键名而不带原值：端点写成带用户信息的地址时口令不能出现在消息里（ADR-0294、ADR-0302）
+            options = options with { ServiceUrl = RequireServiceUrl(serviceUrl, $"'{prefix}ServiceUrl'", $"'{prefix}AccessKey' and '{prefix}SecretKey'") };
         }
 
         if (Text(read, "Region") is { } region)
@@ -435,13 +432,28 @@ public sealed record S3ObjectStorageOptions
         => bool.TryParse(text, out var value) ? value : throw new ArgumentException($"{name} must be 'true' or 'false', but was '{text}'.");
 
     /// <summary>
-    /// 是否是服务端点的合法写法
+    /// 核对服务端点的写法，合法时原样返回
     /// </summary>
     /// <remarks>
-    /// 绝对的 http 或 https 地址
+    /// 绝对的 http 或 https 地址，主机之前没有用户信息（ADR-0302）。<paramref name="subject"/> 是报错里的主语（键名或绑定名），<paramref name="credentials"/> 指明凭据该写在哪里；消息都不带原值（ADR-0294）
     /// </remarks>
-    private static bool IsServiceUrl(string value)
-        => Uri.TryCreate(value, UriKind.Absolute, out var uri) && (uri.Scheme == Uri.UriSchemeHttp || uri.Scheme == Uri.UriSchemeHttps);
+    /// <exception cref="ArgumentException">不是绝对的 http 或 https 地址，或带了用户信息</exception>
+    private static string RequireServiceUrl(string value, string subject, string credentials, string? paramName = null)
+    {
+        if (!Uri.TryCreate(value, UriKind.Absolute, out var uri) || (uri.Scheme != Uri.UriSchemeHttp && uri.Scheme != Uri.UriSchemeHttps))
+        {
+            throw new ArgumentException($"{subject} must be an absolute http or https URL.", paramName);
+        }
+
+        // 连同分隔符取用户信息：空的「@」（http://@host）的 UserInfo 也是空串，只有带上分隔符才看得出主机之前写过东西；
+        // 路径、查询与片段里的 @ 不在这一段里
+        if (uri.GetComponents(UriComponents.UserInfo | UriComponents.KeepDelimiter, UriFormat.UriEscaped).Length > 0)
+        {
+            throw new ArgumentException($"{subject} must not contain user information; set the credentials with {credentials}.", paramName);
+        }
+
+        return value;
+    }
 
     /// <summary>
     /// 是否是代理主机的合法写法
