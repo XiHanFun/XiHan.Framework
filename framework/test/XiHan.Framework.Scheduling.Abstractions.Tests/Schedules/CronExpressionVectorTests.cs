@@ -11,7 +11,7 @@ namespace XiHan.Framework.Scheduling.Abstractions.Tests.Schedules;
 /// 回放 <c>cron-expressions.json</c>：cron 表达式的写法与下一次触发
 /// </summary>
 /// <remarks>
-/// 规范 RFC-0013「作业与触发器」的 cron：5、6、7 段与各段的写法，按时区的墙上时间匹配，夏令时开始时被跳过的墙上时间不运行、结束时重复的只运行第一次，下一次的墙上时间与起点相差超过搜索上限（1830 天）即没有下一次（ADR-0277、ADR-0286）。时区只取向量给的 IANA 名，不看本机时区
+/// 规范 RFC-0013「作业与触发器」的 cron：5、6、7 段与各段的写法，按时区的墙上时间匹配，夏令时开始时被跳过的墙上时间不运行、结束时重复的只运行第一次，下一次的墙上时间与起点相差超过搜索上限（1830 天）即没有下一次，步长不超过这一段能写的最大值（ADR-0277、ADR-0286、ADR-0297）。时区只取向量给的 IANA 名，不看本机时区
 /// </remarks>
 public sealed class CronExpressionVectorTests
 {
@@ -24,6 +24,14 @@ public sealed class CronExpressionVectorTests
     /// 搜索上限：下一次的墙上时间与起点最多相差这么多
     /// </summary>
     private static readonly TimeSpan _searchLimit = TimeSpan.FromDays(1830);
+
+    /// <summary>
+    /// 各段的名字与步长的上限（这一段能写的最大值，星期在 0 到 7 里数）
+    /// </summary>
+    private static readonly (string Field, int Maximum)[] _stepMaximums =
+    [
+        ("second", 59), ("minute", 59), ("hour", 23), ("day-of-month", 31), ("month", 12), ("day-of-week", 7), ("year", 2099),
+    ];
 
     /// <summary>
     /// 向量文件的内容
@@ -103,16 +111,22 @@ public sealed class CronExpressionVectorTests
         Assert.Contains(_vectors.Cases, static vector => vector.Expression.StartsWith(' ') && vector.Expression.EndsWith(' '));
         Assert.Contains(_vectors.Cases, static vector => vector.Expression.Contains("jan", StringComparison.Ordinal));
         Assert.Contains(_vectors.Cases, static vector => Fields(vector.Expression)[0] == "10/15");
-        Assert.Contains(_vectors.Cases, static vector => vector.Expression.Contains("/2147483647", StringComparison.Ordinal));
         Assert.Contains(_vectors.Cases, static vector => Fields(vector.Expression) is { Length: 7 } fields && fields[6] == "1970");
         Assert.Contains(_vectors.Cases, static vector => Fields(vector.Expression) is { Length: 7 } fields && fields[6] == "2099");
         Assert.Contains(_vectors.Cases, static vector => vector.Expression.Contains("L-30", StringComparison.Ordinal));
 
-        // 必须拒绝的：年份、L-n 与步长各比上限多一的，结尾带换行的，夹着不换行空格的
+        // 必须拒绝的：年份、L-n 各比上限多一的，步长超出 32 位整数的，结尾带换行的，夹着不换行空格的
         Assert.Contains(_vectors.Invalid, static vector => vector.Expression.EndsWith(" 1969", StringComparison.Ordinal));
         Assert.Contains(_vectors.Invalid, static vector => vector.Expression.EndsWith(" 2100", StringComparison.Ordinal));
         Assert.Contains(_vectors.Invalid, static vector => vector.Expression.Contains("L-31", StringComparison.Ordinal));
         Assert.Contains(_vectors.Invalid, static vector => vector.Expression.Contains("/2147483648", StringComparison.Ordinal));
+
+        // 步长的上限两侧（ADR-0297）：每一段都有步长正好是上限的合法用例与比上限多一的必须拒绝的用例
+        foreach (var (field, maximum) in _stepMaximums)
+        {
+            Assert.True(_vectors.Cases.Any(vector => Steps(vector.Expression, field).Contains(maximum)), $"No valid case has a step of {maximum} in field '{field}'.");
+            Assert.True(_vectors.Invalid.Any(vector => Steps(vector.Expression, field).Contains(maximum + 1)), $"No invalid case has a step of {maximum + 1} in field '{field}'.");
+        }
         Assert.Contains(_vectors.Invalid, static vector => vector.Expression.EndsWith('\n'));
         Assert.Contains(_vectors.Invalid, static vector => vector.Expression.Contains('\u00a0'));
 
@@ -142,6 +156,35 @@ public sealed class CronExpressionVectorTests
     /// </remarks>
     private static string[] Fields(string expression)
         => expression.Split([' ', '\t'], StringSplitOptions.RemoveEmptyEntries);
+
+    /// <summary>
+    /// 表达式里某一段各项所带的步长
+    /// </summary>
+    /// <remarks>
+    /// 5 段从分开始，6 段与 7 段从秒开始；读不成整数的步长不计
+    /// </remarks>
+    private static List<int> Steps(string expression, string field)
+    {
+        var fields = Fields(expression);
+        var names = fields.Length == 5 ? _stepMaximums.Skip(1).Take(5) : _stepMaximums.Take(fields.Length);
+        var index = names.Select(static entry => entry.Field).ToList().IndexOf(field);
+        if (index < 0 || index >= fields.Length)
+        {
+            return [];
+        }
+
+        var steps = new List<int>();
+        foreach (var item in fields[index].Split(','))
+        {
+            var slash = item.IndexOf('/', StringComparison.Ordinal);
+            if (slash >= 0 && int.TryParse(item.AsSpan(slash + 1), NumberStyles.None, CultureInfo.InvariantCulture, out var step))
+            {
+                steps.Add(step);
+            }
+        }
+
+        return steps;
+    }
 
     /// <summary>
     /// 一个带时区的用例里，起点与各触发时刻在该时区的偏移（去重）

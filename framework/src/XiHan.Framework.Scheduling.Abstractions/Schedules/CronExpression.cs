@@ -11,7 +11,7 @@ namespace XiHan.Framework.Scheduling.Abstractions.Schedules;
 /// cron 表达式，秒精度
 /// </summary>
 /// <remarks>
-/// 5 段 <c>分 时 日 月 周</c>（秒视为 0）、6 段 <c>秒 分 时 日 月 周</c>，或 7 段再加 <c>年</c>（1970 到 2099）。各段以一个或多个空格、制表符分隔，表达式两端的空格与制表符不计；别的空白（换行、不换行空格等）不是分隔符，出现即不合法。每段支持 <c>*</c>、数值（可带前导 0）、列表 <c>a,b</c>、范围 <c>a-b</c>、步长 <c>*/n</c>、<c>a/n</c>（从 a 起到该段的最大值每 n）与 <c>a-b/n</c>，步长是 1 到 2147483647；日与周还可写 <c>?</c>（等价于 <c>*</c>）；月可写 <c>JAN</c> 到 <c>DEC</c>，周可写 <c>SUN</c> 到 <c>SAT</c>，名字与 <c>L</c>、<c>W</c> 都不区分 ASCII 字母的大小写。周按 Unix 约定：0 与 7 都是周日、1 是周一（不采用 Quartz 的 1 = 周日）。日段特殊写法：<c>L</c>（当月最后一天）、<c>L-n</c>（最后一天往前 n 天，n 为 0 到 30）、<c>nW</c>（离 n 日最近的工作日，不跨月）、<c>LW</c>（最后一个工作日）；周段特殊写法：<c>nL</c> / <c>FRIL</c>（当月最后一个周 n）、<c>n#k</c> / <c>FRI#2</c>（当月第 k 个周 n，k 为 1 到 5，不存在时该月不触发）。日与周同时限定时任一匹配即可（标准 cron 语义，不要求其一为 <c>?</c>）；只有整段正好是 <c>*</c> 或 <c>?</c> 才算不限定。下一次匹配默认按 UTC；<see cref="Next(DateTimeOffset, TimeZoneInfo)"/> 按指定时区的墙上时间匹配，夏令时跳过的墙上时间不触发、重复的墙上时间只取第一次出现。下一次的墙上时间与起点（去掉秒以下）相差超过 1830 天（5 × 366）即无值（规范 RFC-0013「作业与触发器」的 cron，ADR-0286）
+/// 5 段 <c>分 时 日 月 周</c>（秒视为 0）、6 段 <c>秒 分 时 日 月 周</c>，或 7 段再加 <c>年</c>（1970 到 2099）。各段以一个或多个空格、制表符分隔，表达式两端的空格与制表符不计；别的空白（换行、不换行空格等）不是分隔符，出现即不合法。每段支持 <c>*</c>、数值（可带前导 0）、列表 <c>a,b</c>、范围 <c>a-b</c>、步长 <c>*/n</c>、<c>a/n</c>（从 a 起到该段的最大值每 n）与 <c>a-b/n</c>，步长是 1 到该段能写的最大值（秒与分 59、时 23、日 31、月 12、周 7、年 2099），超过即不合法；日与周还可写 <c>?</c>（等价于 <c>*</c>）；月可写 <c>JAN</c> 到 <c>DEC</c>，周可写 <c>SUN</c> 到 <c>SAT</c>，名字与 <c>L</c>、<c>W</c> 都不区分 ASCII 字母的大小写。周按 Unix 约定：0 与 7 都是周日、1 是周一（不采用 Quartz 的 1 = 周日）。日段特殊写法：<c>L</c>（当月最后一天）、<c>L-n</c>（最后一天往前 n 天，n 为 0 到 30）、<c>nW</c>（离 n 日最近的工作日，不跨月）、<c>LW</c>（最后一个工作日）；周段特殊写法：<c>nL</c> / <c>FRIL</c>（当月最后一个周 n）、<c>n#k</c> / <c>FRI#2</c>（当月第 k 个周 n，k 为 1 到 5，不存在时该月不触发）。日与周同时限定时任一匹配即可（标准 cron 语义，不要求其一为 <c>?</c>）；只有整段正好是 <c>*</c> 或 <c>?</c> 才算不限定。下一次匹配默认按 UTC；<see cref="Next(DateTimeOffset, TimeZoneInfo)"/> 按指定时区的墙上时间匹配，夏令时跳过的墙上时间不触发、重复的墙上时间只取第一次出现。下一次的墙上时间与起点（去掉秒以下）相差超过 1830 天（5 × 366）即无值（规范 RFC-0013「作业与触发器」的 cron，ADR-0286、ADR-0297）
 /// </remarks>
 [ApiLevel(Stability.Stable, "5.0")]
 public sealed class CronExpression
@@ -1148,10 +1148,11 @@ public sealed class CronExpression
             var slash = item.IndexOf('/');
             if (slash >= 0)
             {
+                // 步长不超过这一段能写的最大值（与 Quartz、cronie 一致）：星期按 0 到 7 数，上限是 7；年份是 2099
                 var stepText = item[(slash + 1)..];
-                if (!TryParseNumber(stepText, out step) || step < 1)
+                if (!TryParseNumber(stepText, out step) || step < 1 || step > field.Max)
                 {
-                    return $"step '{stepText}' in field '{field.Name}' must be a positive number";
+                    return $"step '{stepText}' in field '{field.Name}' must be 1-{field.Max}";
                 }
 
                 item = item[..slash];
@@ -1166,12 +1167,6 @@ public sealed class CronExpression
             for (var value = start; value <= end; value += step)
             {
                 set[value - field.Min] = true;
-
-                // 步长可以远大于段的跨度（最大到 int.MaxValue）：剩下的不够一步就停，不让加法溢出成负数再去写匹配表
-                if (end - value < step)
-                {
-                    break;
-                }
             }
 
             return null;

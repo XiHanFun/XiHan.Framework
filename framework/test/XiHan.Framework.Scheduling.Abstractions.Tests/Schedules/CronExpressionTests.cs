@@ -362,8 +362,11 @@ public sealed class CronExpressionTests
     [InlineData("0 0 * * L", "unknown token 'L' in field 'day-of-week'")]
     [InlineData("0 0 W * *", "unknown token 'W' in field 'day-of-month'")]
     [InlineData("0 0 1-L * *", "unknown token 'L' in field 'day-of-month'")]
-    [InlineData("*/0 * * * *", "step '0' in field 'minute' must be a positive number")]
-    [InlineData("1/2/3 * * * *", "step '2/3' in field 'minute' must be a positive number")]
+    [InlineData("*/0 * * * *", "step '0' in field 'minute' must be 1-59")]
+    [InlineData("1/2/3 * * * *", "step '2/3' in field 'minute' must be 1-59")]
+    [InlineData("*/60 * * * *", "step '60' in field 'minute' must be 1-59")]
+    [InlineData("0 0 * * */8", "step '8' in field 'day-of-week' must be 1-7")]
+    [InlineData("0 0 0 1 1 ? */2100", "step '2100' in field 'year' must be 1-2099")]
     [InlineData("10-5 * * * *", "range '10-5' in field 'minute' has its start after its end")]
     [InlineData("? * * * *", "'?' is only allowed in the day-of-month and day-of-week fields")]
     [InlineData("0 0 32W * *", "value '32' in field 'day-of-month' is out of range 1-31")]
@@ -402,23 +405,40 @@ public sealed class CronExpressionTests
     }
 
     [Theory]
-    [InlineData("1/2147483647 * * * *", "2026-10-23T09:01:00Z")]
-    [InlineData("*/2147483647 * * * *", "2026-10-23T09:00:00Z")]
-    [InlineData("0-59/2147483647 * * * *", "2026-10-23T09:00:00Z")]
-    [InlineData("0 0 1/2147483647 * *", "2026-11-01T00:00:00Z")]
-    [InlineData("0 0 0 1 1 ? 2027/2147483647", "2027-01-01T00:00:00Z")]
-    public void TryParse_AStepFarBeyondTheField_KeepsOnlyTheStart(string expression, string expected)
+    [InlineData("*/59 * * * * *", "2026-10-23T08:30:59Z")]
+    [InlineData("1/59 * * * *", "2026-10-23T09:01:00Z")]
+    [InlineData("0-59/59 * * * *", "2026-10-23T08:59:00Z")]
+    [InlineData("0 */23 * * *", "2026-10-23T23:00:00Z")]
+    [InlineData("0 0 1/31 * *", "2026-11-01T00:00:00Z")]
+    [InlineData("0 0 1 */12 *", "2027-01-01T00:00:00Z")]
+    [InlineData("0 0 * * MON/7", "2026-10-26T00:00:00Z")]
+    [InlineData("0 0 0 1 1 ? 2027/2099", "2027-01-01T00:00:00Z")]
+    public void TryParse_AStepEqualToTheFieldMaximum_IsAccepted(string expression, string expected)
     {
-        // 步长的上限是 int.MaxValue。以前起点加步长溢出成负数，TryParse 抛出 IndexOutOfRangeException
+        // 规范 RFC-0013 的 cron（ADR-0297）：步长的上限是这一段能写的最大值，星期在 0 到 7 里数、上限是 7，年份是 2099
         Assert.True(CronExpression.TryParse(expression, out var parsed));
         Assert.Equal(At(expected), parsed.Next(_friday).ValueOrThrow());
     }
 
-    [Fact]
-    public void TryParse_AStepBeyondTheLimit_IsRejected()
+    [Theory]
+    [InlineData("*/60 * * * * *")]
+    [InlineData("1/60 * * * *")]
+    [InlineData("0-59/60 * * * *")]
+    [InlineData("0 */24 * * *")]
+    [InlineData("0 0 1/32 * *")]
+    [InlineData("0 0 1 */13 *")]
+    [InlineData("0 0 * * MON/8")]
+    [InlineData("0 0 0 1 1 ? 2027/2100")]
+    [InlineData("*/100 * * * *")]
+    [InlineData("*/2147483647 * * * *")]
+    [InlineData("*/2147483648 * * * *")]
+    [InlineData("*/99999999999999999999 * * * *")]
+    public void TryParse_AStepAboveTheFieldMaximum_IsRejected(string expression)
     {
-        Assert.False(CronExpression.TryParse("*/2147483648 * * * *", out _));
-        Assert.False(CronExpression.TryParse("*/99999999999999999999 * * * *", out _));
+        // 以前步长的上限是 int.MaxValue（ADR-0286），*/60 写在分钟上照收、只取起点；现在与 Quartz、cronie 一样不合法
+        Assert.False(CronExpression.TryParse(expression, out var parsed));
+        Assert.Null(parsed);
+        Assert.Throws<ArgumentException>(() => CronExpression.Parse(expression));
     }
 
     [Theory]
