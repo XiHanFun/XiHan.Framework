@@ -165,11 +165,12 @@ public sealed class HostedBlobUrlTests : IDisposable
             Assert.Equal((HttpStatusCode.BadRequest, ObjectStorageErrors.ContentTypeInvalid), (rejected.StatusCode, await CodeOf(rejected)));
         }
 
-        // ; 之后没有参数同样不合文法（ADR-0282）：以前照收，对象的内容类型就是带着尾巴的那一串
-        using (var dangling = new ByteArrayContent(Encoding.UTF8.GetBytes("x")))
+        // 制表符不是 OWS，同样不合文法（ADR-0214、ADR-0295）。测试用的 HttpClient 会把 .NET 解析得了的值改写后再发
+        // （text/plain;\tcharset=utf-8 发出去是 text/plain; charset=utf-8），所以用一个它解析不了、原样发出的值
+        using (var tabbed = new ByteArrayContent(Encoding.UTF8.GetBytes("x")))
         {
-            Assert.True(dangling.Headers.TryAddWithoutValidation("Content-Type", "text/plain;"));
-            using var rejected = await client.PutAsync(upload.Url, dangling);
+            Assert.True(tabbed.Headers.TryAddWithoutValidation("Content-Type", "text/plain;\t;charset=utf-8"));
+            using var rejected = await client.PutAsync(upload.Url, tabbed);
             Assert.Equal((HttpStatusCode.BadRequest, ObjectStorageErrors.ContentTypeInvalid), (rejected.StatusCode, await CodeOf(rejected)));
         }
 
@@ -180,6 +181,26 @@ public sealed class HostedBlobUrlTests : IDisposable
         }
 
         Assert.Equal("text/plain", (await store.HeadAsync(new ContainerName(Container), new BlobKey("inbox/any.txt"), CancellationToken.None)).ValueOrThrow().ContentType);
+    }
+
+    [Fact]
+    public async Task Uploads_WithoutASignedContentType_KeepAnEmptyParameterAsSent()
+    {
+        await using var app = await StartAsync();
+        using var client = app.GetTestClient();
+        var store = app.Services.GetRequiredService<IBlobStore>();
+        var signer = app.Services.GetRequiredService<IBlobUrlSigner>();
+        var upload = (await signer.SignAsync(new ContainerName(Container), new BlobKey("inbox/dangling.txt"), BlobUrlRequest.ForUpload(), CancellationToken.None)).ValueOrThrow();
+
+        // RFC 9110 的参数可以为空（ADR-0295）：ADR-0282 曾以 400 拒绝结尾多出的 ;，现在照收，对象的内容类型就是请求发来的那一串
+        using var dangling = new ByteArrayContent(Encoding.UTF8.GetBytes("x"));
+        Assert.True(dangling.Headers.TryAddWithoutValidation("Content-Type", "text/plain; charset=utf-8;"));
+        using (var accepted = await client.PutAsync(upload.Url, dangling))
+        {
+            Assert.Equal(HttpStatusCode.OK, accepted.StatusCode);
+        }
+
+        Assert.Equal("text/plain; charset=utf-8;", (await store.HeadAsync(new ContainerName(Container), new BlobKey("inbox/dangling.txt"), CancellationToken.None)).ValueOrThrow().ContentType);
     }
 
     [Fact]

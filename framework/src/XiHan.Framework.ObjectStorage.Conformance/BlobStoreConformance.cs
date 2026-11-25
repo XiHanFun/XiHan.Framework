@@ -510,6 +510,77 @@ public abstract class BlobStoreConformance
     }
 
     /// <summary>
+    /// 用例 15：内容类型原样存取，写不出原值的在写入之前拒绝
+    /// </summary>
+    /// <remarks>
+    /// 写入、读出与把读出的值写回都不规范化：不去掉空参数，不改 <c>;</c> 两侧的空格。存储客户端写不出原值的，写入与分片上传的发起返回 VALIDATION_007（参数 <c>contentType</c>）且不写入（RFC-0012「契约」，ADR-0295）
+    /// </remarks>
+    [Fact]
+    public async Task ContentTypes_AreKeptAsGiven_OrRefusedBeforeWriting()
+    {
+        var store = await CreateStoreAsync().ConfigureAwait(false);
+        string[] contentTypes = ["text/plain", "text/plain; charset=utf-8", "multipart/mixed; boundary=\"a;b\"", "text/plain;", "text/plain; charset=utf-8;", "text/plain;;charset=utf-8", "text/plain;charset=utf-8", "text/plain ; charset=utf-8"];
+        for (var index = 0; index < contentTypes.Length; index++)
+        {
+            var contentType = contentTypes[index];
+            var key = Key($"content-types/{index}.txt");
+            var written = await store.PutAsync(Container, key, Bytes("x"), new BlobPutOptions { ContentType = contentType }, CancellationToken.None).ConfigureAwait(false);
+            if (written.Error?.Code == ObjectStorageErrors.ContentTypeUnsupported)
+            {
+                // 拒绝就是没有写：不改写之后照写，也不留下半个对象
+                Assert.Equal(contentType, written.Error.Details?["contentType"]);
+                Assert.False((await store.ExistsAsync(Container, key, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow(), contentType);
+                continue;
+            }
+
+            Assert.Equal(contentType, written.ValueOrThrow().ContentType);
+            var head = (await store.HeadAsync(Container, key, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow();
+            Assert.Equal(contentType, head.ContentType);
+            var got = (await store.GetAsync(Container, key, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow();
+            await using (got)
+            {
+                Assert.Equal(contentType, got.Metadata.ContentType);
+            }
+
+            // 读出的元数据原样写回（复制对象之类）得到同一个内容类型
+            var copy = Key($"content-types/{index}-copy.txt");
+            var copied = await store.PutAsync(Container, copy, Bytes("x"), new BlobPutOptions { ContentType = head.ContentType }, CancellationToken.None).ConfigureAwait(false);
+            Assert.True(copied.IsSuccess, copied.Error?.ToString());
+            Assert.Equal(contentType, (await store.HeadAsync(Container, copy, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().ContentType);
+        }
+
+        if (store is not IBlobMultipartStore multipart)
+        {
+            return;
+        }
+
+        // 分片上传的发起同样原样带上内容类型，完成后的对象就是这个值
+        foreach (var contentType in contentTypes)
+        {
+            var key = Key("content-types/multipart.bin");
+            var started = await multipart.StartAsync(Container, key, new BlobPutOptions { ContentType = contentType }, CancellationToken.None).ConfigureAwait(false);
+            if (started.Error?.Code == ObjectStorageErrors.ContentTypeUnsupported)
+            {
+                Assert.Equal(contentType, started.Error.Details?["contentType"]);
+                continue;
+            }
+
+            var upload = started.ValueOrThrow();
+            try
+            {
+                var part = (await multipart.UploadPartAsync(upload, 1, Bytes("x"), CancellationToken.None).ConfigureAwait(false)).ValueOrThrow();
+                var completed = (await multipart.CompleteAsync(upload, [part], CancellationToken.None).ConfigureAwait(false)).ValueOrThrow();
+                Assert.Equal(contentType, completed.ContentType);
+                Assert.Equal(contentType, (await store.HeadAsync(Container, key, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().ContentType);
+            }
+            finally
+            {
+                await multipart.AbortAsync([upload], CancellationToken.None).ConfigureAwait(false);
+            }
+        }
+    }
+
+    /// <summary>
     /// 被测存储与其分片上传
     /// </summary>
     /// <remarks>

@@ -223,6 +223,14 @@ public static class ObjectStorageMessages
     public const string ContentTypeInvalid = "objectstorage.blob.content_type_invalid";
 
     /// <summary>
+    /// 存储不能原样写入的内容类型
+    /// </summary>
+    /// <remarks>
+    /// 参数：<c>contentType</c>。与 <see cref="ObjectStorageErrors.ContentTypeUnsupported"/> 搭配
+    /// </remarks>
+    public const string ContentTypeUnsupported = "objectstorage.blob.content_type_unsupported";
+
+    /// <summary>
     /// 本包的消息目录
     /// </summary>
     public static MessageCatalog Catalog => MessageCatalog.FromEmbeddedResources(CatalogName, typeof(ObjectStorageMessages));

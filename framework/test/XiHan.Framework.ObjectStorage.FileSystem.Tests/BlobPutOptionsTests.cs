@@ -33,7 +33,7 @@ public sealed class BlobPutOptionsTests
     }
 
     [Fact]
-    public void ContentType_NeedsAParameterAfterEverySemicolon_AndAllowsSpacesAroundIt()
+    public void ContentType_AllowsEmptyParameters_AndSpacesAroundASemicolon()
     {
         // ; 两侧的空格是 RFC 9110 的 OWS，照收（ADR-0282）
         foreach (var valid in new[] { "text/plain;charset=utf-8", "text/plain ; charset=utf-8", "text/plain; charset=utf-8; format=flowed", "text/plain  ;  charset=utf-8  ;  format=flowed" })
@@ -41,8 +41,15 @@ public sealed class BlobPutOptionsTests
             Assert.True(BlobPutOptions.IsValidContentType(valid), valid);
         }
 
-        // ; 之后没有参数的都不收：以前这几种写法能过，对象的内容类型就是带着尾巴的那一串
-        foreach (var invalid in new[] { "text/plain;", "text/plain; ", "text/plain ;", "text/plain; charset=utf-8;", "text/plain; charset=utf-8; ", "text/plain;;charset=utf-8", "text/plain; ;charset=utf-8" })
+        // RFC 9110 的参数可以为空（ADR-0295）：ADR-0282 曾拒绝这几种写法，宿主代收的上传回 400，野外的客户端确有这样发的；照收且原样保存
+        foreach (var valid in new[] { "text/plain;", "text/plain; ", "text/plain ;", "text/plain; charset=utf-8;", "text/plain; charset=utf-8; ", "text/plain;;charset=utf-8", "text/plain; ;charset=utf-8" })
+        {
+            Assert.True(BlobPutOptions.IsValidContentType(valid), valid);
+            Assert.Equal(valid, new BlobPutOptions { ContentType = valid }.ContentType);
+        }
+
+        // 制表符不是 OWS（内容类型不含控制字符，ADR-0214），参数为空时也一样；媒体类型之后只有空格的不收
+        foreach (var invalid in new[] { "text/plain;\t", "text/plain\t;", "text/plain; charset=utf-8;\t", "text/plain " })
         {
             Assert.False(BlobPutOptions.IsValidContentType(invalid), invalid);
             Assert.Throws<ArgumentException>(() => new BlobPutOptions { ContentType = invalid });

@@ -1,6 +1,7 @@
 #nullable enable
 XiHan.Framework.ObjectStorage.Conformance.BlobStoreConformance
 XiHan.Framework.ObjectStorage.Conformance.BlobStoreConformance.BlobStoreConformance() -> void
+XiHan.Framework.ObjectStorage.Conformance.BlobStoreConformance.ContentTypes_AreKeptAsGiven_OrRefusedBeforeWriting() -> System.Threading.Tasks.Task!
 XiHan.Framework.ObjectStorage.Conformance.BlobStoreConformance.DeleteMany_ReportsExistencePerKey() -> System.Threading.Tasks.Task!
 XiHan.Framework.ObjectStorage.Conformance.BlobStoreConformance.GetRange_ReturnsTheRequestedBytes() -> System.Threading.Tasks.Task!
 XiHan.Framework.ObjectStorage.Conformance.BlobStoreConformance.InvalidIdentifiers_AreRejectedEarly() -> void

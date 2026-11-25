@@ -30,7 +30,9 @@ builder.AddXiHan(xihan => xihan.UseFullProfile().UseFeature<S3ObjectStorageFeatu
 { "XiHan": { "ObjectStorage": { "S3": { "ServiceUrl": "http://localhost:9000", "Region": "us-east-1", "AccessKey": "<access-key>", "SecretKey": "<secret-key>", "ForcePathStyle": true, "HealthBucket": "uploads" } } } }
 ```
 
-`ServiceUrl` 为空时访问 Amazon S3；`AccessKey` 与 `SecretKey` 都为空时走 SDK 默认凭据链，只给一项是配置错误（绑定的 `accessKey`、`secretKey` 覆盖之后再核对）。本包是缺省存储时不要再装 `HostedBlobUrlFeature`。服务不支持条件写入时可设 `ConditionalWrites = false`，后果见概念文档。
+`ServiceUrl` 为空时访问 Amazon S3；`AccessKey` 与 `SecretKey` 都为空时走 SDK 默认凭据链，只给一项是配置错误（绑定的 `accessKey`、`secretKey` 覆盖之后再核对）。
+
+内容类型原样存取：AWS SDK 会把 `Content-Type` 按 .NET 的写法重写，写不出原值的（`text/plain;` 这类空参数，`text/plain;charset=utf-8` 这类 `;` 两侧的空格与 `; ` 不同的）写入与分片上传的发起返回 `OBJECTSTORAGE_VALIDATION_007`，不发请求；要写进去就换成 .NET 的写法（`text/plain; charset=utf-8`）。读取时 SDK 同样按这个写法交出它解析得了的值。本包是缺省存储时不要再装 `HostedBlobUrlFeature`。服务不支持条件写入时可设 `ConditionalWrites = false`，后果见概念文档。
 
 端点、区域、密钥与路径风格都在配置里，临时凭据、超时、重试与代理也是。下面这几个键都是可选的，不写时客户端与 SDK 的缺省相同；配置节 `XiHan:ObjectStorage:S3` 与命名实例的设置里都能写：
 

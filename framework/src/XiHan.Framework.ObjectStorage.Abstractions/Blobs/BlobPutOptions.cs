@@ -44,12 +44,12 @@ public sealed partial record BlobPutOptions
     /// 内容类型
     /// </summary>
     /// <remarks>
-    /// 须满足 <see cref="IsValidContentType"/>：它会进 S3 的请求头与文件系统的元数据文件，换行能拆出别的头（ADR-0214）
+    /// 须满足 <see cref="IsValidContentType"/>：它会进 S3 的请求头与文件系统的元数据文件，换行能拆出别的头（ADR-0214）。Provider 原样存取它，不规范化；存储客户端写不出原值的 Provider 以 <see cref="ObjectStorageErrors.ContentTypeUnsupported"/> 拒绝写入（RFC-0012，ADR-0295）
     /// </remarks>
     public string ContentType
     {
         get => field;
-        init => field = IsValidContentType(value) ? value : throw new ArgumentException($"The content type must be a media type 'type/subtype', optionally followed by non-empty ';' parameters of printable ASCII, at most {MaxContentTypeLength} characters.", nameof(value));
+        init => field = IsValidContentType(value) ? value : throw new ArgumentException($"The content type must be a media type 'type/subtype', optionally followed by ';' parameters of printable ASCII, at most {MaxContentTypeLength} characters.", nameof(value));
     } = DefaultContentType;
 
     /// <summary>
@@ -103,7 +103,7 @@ public sealed partial record BlobPutOptions
     /// 内容类型是否合法
     /// </summary>
     /// <remarks>
-    /// 媒体类型 <c>type/subtype</c>，两段都是 HTTP 的 token 字符，可跟若干个 <c>;</c> 起头的参数，整体 1 到 <see cref="MaxContentTypeLength"/> 个字符。每个 <c>;</c> 两侧可以有空格（RFC 9110 的 <c>OWS ";" OWS</c>，只取空格，不收制表符），之后必须有参数：不含 <c>;</c> 的可打印 ASCII 与空格，以非空格字符开头。<c>text/plain;</c>、<c>text/plain; </c>、结尾多出的 <c>;</c> 与连续的 <c>;</c> 都不合法（RFC-0012，ADR-0282）
+    /// 媒体类型 <c>type/subtype</c>，两段都是 HTTP 的 token 字符，可跟若干个 <c>;</c> 起头的参数，整体 1 到 <see cref="MaxContentTypeLength"/> 个字符。参数照 RFC 9110 的 <c>*( OWS ";" OWS [ parameter ] )</c>：每个 <c>;</c> 两侧可以有空格（只取空格，不收制表符），参数可以为空——<c>text/plain;</c>、结尾多出的 <c>;</c> 与连续的 <c>;</c> 都合法；不为空的参数是不含 <c>;</c> 的可打印 ASCII 与空格，不解析引号（RFC-0012，ADR-0282、ADR-0295）
     /// </remarks>
     public static bool IsValidContentType([NotNullWhen(true)] string? contentType)
         => contentType is { Length: > 0 and <= MaxContentTypeLength } && MediaType().IsMatch(contentType);
@@ -123,8 +123,8 @@ public sealed partial record BlobPutOptions
     /// 媒体类型的匹配
     /// </summary>
     /// <remarks>
-    /// token 字符取 RFC 9110。每个参数是 <c>;</c>、两侧可有的空格与一段不含 <c>;</c>（<c>\x3B</c>）的可打印 ASCII 与空格，这一段以非空格字符开头，所以 <c>;</c> 之后不能为空；参数内部不细分，不解析引号（引号里的 <c>;</c> 同样算分隔），不含制表与换行
+    /// token 字符取 RFC 9110。参数可以为空，所以第一个 <c>;</c>（之前可以有空格）之后是任意的可打印 ASCII 与空格：这样一串在每个 <c>;</c> 处都能切成可以为空的参数，与逐段写的文法是同一个集合，也没有嵌套的量词可回溯；参数内部不细分，不解析引号，不含制表与换行
     /// </remarks>
-    [GeneratedRegex(@"^[!#$%&'*+.^_`|~0-9A-Za-z-]+/[!#$%&'*+.^_`|~0-9A-Za-z-]+(?: *; *[\x21-\x3A\x3C-\x7E][\x20-\x3A\x3C-\x7E]*)*\z")]
+    [GeneratedRegex(@"^[!#$%&'*+.^_`|~0-9A-Za-z-]+/[!#$%&'*+.^_`|~0-9A-Za-z-]+(?: *;[\x20-\x7E]*)?\z")]
     private static partial Regex MediaType();
 }

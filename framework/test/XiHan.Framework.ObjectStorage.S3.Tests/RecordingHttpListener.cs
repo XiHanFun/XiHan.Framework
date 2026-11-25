@@ -11,7 +11,7 @@ namespace XiHan.Framework.ObjectStorage.S3.Tests;
 /// 本机回环上记录请求头的假 HTTP 对端
 /// </summary>
 /// <remarks>
-/// 既能当 S3 的端点，也能当 HTTP 代理：只读没有请求体的请求（<c>HEAD</c>），把每个请求头原样记下，再按设定应答——不应答（核对超时）、要求代理凭据（没带就 407）、其余一律回给定的状态码。不转发任何请求：用例核对的是本进程发出了什么
+/// 既能当 S3 的端点，也能当 HTTP 代理：把每个请求头原样记下，按 <c>Content-Length</c> 读掉请求体（带 <c>Expect: 100-continue</c> 时先回 100），再按设定应答——不应答（核对超时）、要求代理凭据（没带就 407）、其余一律回给定的状态码与响应头，响应没有响应体。不转发任何请求：用例核对的是本进程发出了什么
 /// </remarks>
 internal sealed class RecordingHttpListener : IAsyncDisposable
 {
@@ -61,6 +61,11 @@ internal sealed class RecordingHttpListener : IAsyncDisposable
     private readonly string _status;
 
     /// <summary>
+    /// 应答另带的响应头，每行以 CRLF 结尾
+    /// </summary>
+    private readonly string _headers;
+
+    /// <summary>
     /// 要求的 <c>Proxy-Authorization</c> 头的值
     /// </summary>
     /// <remarks>
@@ -71,10 +76,11 @@ internal sealed class RecordingHttpListener : IAsyncDisposable
     /// <summary>
     /// 创建并开始监听
     /// </summary>
-    private RecordingHttpListener(bool silent, string status, string? proxyAuthorization)
+    private RecordingHttpListener(bool silent, string status, string? proxyAuthorization, string[]? headers = null)
     {
         _silent = silent;
         _status = status;
+        _headers = string.Concat((headers ?? []).Select(static header => header + "\r\n"));
         _proxyAuthorization = proxyAuthorization;
         _listener.Start();
         Port = ((IPEndPoint)_listener.LocalEndpoint).Port;
@@ -117,7 +123,10 @@ internal sealed class RecordingHttpListener : IAsyncDisposable
     /// <summary>
     /// 每个请求都回 <paramref name="status"/>（如 <c>502 Bad Gateway</c>）的对端
     /// </summary>
-    public static RecordingHttpListener Answering(string status) => new(silent: false, status, proxyAuthorization: null);
+    /// <remarks>
+    /// <paramref name="headers"/> 是另带的响应头，每项一整行（如 <c>ETag: "abc"</c>），原样写出，不带 <c>Content-Length</c>（它总是 0）
+    /// </remarks>
+    public static RecordingHttpListener Answering(string status, params string[] headers) => new(silent: false, status, proxyAuthorization: null, headers);
 
     /// <summary>
     /// 要求基本认证的代理：没带凭据的请求回 407，带对了的回 <paramref name="status"/>
@@ -189,7 +198,7 @@ internal sealed class RecordingHttpListener : IAsyncDisposable
     }
 
     /// <summary>
-    /// 在一条连接上逐个读请求头并应答，直到对方关闭或停止
+    /// 在一条连接上逐个读请求并应答，直到对方关闭或停止
     /// </summary>
     private async Task ServeAsync(TcpClient client)
     {
@@ -198,38 +207,55 @@ internal sealed class RecordingHttpListener : IAsyncDisposable
             try
             {
                 var stream = client.GetStream();
+                // 按 ASCII 解码，每个字节恰好是一个字符：请求头只有 ASCII，请求体只按长度跳过，不关心内容
                 var pending = new StringBuilder();
-                var buffer = new byte[4096];
                 while (true)
                 {
-                    var read = await stream.ReadAsync(buffer, _stopping.Token);
-                    if (read == 0)
+                    int end;
+                    while ((end = pending.ToString().IndexOf(HeadTerminator, StringComparison.Ordinal)) < 0)
                     {
-                        return;
+                        if (!await ReadMoreAsync(stream, pending))
+                        {
+                            return;
+                        }
                     }
 
-                    // 请求头只有 ASCII；用例只发没有请求体的请求，头结束即一个完整的请求
-                    pending.Append(Encoding.ASCII.GetString(buffer, 0, read));
-                    for (var end = pending.ToString().IndexOf(HeadTerminator, StringComparison.Ordinal); end >= 0; end = pending.ToString().IndexOf(HeadTerminator, StringComparison.Ordinal))
+                    var request = pending.ToString(0, end);
+                    pending.Remove(0, end + HeadTerminator.Length);
+                    lock (_gate)
                     {
-                        var request = pending.ToString(0, end);
-                        pending.Remove(0, end + HeadTerminator.Length);
-                        lock (_gate)
-                        {
-                            _requests.Add(request);
-                        }
-
-                        if (_silent)
-                        {
-                            continue;
-                        }
-
-                        var challenged = _proxyAuthorization is not null && Header(request, "Proxy-Authorization") != _proxyAuthorization;
-                        var response = challenged
-                            ? "HTTP/1.1 407 Proxy Authentication Required\r\nProxy-Authenticate: Basic realm=\"test\"\r\nContent-Length: 0\r\n\r\n"
-                            : $"HTTP/1.1 {_status}\r\nContent-Length: 0\r\n\r\n";
-                        await stream.WriteAsync(Encoding.ASCII.GetBytes(response), _stopping.Token);
+                        _requests.Add(request);
                     }
+
+                    if (_silent)
+                    {
+                        continue;
+                    }
+
+                    var challenged = _proxyAuthorization is not null && Header(request, "Proxy-Authorization") != _proxyAuthorization;
+                    if (!challenged && int.TryParse(Header(request, "Content-Length"), out var length) && length > 0)
+                    {
+                        // 客户端等 100 才发请求体；读掉请求体再应答，同一连接上的下一个请求才从头开始
+                        if (string.Equals(Header(request, "Expect"), "100-continue", StringComparison.OrdinalIgnoreCase))
+                        {
+                            await stream.WriteAsync(Encoding.ASCII.GetBytes("HTTP/1.1 100 Continue\r\n\r\n"), _stopping.Token);
+                        }
+
+                        while (pending.Length < length)
+                        {
+                            if (!await ReadMoreAsync(stream, pending))
+                            {
+                                return;
+                            }
+                        }
+
+                        pending.Remove(0, length);
+                    }
+
+                    var response = challenged
+                        ? "HTTP/1.1 407 Proxy Authentication Required\r\nProxy-Authenticate: Basic realm=\"test\"\r\nContent-Length: 0\r\n\r\n"
+                        : $"HTTP/1.1 {_status}\r\n{_headers}Content-Length: 0\r\n\r\n";
+                    await stream.WriteAsync(Encoding.ASCII.GetBytes(response), _stopping.Token);
                 }
             }
             catch (Exception exception) when (exception is OperationCanceledException or IOException or SocketException or ObjectDisposedException)
@@ -237,5 +263,24 @@ internal sealed class RecordingHttpListener : IAsyncDisposable
                 // 停止，或对方断开
             }
         }
+    }
+
+    /// <summary>
+    /// 再读一段，追加到 <paramref name="pending"/>
+    /// </summary>
+    /// <remarks>
+    /// 对方关闭连接时返回 <see langword="false"/>
+    /// </remarks>
+    private async Task<bool> ReadMoreAsync(NetworkStream stream, StringBuilder pending)
+    {
+        var buffer = new byte[4096];
+        var read = await stream.ReadAsync(buffer, _stopping.Token);
+        if (read == 0)
+        {
+            return false;
+        }
+
+        pending.Append(Encoding.ASCII.GetString(buffer, 0, read));
+        return true;
     }
 }

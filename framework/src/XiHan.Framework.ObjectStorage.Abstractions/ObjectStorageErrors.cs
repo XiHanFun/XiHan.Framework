@@ -89,6 +89,14 @@ public static class ObjectStorageErrors
     public const string ContentTypeInvalid = "OBJECTSTORAGE_VALIDATION_006";
 
     /// <summary>
+    /// 存储不能原样写入的内容类型
+    /// </summary>
+    /// <remarks>
+    /// 内容类型合 <see cref="Blobs.BlobPutOptions.IsValidContentType"/> 的文法，但 Provider 所用的存储客户端写出的请求头与它不同（S3：AWS SDK for .NET 经 .NET 的媒体类型解析器改写 <c>Content-Type</c>）。写入与分片上传的发起在发出任何请求之前以它失败，不改写后照写；HTTP 400，参数 <c>contentType</c>（RFC-0012「契约」，ADR-0295）
+    /// </remarks>
+    public const string ContentTypeUnsupported = "OBJECTSTORAGE_VALIDATION_007";
+
+    /// <summary>
     /// 不覆盖写入在本存储上无法保证
     /// </summary>
     /// <remarks>
