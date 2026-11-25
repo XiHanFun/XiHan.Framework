@@ -3,7 +3,7 @@
 
 using System.Text.Json;
 using XiHan.Framework.ObjectStorage.FileSystem;
-using XiHan.Framework.Testing;
+using XiHan.Framework.Testing.Workspace;
 
 namespace XiHan.Framework.ObjectStorage.S3.Tests;
 

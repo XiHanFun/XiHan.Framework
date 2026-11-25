@@ -3,7 +3,7 @@
 
 using System.Globalization;
 using XiHan.Framework.Persistence.Abstractions.Identifiers;
-using XiHan.Framework.Testing;
+using XiHan.Framework.Testing.Workspace;
 
 namespace XiHan.Framework.Persistence.Abstractions.Tests;
 

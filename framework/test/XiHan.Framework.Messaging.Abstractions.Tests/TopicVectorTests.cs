@@ -4,7 +4,7 @@
 using XiHan.Framework.Messaging.Abstractions.Envelopes;
 using XiHan.Framework.Messaging.Abstractions.Publishing;
 using XiHan.Framework.Primitives;
-using XiHan.Framework.Testing;
+using XiHan.Framework.Testing.Workspace;
 
 namespace XiHan.Framework.Messaging.Abstractions.Tests;
 

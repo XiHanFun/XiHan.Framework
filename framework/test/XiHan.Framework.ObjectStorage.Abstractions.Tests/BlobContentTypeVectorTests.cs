@@ -3,7 +3,7 @@
 
 using XiHan.Framework.ObjectStorage.Abstractions.Blobs;
 using XiHan.Framework.ObjectStorage.Abstractions.Signing;
-using XiHan.Framework.Testing;
+using XiHan.Framework.Testing.Workspace;
 
 namespace XiHan.Framework.ObjectStorage.Abstractions.Tests;
 

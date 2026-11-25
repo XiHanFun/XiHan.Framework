@@ -22,6 +22,7 @@ using XiHan.Framework.Plugins.Protocol.Mapping;
 using XiHan.Framework.Primitives;
 using XiHan.Framework.Primitives.Manifests;
 using XiHan.Framework.Testing;
+using XiHan.Framework.Testing.Workspace;
 using ConfigureRequest = XiHan.Framework.Plugins.Protocol.V1.ConfigureRequest;
 using ManifestBinding = XiHan.Framework.Primitives.Manifests.Binding;
 using MessageEnvelope = XiHan.Framework.Messaging.Abstractions.Envelopes.MessageEnvelope;

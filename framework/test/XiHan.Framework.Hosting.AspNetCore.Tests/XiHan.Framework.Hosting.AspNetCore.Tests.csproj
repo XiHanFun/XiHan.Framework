@@ -10,6 +10,7 @@
   <ItemGroup>
     <ProjectReference Include="../../src/XiHan.Framework.Hosting.AspNetCore/XiHan.Framework.Hosting.AspNetCore.csproj" />
     <ProjectReference Include="../../src/XiHan.Framework.Testing/XiHan.Framework.Testing.csproj" />
+    <ProjectReference Include="../XiHan.Framework.Testing.Workspace/XiHan.Framework.Testing.Workspace.csproj" />
     <ProjectReference Include="../../src/XiHan.Framework.Localization.InMemory/XiHan.Framework.Localization.InMemory.csproj" />
     <ProjectReference Include="../../src/XiHan.Framework.Caching.InMemory/XiHan.Framework.Caching.InMemory.csproj" />
     <!-- 端点授权要求的启动核对要有授权能力（策略目录） -->

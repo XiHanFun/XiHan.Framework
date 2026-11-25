@@ -5,7 +5,7 @@
 
   <ItemGroup>
     <ProjectReference Include="../../src/XiHan.Framework.Plugins.InProcess/XiHan.Framework.Plugins.InProcess.csproj" />
-    <ProjectReference Include="../../src/XiHan.Framework.Testing/XiHan.Framework.Testing.csproj" />
+    <ProjectReference Include="../XiHan.Framework.Testing.Workspace/XiHan.Framework.Testing.Workspace.csproj" />
     <!-- 只保证示例插件先构建，不引用其程序集：测试从输出目录按插件目录加载 -->
     <ProjectReference Include="../../samples/SamplePlugin/SamplePlugin.csproj" ReferenceOutputAssembly="false" Private="false" />
   </ItemGroup>

@@ -4,6 +4,7 @@
 using System.Diagnostics;
 using XiHan.Framework.Kernel.Hosting;
 using XiHan.Framework.Testing;
+using XiHan.Framework.Testing.Workspace;
 
 namespace XiHan.Framework.Plugins.OutOfProcess.Tests.Fixtures;
 

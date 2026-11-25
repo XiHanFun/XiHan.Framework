@@ -3,7 +3,7 @@
 
 using System.Globalization;
 using XiHan.Framework.Scheduling.Abstractions.Schedules;
-using XiHan.Framework.Testing;
+using XiHan.Framework.Testing.Workspace;
 
 namespace XiHan.Framework.Scheduling.Abstractions.Tests.Schedules;
 

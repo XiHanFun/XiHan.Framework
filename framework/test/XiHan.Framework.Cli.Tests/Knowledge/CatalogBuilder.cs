@@ -7,7 +7,7 @@ using System.Text.RegularExpressions;
 using System.Xml.Linq;
 using XiHan.Framework.Cli.Knowledge;
 using XiHan.Framework.Kernel.Hosting;
-using XiHan.Framework.Testing;
+using XiHan.Framework.Testing.Workspace;
 
 namespace XiHan.Framework.Cli.Tests.Knowledge;
 

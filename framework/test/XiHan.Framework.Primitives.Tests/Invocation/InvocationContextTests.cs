@@ -2,7 +2,7 @@
 // See the LICENSE file in the project root for full license text.
 
 using System.Text.Json;
-using XiHan.Framework.Testing;
+using XiHan.Framework.Testing.Workspace;
 
 namespace XiHan.Framework.Primitives.Tests.Invocation;
 

@@ -2,7 +2,7 @@
 // See the LICENSE file in the project root for full license text.
 
 using XiHan.Framework.Cli.Packaging;
-using XiHan.Framework.Testing;
+using XiHan.Framework.Testing.Workspace;
 
 namespace XiHan.Framework.Cli.Tests.Packaging;
 

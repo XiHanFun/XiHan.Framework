@@ -4,6 +4,7 @@
 using XiHan.Framework.Localization.Abstractions.Locales;
 using XiHan.Framework.Primitives;
 using XiHan.Framework.Testing;
+using XiHan.Framework.Testing.Workspace;
 
 namespace XiHan.Framework.Localization.Abstractions.Tests;
 

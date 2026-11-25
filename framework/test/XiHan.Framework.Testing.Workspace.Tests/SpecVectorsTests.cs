@@ -3,9 +3,9 @@
 
 using System.Text.Json;
 using System.Text.Json.Serialization.Metadata;
-using XiHan.Framework.Testing.Tests.Fixtures;
+using XiHan.Framework.Testing.Workspace.Tests.Fixtures;
 
-namespace XiHan.Framework.Testing.Tests;
+namespace XiHan.Framework.Testing.Workspace.Tests;
 
 /// <summary>
 /// <see cref="SpecVectors"/> 的定位与严格读取
@@ -124,7 +124,7 @@ public sealed class SpecVectorsTests : IDisposable
 
     [Fact]
     public void Read_WithAResolverThatDoesNotKnowTheModel_Throws()
-        => Assert.Throws<NotSupportedException>(() => SpecVectors.Read<LogCaptureEntry>("primitives", "error-codes.json", VectorJsonContext.Default));
+        => Assert.Throws<NotSupportedException>(() => SpecVectors.Read<UnlistedVector>("primitives", "error-codes.json", VectorJsonContext.Default));
 
     [Theory]
     [InlineData("", "error-codes.json")]

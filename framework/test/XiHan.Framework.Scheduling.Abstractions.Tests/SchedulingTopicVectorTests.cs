@@ -4,7 +4,7 @@
 using System.Reflection;
 using XiHan.Framework.Messaging.Abstractions.Envelopes;
 using XiHan.Framework.Scheduling.Abstractions.Events;
-using XiHan.Framework.Testing;
+using XiHan.Framework.Testing.Workspace;
 
 namespace XiHan.Framework.Scheduling.Abstractions.Tests;
 

@@ -3,7 +3,7 @@
 
 using System.Text.Json;
 using XiHan.Framework.Kernel.Capabilities;
-using XiHan.Framework.Testing;
+using XiHan.Framework.Testing.Workspace;
 
 namespace XiHan.Framework.Kernel.Tests.Capabilities;
 

@@ -6,7 +6,7 @@ using System.Text.Json;
 using XiHan.Framework.Kernel.Json;
 using XiHan.Framework.Kernel.Operations;
 using XiHan.Framework.Kernel.Tests.Fixtures;
-using XiHan.Framework.Testing;
+using XiHan.Framework.Testing.Workspace;
 
 namespace XiHan.Framework.Kernel.Tests.Json;
 

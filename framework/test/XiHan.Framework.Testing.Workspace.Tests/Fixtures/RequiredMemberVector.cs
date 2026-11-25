@@ -1,7 +1,7 @@
 // Copyright (c) XiHanFun Contributors. Licensed under the MIT License.
 // See the LICENSE file in the project root for full license text.
 
-namespace XiHan.Framework.Testing.Tests.Fixtures;
+namespace XiHan.Framework.Testing.Workspace.Tests.Fixtures;
 
 /// <summary>
 /// 带 <see langword="required"/> 成员与可缺省成员的向量模型

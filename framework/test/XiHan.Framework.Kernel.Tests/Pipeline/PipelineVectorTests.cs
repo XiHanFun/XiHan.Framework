@@ -4,7 +4,7 @@
 using System.Text.Json;
 using XiHan.Framework.Kernel.Pipeline;
 using XiHan.Framework.Primitives;
-using XiHan.Framework.Testing;
+using XiHan.Framework.Testing.Workspace;
 
 namespace XiHan.Framework.Kernel.Tests.Pipeline;
 

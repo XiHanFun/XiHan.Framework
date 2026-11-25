@@ -5,6 +5,7 @@ using System.Diagnostics;
 using XiHan.Framework.Kernel.Hosting;
 using XiHan.Framework.Plugins.OutOfProcess;
 using XiHan.Framework.Testing;
+using XiHan.Framework.Testing.Workspace;
 
 namespace XiHan.Framework.Caching.Remote.Tests;
 

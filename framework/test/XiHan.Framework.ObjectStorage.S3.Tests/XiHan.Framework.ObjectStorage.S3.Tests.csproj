@@ -10,6 +10,7 @@
     <ProjectReference Include="../../src/XiHan.Framework.Hosting.AspNetCore/XiHan.Framework.Hosting.AspNetCore.csproj" />
     <ProjectReference Include="../../src/XiHan.Framework.ObjectStorage.Conformance/XiHan.Framework.ObjectStorage.Conformance.csproj" />
     <ProjectReference Include="../../src/XiHan.Framework.Testing/XiHan.Framework.Testing.csproj" />
+    <ProjectReference Include="../XiHan.Framework.Testing.Workspace/XiHan.Framework.Testing.Workspace.csproj" />
   </ItemGroup>
 
   <ItemGroup>

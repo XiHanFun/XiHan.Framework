@@ -7,17 +7,15 @@ using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Text.Json.Serialization;
 using System.Text.Json.Serialization.Metadata;
-using XiHan.Framework.Primitives;
 
-namespace XiHan.Framework.Testing;
+namespace XiHan.Framework.Testing.Workspace;
 
 /// <summary>
 /// 定位并严格读取规范的一致性向量
 /// </summary>
 /// <remarks>
-/// 向量在框架工作区的 <c>spec/conformance/vectors/&lt;目录&gt;/&lt;文件&gt;</c>（规范子模块，RFC-0024），参考实现与各语言 SDK 回放同一份文件，测试只回放、不另存副本。读取一律严格：成员名按 Web 缺省（camelCase、不区分大小写），对象模型要认得文件里的每个成员（顶层给人看的 <c>$comment</c> 除外），模型里没有缺省值的构造参数与 <see langword="required"/> 成员都要出现在文件里，同一对象里的成员不能重名。向量改了写法时读取就失败，不会漏掉字段还照样通过
+/// 向量在框架工作区的 <c>spec/conformance/vectors/&lt;目录&gt;/&lt;文件&gt;</c>（规范子模块，RFC-0024），参考实现与各语言 SDK 回放同一份文件，测试只回放、不另存副本。读取一律严格：成员名按 Web 缺省（camelCase、不区分大小写），对象模型要认得文件里的每个成员（顶层给人看的 <c>$comment</c> 除外），模型里没有缺省值的构造参数与 <see langword="required"/> 成员都要出现在文件里，同一对象里的成员不能重名。向量改了写法时读取就失败，不会漏掉字段还照样通过。向量只在框架仓库的检出里找得到，所以放在不发包的测试类库里（ADR-0300）
 /// </remarks>
-[ApiLevel(Stability.Preview, "5.0")]
 public static class SpecVectors
 {
     /// <summary>

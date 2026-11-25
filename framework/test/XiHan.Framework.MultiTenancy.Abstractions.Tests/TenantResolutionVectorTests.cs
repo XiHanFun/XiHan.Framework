@@ -9,6 +9,7 @@ using XiHan.Framework.MultiTenancy.Abstractions.Resolution;
 using XiHan.Framework.MultiTenancy.Abstractions.Tenants;
 using XiHan.Framework.Primitives;
 using XiHan.Framework.Testing;
+using XiHan.Framework.Testing.Workspace;
 
 namespace XiHan.Framework.MultiTenancy.Abstractions.Tests;
 

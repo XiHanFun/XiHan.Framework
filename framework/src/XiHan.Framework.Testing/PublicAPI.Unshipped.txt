@@ -11,7 +11,6 @@ XiHan.Framework.Testing.FaultyCache.RemoveManyAsync(System.Collections.Generic.I
 XiHan.Framework.Testing.FaultyCache.SetAsync<T>(XiHan.Framework.Caching.Abstractions.Stores.CacheKey key, T value, XiHan.Framework.Caching.Abstractions.Stores.CacheEntryOptions! options, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask
 XiHan.Framework.Testing.FaultyCache.SetManyAsync<T>(System.Collections.Generic.IReadOnlyList<System.Collections.Generic.KeyValuePair<XiHan.Framework.Caching.Abstractions.Stores.CacheKey, T>>! entries, XiHan.Framework.Caching.Abstractions.Stores.CacheEntryOptions! options, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask
 XiHan.Framework.Testing.FaultyCache.Store.get -> XiHan.Framework.Caching.Abstractions.Stores.ICacheStore!
-XiHan.Framework.Testing.FrameworkWorkspace
 XiHan.Framework.Testing.LogCapture
 XiHan.Framework.Testing.LogCapture.AddProvider(Microsoft.Extensions.Logging.ILoggerProvider! provider) -> void
 XiHan.Framework.Testing.LogCapture.Capacity.get -> int
@@ -119,7 +118,6 @@ XiHan.Framework.Testing.SpanSamplingRequest.Tags.get -> System.Collections.Gener
 XiHan.Framework.Testing.SpanSamplingRequest.Tags.init -> void
 XiHan.Framework.Testing.SpanSamplingRequest.TraceId.get -> string!
 XiHan.Framework.Testing.SpanSamplingRequest.TraceId.init -> void
-XiHan.Framework.Testing.SpecVectors
 XiHan.Framework.Testing.StubFeature
 XiHan.Framework.Testing.StubFeature.Configure(XiHan.Framework.Kernel.Hosting.FeatureContext! context) -> void
 XiHan.Framework.Testing.StubFeature.Events.get -> System.Collections.Generic.IReadOnlyList<string!>!
@@ -197,17 +195,12 @@ override XiHan.Framework.Testing.SpanSamplingRequest.ToString() -> string!
 override XiHan.Framework.Testing.WebAuthnTestCeremony.Equals(object? obj) -> bool
 override XiHan.Framework.Testing.WebAuthnTestCeremony.GetHashCode() -> int
 override XiHan.Framework.Testing.WebAuthnTestCeremony.ToString() -> string!
-static XiHan.Framework.Testing.FrameworkWorkspace.Root.get -> string!
 static XiHan.Framework.Testing.LogCaptureEntry.operator !=(XiHan.Framework.Testing.LogCaptureEntry? left, XiHan.Framework.Testing.LogCaptureEntry? right) -> bool
 static XiHan.Framework.Testing.LogCaptureEntry.operator ==(XiHan.Framework.Testing.LogCaptureEntry? left, XiHan.Framework.Testing.LogCaptureEntry? right) -> bool
 static XiHan.Framework.Testing.MetricCaptureEntry.operator !=(XiHan.Framework.Testing.MetricCaptureEntry? left, XiHan.Framework.Testing.MetricCaptureEntry? right) -> bool
 static XiHan.Framework.Testing.MetricCaptureEntry.operator ==(XiHan.Framework.Testing.MetricCaptureEntry? left, XiHan.Framework.Testing.MetricCaptureEntry? right) -> bool
 static XiHan.Framework.Testing.SpanSamplingRequest.operator !=(XiHan.Framework.Testing.SpanSamplingRequest? left, XiHan.Framework.Testing.SpanSamplingRequest? right) -> bool
 static XiHan.Framework.Testing.SpanSamplingRequest.operator ==(XiHan.Framework.Testing.SpanSamplingRequest? left, XiHan.Framework.Testing.SpanSamplingRequest? right) -> bool
-static XiHan.Framework.Testing.SpecVectors.Directory.get -> string!
-static XiHan.Framework.Testing.SpecVectors.PathOf(string! area, string! fileName) -> string!
-static XiHan.Framework.Testing.SpecVectors.Read<T>(string! area, string! fileName) -> T
-static XiHan.Framework.Testing.SpecVectors.Read<T>(string! area, string! fileName, System.Text.Json.Serialization.Metadata.IJsonTypeInfoResolver! resolver) -> T
 static XiHan.Framework.Testing.TestHost.StartAsync(System.Action<XiHan.Framework.Kernel.Hosting.AppBuilder!>! configure, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string!, string?>>? configuration = null, System.Action<Microsoft.Extensions.DependencyInjection.IServiceCollection!>? services = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<XiHan.Framework.Testing.TestHost!>!
 static XiHan.Framework.Testing.TestInvocationContext.Create(System.IServiceProvider? services = null, System.DateTimeOffset? deadline = null, System.Collections.Generic.IReadOnlyDictionary<string!, string!>? baggage = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> XiHan.Framework.Primitives.InvocationContext!
 static XiHan.Framework.Testing.TestManifests.Create(string! id, System.Collections.Generic.IEnumerable<string!>? provides = null, System.Collections.Generic.IEnumerable<string!>? requires = null, XiHan.Framework.Primitives.Manifests.ManifestRole role = XiHan.Framework.Primitives.Manifests.ManifestRole.Provider, XiHan.Framework.Primitives.Manifests.ManifestKind kind = XiHan.Framework.Primitives.Manifests.ManifestKind.Capability, System.Collections.Generic.IEnumerable<XiHan.Framework.Primitives.Manifests.Binding!>? bindings = null) -> XiHan.Framework.Primitives.Manifests.Manifest!

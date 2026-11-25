@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- 给测试项目引用的类库：只在框架仓库的检出里有用，不打包、不发布、没有公开面文件，不当测试运行（ADR-0300） -->
+  <PropertyGroup>
+    <RootNamespace>XiHan.Framework.Testing.Workspace</RootNamespace>
+    <!-- 按反射读取的重载标了裁剪与 AOT 的要求，分析器照旧核对这些标注 -->
+    <IsAotCompatible>true</IsAotCompatible>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="$(AssemblyName).Tests" />
+  </ItemGroup>
+</Project>

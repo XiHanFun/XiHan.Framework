@@ -3,7 +3,7 @@
 
 using System.Xml;
 using System.Xml.Linq;
-using XiHan.Framework.Testing;
+using XiHan.Framework.Testing.Workspace;
 
 namespace XiHan.Framework.Architecture.Tests.Model;
 

@@ -3,7 +3,7 @@
 
 using System.Globalization;
 using System.Text.Json;
-using XiHan.Framework.Testing;
+using XiHan.Framework.Testing.Workspace;
 
 namespace XiHan.Framework.Primitives.Tests.Invocation;
 

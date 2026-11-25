@@ -9,6 +9,7 @@
     <!-- 雪花机器位租约的用例用内存缓存存储上的分布式锁模拟多个实例共用一个锁存储 -->
     <ProjectReference Include="../../src/XiHan.Framework.Caching.InMemory/XiHan.Framework.Caching.InMemory.csproj" />
     <ProjectReference Include="../../src/XiHan.Framework.Testing/XiHan.Framework.Testing.csproj" />
+    <ProjectReference Include="../XiHan.Framework.Testing.Workspace/XiHan.Framework.Testing.Workspace.csproj" />
   </ItemGroup>
 
   <ItemGroup>

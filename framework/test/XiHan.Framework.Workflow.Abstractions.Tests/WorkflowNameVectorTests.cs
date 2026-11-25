@@ -2,7 +2,7 @@
 // See the LICENSE file in the project root for full license text.
 
 using XiHan.Framework.Messaging.Abstractions.Envelopes;
-using XiHan.Framework.Testing;
+using XiHan.Framework.Testing.Workspace;
 using XiHan.Framework.Workflow.Abstractions.Activities;
 
 namespace XiHan.Framework.Workflow.Abstractions.Tests;

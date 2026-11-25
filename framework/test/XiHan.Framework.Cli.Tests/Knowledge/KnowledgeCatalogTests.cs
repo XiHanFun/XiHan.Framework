@@ -6,7 +6,7 @@ using System.Text.Json;
 using XiHan.Framework.Cli.Knowledge;
 using XiHan.Framework.Cli.Packaging;
 using XiHan.Framework.Kernel.Hosting;
-using XiHan.Framework.Testing;
+using XiHan.Framework.Testing.Workspace;
 
 namespace XiHan.Framework.Cli.Tests.Knowledge;
 

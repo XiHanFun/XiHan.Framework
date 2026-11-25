@@ -4,7 +4,7 @@
 using Microsoft.Extensions.Configuration;
 using XiHan.Framework.Scheduling.Abstractions.Schedulers;
 using XiHan.Framework.Scheduling.InMemory;
-using XiHan.Framework.Testing;
+using XiHan.Framework.Testing.Workspace;
 
 namespace XiHan.Framework.Scheduling.Kubernetes.Tests;
 

@@ -7,6 +7,7 @@
     <ProjectReference Include="../../src/XiHan.Framework.Localization.InMemory/XiHan.Framework.Localization.InMemory.csproj" />
     <ProjectReference Include="../../src/XiHan.Framework.Localization.Conformance/XiHan.Framework.Localization.Conformance.csproj" />
     <ProjectReference Include="../../src/XiHan.Framework.Testing/XiHan.Framework.Testing.csproj" />
+    <ProjectReference Include="../XiHan.Framework.Testing.Workspace/XiHan.Framework.Testing.Workspace.csproj" />
   </ItemGroup>
 
   <ItemGroup>

@@ -5,7 +5,7 @@
 
   <ItemGroup>
     <ProjectReference Include="../../src/XiHan.Framework.Kernel.Analyzers/XiHan.Framework.Kernel.Analyzers.csproj" />
-    <ProjectReference Include="../../src/XiHan.Framework.Testing/XiHan.Framework.Testing.csproj" />
+    <ProjectReference Include="../XiHan.Framework.Testing.Workspace/XiHan.Framework.Testing.Workspace.csproj" />
   </ItemGroup>
 
   <ItemGroup>

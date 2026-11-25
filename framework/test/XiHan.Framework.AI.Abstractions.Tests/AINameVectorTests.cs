@@ -5,7 +5,7 @@ using Microsoft.Extensions.Configuration;
 using XiHan.Framework.AI.Abstractions.Knowledge;
 using XiHan.Framework.AI.Abstractions.Prompts;
 using XiHan.Framework.AI.Abstractions.Providers;
-using XiHan.Framework.Testing;
+using XiHan.Framework.Testing.Workspace;
 
 namespace XiHan.Framework.AI.Abstractions.Tests;
 

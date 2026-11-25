@@ -6,7 +6,7 @@ using System.Text.Json.Nodes;
 using System.Text.Json.Serialization.Metadata;
 using XiHan.Framework.Caching.Abstractions;
 using XiHan.Framework.Caching.Abstractions.Stores;
-using XiHan.Framework.Testing;
+using XiHan.Framework.Testing.Workspace;
 
 namespace XiHan.Framework.Caching.Remote.Tests;
 

@@ -3,7 +3,7 @@
 
 using System.Text.Json.Serialization;
 
-namespace XiHan.Framework.Testing.Tests.Fixtures;
+namespace XiHan.Framework.Testing.Workspace.Tests.Fixtures;
 
 /// <summary>
 /// 向量模型的源生成序列化上下文

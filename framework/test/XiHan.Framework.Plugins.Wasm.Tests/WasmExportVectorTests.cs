@@ -8,7 +8,7 @@ using Wasmtime;
 using XiHan.Framework.Plugins.Protocol;
 using XiHan.Framework.Plugins.Wasm.Instances;
 using XiHan.Framework.Plugins.Wasm.Runtime;
-using XiHan.Framework.Testing;
+using XiHan.Framework.Testing.Workspace;
 
 namespace XiHan.Framework.Plugins.Wasm.Tests;
 

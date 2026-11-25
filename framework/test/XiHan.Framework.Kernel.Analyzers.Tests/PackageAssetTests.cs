@@ -3,7 +3,7 @@
 
 using System.Text.RegularExpressions;
 using System.Xml.Linq;
-using XiHan.Framework.Testing;
+using XiHan.Framework.Testing.Workspace;
 
 namespace XiHan.Framework.Kernel.Analyzers.Tests;
 

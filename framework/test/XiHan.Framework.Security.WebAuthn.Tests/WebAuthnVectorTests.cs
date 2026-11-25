@@ -11,6 +11,7 @@ using System.Text.Json.Serialization;
 using XiHan.Framework.Primitives;
 using XiHan.Framework.Security.Abstractions;
 using XiHan.Framework.Testing;
+using XiHan.Framework.Testing.Workspace;
 
 namespace XiHan.Framework.Security.WebAuthn.Tests;
 

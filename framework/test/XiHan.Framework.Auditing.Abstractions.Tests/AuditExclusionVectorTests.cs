@@ -6,6 +6,7 @@ using XiHan.Framework.Auditing.Abstractions.Pipeline;
 using XiHan.Framework.Auditing.Abstractions.Tests.Fixtures;
 using XiHan.Framework.Kernel.Operations;
 using XiHan.Framework.Testing;
+using XiHan.Framework.Testing.Workspace;
 
 namespace XiHan.Framework.Auditing.Abstractions.Tests;
 

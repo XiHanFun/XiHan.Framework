@@ -5,7 +5,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging.Abstractions;
 using XiHan.Framework.Kernel.Plugins;
 using XiHan.Framework.Primitives;
-using XiHan.Framework.Testing;
+using XiHan.Framework.Testing.Workspace;
 
 namespace XiHan.Framework.Plugins.InProcess.Tests;
 

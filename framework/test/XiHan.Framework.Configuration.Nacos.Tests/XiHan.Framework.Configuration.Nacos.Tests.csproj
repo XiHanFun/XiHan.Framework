@@ -7,6 +7,7 @@
     <ProjectReference Include="../../src/XiHan.Framework.Configuration.Nacos/XiHan.Framework.Configuration.Nacos.csproj" />
     <ProjectReference Include="../../src/XiHan.Framework.Configuration.Conformance/XiHan.Framework.Configuration.Conformance.csproj" />
     <ProjectReference Include="../../src/XiHan.Framework.Testing/XiHan.Framework.Testing.csproj" />
+    <ProjectReference Include="../XiHan.Framework.Testing.Workspace/XiHan.Framework.Testing.Workspace.csproj" />
   </ItemGroup>
 
   <ItemGroup>

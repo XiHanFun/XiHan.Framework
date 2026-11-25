@@ -5,6 +5,6 @@
 
   <ItemGroup>
     <ProjectReference Include="../../src/XiHan.Framework.ObjectStorage.Abstractions/XiHan.Framework.ObjectStorage.Abstractions.csproj" />
-    <ProjectReference Include="../../src/XiHan.Framework.Testing/XiHan.Framework.Testing.csproj" />
+    <ProjectReference Include="../XiHan.Framework.Testing.Workspace/XiHan.Framework.Testing.Workspace.csproj" />
   </ItemGroup>
 </Project>

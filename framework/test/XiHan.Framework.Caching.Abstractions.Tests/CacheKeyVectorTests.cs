@@ -3,7 +3,7 @@
 
 using System.Text;
 using XiHan.Framework.Caching.Abstractions.Stores;
-using XiHan.Framework.Testing;
+using XiHan.Framework.Testing.Workspace;
 
 namespace XiHan.Framework.Caching.Abstractions.Tests;
 
