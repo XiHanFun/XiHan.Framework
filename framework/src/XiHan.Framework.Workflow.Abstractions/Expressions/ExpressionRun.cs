@@ -14,7 +14,7 @@ namespace XiHan.Framework.Workflow.Abstractions.Expressions;
 /// 一次求值或一次渲染的状态：作用域与累计的工作量
 /// </summary>
 /// <remarks>
-/// 工作量的规则来自 RFC-0021「表达式」的「长度与上限」（ADR-0296、ADR-0303）：每开始求值一个节点记 <see cref="StepWork"/>；运算读到的字符串记它的长度，读到的数字记它的写法的长度（从 JSON 文本读来的是原文，别的是写成 JSON 的文本），读到的数组与对象记它里面每个值 <see cref="StepWork"/>（它自己也算一个）加上全部字符串、数字与成员名的长度；累计超过 <see cref="MaxWork"/> 即以 <see cref="WorkflowMessages.ExpressionBudgetExceeded"/> 失败。工作量只取决于表达式、值与求值的次序，与平台和机器的快慢无关，所以能写进向量。一次 <c>Render</c> 的全部占位共用一个实例
+/// 工作量的规则来自 RFC-0021「表达式」的「长度与上限」（ADR-0296、ADR-0303、ADR-0309）：每开始求值一个节点记 <see cref="StepWork"/>；运算读到的字符串记它的长度（<c>isNullOrEmpty</c> 只读到能判定为止），读到的数字记它的写法的长度（从 JSON 文本读来的是原文，别的是写成 JSON 的文本），读到的数组与对象记它里面每个值 <see cref="StepWork"/>（它自己也算一个）加上全部字符串、数字与成员名的长度；累计超过 <see cref="MaxWork"/> 即以 <see cref="WorkflowMessages.ExpressionBudgetExceeded"/> 失败。工作量只取决于表达式、值与求值的次序，与平台和机器的快慢无关，所以能写进向量。一次 <c>Render</c> 的全部占位共用一个实例
 /// </remarks>
 internal sealed class ExpressionRun
 {
@@ -75,7 +75,7 @@ internal sealed class ExpressionRun
     /// 读一个值，只在它是字符串或数字时记它的长度
     /// </summary>
     /// <remarks>
-    /// 算术、比较与数字函数把字符串当数字文本读、把数字从它的写法读出值：容器不读，它们在核对时就是错误；布尔与 null 的读取量本来是零
+    /// 算术、比较与数字函数把字符串当数字文本读、把数字从它的写法读出值：容器不读，它们在核对时就是错误；布尔与 null 的读取量本来是零。<c>len</c> 同样读（ADR-0309）：字符串要取出全文才数得出 UTF-16 码元，数字要从写法读出值再写成数字的文本；容器的长度是个数，不读
     /// </remarks>
     public void ReadScalar(JsonNode? node)
     {
@@ -86,17 +86,22 @@ internal sealed class ExpressionRun
     }
 
     /// <summary>
-    /// 读一个值，只在它是数字时记它的写法的长度
+    /// 读一个字符串，只读到能判定它是不是空串为止
     /// </summary>
     /// <remarks>
-    /// <c>len</c> 与 <c>isNullOrEmpty</c> 要的是值的文本：字符串的文本就是它自己，不用读内容；数字的文本要先从它的写法读出值再写出来（ADR-0303）
+    /// <c>isNullOrEmpty</c> 用（ADR-0309）：看到第一个码元就知道不是空串，非空的记 1、空串记 0，与它多长无关。判定不取出整个字符串：从 JSON 文本读来的看原文是不是 <c>""</c>（空串在 JSON 里只有这一种写法，带转义的至少写出一个码元），进程内构造的直接看长度
     /// </remarks>
-    public void ReadIfNumber(JsonNode? node)
+    /// <param name="value">JSON 类型是字符串的标量</param>
+    /// <returns>是不是空串</returns>
+    public bool ReadEmptiness(JsonValue value)
     {
-        if (node is JsonValue value && value.GetValueKind() == JsonValueKind.Number)
+        var empty = IsEmptyString(value);
+        if (!empty)
         {
-            Add(NumberLength(value));
+            Add(1);
         }
+
+        return empty;
     }
 
     /// <summary>
@@ -204,6 +209,28 @@ internal sealed class ExpressionRun
         JsonValueKind.Number => NumberLength(value),
         _ => 0,
     };
+
+    /// <summary>
+    /// 一个 JSON 类型是字符串的标量是不是空串
+    /// </summary>
+    /// <remarks>
+    /// 不取出整个字符串：由 JSON 文本读来的值取出要先解码全文（四百万个码元约两毫秒），而原文带两侧的引号，空串正好是两个字节
+    /// </remarks>
+    private static bool IsEmptyString(JsonValue value)
+    {
+        if (value.TryGetValue<JsonElement>(out var element))
+        {
+            return JsonMarshal.GetRawUtf8Value(element).Length == 2;
+        }
+
+        if (value.TryGetValue<string>(out var text))
+        {
+            return text.Length == 0;
+        }
+
+        // 由 Guid、DateTimeOffset 等构造、写成 JSON 是字符串的值：它们的文本都很短
+        return WorkflowValues.AsString(value).Length == 0;
+    }
 
     /// <summary>
     /// 一个数字的写法的长度

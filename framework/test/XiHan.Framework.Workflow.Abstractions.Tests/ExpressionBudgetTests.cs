@@ -8,10 +8,10 @@ using XiHan.Framework.Workflow.Abstractions.Values;
 namespace XiHan.Framework.Workflow.Abstractions.Tests;
 
 /// <summary>
-/// 一次求值的工作量上限（RFC-0021「表达式」的「长度与上限」，ADR-0296、ADR-0303）
+/// 一次求值的工作量上限（RFC-0021「表达式」的「长度与上限」）
 /// </summary>
 /// <remarks>
-/// 计数规则逐条由 <c>expression-limits.json</c> 的 <c>budgets</c> 回放；这里核对向量写不出来的部分：几十万个值的容器、溢出的乘积、工作量按求值与渲染分开计、进程内由 CLR 类型构造的数字与写进存储再读回来的读取量相同、表达式得出的数字写成 JSON 是数字的文本
+/// ADR-0296、ADR-0303、ADR-0309。计数规则逐条由 <c>expression-limits.json</c> 的 <c>budgets</c> 回放；这里核对向量写不出来的部分：几十万个值的容器、溢出的乘积、工作量按求值与渲染分开计、进程内由 CLR 类型构造的数字与写进存储再读回来的读取量相同、表达式得出的数字写成 JSON 是数字的文本、<c>len</c> 与 <c>isNullOrEmpty</c> 对从 JSON 读来与进程内构造的字符串记同样的读取量
 /// </remarks>
 public sealed class ExpressionBudgetTests
 {
@@ -135,18 +135,82 @@ public sealed class ExpressionBudgetTests
     }
 
     [Fact]
-    public void LenAndIsNullOrEmpty_ReadNumbers_ButNotStrings()
+    public void Len_ReadsStringsAndNumbers_ButNotContainers()
     {
-        var scope = Scope(("n", JsonNode.Parse("12.50")), ("s", "12.50"));
+        // 数字的文本要先从写法 12.50 读出值才写得出 12.5（ADR-0303）；字符串要取出全文才数得出 UTF-16 码元，从 JSON 读来的与进程内构造的同样记（ADR-0309）
+        var scope = Scope(("n", JsonNode.Parse("12.50")), ("parsed", JsonNode.Parse("\"12.50\"")), ("constructed", "12.50"), ("o", new JsonObject { ["name"] = "xxxx" }));
 
         Assert.True(_evaluator.Evaluate("len(n)", scope, out var number).IsSuccess);
-        Assert.True(_evaluator.Evaluate("len(s)", scope, out var text).IsSuccess);
-        Assert.True(_evaluator.Evaluate("isNullOrEmpty(n)", scope, out var empty).IsSuccess);
+        Assert.True(_evaluator.Evaluate("len(parsed)", scope, out var parsed).IsSuccess);
+        Assert.True(_evaluator.Evaluate("len(constructed)", scope, out var constructed).IsSuccess);
+        Assert.True(_evaluator.Evaluate("len(o)", scope, out var container).IsSuccess);
 
-        // 数字的文本要先从写法 12.50 读出值才写得出 12.5；字符串的长度不用读内容
         Assert.Equal((2 * ExpressionRun.StepWork) + 5, number);
-        Assert.Equal(2 * ExpressionRun.StepWork, text);
-        Assert.Equal((2 * ExpressionRun.StepWork) + 5, empty);
+        Assert.Equal((2 * ExpressionRun.StepWork) + 5, parsed);
+        Assert.Equal((2 * ExpressionRun.StepWork) + 5, constructed);
+        // 容器的长度是个数，不读
+        Assert.Equal(2 * ExpressionRun.StepWork, container);
+    }
+
+    [Fact]
+    public void LenOfALongString_ChargesItsLengthEveryTime()
+    {
+        // 上一轮报告的写法：从 JSON 读来的四百万码元的字符串，每次求 len 都要重新解码，连写 571 次一秒多，以前计量只有十来万（ADR-0309）
+        const int Units = 4_194_304;
+        var scope = Scope(("s", JsonNode.Parse("\"" + new string('a', Units) + "\"")));
+
+        Assert.True(_evaluator.Evaluate("len(s)", scope, out var once).IsSuccess);
+        Assert.Equal((2 * ExpressionRun.StepWork) + Units, once);
+
+        var expression = "len(s)" + string.Concat(Enumerable.Repeat("+len(s)", 570));
+        var error = _evaluator.Evaluate(expression, scope, out var work).Error;
+
+        // 读到第四次就超过上限，不再随表达式的写法放大
+        Assert.Equal(WorkflowMessages.ExpressionBudgetExceeded, error?.MessageKey);
+        Assert.InRange(work, ExpressionRun.MaxWork + 1, ExpressionRun.MaxWork + Units);
+    }
+
+    [Fact]
+    public void IsNullOrEmpty_ReadsOnlyUntilItCanTell()
+    {
+        // 只读到能判定为止（ADR-0309）：非空的字符串看到第一个码元就知道，记 1；空串、null、布尔、数字与容器看类型与个数，不读
+        var scope = Scope(
+            ("parsedEmpty", JsonNode.Parse("\"\"")),
+            ("parsedEscaped", JsonNode.Parse("\"\\u0000\"")),
+            ("parsedLong", JsonNode.Parse("\"" + new string('a', 4_194_304) + "\"")),
+            ("constructedEmpty", string.Empty),
+            ("constructedLong", new string('a', 4_194_304)),
+            ("guid", JsonValue.Create(Guid.Empty)),
+            ("number", JsonNode.Parse("1." + new string('0', 4_000_000))),
+            ("flag", false),
+            ("items", new JsonArray()),
+            ("fields", new JsonObject { ["a"] = 1 }),
+            ("nothing", null));
+        (string Name, bool Empty, int Read)[] cases =
+        [
+            ("parsedEmpty", true, 0),
+            ("parsedEscaped", false, 1),
+            ("parsedLong", false, 1),
+            ("constructedEmpty", true, 0),
+            ("constructedLong", false, 1),
+            ("guid", false, 1),
+            ("number", false, 0),
+            ("flag", false, 0),
+            ("items", true, 0),
+            ("fields", false, 0),
+            ("nothing", true, 0),
+        ];
+
+        foreach (var (name, empty, read) in cases)
+        {
+            var result = _evaluator.Evaluate($"isNullOrEmpty({name})", scope, out var work).ValueOrThrow().OrNull();
+            Assert.Equal((name, (bool?)empty, (2L * ExpressionRun.StepWork) + read), (name, result?.GetValue<bool>(), work));
+        }
+
+        // 上一轮报告的写法：连写两百多次也只是每次一步加一个码元，不随字符串的长度放大
+        var chain = "isNullOrEmpty(parsedLong)" + string.Concat(Enumerable.Repeat("||isNullOrEmpty(parsedLong)", 140));
+        Assert.True(_evaluator.Evaluate(chain, scope, out var total).IsSuccess);
+        Assert.Equal((141L * ((2 * ExpressionRun.StepWork) + 1)) + (140L * ExpressionRun.StepWork), total);
     }
 
     /// <summary>

@@ -13,7 +13,7 @@ namespace XiHan.Framework.Workflow.Abstractions.Tests;
 /// 回放 <c>expression-limits.json</c>：表达式的上限、错误里带出的文本与工作量
 /// </summary>
 /// <remarks>
-/// 规范 RFC-0021「表达式」的「长度与上限」（ADR-0120、ADR-0182、ADR-0287、ADR-0296、ADR-0303）：长度 4000、嵌套 64 层、拼接与渲染出的文本 4194304、错误里带出的文本 200、一次求值的工作量 16777216，长度都按 UTF-16 码元计。这个文件里的表达式由重复的片段拼出来。向量是规范的一部分，这里只回放，不另存一份
+/// 规范 RFC-0021「表达式」的「长度与上限」（ADR-0120、ADR-0182、ADR-0287、ADR-0296、ADR-0303、ADR-0309）：长度 4000、嵌套 64 层、拼接与渲染出的文本 4194304、错误里带出的文本 200、一次求值的工作量 16777216，长度都按 UTF-16 码元计。这个文件里的表达式由重复的片段拼出来。向量是规范的一部分，这里只回放，不另存一份
 /// </remarks>
 public sealed class ExpressionLimitVectorTests
 {
@@ -297,6 +297,13 @@ public sealed class ExpressionLimitVectorTests
         Assert.Contains(_variables, static pair => pair.Value is JsonValue value && value.GetValueKind() == System.Text.Json.JsonValueKind.Number && value.ToJsonString() != WorkflowValues.AsString(value));
         Assert.All(_vectors.Budgets, static vector => Assert.True(vector.Valid ? vector.Work is > 0 && vector.Expression is null : vector.Work is null && vector.Expression is not null, vector.Name));
 
+        // len 读字符串、isNullOrEmpty 只读到能判定为止（ADR-0309）：len 读很长的字符串要有正好到上限的与超过的；isNullOrEmpty 连写读很长的字符串，工作量要比那个字符串的长度还少，读了全文的实现在这条上对不上
+        Assert.Contains(_vectors.Budgets, static vector => vector.Valid && vector.Work == _vectors.MaxWork && ReadsALongStringWithLen(vector));
+        Assert.Contains(_vectors.Budgets, static vector => !vector.Valid && ReadsALongStringWithLen(vector));
+        Assert.Contains(_vectors.Budgets, static vector => vector.Valid && vector.Count > 0 && _vectors.Blocks.Any(block =>
+            (vector.Head + Repeat(vector.Link, vector.Count) + vector.Tail).Split($"isNullOrEmpty({block.Variable})").Length == vector.Count + 2
+            && vector.Work < (long)block.Unit.Length * block.Repeat));
+
         // 带出的文本：不截断的、截断的、截断处是代理对的、三种求值方式
         Assert.Contains(_vectors.Echoes, static vector => vector.Arguments["expression"]!.GetValue<string>() == vector.Source);
         Assert.Contains(_vectors.Echoes, static vector => vector.Arguments["expression"]!.GetValue<string>().Length == _vectors.MaxEchoLength + 1);
@@ -430,6 +437,13 @@ public sealed class ExpressionLimitVectorTests
     /// 重复文本
     /// </summary>
     private static string Repeat(string text, int count) => string.Concat(Enumerable.Repeat(text, count));
+
+    /// <summary>
+    /// 一条工作量的用例是不是以 <c>len</c> 开头、对很长的字符串变量求 <c>len</c>
+    /// </summary>
+    private static bool ReadsALongStringWithLen(BudgetCase vector)
+        => vector.Head.StartsWith("len(", StringComparison.Ordinal)
+            && _vectors.Blocks.Any(block => (vector.Head + Repeat(vector.Link, vector.Count) + vector.Tail).Contains($"len({block.Variable})", StringComparison.Ordinal));
 
     /// <summary>
     /// 向量文件的对象模型

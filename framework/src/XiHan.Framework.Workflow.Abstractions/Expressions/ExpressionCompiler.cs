@@ -486,9 +486,9 @@ internal sealed class ExpressionCompiler
                 Arity(name, args, 1, 1);
                 return run =>
                 {
-                    // 字符串的长度不用读内容；数字的长度是它的数字的文本的长度，要先从它的写法读出值（ADR-0303）
+                    // 字符串的长度要取出全文才数得出 UTF-16 码元（ADR-0309）；数字的长度是它的数字的文本的长度，要先从它的写法读出值（ADR-0303）；容器的长度是个数，不读
                     var value = args[0](run);
-                    run.ReadIfNumber(value);
+                    run.ReadScalar(value);
                     return value switch
                     {
                         null => JsonValue.Create(0),
@@ -550,15 +550,15 @@ internal sealed class ExpressionCompiler
                 Arity(name, args, 1, 1);
                 return run =>
                 {
-                    // 与 len 相同：数字要从它的写法读出值才写得出文本
+                    // 只读到能判定为止（ADR-0309）：null 与容器看类型与个数，布尔与数字的文本总不是空的，字符串只看有没有第一个码元
                     var value = args[0](run);
-                    run.ReadIfNumber(value);
                     return value switch
                     {
                         null => True,
                         JsonArray array => array.Count == 0 ? True : False,
                         JsonObject obj => obj.Count == 0 ? True : False,
-                        _ => Text(value).Length == 0 ? True : False,
+                        JsonValue scalar when scalar.GetValueKind() == JsonValueKind.String => run.ReadEmptiness(scalar) ? True : False,
+                        _ => False,
                     };
                 };
             case "abs":
