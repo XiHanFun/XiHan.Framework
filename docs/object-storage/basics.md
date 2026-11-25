@@ -168,6 +168,8 @@ for (var i = 0; i < results.Count; i++)
 
 不覆盖写入在两个实现上都是原子的：多个写入方同时以 `Overwrite = false` 写同一个新键，只有一个成功，其余 `OBJECTSTORAGE_CONFLICT_001`。
 
+写入结果里的最后修改时间是 Provider 记下的写入时刻，不保证与之后读出的相同：文件系统存储存进元数据的就是它；S3 的写入应答不带修改时间，取本机收到应答时的时钟，`GetAsync`、`HeadAsync` 与列举交出的是服务记下的值（RFC-0012「契约」，ADR-0313）。要以存储为准的修改时间，写完再 `HeadAsync`。
+
 ## 读取
 
 `GetAsync` 打开内容流与元数据，返回的 `BlobContent` 要释放（释放时关闭流，S3 一并释放响应）。只要元数据时用 `HeadAsync`，只判断存在用扩展方法 `ExistsAsync`，小对象一次读进内存用扩展方法 `ReadAllBytesAsync`。

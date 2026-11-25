@@ -98,6 +98,8 @@ if (opened.TryGetValue(out var part))
 | 发起的应答成功却没有可用的上传标识（S3：兼容服务的缺陷或中间的代理改写了响应体） | 发起返回 `OBJECTSTORAGE_UNAVAILABLE_001`，不抛异常、不重发；服务端可能已经建出这个上传，由桶的生命周期规则清理 |
 | 上传分片的应答成功却没有可用的 `ETag`（S3：缺失、为空或去掉引号之后只有空白） | 这一片返回 `OBJECTSTORAGE_UNAVAILABLE_001`，不抛异常、不重发；可以重传同一编号（后一次覆盖） |
 | 列出的分片里有一片没有可用的编号（缺失或不在 1 到 10000）、没有可用的 `ETag` 或长度为负（S3） | 整个列出返回 `OBJECTSTORAGE_UNAVAILABLE_001`，不抛异常，不跳过那一片；长度缺失照旧当作 0 |
+| 列出分片的应答说截断了，续页标记却缺失、不比这一页的起点大或不小于 10000，或累计列出超过 10000 片（S3） | 整个列出返回 `OBJECTSTORAGE_UNAVAILABLE_001`，不交出已列出的部分；标记每页严格增大，一次列出至多请求 10000 页，不会循环不止 |
+| 完成之后取元数据的应答缺 `ETag` 或修改时间（S3） | 完成返回 `OBJECTSTORAGE_UNAVAILABLE_001`，这时对象已经拼成，不重发；可以 `HeadAsync` 再看 |
 
 文件系统把分片暂存在容器下的 `uploads/<上传标识>/`，暂存的分片计入总配额，超过 `MultipartExpiryHours`（缺省 168 小时）仍未完成的上传即过期，拒绝再传分片与完成并被清掉，细则见 [ObjectStorage.FileSystem](/packages/objectstorage-filesystem)；S3 直接映射原生 multipart，未完成的上传按桶的生命周期规则清理。
 
@@ -120,7 +122,7 @@ S3 由存储自己签名（签名 V4），客户端直连存储。文件系统�
 | `XiHan:ObjectStorage:SignedUrls:BaseUrl` | `/blobs` | 签出地址的前缀：以 `/` 开头的路径（相对应用的源）或绝对地址；端点的路由前缀取它的路径部分 |
 | `XiHan:ObjectStorage:SignedUrls:Secret` | 无，必填 | 签名密钥，UTF-8 至少 32 字节；多实例部署必须一致；缺失或过短时装配抛出 `ArgumentException` |
 
-宿主端点 `GET` 支持单个 `Range` 区间（206 与 `Content-Range`，不可满足回 416），`PUT` 写整个对象或一片并在响应头带 `ETag`。端点经内核管道，Observe 照常记录，不要求凭据，签名即授权；上传解除了请求体大小上限，单对象上限由存储把关。签名不符或过期回 403（`OBJECTSTORAGE_DENIED_001`）。签名没有限定内容类型时对象的内容类型取请求的 `Content-Type`，原样保存（`text/plain;`、`text/plain; charset=utf-8;` 这类空参数照收）；不合文法（媒体类型，最长 255 个字符，`;` 两侧只收空格、不收制表符，不以空格结尾）回 400（`OBJECTSTORAGE_VALIDATION_006`），不写入。经 Kestrel 时请求头首尾的空白在到达端点之前已被去掉，以空格结尾的 `Content-Type` 按去掉之后的值写入；不去掉的宿主（如进程内的测试服务器）上回 400。没有装配 `HostedBlobUrlFeature` 就调用 `MapXiHanBlobs()`，调用处抛出 `FrameworkException`（`KERNEL_HOSTING_004`）。
+宿主端点 `GET` 支持单个 `Range` 区间（206 与 `Content-Range`，不可满足回 416），`PUT` 写整个对象或一片并在响应头带 `ETag`。端点经内核管道，Observe 照常记录，不要求凭据，签名即授权；上传解除了请求体大小上限，单对象上限由存储把关。签名不符或过期回 403（`OBJECTSTORAGE_DENIED_001`）。上传端点照 RFC 9110 §5.5 先去掉 `Content-Type` 首尾的空格与制表符再用，Kestrel、进程内的测试服务器与别的宿主收到同一个请求时结果相同（ADR-0314）：签名限定了内容类型时以去掉之后的值与它比较（不区分大小写，不符同样回 403）；没限定时去掉之后为空即当作没给，存成缺省的 `application/octet-stream`，否则以去掉之后的值作对象的内容类型（`text/plain; ` 存成 `text/plain;`，`text/plain;`、`text/plain; charset=utf-8;` 这类空参数照收）。不合文法（媒体类型，最长 255 个字符，`;` 两侧只收空格、不收制表符）回 400（`OBJECTSTORAGE_VALIDATION_006`），不写入；不换行空格等别的空白不是 HTTP 的空白，留在值里照文法判，开头或结尾带它的回 400。端点读的请求头只有上传的 `Content-Type` 与下载的 `Range`，`Range` 由宿主的头解析器去掉首尾空白，签名的各项都在查询串里。没有装配 `HostedBlobUrlFeature` 就调用 `MapXiHanBlobs()`，调用处抛出 `FrameworkException`（`KERNEL_HOSTING_004`）。
 
 端点的响应都带 `X-Content-Type-Options: nosniff`。写出内容时还带沙箱的 `Content-Security-Policy`：用户上传的 HTML、SVG 在这里跑不了脚本，图片、视频和 PDF 照常预览。把这个地址上的 HTML 当网页用的应用，在 `UseXiHan` 之前的中间件里设自己的 `Content-Security-Policy`，端点不覆盖。S3 直传直下的地址不经宿主，不受这一条影响。
 

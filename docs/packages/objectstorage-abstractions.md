@@ -167,12 +167,12 @@ public sealed class AzureBlobStoreConformanceTests : BlobStoreConformance
 | `OBJECTSTORAGE_VALIDATION_003` | `StoreDefinitionInvalid` | 命名存储实例的定义不合法（Provider 未登记或设置不合法） |
 | `OBJECTSTORAGE_VALIDATION_004` | `StoreSelectionInvalid` | 缺省存储的能力选择不一致：被要求的分片上传或预签名与对象存储不在同一存储（装配时抛出，启动失败） |
 | `OBJECTSTORAGE_VALIDATION_005` | `PageSizeInvalid` | 列举的页大小不在 1 到 1000 之间（HTTP 400；不在构造时抛出，列举时以结果返回，不访问存储） |
-| `OBJECTSTORAGE_VALIDATION_006` | `ContentTypeInvalid` | 宿主直传端点：签名没有限定内容类型，请求的 `Content-Type` 不合内容类型文法（含以空格结尾；经 Kestrel 时首尾的空白已先去掉）（HTTP 400，不写入） |
+| `OBJECTSTORAGE_VALIDATION_006` | `ContentTypeInvalid` | 宿主直传端点：签名没有限定内容类型，请求的 `Content-Type` 去掉首尾的空格与制表符之后不合内容类型文法（HTTP 400，不写入） |
 | `OBJECTSTORAGE_VALIDATION_007` | `ContentTypeUnsupported` | 内容类型合文法，但 Provider 所用的存储客户端写不出原值（S3：AWS SDK 改写 `Content-Type`）：写入与分片上传的发起在发出任何请求之前返回，HTTP 400，参数 `contentType`，消息键 `objectstorage.blob.content_type_unsupported` |
 | `OBJECTSTORAGE_DENIED_001` | `SignatureInvalid` | 预签名地址无效或已过期 |
 | `OBJECTSTORAGE_DENIED_002` | `ProbeDenied` | 条件写入探测被存储拒绝（403；S3：凭据无效、只读或无权写探测键）：启动或建实例时即失败；启动时连不上、之后才被拒的，健康项 Failed、后台照常重试 |
 | `OBJECTSTORAGE_CONFLICT_001` | `BlobExists` | 对象已存在且不允许覆盖 |
-| `OBJECTSTORAGE_UNAVAILABLE_001` | `StoreUnavailable` | 对象存储不可达或 IO 失败，`reason` 只写异常类型的全名，完整异常进日志（ADR-0115） |
+| `OBJECTSTORAGE_UNAVAILABLE_001` | `StoreUnavailable` | 对象存储不可达或 IO 失败，`reason` 只写异常类型的全名，完整异常进日志（ADR-0115）；服务的应答不合规同此（S3：应答成功却缺了必需的内容，或分页说截断了却不前进，见 [ObjectStorage.S3](/packages/objectstorage-s3#行为与限制)） |
 | `OBJECTSTORAGE_UNAVAILABLE_002` | `QuotaExceeded` | 配额或单对象大小超限 |
 | `OBJECTSTORAGE_UNAVAILABLE_003` | `ConditionalWriteUnavailable` | 不覆盖写入在本存储上无法保证：S3 兼容服务不认条件写入（启动时探明即启动失败或不建命名实例，之后探明的不覆盖写入一律返回它），或存储关闭了条件写入（`ConditionalWrites = false`） |
 | `OBJECTSTORAGE_UNAVAILABLE_004` | `ConditionalWriteUnconfirmed` | 不覆盖写入暂不可用：存储是否认条件写入尚未确认（启动时连不上，或之后的探测被拒绝、缺桶；HTTP 503，探测通过后自动恢复） |
