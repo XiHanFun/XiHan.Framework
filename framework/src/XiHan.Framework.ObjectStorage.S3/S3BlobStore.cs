@@ -22,7 +22,7 @@ namespace XiHan.Framework.ObjectStorage.S3;
 /// S3 对象存储
 /// </summary>
 /// <remarks>
-/// 容器即桶，键即对象键。不覆盖写入用条件请求（<c>If-None-Match: *</c>）保证原子，已存在返回 <see cref="ObjectStorageErrors.BlobExists"/>；服务是否认条件写入要先探明（ADR-0089、ADR-0090）：特性启动或命名实例建出时探一次，没探明就在后台重试，这期间不覆盖的写入与分片上传返回 <see cref="ObjectStorageErrors.ConditionalWriteUnconfirmed"/>，探明不认或选项关闭条件写入时一律返回 <see cref="ObjectStorageErrors.ConditionalWriteUnavailable"/>；批量删除先逐键 HEAD 得知是否存在，再一次 <c>DeleteObjects</c>；列举经 <c>ListObjectsV2</c>，条目只有键、长度、ETag 与修改时间（内容类型为默认值、自定义元数据为空，需要时再 HEAD）。范围读取经 <c>Range</c> 请求头；分片上传直接映射 S3 的 multipart（不覆盖的完成带 <c>If-None-Match: *</c>）；预签名地址由 SDK 本地签出（签名 V4），客户端直连存储。不存在的键与桶映射为 <see cref="ObjectStorageErrors.BlobNotFound"/>，其余服务端与网络错误映射为 <see cref="ObjectStorageErrors.StoreUnavailable"/>，服务应答成功却缺了必需的内容同此（发起分片上传的应答没有可用的上传标识，ADR-0302）。内容类型原样存取：SDK 写不出原值的（<see cref="S3ContentTypeHeader"/>）写入与分片上传的发起返回 <see cref="ObjectStorageErrors.ContentTypeUnsupported"/>，不发请求；读取时 SDK 按 .NET 的写法交出它解析得了的值（ADR-0295）。没有公开构造（ADR-0266，公开面不出现 SDK 的类型）：缺省实例由 <see cref="S3ObjectStorageFeature"/> 建出，客户端归容器所有，释放实例什么都不做；命名实例由 <see cref="S3BlobStoreProvider"/> 按定义建出（经 <c>BlobStores</c>，或直接调它的 <c>CreateAsync</c>），自己建客户端并在后台重试探测，释放实例即停止重试、释放客户端
+/// 容器即桶，键即对象键。不覆盖写入用条件请求（<c>If-None-Match: *</c>）保证原子，已存在返回 <see cref="ObjectStorageErrors.BlobExists"/>；服务是否认条件写入要先探明（ADR-0089、ADR-0090）：特性启动或命名实例建出时探一次，没探明就在后台重试，这期间不覆盖的写入与分片上传返回 <see cref="ObjectStorageErrors.ConditionalWriteUnconfirmed"/>，探明不认或选项关闭条件写入时一律返回 <see cref="ObjectStorageErrors.ConditionalWriteUnavailable"/>；批量删除先逐键 HEAD 得知是否存在，再一次 <c>DeleteObjects</c>；列举经 <c>ListObjectsV2</c>，条目只有键、长度、ETag 与修改时间（内容类型为默认值、自定义元数据为空，需要时再 HEAD）。范围读取经 <c>Range</c> 请求头；分片上传直接映射 S3 的 multipart（不覆盖的完成带 <c>If-None-Match: *</c>）；预签名地址由 SDK 本地签出（签名 V4），客户端直连存储。不存在的键与桶映射为 <see cref="ObjectStorageErrors.BlobNotFound"/>，其余服务端与网络错误映射为 <see cref="ObjectStorageErrors.StoreUnavailable"/>，服务应答成功却缺了必需的内容同此（发起分片上传的应答没有可用的上传标识，ADR-0302；上传分片的应答没有可用的 ETag、列出的分片没有可用的编号或 ETag 或长度为负，ADR-0308）。内容类型原样存取：SDK 写不出原值的（<see cref="S3ContentTypeHeader"/>）写入与分片上传的发起返回 <see cref="ObjectStorageErrors.ContentTypeUnsupported"/>，不发请求；读取时 SDK 按 .NET 的写法交出它解析得了的值（ADR-0295）。没有公开构造（ADR-0266，公开面不出现 SDK 的类型）：缺省实例由 <see cref="S3ObjectStorageFeature"/> 建出，客户端归容器所有，释放实例什么都不做；命名实例由 <see cref="S3BlobStoreProvider"/> 按定义建出（经 <c>BlobStores</c>，或直接调它的 <c>CreateAsync</c>），自己建客户端并在后台重试探测，释放实例即停止重试、释放客户端
 /// </remarks>
 [ApiLevel(Stability.Stable, "5.0")]
 public sealed partial class S3BlobStore : IBlobStore, IBlobMultipartStore, IBlobUrlSigner, IDisposable, IAsyncDisposable
@@ -57,6 +57,38 @@ public sealed partial class S3BlobStore : IBlobStore, IBlobMultipartStore, IBlob
     /// 固定文本，不带应答里的值（ADR-0302）
     /// </remarks>
     private const string UploadIdMissingReason = "InitiateMultipartUpload returned no usable UploadId";
+
+    /// <summary>
+    /// 上传分片的应答没有可用的 ETag 时 <c>reason</c> 的文本
+    /// </summary>
+    /// <remarks>
+    /// 固定文本，不带应答里的值（ADR-0308）
+    /// </remarks>
+    private const string PartETagMissingReason = "UploadPart returned no usable ETag";
+
+    /// <summary>
+    /// 列出的分片没有可用的编号时 <c>reason</c> 的文本
+    /// </summary>
+    /// <remarks>
+    /// 编号缺失或不在 1 到 <see cref="BlobMultipart.MaxPartNumber"/> 之内（ADR-0308）
+    /// </remarks>
+    private const string ListedPartNumberMissingReason = "ListParts returned a part without a usable PartNumber";
+
+    /// <summary>
+    /// 列出的分片没有可用的 ETag 时 <c>reason</c> 的文本
+    /// </summary>
+    /// <remarks>
+    /// 固定文本，不带应答里的值（ADR-0308）
+    /// </remarks>
+    private const string ListedPartETagMissingReason = "ListParts returned a part without a usable ETag";
+
+    /// <summary>
+    /// 列出的分片长度为负时 <c>reason</c> 的文本
+    /// </summary>
+    /// <remarks>
+    /// 固定文本，不带应答里的值（ADR-0308）
+    /// </remarks>
+    private const string ListedPartSizeNegativeReason = "ListParts returned a part with a negative Size";
 
     /// <summary>
     /// S3 客户端
@@ -516,7 +548,15 @@ public sealed partial class S3BlobStore : IBlobStore, IBlobMultipartStore, IBlob
                 InputStream = source,
                 PartSize = length,
             }, cancellationToken).ConfigureAwait(false);
-            return Result.Success(new BlobPart(partNumber, Unquote(response.ETag), length));
+            // 服务回了成功却没给当得了分片的 ETag，是不合规的应答：按服务端错误返回，不让分片的构造把 ArgumentException 抛给调用方。
+            // 不重发：这一片可能已在服务端，调用方重传同一编号即覆盖它，或从列出分片里取它的 ETag（ADR-0308）
+            var etag = Unquote(response.ETag);
+            if (!IsUsablePartETag(etag))
+            {
+                return UnusableAnswer(upload.Container, "UploadPart", PartETagMissingReason);
+            }
+
+            return Result.Success(new BlobPart(partNumber, etag, length));
         }
         catch (AmazonS3Exception exception) when (IsNoSuchUpload(exception))
         {
@@ -555,7 +595,26 @@ public sealed partial class S3BlobStore : IBlobStore, IBlobMultipartStore, IBlob
                 }, cancellationToken).ConfigureAwait(false);
                 foreach (var part in response.Parts ?? [])
                 {
-                    parts.Add(new BlobPart(part.PartNumber ?? 0, Unquote(part.ETag), part.Size ?? 0));
+                    // 分片缺可用的编号或 ETag、长度为负，是不合规的应答：整个列出按服务端错误返回，不让分片的构造抛出。
+                    // 不跳过那一片：跳过之后续传会重传它，或让完成清单少一片（ADR-0308）
+                    if (part.PartNumber is not { } number || number is < 1 or > BlobMultipart.MaxPartNumber)
+                    {
+                        return UnusableAnswer(upload.Container, "ListParts", ListedPartNumberMissingReason);
+                    }
+
+                    var etag = Unquote(part.ETag);
+                    if (!IsUsablePartETag(etag))
+                    {
+                        return UnusableAnswer(upload.Container, "ListParts", ListedPartETagMissingReason);
+                    }
+
+                    if (part.Size is < 0)
+                    {
+                        return UnusableAnswer(upload.Container, "ListParts", ListedPartSizeNegativeReason);
+                    }
+
+                    // 长度只用于说明、完成时不核对：缺失照旧当作 0
+                    parts.Add(new BlobPart(number, etag, part.Size ?? 0));
                 }
 
                 if (response.IsTruncated != true)
@@ -748,6 +807,26 @@ public sealed partial class S3BlobStore : IBlobStore, IBlobMultipartStore, IBlob
     /// </remarks>
     private static bool IsUsableUploadId([NotNullWhen(true)] string? uploadId)
         => uploadId is { Length: > 0 and <= MaxUploadIdLength } && !uploadId.Any(static ch => char.IsWhiteSpace(ch) || char.IsControl(ch));
+
+    /// <summary>
+    /// 去掉引号之后的 ETag 当得了分片的 ETag
+    /// </summary>
+    /// <remarks>
+    /// 照 <see cref="BlobPart"/> 构造的公开前置条件先判：不为空、不只有空白
+    /// </remarks>
+    private static bool IsUsablePartETag(string etag) => !string.IsNullOrWhiteSpace(etag);
+
+    /// <summary>
+    /// 服务应答成功却缺了必需的内容
+    /// </summary>
+    /// <remarks>
+    /// 记一条 Warning（只带请求名与桶名，不带应答里的值），按服务端错误返回 <see cref="ObjectStorageErrors.StoreUnavailable"/>（ADR-0302、ADR-0308）
+    /// </remarks>
+    private Error UnusableAnswer(ContainerName container, string operation, string reason)
+    {
+        LogAnswerUnusable(_logger, operation, container.Value, reason);
+        return Unavailable(reason);
+    }
 
     /// <summary>
     /// 分片上传不存在或已结束
@@ -994,4 +1073,13 @@ public sealed partial class S3BlobStore : IBlobStore, IBlobMultipartStore, IBlob
     /// </remarks>
     [LoggerMessage(Level = LogLevel.Warning, Message = "The S3 service answered InitiateMultipartUpload for bucket '{Bucket}' without a usable upload ID.")]
     private static partial void LogUploadIdMissing(ILogger logger, string bucket);
+
+    /// <summary>
+    /// 上传分片或列出分片的应答缺了必需的内容
+    /// </summary>
+    /// <remarks>
+    /// <c>Reason</c> 是固定文本，不带应答里的值
+    /// </remarks>
+    [LoggerMessage(Level = LogLevel.Warning, Message = "The S3 service answered {Operation} for bucket '{Bucket}' without the content the blob store needs: {Reason}.")]
+    private static partial void LogAnswerUnusable(ILogger logger, string operation, string bucket, string reason);
 }

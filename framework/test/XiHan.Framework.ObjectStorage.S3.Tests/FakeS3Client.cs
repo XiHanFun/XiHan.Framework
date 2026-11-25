@@ -11,7 +11,7 @@ using Amazon.S3.Model;
 namespace XiHan.Framework.ObjectStorage.S3.Tests;
 
 /// <summary>
-/// 内存里的 S3 替身，只认条件写入探测、启动、健康项与写入用到的请求
+/// 内存里的 S3 替身，只认条件写入探测、启动、健康项、写入与分片上传用到的请求
 /// </summary>
 /// <remarks>
 /// 经 <see cref="DispatchProxy"/> 实现 <see cref="IAmazonS3"/>（代理类型由运行时从本类派生，所以本类公开且不密封）：对象只记键，按开关决定是否认 <c>If-None-Match: *</c>，可按请求名注入故障、让请求挂起直到取消，或把请求拦住直到放行；未模拟的请求抛出，用例里出现即说明发出了不该发的请求。线程安全，供并发探测的用例使用
@@ -37,6 +37,11 @@ public class FakeS3Client : DispatchProxy
     /// 未结束的分片上传标识
     /// </summary>
     private readonly HashSet<string> _uploads = new(StringComparer.Ordinal);
+
+    /// <summary>
+    /// 每个未结束的上传里已上传的分片（上传标识 → 编号 → 分片）
+    /// </summary>
+    private readonly Dictionary<string, SortedDictionary<int, PartDetail>> _parts = new(StringComparer.Ordinal);
 
     /// <summary>
     /// 收到的请求名，按到达顺序
@@ -78,6 +83,22 @@ public class FakeS3Client : DispatchProxy
     /// 缺省每次一个新的 GUID；换掉它模拟不合规的应答：返回 <see langword="null"/> 时应答不带标识，也可以返回空串或当不了句柄的标识。只有非空的标识记为未结束的上传
     /// </remarks>
     public Func<string?> NextUploadId { get; set; } = static () => Guid.NewGuid().ToString("N");
+
+    /// <summary>
+    /// 上传分片时应答里的 ETag
+    /// </summary>
+    /// <remarks>
+    /// 缺省带引号的 <c>"part"</c>；换掉它模拟不合规的应答：返回 <see langword="null"/> 时应答不带 ETag，也可以返回空串、只有引号或只有空白的 ETag。列出分片时交出的就是它
+    /// </remarks>
+    public Func<string?> NextPartETag { get; set; } = static () => "\"part\"";
+
+    /// <summary>
+    /// 列出分片时应答里的分片
+    /// </summary>
+    /// <remarks>
+    /// 缺省原样交出这个上传里已上传的分片（按编号升序）；换掉它模拟不合规的应答，如分片没有编号、编号越界、没有 ETag 或长度为负
+    /// </remarks>
+    public Func<IReadOnlyList<PartDetail>, IReadOnlyList<PartDetail>> ListedParts { get; set; } = static parts => parts;
 
     /// <summary>
     /// 挂起直到取消的请求名
@@ -206,6 +227,7 @@ public class FakeS3Client : DispatchProxy
             nameof(IAmazonS3.ListBucketsAsync) => Run(request, static () => new ListBucketsResponse(), cancellationToken),
             nameof(IAmazonS3.InitiateMultipartUploadAsync) => Run(request, () => Initiate((InitiateMultipartUploadRequest)args[0]!), cancellationToken),
             nameof(IAmazonS3.UploadPartAsync) => Run(request, () => UploadPart((UploadPartRequest)args[0]!), cancellationToken),
+            nameof(IAmazonS3.ListPartsAsync) when args[0] is ListPartsRequest list => Run(request, () => ListParts(list), cancellationToken),
             nameof(IAmazonS3.CompleteMultipartUploadAsync) => Run(request, () => Complete((CompleteMultipartUploadRequest)args[0]!), cancellationToken),
             nameof(IAmazonS3.AbortMultipartUploadAsync) => Run(request, () => Abort((AbortMultipartUploadRequest)args[0]!), cancellationToken),
             _ => throw new NotSupportedException($"The fake S3 client does not simulate '{request}'."),
@@ -314,8 +336,44 @@ public class FakeS3Client : DispatchProxy
     /// <summary>
     /// 上传分片
     /// </summary>
+    /// <remarks>
+    /// 后一次覆盖同一编号的前一次（同 Amazon S3）；应答的 ETag 取 <see cref="NextPartETag"/>
+    /// </remarks>
     private UploadPartResponse UploadPart(UploadPartRequest request)
-        => _uploads.Contains(request.UploadId) ? new UploadPartResponse { ETag = "\"part\"", HttpStatusCode = HttpStatusCode.OK } : throw ServiceError(HttpStatusCode.NotFound, "NoSuchUpload");
+    {
+        if (!_uploads.Contains(request.UploadId))
+        {
+            throw ServiceError(HttpStatusCode.NotFound, "NoSuchUpload");
+        }
+
+        var etag = NextPartETag();
+        var number = request.PartNumber ?? throw new InvalidOperationException("The fake S3 client got an UploadPart request without a part number.");
+        if (!_parts.TryGetValue(request.UploadId, out var parts))
+        {
+            parts = [];
+            _parts[request.UploadId] = parts;
+        }
+
+        parts[number] = new PartDetail { PartNumber = number, ETag = etag, Size = request.PartSize };
+        return new UploadPartResponse { ETag = etag, HttpStatusCode = HttpStatusCode.OK };
+    }
+
+    /// <summary>
+    /// 列出分片
+    /// </summary>
+    /// <remarks>
+    /// 一页交出全部分片，经 <see cref="ListedParts"/> 换成要模拟的应答
+    /// </remarks>
+    private ListPartsResponse ListParts(ListPartsRequest request)
+    {
+        if (!_uploads.Contains(request.UploadId))
+        {
+            throw ServiceError(HttpStatusCode.NotFound, "NoSuchUpload");
+        }
+
+        IReadOnlyList<PartDetail> uploaded = _parts.TryGetValue(request.UploadId, out var parts) ? [.. parts.Values] : [];
+        return new ListPartsResponse { Parts = [.. ListedParts(uploaded)], IsTruncated = false, HttpStatusCode = HttpStatusCode.OK };
+    }
 
     /// <summary>
     /// 完成分片上传
@@ -336,6 +394,7 @@ public class FakeS3Client : DispatchProxy
         }
 
         _uploads.Remove(request.UploadId);
+        _parts.Remove(request.UploadId);
         _objects.Add(request.BucketName + "/" + request.Key);
         return new CompleteMultipartUploadResponse { ETag = "\"complete\"", HttpStatusCode = HttpStatusCode.OK };
     }
@@ -344,5 +403,13 @@ public class FakeS3Client : DispatchProxy
     /// 放弃分片上传
     /// </summary>
     private AbortMultipartUploadResponse Abort(AbortMultipartUploadRequest request)
-        => _uploads.Remove(request.UploadId) ? new AbortMultipartUploadResponse { HttpStatusCode = HttpStatusCode.NoContent } : throw ServiceError(HttpStatusCode.NotFound, "NoSuchUpload");
+    {
+        if (!_uploads.Remove(request.UploadId))
+        {
+            throw ServiceError(HttpStatusCode.NotFound, "NoSuchUpload");
+        }
+
+        _parts.Remove(request.UploadId);
+        return new AbortMultipartUploadResponse { HttpStatusCode = HttpStatusCode.NoContent };
+    }
 }

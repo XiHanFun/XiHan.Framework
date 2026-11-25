@@ -1,6 +1,7 @@
 // Copyright (c) XiHanFun Contributors. Licensed under the MIT License.
 // See the LICENSE file in the project root for full license text.
 
+using System.Globalization;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
@@ -11,7 +12,7 @@ namespace XiHan.Framework.ObjectStorage.S3.Tests;
 /// 本机回环上记录请求头的假 HTTP 对端
 /// </summary>
 /// <remarks>
-/// 既能当 S3 的端点，也能当 HTTP 代理：把每个请求头原样记下，按 <c>Content-Length</c> 读掉请求体（带 <c>Expect: 100-continue</c> 时先回 100），再按设定应答——不应答（核对超时）、要求代理凭据（没带就 407）、其余一律回给定的状态码与响应头，响应没有响应体。不转发任何请求：用例核对的是本进程发出了什么
+/// 既能当 S3 的端点，也能当 HTTP 代理：把每个请求头原样记下，按 <c>Content-Length</c> 读掉请求体（带 <c>Expect: 100-continue</c> 时先回 100），再按设定应答——不应答（核对超时）、要求代理凭据（没带就 407）、其余一律回给定的状态码、响应头与响应体（缺省没有响应体）。不转发任何请求：用例核对的是本进程发出了什么
 /// </remarks>
 internal sealed class RecordingHttpListener : IAsyncDisposable
 {
@@ -66,6 +67,14 @@ internal sealed class RecordingHttpListener : IAsyncDisposable
     private readonly string _headers;
 
     /// <summary>
+    /// 应答的响应体
+    /// </summary>
+    /// <remarks>
+    /// 按 UTF-8 编码写出，<c>Content-Length</c> 是它的字节数；缺省为空
+    /// </remarks>
+    private readonly byte[] _body;
+
+    /// <summary>
     /// 要求的 <c>Proxy-Authorization</c> 头的值
     /// </summary>
     /// <remarks>
@@ -76,11 +85,12 @@ internal sealed class RecordingHttpListener : IAsyncDisposable
     /// <summary>
     /// 创建并开始监听
     /// </summary>
-    private RecordingHttpListener(bool silent, string status, string? proxyAuthorization, string[]? headers = null)
+    private RecordingHttpListener(bool silent, string status, string? proxyAuthorization, string[]? headers = null, string? body = null)
     {
         _silent = silent;
         _status = status;
         _headers = string.Concat((headers ?? []).Select(static header => header + "\r\n"));
+        _body = Encoding.UTF8.GetBytes(body ?? string.Empty);
         _proxyAuthorization = proxyAuthorization;
         _listener.Start();
         Port = ((IPEndPoint)_listener.LocalEndpoint).Port;
@@ -127,6 +137,14 @@ internal sealed class RecordingHttpListener : IAsyncDisposable
     /// <paramref name="headers"/> 是另带的响应头，每项一整行（如 <c>ETag: "abc"</c>），原样写出，不带 <c>Content-Length</c>（它总是 0）
     /// </remarks>
     public static RecordingHttpListener Answering(string status, params string[] headers) => new(silent: false, status, proxyAuthorization: null, headers);
+
+    /// <summary>
+    /// 每个请求都回 <paramref name="status"/> 与响应体 <paramref name="body"/> 的对端
+    /// </summary>
+    /// <remarks>
+    /// 让 SDK 解析一份给定的应答（如列出分片的 XML）；<paramref name="headers"/> 同 <see cref="Answering"/>，<c>Content-Length</c> 按响应体的 UTF-8 字节数写出
+    /// </remarks>
+    public static RecordingHttpListener AnsweringWithBody(string status, string body, params string[] headers) => new(silent: false, status, proxyAuthorization: null, headers, body);
 
     /// <summary>
     /// 要求基本认证的代理：没带凭据的请求回 407，带对了的回 <paramref name="status"/>
@@ -254,8 +272,12 @@ internal sealed class RecordingHttpListener : IAsyncDisposable
 
                     var response = challenged
                         ? "HTTP/1.1 407 Proxy Authentication Required\r\nProxy-Authenticate: Basic realm=\"test\"\r\nContent-Length: 0\r\n\r\n"
-                        : $"HTTP/1.1 {_status}\r\n{_headers}Content-Length: 0\r\n\r\n";
+                        : $"HTTP/1.1 {_status}\r\n{_headers}Content-Length: {_body.Length.ToString(CultureInfo.InvariantCulture)}\r\n\r\n";
                     await stream.WriteAsync(Encoding.ASCII.GetBytes(response), _stopping.Token);
+                    if (!challenged && _body.Length > 0)
+                    {
+                        await stream.WriteAsync(_body, _stopping.Token);
+                    }
                 }
             }
             catch (Exception exception) when (exception is OperationCanceledException or IOException or SocketException or ObjectDisposedException)
