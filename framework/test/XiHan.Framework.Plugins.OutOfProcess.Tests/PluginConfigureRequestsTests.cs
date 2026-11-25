@@ -6,6 +6,7 @@ using System.Text.Json;
 using Google.Protobuf;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using XiHan.Framework.Kernel.Hosting;
 using XiHan.Framework.Kernel.Plugins;
 using XiHan.Framework.Plugins.Protocol;
 using XiHan.Framework.Plugins.Protocol.Hosting;
@@ -281,6 +282,33 @@ public sealed class PluginConfigureRequestsTests : IDisposable
 
         Assert.Equal(reason, Rejected(Manifest(new Binding("db", "connection:relational")), Configuration()));
         Assert.DoesNotContain("s3cret-file", _logs.Entries[^1].Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Bindings_WithMoreFilesThanTheKernelReads_FailTheRequest_BeforeAnyPropertyIsChecked()
+    {
+        // 正好 128 个文件读得进来（RFC-0016 第 10 条），再由下发的 64 个属性的上限拦下；多一个即文件数的上限，属性不再核对
+        Mount("db", Enumerable.Range(0, BindingResolver.MaxBindingFiles).Select(static i => ($"s3cret-{i}", "v")).ToArray());
+        Assert.Equal("binding 'db' has more than 64 properties", Rejected(Manifest(new Binding("db", "connection:relational")), Configuration()));
+
+        Mount("db", ("s3cret-extra", "v"));
+        Assert.Equal("binding 'db' has more than 128 files", Rejected(Manifest(new Binding("db", "connection:relational")), Configuration()));
+        Assert.DoesNotContain("s3cret", _logs.Entries[^1].Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Bindings_ThePluginDidNotDeclare_AreNotCountedForIt()
+    {
+        // 只读清单声明的绑定：根目录下的绑定再多、别的绑定的文件再多，都不关这个插件的事
+        Mount("db", ("uri", "postgres://db/app"));
+        for (var i = 0; i <= BindingResolver.MaxBindings; i++)
+        {
+            Mount($"other-{i}");
+        }
+
+        Mount("wide", Enumerable.Range(0, BindingResolver.MaxBindingFiles + 1).Select(static i => ($"p{i}", "v")).ToArray());
+
+        Assert.Equal(["db"], Build(Manifest(new Binding("db", "connection:relational")), Configuration()).Bindings.Select(static b => b.Name));
     }
 
     [Fact]

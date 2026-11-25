@@ -1,6 +1,7 @@
 // Copyright (c) XiHanFun Contributors. Licensed under the MIT License.
 // See the LICENSE file in the project root for full license text.
 
+using System.Globalization;
 using System.Text;
 using Microsoft.Extensions.Configuration;
 using XiHan.Framework.Primitives;
@@ -11,7 +12,7 @@ namespace XiHan.Framework.Kernel.Hosting;
 /// 从配置与 Service Binding 目录解析绑定
 /// </summary>
 /// <remarks>
-/// 目录来源的文件有大小上限：一个文件最多 <see cref="MaxFileBytes"/> 字节，一个绑定目录里读的文件合计最多 <see cref="MaxBindingBytes"/> 字节，读的时候到上限就停，超过时抛出携带 <see cref="KernelErrors.BindingTooLarge"/> 的 <see cref="FrameworkException"/>（RFC-0016「资源绑定与配置节」第 9 条，ADR-0292）
+/// 目录来源有大小与条目数的上限：一个文件最多 <see cref="MaxFileBytes"/> 字节，一个绑定目录里读的文件合计最多 <see cref="MaxBindingBytes"/> 字节，读的时候到上限就停（RFC-0016「资源绑定与配置节」第 9 条，ADR-0292）；解析全部绑定时根目录下最多 <see cref="MaxBindings"/> 个绑定，一个绑定目录里读的文件最多 <see cref="MaxBindingFiles"/> 个，先数、后读（第 10 条，ADR-0301）。超过时抛出携带 <see cref="KernelErrors.BindingTooLarge"/> 的 <see cref="FrameworkException"/>
 /// </remarks>
 [ApiLevel(Stability.Stable, "5.0")]
 public static class BindingResolver
@@ -43,6 +44,22 @@ public static class BindingResolver
     public const int MaxBindingBytes = 1048576;
 
     /// <summary>
+    /// 一个绑定目录里读的文件数上限
+    /// </summary>
+    /// <remarks>
+    /// 以 <c>.</c> 开头的不读、不计。下发给插件的一个绑定最多 64 个属性（ADR-0285）的两倍：<c>type</c> 文件之外，下发得了的属性都放得下（ADR-0301）
+    /// </remarks>
+    public const int MaxBindingFiles = 128;
+
+    /// <summary>
+    /// 解析全部绑定时根目录下的绑定数上限
+    /// </summary>
+    /// <remarks>
+    /// 根目录下的每个子目录都是一个绑定、都计入；与 <see cref="MaxBindingFiles"/> 同一个数，解析全部绑定读进内存的内容因此不超过 128 × <see cref="MaxBindingBytes"/> 字节（ADR-0301）。只解析点了名的绑定时不核对
+    /// </remarks>
+    public const int MaxBindings = 128;
+
+    /// <summary>
     /// 读一个文件时每次读的字节数
     /// </summary>
     private const int ChunkBytes = 4096;
@@ -54,7 +71,7 @@ public static class BindingResolver
     /// 同名时配置优先于目录
     /// <c>serviceBindingRoot</c> 取 <c>null</c>
     /// </remarks>
-    /// <exception cref="FrameworkException">目录里的文件超过 <see cref="MaxFileBytes"/> 或一个绑定合计超过 <see cref="MaxBindingBytes"/>（<see cref="KernelErrors.BindingTooLarge"/>）</exception>
+    /// <exception cref="FrameworkException">目录里的文件超过 <see cref="MaxFileBytes"/>、一个绑定合计超过 <see cref="MaxBindingBytes"/>、一个绑定的文件多于 <see cref="MaxBindingFiles"/> 个或根目录下的绑定多于 <see cref="MaxBindings"/> 个（<see cref="KernelErrors.BindingTooLarge"/>）</exception>
     public static IReadOnlyDictionary<string, BindingValue> Resolve(IConfiguration configuration)
         => Resolve(configuration, null);
 
@@ -64,7 +81,7 @@ public static class BindingResolver
     /// <remarks>
     /// 同名时配置优先于目录
     /// </remarks>
-    /// <exception cref="FrameworkException">目录里的文件超过 <see cref="MaxFileBytes"/> 或一个绑定合计超过 <see cref="MaxBindingBytes"/>（<see cref="KernelErrors.BindingTooLarge"/>）</exception>
+    /// <exception cref="FrameworkException">目录里的文件超过 <see cref="MaxFileBytes"/>、一个绑定合计超过 <see cref="MaxBindingBytes"/>、一个绑定的文件多于 <see cref="MaxBindingFiles"/> 个或根目录下的绑定多于 <see cref="MaxBindings"/> 个（<see cref="KernelErrors.BindingTooLarge"/>）</exception>
     public static IReadOnlyDictionary<string, BindingValue> Resolve(IConfiguration configuration, string? serviceBindingRoot)
         => Resolve(configuration, serviceBindingRoot, null);
 
@@ -72,7 +89,7 @@ public static class BindingResolver
     /// 解析绑定，可以只解析点了名的那些
     /// </summary>
     /// <remarks>
-    /// 同名时配置优先于目录。<paramref name="names"/> 给了时只读这些名字的绑定目录与配置节，其余的不读、不进结果：每个绑定的读法与不限名字时相同，名字按字面比。插件宿主在配置一个插件时只解析它的清单声明的绑定，别的绑定读不出来不影响它（ADR-0268）。点了名的绑定目录按 <paramref name="names"/> 的顺序读：读不出或超过大小上限时，报的是这个顺序里的第一个（ADR-0292）
+    /// 同名时配置优先于目录。<paramref name="names"/> 给了时只读这些名字的绑定目录与配置节，其余的不读、不进结果：每个绑定的读法与不限名字时相同，名字按字面比。插件宿主在配置一个插件时只解析它的清单声明的绑定，别的绑定读不出来不影响它（ADR-0268）。点了名的绑定目录按 <paramref name="names"/> 的顺序读：读不出或超过大小、文件数的上限时，报的是这个顺序里的第一个（ADR-0292）；只读点了名的那几个目录，根目录下的绑定数不核对（ADR-0301）
     /// </remarks>
     /// <param name="configuration">宿主配置</param>
     /// <param name="serviceBindingRoot">Service Binding 根目录；<see langword="null"/> 时取环境变量</param>
@@ -88,7 +105,14 @@ public static class BindingResolver
         {
             if (names is null)
             {
-                foreach (var directory in Directory.EnumerateDirectories(serviceBindingRoot))
+                // 先数、后读：最多枚举到上限再多一个，多出来即失败，一个文件也不读；根目录指错到一棵大目录树时不把每个子目录都当成绑定读进内存
+                var directories = Directory.EnumerateDirectories(serviceBindingRoot).Take(MaxBindings + 1).ToList();
+                if (directories.Count > MaxBindings)
+                {
+                    throw new FrameworkException(KernelErrors.BindingTooLarge, string.Create(CultureInfo.InvariantCulture, $"The service binding root contains more than {MaxBindings} bindings."));
+                }
+
+                foreach (var directory in directories)
                 {
                     var binding = FromDirectory(directory);
                     result[binding.Name] = binding;
@@ -168,7 +192,7 @@ public static class BindingResolver
     /// 按 Service Binding 规范从一个目录读取绑定
     /// </summary>
     /// <remarks>
-    /// 目录名是绑定名，每个文件是一个属性，<c>type</c> 作类型，<c>uri</c> 同时作主值。读的文件合计不超过 <see cref="MaxBindingBytes"/>，每个不超过 <see cref="MaxFileBytes"/>
+    /// 目录名是绑定名，每个文件是一个属性，<c>type</c> 作类型，<c>uri</c> 同时作主值。读的文件不多于 <see cref="MaxBindingFiles"/> 个，合计不超过 <see cref="MaxBindingBytes"/>，每个不超过 <see cref="MaxFileBytes"/>
     /// </remarks>
     private static BindingValue FromDirectory(string directory)
     {
@@ -178,16 +202,28 @@ public static class BindingResolver
         string? value = null;
         var remaining = MaxBindingBytes;
 
+        // 先数、后读：文件多于上限时这个绑定的内容一个字节也不读；空文件不占字节的额度，只有文件数能限住它们
+        var files = new List<string>();
         foreach (var file in Directory.EnumerateFiles(directory))
         {
-            // 规范允许挂载工具放置以点开头的元数据文件（如 ..data 符号链接），它们不是绑定属性
-            var key = Path.GetFileName(file);
-            if (key.StartsWith('.'))
+            // 规范允许挂载工具放置以点开头的元数据文件（如 ..data 符号链接），它们不是绑定属性，不读也不计
+            if (Path.GetFileName(file).StartsWith('.'))
             {
                 continue;
             }
 
+            if (files.Count == MaxBindingFiles)
+            {
+                throw new BindingTooLargeException(name, Path.GetFileName(file), BindingLimit.FileCount);
+            }
+
+            files.Add(file);
+        }
+
+        foreach (var file in files)
+        {
             // 文件内容常带尾部换行，统一修剪；类型文件不进属性，uri 既是主值也保留为属性
+            var key = Path.GetFileName(file);
             var content = ReadBounded(name, file, ref remaining).Trim();
             switch (key)
             {
@@ -230,7 +266,7 @@ public static class BindingResolver
                 if (content.Length + read > limit)
                 {
                     // 剩余的合计额度还有一整个文件那么多时，超的是单个文件的上限，否则是合计的上限
-                    throw new BindingTooLargeException(binding, Path.GetFileName(path), total: limit < MaxFileBytes);
+                    throw new BindingTooLargeException(binding, Path.GetFileName(path), limit < MaxFileBytes ? BindingLimit.TotalBytes : BindingLimit.FileBytes);
                 }
 
                 content.Write(chunk[..read]);

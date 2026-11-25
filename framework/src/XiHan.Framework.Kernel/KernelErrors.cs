@@ -83,10 +83,10 @@ public static class KernelErrors
     public const string InvalidAppState = "KERNEL_HOSTING_004";
 
     /// <summary>
-    /// 绑定目录里的文件超过大小上限
+    /// 绑定目录超过大小或条目数的上限
     /// </summary>
     /// <remarks>
-    /// 一个文件超过 <see cref="Hosting.BindingResolver.MaxFileBytes"/>，或一个绑定目录里读的文件合计超过 <see cref="Hosting.BindingResolver.MaxBindingBytes"/>；配置错误，装配时启动失败（RFC-0016「资源绑定与配置节」第 9 条，ADR-0292）
+    /// 一个文件超过 <see cref="Hosting.BindingResolver.MaxFileBytes"/>、一个绑定目录里读的文件合计超过 <see cref="Hosting.BindingResolver.MaxBindingBytes"/>（RFC-0016「资源绑定与配置节」第 9 条，ADR-0292），或一个绑定目录里读的文件多于 <see cref="Hosting.BindingResolver.MaxBindingFiles"/> 个、根目录下的绑定多于 <see cref="Hosting.BindingResolver.MaxBindings"/> 个（第 10 条，ADR-0301）；配置错误，装配时启动失败
     /// </remarks>
     public const string BindingTooLarge = "KERNEL_HOSTING_005";
 

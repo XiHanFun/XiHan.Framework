@@ -368,6 +368,8 @@ public sealed class ProtocolVectorTests
         Assert.Equal(PluginBindingProperties.MaxBytes, limits.GetProperty("maxBytes").GetInt32());
         Assert.Equal(BindingResolver.MaxFileBytes, limits.GetProperty("maxFileBytes").GetInt32());
         Assert.Equal(BindingResolver.MaxBindingBytes, limits.GetProperty("maxBindingFileBytes").GetInt32());
+        Assert.Equal(BindingResolver.MaxBindingFiles, limits.GetProperty("maxBindingFiles").GetInt32());
+        Assert.Equal(BindingResolver.MaxBindings, limits.GetProperty("maxBindings").GetInt32());
         Assert.Equal(PluginConfigureRequests.MaxBytes, limits.GetProperty("maxRequestBytes").GetInt32());
 
         var names = document.RootElement.GetProperty("names");
@@ -518,7 +520,7 @@ public sealed class ProtocolVectorTests
         Assert.Contains(PluginBindingRules.FindViolation(new ManifestBinding("db", "connection:relational"), null).ValueOrThrow(), reasons);
         Assert.Contains(PluginBindingRules.FindViolation(new ManifestBinding("db", "connection:relational"), new BindingValue { Name = "db", Type = "queue", Value = "x", Properties = empty }).ValueOrThrow(), typed);
 
-        // 绑定目录的文件超过内核的大小上限，与整个请求超过上限：经真实的组装写出
+        // 绑定目录超过内核的大小与文件数上限，与整个请求超过上限：经真实的组装写出
         var root = Directory.CreateTempSubdirectory("xihan-binding-reasons-");
         try
         {
@@ -531,6 +533,16 @@ public sealed class ProtocolVectorTests
             File.WriteAllText(Path.Combine(root.FullName, "db", "blob"), new string('v', BindingResolver.MaxFileBytes));
             File.WriteAllText(Path.Combine(root.FullName, "db", "blob2"), new string('v', BindingResolver.MaxFileBytes));
             File.WriteAllText(Path.Combine(root.FullName, "db", "blob3"), "v");
+            Assert.Contains(ReasonOf(PluginConfigureRequests.Build(manifest, configuration, root.FullName, "work", NullLoggerFactory.Instance.CreateLogger("test"))), reasons);
+
+            // 文件多于内核读的上限（RFC-0016 第 10 条，ADR-0301）
+            Directory.Delete(Path.Combine(root.FullName, "db"), recursive: true);
+            Directory.CreateDirectory(Path.Combine(root.FullName, "db"));
+            for (var i = 0; i <= BindingResolver.MaxBindingFiles; i++)
+            {
+                File.WriteAllText(Path.Combine(root.FullName, "db", $"p{i}"), "v");
+            }
+
             Assert.Contains(ReasonOf(PluginConfigureRequests.Build(manifest, configuration, root.FullName, "work", NullLoggerFactory.Instance.CreateLogger("test"))), reasons);
 
             var large = TestManifests.Create("xihan.test.bound", kind: ManifestKind.Plugin) with { Contributes = new Contributions { Config = new ConfigContribution("XiHan:Bound") } };
