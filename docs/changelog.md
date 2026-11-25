@@ -27,16 +27,19 @@
 - S3 的写入与分片上传的发起遇到 AWS SDK 写不出原值的内容类型（`text/plain;` 这类空参数，`text/plain;charset=utf-8` 这类 `;` 两侧空格与 `; ` 不同的）返回 `OBJECTSTORAGE_VALIDATION_007`，不发请求：改成 `text/plain; charset=utf-8` 这种写法
 - S3 命名实例的设置里配了代理（`ProxyHost` 等）的，由运营方在配置节写 `XiHan:ObjectStorage:S3:NamedInstancesAllowProxy: true`，否则登记失败（`OBJECTSTORAGE_VALIDATION_003`）
 - S3 缺省实例只给 `AccessKey` 或 `SecretKey` 其中一项时启动失败（以前悄悄走默认凭据链）：两项都给，或两项都删
+- S3 的 `ServiceUrl`（配置节或命名实例的设置）与绑定 `objectstorage` 的主值带用户信息时，缺省实例启动失败、命名实例登记失败（`OBJECTSTORAGE_VALIDATION_003`）：去掉 `user:pass@`，凭据写进 `AccessKey` / `SecretKey`（绑定写属性 `accessKey` / `secretKey`）
 - 消息信封的 `time` 与 binary 模式的 `ce-time` 只认带 `T`、秒与偏移的 RFC 3339 时刻（`2026-01-02T03:04:05Z`、`…+08:00`），空格代替 `T`、没有偏移、没有秒、只有日期、`+0800`、首尾空白、HTTP 日期都是信封不合法：自己写结构化 JSON 或 `ce-time` 的发送方逐个核对
 - 信封里重复的成员（含 `data` 内部）、`data` 与 `data_base64` 同时出现、值为对象或数组的扩展属性现在是信封不合法，竞争订阅进死信、广播订阅丢弃：升级前带这类信封的队列先排空
 - 读出的 `MessageEnvelope.Time` 一律是 UTC（`Offset` 为零），值为 `null` 的扩展属性读成没有这个扩展：取 `Offset` 的处理器改为按时刻使用，扩展的有无用 `Extension(name)` 判断
 - `CloudEventsFormat.Encode` 对带重复成员或孤立代理项的 JSON 数据抛出 `MESSAGING_VALIDATION_002`：发布之前改正数据
 - 名为 `id`、`source`、`type`、`time`、`subject`、`data`、`data_base64`、`specversion`、`datacontenttype`、`dataschema` 的扩展属性，构造信封或 `WithExtension` 时就抛 `ArgumentException`：改名（如加 `xihan` 前缀）
-- 带 `dataschema` 的 CloudEvents 事件（structured 的成员、binary 的 `ce-dataschema`）和 binary 的 `ce-data` 头读不出了，入站端点返回 400、代理上按无法解码了结：发送方去掉 `dataschema`，或改放到自己的扩展属性里
 - 下发给插件的绑定有属性名不在 `[A-Za-z0-9._-]` 之内（1–253 个字符、不以 `.` 开头）、属性多于 64 个或名与值合计超过 256 KiB 时，这个插件配置失败并按重启策略重试：把多余的文件挪出绑定目录或改属性名
 - 绑定目录里单个文件超过 512 KiB、或一个绑定目录的文件合计超过 1 MiB 时应用启动失败（`KERNEL_HOSTING_005`）：把不属于绑定的文件移出绑定目录
 - 插件清单声明的绑定没写 `required`（缺省必需）、部署里又没给或只给了类型时，进程外与 Wasm 插件配置失败，进程内插件加载失败：补上绑定，或在清单写 `"required": false`
 - 来源声明的绑定类型与插件清单不同时插件配置或加载失败（以前下发来源的类型）：改正或去掉来源的 `type`
+- 特性声明的必需绑定只给了类型，或可选绑定给了内容而 `type` 与清单不同时，应用启动失败（`KERNEL_HOSTING_001`）：补上主值或属性，改正或去掉 `type`；按消息文本匹配的改认 `Feature '<清单 ID>' is not configured: <reason>.`
+- 一个绑定目录多于 128 个文件（以 `.` 开头的不计），或绑定根目录下多于 128 个子目录时应用启动失败（`KERNEL_HOSTING_005`），插件的绑定多于 128 个文件时插件配置或加载失败：挪走不属于绑定的文件与目录，或改正 `SERVICE_BINDING_ROOT`
+- 用了 `UseServiceBindingRoot` 又用进程内插件的，把同一个值作 `InProcessPluginHost` 的第三个参数；插件里 `BindingResolver.Resolve(context.Configuration)` 改成 `Resolve(context.Configuration, context.ServiceBindingRoot)`
 - 插件发布的信封 `time` 只认带秒与偏移的 RFC 3339，不合的那一项以 `messaging.envelope.invalid_time` 不发布：插件作者改用 `2026-11-25T03:25:00Z` 或带 `±HH:MM` 偏移的写法
 - 把整个 stderr 当一行 JSON 解析的命令行脚本，调用弃用的操作且失败时会多读到一行提示，取最后一行；按行匹配 `.proto` 里以分号结束的 `rpc` 的脚本要认带花括号的形式（只影响已声明弃用的操作）
 - 照抄 `Caching.Remote` 消息目录的远程缓存插件，把 `caching.remote.key_invalid` 改成同样的「按 UTF-8 编码后不超过 512 字节」（10 个区域），否则与宿主的目录冲突（`LOCALIZATION_CONFLICT_001`）
@@ -51,7 +54,9 @@
 - 工作流表达式里数组与对象的文本改为成员按名字排序的紧凑 JSON，非 ASCII 字符原样、数字写规范文本：按文本匹配容器的条件照新写法改
 - 工作流表达式的成员名与变量名一律区分大小写，不随 `JsonObject` 的选项：靠大小写不敏感取成员的表达式改成准确的名字
 - 工作流表达式一次求值（一次渲染的全部占位合计）的工作量上限是 16777216，超过是 `WORKFLOW_VALIDATION_003`（`workflow.expression.budget_exceeded`）：整个渲染几十万个值的变量、在很大的数组里 `contains`、比两个很大的容器，这类写法改在活动里处理
-- 列表查询关键字的折叠改成逐个码位的 Unicode 简单小写映射（`İ` 折成 `i`，平面以外的字母同样折叠）：`Workflow.Database` 查询列（`SearchText`、`SearchTitle`、`SearchInstanceText`）里含这些字符的已有行重新折叠回填
+- 工作流表达式读数字按它的写法的长度计入工作量，反复读几十万位以上数字的表达式可能以 `budget_exceeded` 失败：这类数据改在活动里处理
+- 工作流表达式的 `upper('ı')` 是 `I`、`lower('İ')` 是 `i`（与关键字的折叠同一份 Unicode 简单大小写映射）：要保留这两个字符原样的在流程之外处理
+- 列表查询关键字的折叠改成逐个码位的 Unicode 简单小写映射（`İ` 折成 `i`，平面以外的字母同样折叠）：`Workflow.Database` 的应用升级之后为平台与每个租户调用一次 `DatabaseWorkflowBackfill.RunAsync` 重新算出已有行的查询列，`Busy` 不为零时再跑一次
 - `Delay.Until`、`UserTask.DueAt` 与 `WorkflowValues.TryConvert<DateTimeOffset>` / `<DateTime>` 只认表达式的时间文法，`12:30`、`01/02/2026`、`Jan 2, 2026` 不再被接受：写成 `2026-01-02T12:30` 这类完整的时刻；读出的时刻是 UTC，任务视图的 `DueAt` 不再保留属性里写的偏移
 :::
 
@@ -72,6 +77,9 @@
 - **新增** 内核的 `JsonText`（`FindProblem`）、`JsonTextProblem` 与 `JsonTextProblemKind` 公开（Stable）：读取 JSON 文本的共同检查，操作载荷、清单与消息信封共用，问题带种类（语法、嵌套过深、非法 UTF-8、孤立代理项、重复成员）（ADR-0283、ADR-0291）
 - **新增** 绑定目录的文件大小上限 `BindingResolver.MaxFileBytes`（512 KiB）与 `MaxBindingBytes`（1 MiB）：读到上限即停，超限以 `KERNEL_HOSTING_005`（`KernelErrors.BindingTooLarge`）启动失败（ADR-0292）
 - **新增** `PluginBindingRules`（Preview）：插件宿主共用的绑定核对（ADR-0292）
+- **调整** 装配特性时的绑定核对改用 `PluginBindingRules`，与插件宿主同一套规则：只给了类型的必需绑定算没给，可选绑定也核对类型，`KERNEL_HOSTING_001` 的消息改为 `Feature '<清单 ID>' is not configured: <reason>.`（ADR-0301）
+- **新增** 绑定目录的条目数上限 `BindingResolver.MaxBindingFiles`（一个绑定 128 个文件）与 `MaxBindings`（根目录下 128 个绑定）：先数后读，超限以 `KERNEL_HOSTING_005` 启动失败（ADR-0301）
+- **新增** `PluginContext.ServiceBindingRoot`：宿主解析绑定所用的根目录，进程内插件读绑定时交给 `BindingResolver.Resolve`（ADR-0301）
 - **新增** `UnreadableDeadlineLog`（Preview）：调用方给的截止时间读不出时的限频告警，内核登记为单例，自写载体读不出截止时间时经它报告（ADR-0279）
 - **调整** `BindingValue.ToString()` 的 `Properties` 只列属性名，属性值不打印（ADR-0285）
 
@@ -99,6 +107,9 @@
 - **调整** 插件宿主在下发或加载之前按清单核对绑定：必需的绑定没有内容、来源声明的类型与清单不同即配置或加载失败，下发的 `type` 总是清单的；进程内宿主也核对（ADR-0292）
 - **调整** 进程外与 Wasm 插件的 `Configure` 请求按 protobuf 编码超过 2 MiB 时配置失败，`reason` 写明是整个请求，不再失败在传输层（ADR-0292）
 - **调整** 插件发布的信封 `time` 与消息信封同一条文法，读不出的那一项是 `messaging.envelope.invalid_time`（参数 `time` 是原文），以前没有偏移的按 UTC 读（ADR-0293）
+- **新增** `InProcessPluginHost` 构造的可选参数 `serviceBindingRoot`：加载前按它解析绑定，插件经 `PluginContext.ServiceBindingRoot` 拿到同一个值，不给时取环境变量（ADR-0301）
+- **调整** 插件的绑定目录多于 128 个文件时配置失败，`reason` 为 `binding '<绑定名>' has more than 128 files`（ADR-0301）
+- **修复** 插件写来的错误细节里有孤立代理项时当作没有细节，不再换成 U+FFFD（ADR-0301）
 
 ### 配置
 
@@ -137,9 +148,11 @@
 - **修复** 发件箱的退避对任何尝试次数都饱和在 `MaxRetryDelay`；以前上限大于间隔的 2 的 30 次方倍时到不了上限（ADR-0283）
 - **修复** Redis 上被停止打断的投递不计尝试：重启后仍是原来的尝试号，最后一次尝试上被打断的消息不再不经处理就进死信（ADR-0284）
 - **新增** `EnvelopeExtensions.ReservedNames`：扩展属性名不能是 CloudEvents 的规范属性名与结构化 JSON 的成员名，构造信封时就拒绝，四个代理一致（ADR-0298）
-- **调整** 带 `dataschema` 的文档与 binary 的 `ce-dataschema`、`ce-data` 头是信封不合法，以前读成同名的扩展属性（ADR-0298）
+- **调整** binary 的 `ce-data` 头是信封不合法，以前读成同名的扩展属性（ADR-0298）
 - **优化** Redis 收到停止信号后不再读取新条目，没读走的留在流里，由别的实例直接读到（ADR-0298）
 - **优化** Redis 上被停止打断的条目，别的实例下一次维护就接手，不用等满 `ClaimIdleTimeSeconds`（ADR-0298）
+- **新增** `MessageEnvelope.DataSchema` 承载 CloudEvents 的 `dataschema`：structured 的成员、binary 的 `ce-dataschema` 头、插件协议的 `Envelope.data_schema` 原样收发，空串或只有空白抛 `ArgumentException`（ADR-0305）
+- **调整** 结构化 JSON 里 `dataschema` 为空串、只有空白或不是字符串时信封不合法（`MESSAGING_VALIDATION_002`）（ADR-0305）
 
 ### 缓存
 
@@ -170,6 +183,10 @@
 - **调整** 表达式一次求值的工作量上限 16777216，超过是 `workflow.expression.budget_exceeded`（新消息键）（ADR-0296）
 - **调整** 列表关键字的折叠改成逐个码位的 Unicode 简单小写映射，`İ` 与平面以外的大写字母也折叠（ADR-0296）
 - **调整** `Delay.Until`、`UserTask.DueAt` 与按时间读的值改用表达式的时间文法、读成 UTC，不再随机器的日子与时区变（ADR-0296）
+- **调整** 表达式的 `upper` / `lower` 改用与关键字折叠同一份的 Unicode 简单大小写映射，`İ` 与 `ı` 也转换（ADR-0303）
+- **调整** 表达式读数字按它的写法的长度计入工作量，`len`、`isNullOrEmpty` 读数字也计入（ADR-0303）
+- **调整** 表达式算出的数字写进变量时不再带结尾的零（`1.5 + 1.5` 存成 `3`），数值不变（ADR-0303）
+- **新增** `DatabaseWorkflowBackfill`、`DatabaseWorkflowBackfillReport`（Preview）：按分区分批回填已有行的查询列，可以重复运行、与引擎互斥（ADR-0304）
 
 ### AI
 
@@ -193,6 +210,9 @@
 - **调整** S3 的 `AccessKey` 与 `SecretKey` 必须成对，缺省实例只给一项时启动失败，不再悄悄走默认凭据链（ADR-0294）
 - **修复** S3 的 `ServiceUrl` 与绑定主值不合法时，报错不再带原值（ADR-0294）
 - **新增** `xihan pack` 的 `bindings.example.yaml` 为 `blob` 绑定列出 `sessionToken`（ADR-0294）
+- **调整** S3 的 `ServiceUrl` 与绑定 `objectstorage` 的主值不再收用户信息，凭据只走密钥配置，报错只写键名（ADR-0302）
+- **修复** S3 发起分片上传时服务回成功却没有可用的上传标识，返回 `OBJECTSTORAGE_UNAVAILABLE_001`，不再抛异常（ADR-0302）
+- **新增** 命令行工具的配置索引收进 S3 的两个运营方开关，MCP tool `xihan_framework_config` 查得到，由 Provider 读取的键带 `readBy`（ADR-0302）
 
 ### 可观测
 
