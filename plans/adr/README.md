@@ -312,3 +312,6 @@
 | [0310](0310-SDK读写信封time的向量进plugin档.md) | SDK 读写信封 `time` 的向量收进 `plugin` 档：新增 `plugin/sdk-envelope-times.json`，按纳秒、100 纳秒、微秒、毫秒四种精度给出写出的文本与读出的时刻，另补必须读不出的文本；`plugin/envelope-times.json` 也进 `plugin` 档；Go 规则包新增 `TruncateEnvelopeTime`、`FormatSDKEnvelopeTime` | 已采纳 |
 | [0311](0311-绑定根目录跳过以点开头的子目录与绑定核对改名.md) | 绑定根目录下以 `.` 开头的子目录不是绑定，不读、不计入 128 个，点名也不读；符号链接按目标读、名字取目录项自己的；`PluginBindingRules` 改名 `Kernel.Hosting.BindingRules`，不留旧名 | 已采纳 |
 | [0312](0312-写出与转交的JSON文本严格编码成UTF-8.md) | 写出与转交的 JSON 文本在字符串与 UTF-8 之间严格转换：Wasm 宿主解码客体消息、`invoke --json`、MCP stdio 的一行与 `xihan setup` 读配置都不再换成 U+FFFD，按各处「不是 JSON」处理；SDK 字符串载荷编码不成即本地 `KERNEL_VALIDATION_001` | 已采纳 |
+| [0313](0313-S3的列举批量删除与读写应答缺内容返回错误.md) | S3 列出分片的分页不前进或超过 10000 片、列举截断却无可用续页标记、批量删除的错误项认不出键、读取与 HEAD 缺 `ETag` 或修改时间、写入缺 `ETag`、条件写入探测的发起缺上传标识，都按不合规的应答返回 `OBJECTSTORAGE_UNAVAILABLE_001`；写入结果的修改时间取本机时钟，契约写明可与读出的不同 | 已采纳 |
+| [0314](0314-宿主代收的上传先去掉内容类型首尾的空白.md) | 宿主代收的上传端点照 RFC 9110 §5.5 先去掉 `Content-Type` 首尾的空格与制表符，再与签名比较、核对文法与写入，各宿主结果一致 | 已采纳 |
+| [0315](0315-插件应答载荷的核对与写进JSON的字符串严格编码.md) | 宿主转交插件的应答载荷之前过 JSON 文本的检查，没过为 `PLUGINS_UNEXPECTED_001`、不按崩溃处理；SDK 以字符串交回的应答与发布的 `data` 严格编码；命令行字段选项、插件配置节与信封属性有孤立代理项时按各处的不合法处理，不写成 U+FFFD | 已采纳 |
