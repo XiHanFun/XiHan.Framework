@@ -133,7 +133,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
 
 - 保存是「新增或整体替换」：按 ID 批量取回已有行（每 1000 个一批），有的整行更新、没有的新增，同一批里同一 ID 后者覆盖前者；保存在调用方的事务里，失败随调用一起回滚。删实例级联删节点实例。
 - 实例列表的每个过滤项都是 SQL 条件，按排序项 `Sorts` 依次（空时创建时间降序）再接创建时间降序、写入序号降序、ID 降序在 SQL 里排序后分页（ADR-0102、ADR-0104，排序项里有创建时间时它不再作次序键，写入序号与 ID 随它的方向）；`CountAsync` 是 SQL 计数。关联 ID 集合是 `IN`（空集合不匹配），只取顶层是 `ParentInstanceId IS NULL`，关键字对 `SearchText` 做包含判断——实例标题或关联 ID 包含即匹配（ADR-0096、ADR-0099）。
-- 定义列表（`ListSummariesAsync` / `CountAsync`）是 SQL（ADR-0096）：关键字对 `SearchText` 做包含判断，两边都已小写折叠（见 [关键字](/workflow/definitions#关键字)），按字面由持久化的 `Contains` 保证（ADR-0098）；分类、名字、状态等值，创建时间区间按列比较；按排序项 `Sorts` 依次（空时名字升序）再接名字升序、版本降序、ID 升序在 SQL 里排序（ADR-0102、ADR-0104；次序键跳过排序项里已有的列、重复的排序项只取第一次，SQL Server 不许同一列在 `ORDER BY` 里出现两次）；摘要从读回的 `Document` 取。
+- 定义列表（`ListSummariesAsync` / `CountAsync`）是 SQL（ADR-0096）：关键字对 `SearchText` 做包含判断，两边都已小写折叠（见 [关键字](/workflow/definitions#关键字)），按字面由持久化的 `Contains` 保证（ADR-0098），排序规则另有放宽时以排序规则为准（见下文「推荐的排序规则」）；分类、名字、状态等值，创建时间区间按列比较；按排序项 `Sorts` 依次（空时名字升序）再接名字升序、版本降序、ID 升序在 SQL 里排序（ADR-0102、ADR-0104；次序键跳过排序项里已有的列、重复的排序项只取第一次，SQL Server 不许同一列在 `ORDER BY` 里出现两次）；摘要从读回的 `Document` 取。
 - 待办查询（`ListUserTasksAsync` / `CountUserTasksAsync`）同样是 SQL：书签行带所属实例的定义名、状态与实例一侧的关键字查询列，写书签时从实例行算出，实例新增或这几列变化时同步到它的书签行（同一事务），只取状态为 `Running` 的；关键字对任务标题列 `SearchTitle` 与实例一侧的 `SearchInstanceText`（实例行的 `SearchText` 再拼上折叠后的定义名）各自做包含判断、取或——任务标题、实例标题、定义名、关联 ID 任一包含即匹配（ADR-0096、ADR-0099）。到期书签按到期时间升序，其余书签与节点实例按时间升序、同刻按写入序号。
 - 上面三种查询用到的列（`Category`、`SearchText`、`SearchTitle`、`SearchInstanceText`）可空只为给已有行的表加列，已有的行要回填，没回填的行不被分类与关键字匹配；回填用 `DatabaseWorkflowBackfill`，见下文「升级之后回填查询列」。
 - 读出来的模型来自 JSON 反序列化，天然是快照；按 ID 批量查找每 1000 个一批，列表与级联查询按全序排序分页读完。删除对不存在的 ID 忽略，`DeleteByInstanceAsync` 删该实例全部书签；写入的记录的 `TenantId` 不等于分区时抛 `ArgumentException`。
@@ -225,6 +225,21 @@ UPDATE WorkflowInstanceRecord SET StatusOrder = CASE Status WHEN 'Running' THEN 
 
 - 定义行与实例行的 `SearchText`、书签行的 `SearchTitle` 与 `SearchInstanceText` 都是折叠后的值，折叠只做逐个码位的 Unicode 简单小写映射（`WorkflowKeyword.Fold`，见 [关键字](/workflow/definitions#关键字)），`%`、`_`、`[`、反斜杠原样保留（ADR-0099 第四节、ADR-0296）。
 - 回填：定义行 `SearchText = WorkflowKeyword.Join(name, displayName, description)`，`Category` 取 `Document` 的 `category`；实例行 `SearchText = WorkflowKeyword.Join(title, correlationId)`（`title` 取 `Document` 的 `displayName`，为空取 `definitionName`；`correlationId` 取同名列）；书签行 `SearchTitle = WorkflowKeyword.Fold(Document.payload.title)`（没有标题为空），`SearchInstanceText` = 所属实例行回填后的 `SearchText` + U+001F + `WorkflowKeyword.Fold(definitionName)`。折叠用 `WorkflowKeyword` 算（简单小写映射加字符替换），SQL 的 `lower()` 在 SQLite 上只管 ASCII、各库对 `İ` 与平面以外的字母也各不相同，不要用 SQL 回填，用 `DatabaseWorkflowBackfill`。没回填的行不被关键字匹配；查询列里的值与 `WorkflowKeyword` 算出的不同（如 `İ` 没有折成 `i`）时，关键字里的这些字符匹配不到它，跑一次回填即可。
+
+## 推荐的排序规则
+
+关键字对查询列的包含判断（`LIKE`）与按标题、名字的排序都在数据库里做，照列的排序规则比较。关键字与查询列两边都已折成小写，RFC-0021 要求按字面匹配，同时写明：数据库的排序规则另有放宽时以排序规则为准。框架不检查、也不改库的排序规则，下表只是推荐；用放宽的排序规则时，关键字会命中字面上不包含它的行，结果与内存实现、别的库不同。
+
+| 数据库 | 推荐 | 缺省排序规则的后果 |
+| --- | --- | --- |
+| SQL Server | `Latin1_General_100_CI_AS_KS_WS_SC`：区分重音、假名与全宽，认得平面以外的字符 | 缺省的 `SQL_Latin1_General_CP1_CI_AS` 不分全角与半角（`50％` 匹配 `50%`）；平面以外的字符在 `LIKE` 里被忽略，只含这类字符的关键字（如 `𐐨`）命中所有行 |
+| MySQL | `utf8mb4_0900_bin`：按码位比较，不补空格 | 缺省的 `utf8mb4_0900_ai_ci` 不分重音与全角半角：`İ` 匹配 `i`，Deseret 字母的大小写（`𐐀` 与 `𐐨`）互相匹配，`50％` 匹配 `50%` |
+| PostgreSQL | 缺省的确定性排序规则，不另指定 | `LIKE` 区分大小写、按字面比较 |
+| Oracle | 缺省的 `BINARY`（`NLS_COMP` 与 `NLS_SORT`），不另指定 | `LIKE` 按码元比较 |
+
+- SQL Server 推荐的规则仍不区分大小写：两边都已折成小写，大小写不影响关键字；SqlSugar 读库结构的语句里列名的大小写与系统视图不一致（如 `syscolumns.Id`），区分大小写的库上读不了结构，所以不用区分大小写的规则。即使用推荐的规则，`straße` 仍匹配 `strasse`。
+- 排序规则在建库时定：SQL Server `CREATE DATABASE [app] COLLATE Latin1_General_100_CI_AS_KS_WS_SC`，MySQL `CREATE DATABASE app CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_bin`。改库的缺省排序规则不会改已经建好的列，已有的表要按数据库的文档逐列改。租户有独立库时，租户库照同样的规则建。
+- 门控测试的夹具（`framework/test/XiHan.Framework.Workflow.Database.Tests`）按上表建临时库，存储套件与回填用例核对的是不放宽时的结果，用缺省规则的库跑会失败：`SqlServerDatabase` 以 `COLLATE Latin1_General_100_CI_AS_KS_WS_SC` 建库，并开 `READ_COMMITTED_SNAPSHOT`（未提交的写入不挡读，与 PostgreSQL、MySQL 一致）；`MySqlDatabase` 以 `CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_bin` 建库；`PostgresDatabase` 建库不指定排序规则，用服务器的缺省；`OracleSchema` 每个用例建一个用户，用缺省的 `BINARY`。
 
 ## 相关
 
