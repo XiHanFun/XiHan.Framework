@@ -15,6 +15,14 @@ namespace XiHan.Framework.Plugins.Protocol.Mapping;
 internal static class PluginJson
 {
     /// <summary>
+    /// 严格的 UTF-8 编码
+    /// </summary>
+    /// <remarks>
+    /// 文本里的孤立代理项不悄悄换成 U+FFFD，按不合法处理，与内核 <c>ResultJson.Read(string)</c> 相同（RFC-0001「JSON 文本」，ADR-0301）
+    /// </remarks>
+    private static readonly UTF8Encoding _strictUtf8 = new(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true);
+
+    /// <summary>
     /// 错误细节（模板参数）写成 JSON 对象
     /// </summary>
     /// <remarks>
@@ -42,7 +50,7 @@ internal static class PluginJson
     /// 解析错误细节
     /// </summary>
     /// <remarks>
-    /// 先过 RFC-0001 的共同 JSON 读取检查（<see cref="JsonText"/>：语法、64 层、合法 Unicode、任何一层的重复成员）；通不过、不是 JSON 对象、是空对象，或任何一层有读成双精度会溢出（±∞）的数，都当作没有细节，返回空（<c>invocation.md</c> §3，ADR-0237，向量 <c>error-reading.json</c>）。下溢的数读成 0，超出 64 位的整数读成双精度。以前直接交给 <see cref="JsonDocument"/>：重复成员取最后一个，转义出的孤立代理项在读值时抛出，溢出的数读成无穷
+    /// 文本先严格编码成 UTF-8，再过 RFC-0001 的共同 JSON 读取检查（<see cref="JsonText"/>：语法、64 层、合法 Unicode、任何一层的重复成员）；编码不成 UTF-8（有孤立的代理项）、通不过检查、不是 JSON 对象、是空对象，或任何一层有读成双精度会溢出（±∞）的数，都当作没有细节，返回空（<c>invocation.md</c> §3，ADR-0237、ADR-0301，向量 <c>error-reading.json</c>）。下溢的数读成 0，超出 64 位的整数读成双精度。以前直接交给 <see cref="JsonDocument"/>：重复成员取最后一个，转义出的孤立代理项在读值时抛出，溢出的数读成无穷；ADR-0301 之前用宽松的编码，字符串里的孤立代理项悄悄换成 U+FFFD
     /// </remarks>
     public static IReadOnlyDictionary<string, object?>? ParseDetails(string json)
     {
@@ -51,7 +59,17 @@ internal static class PluginJson
             return null;
         }
 
-        var utf8 = Encoding.UTF8.GetBytes(json);
+        byte[] utf8;
+        try
+        {
+            utf8 = _strictUtf8.GetBytes(json);
+        }
+        catch (EncoderFallbackException)
+        {
+            // 孤立的代理项编码不成 UTF-8：与通不过共同检查同样当作没有细节，不换成 U+FFFD 读出一份本不合法的细节
+            return null;
+        }
+
         if (JsonText.FindProblem(utf8).HasValue)
         {
             return null;
