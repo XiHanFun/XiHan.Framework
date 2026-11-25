@@ -240,6 +240,7 @@ static XiHan.Framework.Messaging.Abstractions.CloudEvents.CloudEventsFormat.Deco
 static XiHan.Framework.Messaging.Abstractions.CloudEvents.CloudEventsFormat.Encode(XiHan.Framework.Messaging.Abstractions.Envelopes.MessageEnvelope! envelope) -> byte[]!
 static XiHan.Framework.Messaging.Abstractions.Envelopes.EnvelopeExtensions.BaggageMappings.get -> System.Collections.Generic.IReadOnlyList<(string! Extension, string! BaggageKey)>!
 static XiHan.Framework.Messaging.Abstractions.Envelopes.EnvelopeExtensions.IsValidName(string? name) -> bool
+static XiHan.Framework.Messaging.Abstractions.Envelopes.EnvelopeExtensions.ReservedNames.get -> System.Collections.Generic.IReadOnlyList<string!>!
 static XiHan.Framework.Messaging.Abstractions.Envelopes.MessageEnvelope.operator !=(XiHan.Framework.Messaging.Abstractions.Envelopes.MessageEnvelope? left, XiHan.Framework.Messaging.Abstractions.Envelopes.MessageEnvelope? right) -> bool
 static XiHan.Framework.Messaging.Abstractions.Envelopes.MessageEnvelope.operator ==(XiHan.Framework.Messaging.Abstractions.Envelopes.MessageEnvelope? left, XiHan.Framework.Messaging.Abstractions.Envelopes.MessageEnvelope? right) -> bool
 static XiHan.Framework.Messaging.Abstractions.Envelopes.TopicName.IsValid(string? topic) -> bool

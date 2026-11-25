@@ -10,7 +10,7 @@ namespace XiHan.Framework.Messaging.Abstractions.Envelopes;
 /// 框架约定的 CloudEvents 扩展属性名
 /// </summary>
 /// <remarks>
-/// 扩展属性名只含小写字母与数字、不超过 20 个字符。租户、主体、关联与区域四个扩展与 Baggage 的对应见 <see cref="BaggageMappings"/>（<c>spec/conventions/baggage-keys.md</c> 的 CloudEvents 载体）；幂等键不进入消息
+/// 扩展属性名只含小写字母与数字、不超过 20 个字符，且不是 <see cref="ReservedNames"/> 里的保留名（RFC-0009「信封」，ADR-0298）。租户、主体、关联与区域四个扩展与 Baggage 的对应见 <see cref="BaggageMappings"/>（<c>spec/conventions/baggage-keys.md</c> 的 CloudEvents 载体）；幂等键不进入消息
 /// </remarks>
 [ApiLevel(Stability.Stable, "5.0")]
 public static partial class EnvelopeExtensions
@@ -60,9 +60,48 @@ public static partial class EnvelopeExtensions
     ];
 
     /// <summary>
+    /// 不能用作扩展属性名的保留名（按序数升序）
+    /// </summary>
+    /// <remarks>
+    /// CloudEvents 1.0 的规范属性名与结构化 JSON 格式的成员名：用作扩展属性名，写出来与规范属性是重复的成员，读回时扩展属性的值顶掉规范属性。<c>dataschema</c> 是 CloudEvents 的可选属性，信封不承载它，同样不能用作扩展属性名；<c>data_base64</c> 本来就不合文法，列进来是为了清单完整（RFC-0009「信封」，ADR-0298）
+    /// </remarks>
+    public static IReadOnlyList<string> ReservedNames { get; } =
+    [
+        "data",
+        "data_base64",
+        "datacontenttype",
+        "dataschema",
+        "id",
+        "source",
+        "specversion",
+        "subject",
+        "time",
+        "type",
+    ];
+
+    /// <summary>
     /// 扩展属性名是否合法
     /// </summary>
-    public static bool IsValidName(string? name) => name is not null && NamePattern().IsMatch(name);
+    /// <remarks>
+    /// 合文法且不是保留名；以前（ADR-0283）文法收得下保留名里不带下划线的九个，要到 <c>CloudEventsFormat.Encode</c> 写出重复的成员时才被拒（ADR-0298）
+    /// </remarks>
+    public static bool IsValidName(string? name) => name is not null && NamePattern().IsMatch(name) && !IsReservedName(name);
+
+    /// <summary>
+    /// 是否是保留名
+    /// </summary>
+    internal static bool IsReservedName(string name)
+    {
+        foreach (var reserved in ReservedNames)
+        {
+            if (string.Equals(name, reserved, StringComparison.Ordinal))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
 
     /// <summary>
     /// 扩展属性名文法：小写字母与数字，1 到 20 个字符

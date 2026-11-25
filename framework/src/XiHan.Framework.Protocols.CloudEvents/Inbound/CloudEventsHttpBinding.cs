@@ -266,7 +266,7 @@ public static class CloudEventsHttpBinding
     /// binary
     /// </summary>
     /// <remarks>
-    /// <c>ce-specversion</c>、<c>ce-id</c>、<c>ce-source</c>、<c>ce-type</c> 必填，<c>ce-time</c>（<see cref="TimestampText"/> 的文法，读出 UTC 时刻）、<c>ce-subject</c> 可选，其余 <c>ce-*</c> 是扩展属性；数据内容类型取 <c>Content-Type</c>，数据取请求体
+    /// <c>ce-specversion</c>、<c>ce-id</c>、<c>ce-source</c>、<c>ce-type</c> 必填，<c>ce-time</c>（<see cref="TimestampText"/> 的文法，读出 UTC 时刻）、<c>ce-subject</c> 可选，其余 <c>ce-*</c> 是扩展属性（名字不能是保留名，<c>ce-dataschema</c>、<c>ce-data</c> 因此不合法，ADR-0298）；数据内容类型取 <c>Content-Type</c>，数据取请求体
     /// </remarks>
     private static Result<IReadOnlyList<MessageEnvelope>> ReadBinary(HttpRequest request, byte[] body)
     {

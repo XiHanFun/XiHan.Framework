@@ -43,7 +43,7 @@ public static class CloudEventsFormat
     /// 编码
     /// </summary>
     /// <remarks>
-    /// 写出的文档必须读得回来，写不出这样的文档时抛出携带 <see cref="MessagingErrors.InvalidEnvelope"/> 的 <see cref="FrameworkException"/>：JSON 数据不是合法 JSON，或文档过不了读取一侧的共同检查（RFC-0001「JSON 文本」）——JSON 数据里有重复的成员名、嵌套让文档超过 64 层、字符串里有不成对的代理项转义，或扩展属性与规范属性同名（<c>id</c>、<c>data</c> 等，写出来是重复的成员）
+    /// 写出的文档必须读得回来，写不出这样的文档时抛出携带 <see cref="MessagingErrors.InvalidEnvelope"/> 的 <see cref="FrameworkException"/>：JSON 数据不是合法 JSON，或文档过不了读取一侧的共同检查（RFC-0001「JSON 文本」）——JSON 数据里有重复的成员名、嵌套让文档超过 64 层、字符串里有不成对的代理项转义。扩展属性与规范属性同名的信封构造不出来（<see cref="EnvelopeExtensions.ReservedNames"/>，ADR-0298），写出之后的检查照样覆盖整份文档
     /// </remarks>
     public static byte[] Encode(MessageEnvelope envelope)
     {
@@ -101,7 +101,8 @@ public static class CloudEventsFormat
         }
 
         // 写出的文档自己过一遍读取一侧的检查：过不了的在发布时就拒绝，不等消费方把它当成无法解码的消息送进死信
-        // 能让它过不了的只有调用方给的 JSON 数据（重复成员、不成对的代理项转义）与同规范属性重名的扩展
+        // 能让它过不了的只有调用方给的 JSON 数据（重复成员、不成对的代理项转义）；与规范属性重名的扩展在构造信封时已经拒绝（ADR-0298），
+        // 这里仍查整份文档而不只查数据：信封以后多承载一个规范属性而保留名漏了更新，写出的重复成员照样在发布时拦下
         if (JsonText.FindProblem(encoded).TryGetValue(out var problem))
         {
             throw new FrameworkException(
@@ -123,7 +124,7 @@ public static class CloudEventsFormat
     /// 解码
     /// </summary>
     /// <remarks>
-    /// 文档不合法返回 <see cref="MessagingErrors.InvalidEnvelope"/>（RFC-0009「信封」）：没过 RFC-0001「JSON 文本」的共同检查（不是 JSON、嵌套超过 64 层、字符串不是合法的 Unicode、任何一层有重复的成员名，含 <c>data</c> 内部）；不是 JSON 对象；<c>specversion</c> 不是 <c>1.0</c>；<c>id</c>、<c>source</c>、<c>type</c> 缺失或为空；<c>time</c> 不合 <see cref="TimestampText"/> 的文法；<c>data</c> 与 <c>data_base64</c> 同时出现；<c>data_base64</c> 不是 Base64；扩展属性名不合文法，或值是对象、数组。
+    /// 文档不合法返回 <see cref="MessagingErrors.InvalidEnvelope"/>（RFC-0009「信封」）：没过 RFC-0001「JSON 文本」的共同检查（不是 JSON、嵌套超过 64 层、字符串不是合法的 Unicode、任何一层有重复的成员名，含 <c>data</c> 内部）；不是 JSON 对象；<c>specversion</c> 不是 <c>1.0</c>；<c>id</c>、<c>source</c>、<c>type</c> 缺失或为空；<c>time</c> 不合 <see cref="TimestampText"/> 的文法；<c>data</c> 与 <c>data_base64</c> 同时出现；<c>data_base64</c> 不是 Base64；扩展属性名不合文法或是保留名（带 <c>dataschema</c> 的文档因此不合法：信封不承载这个规范属性，ADR-0298），或值是对象、数组。
     /// 读出的 <c>time</c> 是 UTC 时刻。文档带 <c>data_base64</c> 而不写 <c>datacontenttype</c> 时数据内容类型是 <c>application/octet-stream</c>，否则缺省 <c>application/json</c>。扩展属性的值：字符串照原样，数字与布尔保留 JSON 原文，<c>null</c> 视为没有这个属性
     /// </remarks>
     public static Result<MessageEnvelope> Decode(ReadOnlyMemory<byte> json)

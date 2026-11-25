@@ -88,7 +88,7 @@ public sealed record MessageEnvelope
     /// 扩展属性
     /// </summary>
     /// <remarks>
-    /// 名称须满足 <see cref="EnvelopeExtensions.IsValidName"/>
+    /// 名称须满足 <see cref="EnvelopeExtensions.IsValidName"/>：不合文法或是保留名（CloudEvents 的规范属性名与结构化 JSON 格式的成员名）抛出 <see cref="ArgumentException"/>，构造时就拒绝，不等到写出（ADR-0298）
     /// </remarks>
     public IReadOnlyDictionary<string, string> Extensions
     {
@@ -98,6 +98,12 @@ public sealed record MessageEnvelope
             ArgumentNullException.ThrowIfNull(value);
             foreach (var name in value.Keys)
             {
+                // 保留名合文法却同样不收：写出来与规范属性是重复的成员，读回时扩展属性的值顶掉规范属性
+                if (name is not null && EnvelopeExtensions.IsReservedName(name))
+                {
+                    throw new ArgumentException($"Extension attribute name '{name}' is reserved: it is a CloudEvents context attribute or a member of the JSON event format.", nameof(value));
+                }
+
                 if (!EnvelopeExtensions.IsValidName(name))
                 {
                     throw new ArgumentException($"Extension attribute name '{name}' is invalid: it must contain only lowercase letters and digits and be at most 20 characters long.", nameof(value));

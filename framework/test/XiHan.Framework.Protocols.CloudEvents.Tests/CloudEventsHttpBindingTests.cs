@@ -79,6 +79,19 @@ public sealed class CloudEventsHttpBindingTests
     }
 
     [Theory]
+    [InlineData("ce-dataschema")]
+    [InlineData("ce-data")]
+    public async Task Read_BinaryMode_RejectsAHeaderNamedAfterAReservedName(string header)
+    {
+        // 扩展属性名不能是保留名（RFC-0009「信封」，ADR-0298）：信封不承载 dataschema，data 是结构化 JSON 格式的成员；以前两者都读成同名的扩展属性
+        var request = Request("application/json", "{}", ("ce-specversion", "1.0"), ("ce-id", "1"), ("ce-source", "/s"), ("ce-type", "t"), (header, "https://example.com/schemas/order.json"));
+
+        var error = (await CloudEventsHttpBinding.ReadAsync(request, _options, CancellationToken.None)).Error;
+
+        Assert.Equal((MessagingErrors.InvalidEnvelope, MessagingMessages.EnvelopeInvalidExtension), (error?.Code, error?.MessageKey));
+    }
+
+    [Theory]
     [InlineData("2026-10-23T08:00:00")]
     [InlineData("2026-10-23 08:00:00Z")]
     [InlineData("2026-10-23")]

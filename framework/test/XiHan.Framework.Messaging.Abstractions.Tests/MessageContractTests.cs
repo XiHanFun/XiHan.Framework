@@ -287,10 +287,8 @@ public sealed class MessageContractTests
     {
         var envelope = new MessageEnvelope { Id = "1", Source = "/o", Type = "t" };
 
-        // 扩展属性与规范属性同名：写出来是重复的成员（以前照写，读回时扩展的值顶掉规范属性）
-        var renamed = Assert.Throws<FrameworkException>(() => CloudEventsFormat.Encode(envelope.WithExtension("id", "other")));
-        Assert.Equal(MessagingErrors.InvalidEnvelope, renamed.Code);
-        Assert.Contains("'$.id'", renamed.Message, StringComparison.Ordinal);
+        // 扩展属性与规范属性同名的信封构造不出来（ADR-0298）：ADR-0283 时要到这里才因写出重复的成员被拒，不写出的内存代理照常投递
+        Assert.Throws<ArgumentException>(() => envelope.WithExtension("id", "other"));
 
         // JSON 数据里重复的成员、让文档超过 64 层的嵌套、不成对的代理项转义：消费方会把这条消息当成无法解码的送进死信，发布时就拒绝
         var duplicated = Assert.Throws<FrameworkException>(() => CloudEventsFormat.Encode(envelope with { Data = Encoding.UTF8.GetBytes("""{"a":1,"a":2}""") }));

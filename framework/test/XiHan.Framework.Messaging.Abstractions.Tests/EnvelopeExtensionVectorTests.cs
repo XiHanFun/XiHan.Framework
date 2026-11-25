@@ -52,6 +52,25 @@ public sealed class EnvelopeExtensionVectorTests
     }
 
     [Fact]
+    public void ReservedNames_AreTheOnesInTheVectors_AndEveryEnvelopeRejectsThem()
+    {
+        // 保留名（RFC-0009「信封」，ADR-0298）：CloudEvents 的规范属性名与结构化 JSON 格式的成员名。以前文法收得下其中不带下划线的九个，
+        // 信封照样接受，要到写出时才因重复的成员被拒，不写出的内存代理照常投递
+        Assert.Equal(_vectors.Names.Reserved, EnvelopeExtensions.ReservedNames);
+        foreach (var name in _vectors.Names.Reserved)
+        {
+            Assert.Contains(name, _vectors.Names.Invalid);
+            Assert.False(EnvelopeExtensions.IsValidName(name), name);
+            var appended = Assert.Throws<ArgumentException>(() => Envelope().WithExtension(name, "x"));
+            Assert.StartsWith($"Extension attribute name '{name}' is ", appended.Message, StringComparison.Ordinal);
+            Assert.Throws<ArgumentException>(() => Envelope() with { Extensions = new Dictionary<string, string>(StringComparer.Ordinal) { [name] = "x" } });
+        }
+
+        // 合文法的保留名给出的原因是「保留」，不是「不合文法」
+        Assert.StartsWith("Extension attribute name 'id' is reserved", Assert.Throws<ArgumentException>(static () => Envelope().WithExtension("id", "x")).Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void BaggageMappings_AreTheOnesInTheVectors()
     {
         Assert.NotEmpty(_vectors.Baggage);
@@ -139,6 +158,9 @@ public sealed class EnvelopeExtensionVectorTests
         // 防止向量换了写法后上限一条都没核对还照样通过：正好到上限的要收，只因超长而不合法的要拒
         Assert.Contains(_vectors.Names.Valid, name => name.Length == _vectors.Names.MaxLength);
         Assert.Contains(_vectors.Names.Invalid, name => name.Length == _vectors.Names.MaxLength + 1 && name.All(static c => c is (>= 'a' and <= 'z') or (>= '0' and <= '9')));
+
+        // 保留名按整串比较：只比保留名多一个字符的名字合法
+        Assert.Contains(_vectors.Names.Valid, name => _vectors.Names.Reserved.Any(reserved => name.Length == reserved.Length + 1 && name.StartsWith(reserved, StringComparison.Ordinal)));
     }
 
     /// <summary>
@@ -205,8 +227,9 @@ public sealed class EnvelopeExtensionVectorTests
     /// </summary>
     /// <param name="MaxLength">名字的字符数上限</param>
     /// <param name="Valid">合文法的名字</param>
-    /// <param name="Invalid">不合文法的名字</param>
-    private sealed record NameVectors(int MaxLength, string[] Valid, string[] Invalid);
+    /// <param name="Invalid">不合法的名字（不合文法或是保留名）</param>
+    /// <param name="Reserved">保留名，按序数升序</param>
+    private sealed record NameVectors(int MaxLength, string[] Valid, string[] Invalid, string[] Reserved);
 
     /// <summary>
     /// 一项对应
