@@ -169,7 +169,7 @@ app.MapGet("/ledger", (LedgerConnection ledger) => ledger.ConnectionString.Lengt
 | `queue` | `cache:distributed` | `Messaging.Redis` | 主值覆盖 `XiHan:Messaging:Redis:Configuration`；属性 `username`、`password` 覆盖连接字符串里的 `user`、`password`。绑定名与 RabbitMQ 相同（消息队列这个角色），类型是 Redis 服务；不读缓存的 `cache`，要共用一台 Redis 时让两个绑定指向它 |
 | `stream` | `stream` | `Messaging.Kafka` | 主值覆盖 `XiHan:Messaging:Kafka:BootstrapServers`；属性 `security.protocol`、`sasl.mechanism`、`sasl.username`、`sasl.password` 覆盖 `Properties` 里的同名键（只认这四项） |
 | `nacos` | `configuration:remote` | `Configuration.Nacos` | 主值覆盖 `XiHan:Configuration:Nacos:ServerAddresses`；属性 `username`、`password` 覆盖 `Username`、`Password` |
-| `objectstorage` | `blob` | `ObjectStorage.S3` | 主值（服务端点）与属性 `region`、`accessKey`、`secretKey`、`sessionToken`、`forcePathStyle` 覆盖 `XiHan:ObjectStorage:S3` 里的同名设置；`sessionToken` 是临时凭据的会话令牌，覆盖之后仍要与两项密钥同时给出 |
+| `objectstorage` | `blob` | `ObjectStorage.S3` | 主值（服务端点）与属性 `region`、`accessKey`、`secretKey`、`sessionToken`、`forcePathStyle` 覆盖 `XiHan:ObjectStorage:S3` 里的同名设置；主值不能带用户信息（`user:pass@`），带了即启动失败，凭据写属性 `accessKey`、`secretKey`；`sessionToken` 是临时凭据的会话令牌，覆盖之后仍要与两项密钥同时给出 |
 
 ## 与部署产物的关系
 

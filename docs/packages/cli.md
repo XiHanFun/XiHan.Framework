@@ -94,12 +94,12 @@ dnx XiHan.Framework.Cli@<版本> --yes -- mcp    # 不安装、按版本运行�
 | tool | 输入 | 输出 |
 | --- | --- | --- |
 | `xihan_framework_info` | `name`：包 ID、短名（`Caching.Redis`）、文档页名（`caching-redis`）、清单 ID、特性类型名或能力 ID（可带 `@版本`）；不给时列出全部包 | 包：安装命令、环层、框架包 / 第三方包 / 共享框架依赖、每个特性的清单（种类与角色、提供与依赖的能力、绑定、配置节、管道中间件、操作、权限码、健康项）、读取的配置节、相关文档页；能力：提供者（含 `default` 角色）与依赖方 |
-| `xihan_framework_config` | `query`：配置节（含其下子节）、完整键路径（按名字展开的段任意匹配）、包、Options 类名，或键名与说明里的文字；不给时列出全部配置节 | 每个键的完整路径、类型、缺省值、是否必填、上下限或枚举取值、说明，以及按缺省值与必填示例写出的 appsettings 片段 |
+| `xihan_framework_config` | `query`：配置节（含其下子节）、完整键路径（按名字展开的段任意匹配）、包、Options 类名，或键名与说明里的文字；不给时列出全部配置节 | 每个键的完整路径、类型、缺省值、是否必填、上下限或枚举取值、说明，由 Provider 而不是节的 Options 类读取的键另带 `readBy`（读取它的类型全名，如 S3 的两个运营方开关），以及按缺省值与必填示例写出的 appsettings 片段 |
 | `xihan_framework_search` | `query`（空格分隔的词须同时出现）与 `limit`（1-50，缺省 10），或 `page`（仓库内路径、`guide/caching`、RFC 编号或包 ID） | 按相关度排序的文档页与摘录，或一页全文 |
 
 结果是结构化 JSON（`structuredContent` 与文本内容相同）。查不到时 `isError`，文本 `CLI_NOTFOUND_003: …` 带最接近的候选；检索既没给 `query` 也没给 `page`、或 `limit` 越界为 `CLI_VALIDATION_004`。
 
-数据随工具一起构建，与工具版本一致：包与特性清单、各 Options 读取的配置键（有测试逐条核对与代码一致），以及文档站、RFC 与约定、各包 README 的全文。包与特性清单（`Knowledge/catalog.json`）由 `XiHan.Framework.Cli.Tests` 从项目文件、`framework/README.md` 包表与各特性的 `Manifest` 生成，与代码不一致时 `KnowledgeCatalogTests` 失败，运行 `pwsh framework/scripts/Update-CliKnowledge.ps1` 重新生成；配置键索引（`Knowledge/configuration.json`）人工整理，改了 Options 后 `KnowledgeConfigurationTests` 失败，按失败信息改索引；文档与 README 在构建时嵌入程序集。`--path`（缺省当前目录）所在项目引用的 `XiHan.Framework.*` 版本与工具不同时，stderr 与服务端说明里提示改用 `dnx XiHan.Framework.Cli@<项目版本> --yes -- mcp`。
+数据随工具一起构建，与工具版本一致：包与特性清单、各 Options 与 Provider 读取的配置键（有测试逐条核对与代码一致），以及文档站、RFC 与约定、各包 README 的全文。包与特性清单（`Knowledge/catalog.json`）由 `XiHan.Framework.Cli.Tests` 从项目文件、`framework/README.md` 包表与各特性的 `Manifest` 生成，与代码不一致时 `KnowledgeCatalogTests` 失败，运行 `pwsh framework/scripts/Update-CliKnowledge.ps1` 重新生成；配置键索引（`Knowledge/configuration.json`）人工整理，改了 Options 或 Provider 带配置的构造读的键后 `KnowledgeConfigurationTests` 失败，按失败信息改索引，由 Provider 读取的键写上 `readBy`；文档与 README 在构建时嵌入程序集。`--path`（缺省当前目录）所在项目引用的 `XiHan.Framework.*` 版本与工具不同时，stderr 与服务端说明里提示改用 `dnx XiHan.Framework.Cli@<项目版本> --yes -- mcp`。
 
 ### setup
 

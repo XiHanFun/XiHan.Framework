@@ -95,6 +95,7 @@ if (opened.TryGetValue(out var part))
 | 上传不存在或已结束 | `OBJECTSTORAGE_NOTFOUND_002` |
 | `Overwrite = false` 且对象已存在 | 发起与完成都返回 `OBJECTSTORAGE_CONFLICT_001` |
 | 发起时的内容类型存储写不出原值（S3：`text/plain;` 这类空参数、`text/plain;charset=utf-8` 这类 `;` 两侧的空格与 `; ` 不同的写法） | 发起返回 `OBJECTSTORAGE_VALIDATION_007`，不发请求；与单次写入相同，换成 `text/plain; charset=utf-8` 这种写法 |
+| 发起的应答成功却没有可用的上传标识（S3：兼容服务的缺陷或中间的代理改写了响应体） | 发起返回 `OBJECTSTORAGE_UNAVAILABLE_001`，不抛异常、不重发；服务端可能已经建出这个上传，由桶的生命周期规则清理 |
 
 文件系统把分片暂存在容器下的 `uploads/<上传标识>/`，暂存的分片计入总配额，超过 `MultipartExpiryHours`（缺省 168 小时）仍未完成的上传即过期，拒绝再传分片与完成并被清掉，细则见 [ObjectStorage.FileSystem](/packages/objectstorage-filesystem)；S3 直接映射原生 multipart，未完成的上传按桶的生命周期规则清理。
 
@@ -225,7 +226,7 @@ var url = (await signer.SignAsync(new ContainerName("files"), new BlobKey("docs/
 
 每个实例一条健康项 `objectstorage.store.<name>`，按 `XiHan:ObjectStorage:StoreHealthProbeIntervalSeconds`（缺省 15 秒）在后台逐个探测，新实例建出后立即探一次；还没探过为 Started，探测失败为 Degraded，实例仍可取用。文件系统看总配额是否还有余量，S3 对实例的 `HealthBucket` 做 HEAD（没配时列桶），连通之后再看条件写入，尚未确认或不认时 Degraded。健康项的汇总见[生命周期与健康](/startup/lifecycle)。
 
-S3 命名实例的定义可能来自应用的库，端点可能是租户填的，所以它的客户端过[出站地址策略](/security/outbound)，缺省只能连公网地址。自建的 MinIO 等要放行，比如把主机名写进 `XiHan:Security:Outbound:AllowedHosts`。被拒绝与连不上同样处理：建实例时的探测只算尚未确认，读写返回 `OBJECTSTORAGE_UNAVAILABLE_001`，日志里有一条 Warning。实例的设置里配 HTTP 代理（`ProxyHost`、`ProxyPort`）要运营方在配置节写 `XiHan:ObjectStorage:S3:NamedInstancesAllowProxy: true`（缺省 `false`，实例设置打不开它），没打开时带代理的定义登记失败（`OBJECTSTORAGE_VALIDATION_003`，原因不带代理的取值）：策略放行了一个内网代理时，能填实例设置的人就能经它到达策略本来拒绝的地址。打开之后过策略的是代理的地址，端点由代理去连，要限制经代理能到的目标就在代理上做。缺省实例的端点与代理是运维配的，不过策略，也不受这个开关约束。S3 命名实例的设置与配置节同名，会话令牌、请求超时、尝试次数与代理也能按实例写，键表见 [ObjectStorage.S3](/packages/objectstorage-s3#配置)。
+S3 命名实例的定义可能来自应用的库，端点可能是租户填的，所以它的客户端过[出站地址策略](/security/outbound)，缺省只能连公网地址。自建的 MinIO 等要放行，比如把主机名写进 `XiHan:Security:Outbound:AllowedHosts`。被拒绝与连不上同样处理：建实例时的探测只算尚未确认，读写返回 `OBJECTSTORAGE_UNAVAILABLE_001`，日志里有一条 Warning。实例的设置里配 HTTP 代理（`ProxyHost`、`ProxyPort`）要运营方在配置节写 `XiHan:ObjectStorage:S3:NamedInstancesAllowProxy: true`（缺省 `false`，实例设置打不开它），没打开时带代理的定义登记失败（`OBJECTSTORAGE_VALIDATION_003`，原因不带代理的取值）：策略放行了一个内网代理时，能填实例设置的人就能经它到达策略本来拒绝的地址。打开之后过策略的是代理的地址，端点由代理去连，要限制经代理能到的目标就在代理上做。缺省实例的端点与代理是运维配的，不过策略，也不受这个开关约束。实例设置里的 `ServiceUrl` 不能带用户信息（`https://user:pass@host`），带了即登记失败（`OBJECTSTORAGE_VALIDATION_003`），凭据写 `AccessKey` / `SecretKey`。S3 命名实例的设置与配置节同名，会话令牌、请求超时、尝试次数与代理也能按实例写，键表见 [ObjectStorage.S3](/packages/objectstorage-s3#配置)。
 
 ::: warning 混装文件系统与 S3 时怎样指定缺省存储
 缺省的 `IBlobStore`、`IBlobMultipartStore`、`IBlobUrlSigner` 必须落在同一存储上，这条规则只约束被要求的契约：有特性在清单里依赖了这项能力，或 `XiHan:Providers` / `UseProvider` 指定了它的提供者。不指定时 S3 是显式 Provider，三项都归 S3，文件系统被顶替，但它的命名实例 Provider 照样登记（被顶替的存储包只登记命名实例，不建缺省实例、不启动）。
