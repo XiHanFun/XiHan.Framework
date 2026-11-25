@@ -296,3 +296,5 @@
 | [0294](0294-S3命名实例配代理要运营方开关与配置报错不回显原值.md) | S3 命名实例在设置里配代理要运营方打开 `XiHan:ObjectStorage:S3:NamedInstancesAllowProxy`（缺省不许，配了即 `OBJECTSTORAGE_VALIDATION_003`）；`ServiceUrl` 与绑定主值不合法时报错只写键名、不回显原值；缺省实例只给 `AccessKey` 或 `SecretKey` 一项是配置错误（绑定覆盖之后核对）；`xihan pack` 的绑定样板补 `sessionToken` | 已采纳 |
 | [0295](0295-内容类型照RFC9110收空参数并原样存取.md) | 内容类型照 RFC 9110 收空参数（修订 ADR-0282 的那一部分，制表符仍不收、仍不解析引号）；Provider 原样存取内容类型，S3 写不出原值的（AWS SDK 经 `MediaTypeHeaderValue` 改写）在发请求之前以新码 `OBJECTSTORAGE_VALIDATION_007` 拒绝 | 已采纳 |
 | [0296](0296-表达式的格式化函数与工作量上限关键字的小写与活动里的时间.md) | 表达式新增 `format(x, n)`，一次求值的工作量上限 16777216，列表关键字折叠改成 Unicode 简单小写映射，活动里的时间改用表达式的时间文法 | 已采纳 |
+| [0297](0297-cron步长的上限与计划的文本形式.md) | cron 的步长不超过这一段能写的最大值（秒、分 59，时 23，日 31，月 12，星期 7，年 2099），与 Quartz、cronie 一致；计划的文本形式写成文法——只认单个空格分隔，间隔、次数、cron 与选项的读法与写法相同，选项次序固定、不能重复，时刻按 RFC-0003 规则 8 读，时区名只收 IANA 名（`FromCron` 同样核对），新增向量 `scheduling/schedule-texts.json` | 已采纳 |
+| [0298](0298-信封扩展属性的保留名与Redis停止时的两处.md) | 扩展属性名排除 CloudEvents 的规范属性名与结构化 JSON 格式的成员名（新增 `EnvelopeExtensions.ReservedNames`），构造信封时就拒绝，带 `dataschema` 的文档不合法；Redis 收到停止信号后不再发起新的认领与读取，被放弃的条目退回投递次数时空闲时间设到回收阈值，别的实例下一次维护就接手 | 已采纳 |
