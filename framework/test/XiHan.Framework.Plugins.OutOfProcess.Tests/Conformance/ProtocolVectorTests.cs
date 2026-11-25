@@ -14,6 +14,7 @@ using Microsoft.Extensions.Logging.Abstractions;
 using XiHan.Framework.Kernel;
 using XiHan.Framework.Kernel.Hosting;
 using XiHan.Framework.Kernel.Plugins;
+using XiHan.Framework.Messaging.Abstractions;
 using XiHan.Framework.Plugins.Protocol;
 using XiHan.Framework.Plugins.Protocol.Handshake;
 using XiHan.Framework.Plugins.Protocol.Hosting;
@@ -23,6 +24,8 @@ using XiHan.Framework.Primitives.Manifests;
 using XiHan.Framework.Testing;
 using ConfigureRequest = XiHan.Framework.Plugins.Protocol.V1.ConfigureRequest;
 using ManifestBinding = XiHan.Framework.Primitives.Manifests.Binding;
+using MessageEnvelope = XiHan.Framework.Messaging.Abstractions.Envelopes.MessageEnvelope;
+using ProtoEnvelope = XiHan.Framework.Plugins.Protocol.V1.Envelope;
 using ProtoBinding = XiHan.Framework.Plugins.Protocol.V1.Binding;
 using ProtoError = XiHan.Framework.Plugins.Protocol.V1.Error;
 using ProtoStatus = XiHan.Framework.Plugins.Protocol.V1.Status;
@@ -189,6 +192,88 @@ public sealed class ProtocolVectorTests
         foreach (var text in new[] { "2026-11-18 03:25:00Z", "2026-11-18T03:25:00", "Wed, 18 Nov 2026 03:25:00 GMT", "2026-11-18" })
         {
             Assert.Null(PluginDeadlines.Effective(text, null));
+        }
+    }
+
+    [Fact]
+    public void EnvelopeTimes_FollowTheVectors()
+    {
+        using var document = JsonDocument.Parse(File.ReadAllText(SpecVectors.PathOf("plugin", "envelope-times.json")));
+
+        // 宿主读插件写来的信封（Host.Publish 与 Wasm 的 publish 共用这一处）：空串是没有时间，其余只认一条文法，读成 UTC
+        foreach (var valid in document.RootElement.GetProperty("valid").EnumerateArray())
+        {
+            var text = valid.GetProperty("text").GetString()!;
+            var read = PluginEnvelopeMapper.FromProto(new ProtoEnvelope { Id = "e1", Source = "/plugins", Type = "t", Time = text });
+            Assert.True(read.IsSuccess, $"{text}: {read}");
+            var utc = valid.GetProperty("utc");
+            if (utc.ValueKind == JsonValueKind.Null)
+            {
+                Assert.True(read.ValueOrThrow().Time is null, text);
+                continue;
+            }
+
+            Assert.True(read.ValueOrThrow().Time is { } time && time == Utc(utc.GetString()!) && time.Offset == TimeSpan.Zero, $"{text}: read as {read.ValueOrThrow().Time:O}");
+        }
+
+        // 不合文法的那一项不发布：错误码与消息键取自向量，参数 time 是原文
+        var error = document.RootElement.GetProperty("error");
+        foreach (var invalid in document.RootElement.GetProperty("invalid").EnumerateArray())
+        {
+            var text = invalid.GetString()!;
+            var read = PluginEnvelopeMapper.FromProto(new ProtoEnvelope { Id = "e1", Source = "/plugins", Type = "t", Time = text });
+            Assert.True(read.IsFailure, text);
+            Assert.True(error.GetProperty("code").GetString() == read.Error!.Code, $"{text}: code '{read.Error.Code}'");
+            Assert.True(error.GetProperty("key").GetString() == read.Error.MessageKey, $"{text}: key '{read.Error.MessageKey}'");
+            Assert.True(text == (string?)read.Error.Details!["time"], $"{text}: details {PluginJson.SerializeDetails(read.Error.Details)}");
+        }
+
+        // 宿主写给插件的信封：换算成 UTC、七位小数、+00:00，没有时间写空串
+        foreach (var written in document.RootElement.GetProperty("written").EnumerateArray())
+        {
+            var instant = written.GetProperty("instant");
+            var envelope = new MessageEnvelope
+            {
+                Id = "e1",
+                Source = "/orders",
+                Type = "t",
+                Time = instant.ValueKind == JsonValueKind.Null ? null : DateTimeOffset.Parse(instant.GetString()!, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind),
+            };
+            Assert.Equal(written.GetProperty("text").GetString(), PluginEnvelopeMapper.ToProto("orders", envelope).Time);
+        }
+    }
+
+    [Fact]
+    public void EnvelopeTimes_ThatAreNotValid_FailOnlyTheirItemOfAPublish()
+    {
+        // 逐项的核对里「信封能否转换」那一步（invocation.md §5）：不合文法的那一项写错误、不发布，其余照常分组发布
+        ProtoEnvelope[] envelopes =
+        [
+            new() { Topic = "orders", Id = "e1", Source = "/plugins", Type = "t", Time = "2026-11-25T03:25:00Z" },
+            new() { Topic = "orders", Id = "e2", Source = "/plugins", Type = "t", Time = "2026-11-25T03:25:00" },
+            new() { Topic = "orders", Id = "e3", Source = "/plugins", Type = "t" },
+        ];
+        var statuses = new ProtoStatus[envelopes.Length];
+
+        var batches = PluginPublishBatches.Collect(envelopes, statuses, null, static _ => null);
+
+        var batch = Assert.Single(batches);
+        Assert.Equal([0, 2], batch.Indexes);
+        Assert.Equal(["e1", "e3"], batch.Messages.Select(static m => m.Id));
+        Assert.Equal(new DateTimeOffset(2026, 11, 25, 3, 25, 0, TimeSpan.Zero), batch.Messages[0].Time);
+        Assert.Null(batch.Messages[1].Time);
+        Assert.Equal(("MESSAGING_VALIDATION_002", MessagingMessages.EnvelopeInvalidTime), (statuses[1].Error.Code, statuses[1].Error.MessageKey));
+        Assert.Null(statuses[0]);
+    }
+
+    [Fact]
+    public void EnvelopeTimes_ThatTheEarlierHostRead_AreRejectedNow()
+    {
+        // 修之前 DateTimeOffset.TryParse 读得出这些：没有偏移的按 UTC、空格分隔、只到分钟、RFC 1123、只有日期（ADR-0293）
+        foreach (var text in new[] { "2026-11-25T03:25:00", "2026-11-25 03:25:00Z", "2026-11-25T03:25Z", "Wed, 25 Nov 2026 03:25:00 GMT", "2026-11-25", " 2026-11-25T03:25:00Z" })
+        {
+            Assert.True(DateTimeOffset.TryParse(text, CultureInfo.InvariantCulture, DateTimeStyles.AdjustToUniversal | DateTimeStyles.AssumeUniversal, out _), text);
+            Assert.Equal(MessagingMessages.EnvelopeInvalidTime, PluginEnvelopeMapper.FromProto(new ProtoEnvelope { Id = "e1", Source = "/plugins", Type = "t", Time = text }).Error?.MessageKey);
         }
     }
 
