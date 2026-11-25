@@ -109,7 +109,7 @@ dotnet add package XiHan.Framework.Caching.Conformance --prerelease
 
 | 基类 | 实现 | 覆盖 |
 | --- | --- | --- |
-| `BlobStoreConformance` | `CreateStoreAsync()` 返回 `ValueTask<IBlobStore>`（被测存储初始化好再交出）；`PlantOutsideContractAsync(container, key, content)` 绕过契约直接写一个对象；可覆写 `Container`（缺省 `conformance`） | 读写往返与元数据、覆盖与不覆盖、并发的不覆盖写入只有一个成功、保留前缀 `.xihan` 下的键构造时拒绝且列举跳过存储里已有的这类对象、键区分大小写与嵌套段、批量写入逐项结果、批量删除逐项结果、按前缀分页列举、范围读取、分片上传（任意顺序上传、原子完成、非法分片列表、覆盖与中止，批量放弃的逐项结果、重复与已放弃的上传、空集合、`null` 与已取消）、非法标识提前拒绝、列举的页大小越界是校验错误（`OBJECTSTORAGE_VALIDATION_005`，边界照常）、大对象流式读写 |
+| `BlobStoreConformance` | `CreateStoreAsync()` 返回 `ValueTask<IBlobStore>`（被测存储初始化好再交出）；`PlantOutsideContractAsync(container, key, content)` 绕过契约直接写一个对象；可覆写 `Container`（缺省 `conformance`） | 读写往返与元数据、覆盖与不覆盖、并发的不覆盖写入只有一个成功、保留前缀 `.xihan` 下的键构造时拒绝且列举跳过存储里已有的这类对象、键区分大小写与嵌套段、批量写入逐项结果、批量删除逐项结果、按前缀分页列举、范围读取、分片上传（任意顺序上传、原子完成、非法分片列表、覆盖与中止，批量放弃的逐项结果、重复与已放弃的上传、空集合、`null` 与已取消）、非法标识提前拒绝、列举的页大小越界是校验错误（`OBJECTSTORAGE_VALIDATION_005`，边界照常）、内容类型原样存取（八种写法含空参数、`;` 两侧的空格与引号里的 `;`，写入、读出与写回都原样，或在写入之前以 `OBJECTSTORAGE_VALIDATION_007` 拒绝且对象不存在，分片上传的发起同此）、大对象流式读写 |
 | `BlobStoreProviderConformance` | `CreateProvider()` 返回 `IBlobStoreProvider`，`ValidSettings()` 与 `OtherValidSettings()` 给两组可用设置 | 按定义建出的实例可读写且探测通过、未知设置键以 `OBJECTSTORAGE_VALIDATION_003` 结果拒绝（不抛出）、经注册表同定义复用 / 定义变了替换 / 批量移除逐项报告、移除后不存在、定义错误翻译为 `OBJECTSTORAGE_VALIDATION_003` 且不影响已有实例 |
 
 `ObjectStorage.FileSystem` 与 `ObjectStorage.S3` 通过两套用例。

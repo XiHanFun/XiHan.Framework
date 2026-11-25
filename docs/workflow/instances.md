@@ -131,7 +131,7 @@ var nightly = WorkflowDefinitionBuilder.Create(new WorkflowName("finance.reconci
 | `EmptyAssigneeStrategy` | `Fault` | 没有指派人时：`Fault` 节点故障，`AutoApprove`、`AutoReject`，`Fallback` 改用 `FallbackAssigneeRules` |
 | `Title`、`FormKey` | 节点显示名、空 | 模板，写进任务视图 |
 | `FormData`、`Priority` | 空 | 表单数据、优先级 |
-| `DueAfterSeconds` / `DueAt` | 空 | 截止时长或截止时刻，`DueAt` 优先；只写进任务视图，不自动完成任务 |
+| `DueAfterSeconds` / `DueAt` | 空 | 截止时长或截止时刻，`DueAt` 优先；只写进任务视图，不自动完成任务。`DueAt` 是合表达式时间文法的字符串（`2026-01-02`、`2026-01-02T12:30`、`2026-01-02 12:30:00+08:00`）时就是那个时刻，否则当表达式求值，结果不合文法是 `workflow.activity.property_not_datetime`；读出的时刻换算成 UTC，任务视图的 `DueAt` 是 UTC，不保留属性里写的偏移 |
 | `ReminderAfterSeconds` | 空 | 每隔该时长发布一次 `workflow.task.reminder`，直到任务结束 |
 | `CcUserIds` / `CcRules` | 空 | 抄送人，写进任务事件 |
 | `AllowedOutcomes` | `approved`、`rejected` | 允许的完成结果 |

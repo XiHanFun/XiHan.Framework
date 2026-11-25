@@ -15,7 +15,7 @@
 
 ## 概述
 
-`InProcessPluginHost` 实现内核的 `IPluginHost`。`LoadAsync(PluginSource)` 的顺序是：读插件目录里的 `xihan.manifest.json`，要求 `kind: plugin` 与 `isolation: in-process`；核对清单 `permissions` 都在 `PluginSource.Permissions` 里；要求 `package` 与 `entry` 都有值且 `<package>.dll` 存在；在一个新的可收集加载上下文里加载程序集，按 `entry` 类型名实例化，要求它实现 `IPlugin` 且自带清单的 ID 与文件一致；调用 `IPlugin.Configure(PluginContext)`，构建插件专属的 `ServiceProvider`，再调用 `StartAsync`。成功后状态为 `Ready`。
+`InProcessPluginHost` 实现内核的 `IPluginHost`。`LoadAsync(PluginSource)` 的顺序是：读插件目录里的 `xihan.manifest.json`，要求 `kind: plugin` 与 `isolation: in-process`；核对清单 `permissions` 都在 `PluginSource.Permissions` 里；要求 `package` 与 `entry` 都有值且 `<package>.dll` 存在；核对清单声明的绑定（与进程外、Wasm 宿主同一条规则，规则在内核的 `PluginBindingRules`）：按宿主配置与环境变量 `SERVICE_BINDING_ROOT` 指向的目录解析，必需（`required` 缺省 `true`）的绑定两种来源都没给或只给了类型、来源声明的类型与清单不同（必需与可选都核对），即加载失败、插件程序集不加载；宿主不向插件下发绑定，插件自己经 `BindingResolver.Resolve(Configuration)` 读；在一个新的可收集加载上下文里加载程序集，按 `entry` 类型名实例化，要求它实现 `IPlugin` 且自带清单的 ID 与文件一致；调用 `IPlugin.Configure(PluginContext)`，构建插件专属的 `ServiceProvider`，再调用 `StartAsync`。成功后状态为 `Ready`。
 
 加载上下文把名字以 `XiHan.Framework.`、`Microsoft.Extensions.`、`System.`、`netstandard`、`mscorlib` 开头的程序集交给默认上下文，保证 `IPlugin` 等类型与宿主是同一个类型；插件的私有托管与原生依赖按它自己的 `.deps.json` 在插件目录里解析。
 
@@ -134,7 +134,7 @@ Console.WriteLine(unloaded.IsSuccess);
 | `PLUGINS_NOTFOUND_001` | `NotFound` | 程序集或入口类型不存在；卸载未加载的插件 |
 | `PLUGINS_DENIED_001` | `PermissionDenied` | 清单声明的权限未被授予（在加载任何代码之前判定） |
 | `PLUGINS_CONFLICT_001` | `AlreadyLoaded` | 同一清单 ID 已加载 |
-| `PLUGINS_UNEXPECTED_001` | `LoadFailed` | `Configure` / `StartAsync` 抛出异常；`StopAsync` 抛出异常时状态记为 `Failed`，错误同码 |
+| `PLUGINS_UNEXPECTED_001` | `LoadFailed` | 清单声明的绑定不合（在加载任何代码之前判定，消息键 `plugins.plugin.load_failed`，`reason` 与进程外宿主相同：`binding '<绑定名>' is required but not provided` 或 `binding '<绑定名>' is of type '<来源的类型>' but the manifest declares '<清单的类型>'`，宿主记一条 Error `Plugin <清单 ID> is not loaded: <reason>.`），绑定读不出（`reason` 是异常类型的全名）或绑定目录的文件超过内核的大小上限（`reason` 是内核的消息）；`Configure` / `StartAsync` 抛出异常；`StopAsync` 抛出异常时状态记为 `Failed`，错误同码 |
 
 - 失败以 `Result` 返回，不抛出到宿主；加载失败时已建的容器被释放、加载上下文被卸载。取消异常原样传播。
 - 加载、卸载与释放由一个互斥量串行化，同一清单 ID 不会被并发加载两次。

@@ -17,7 +17,7 @@
 
 本包是显式 Provider，装配后顶替默认的文件系统存储，三个能力都由同一个 `S3BlobStore` 实例提供。客户端由特性按选项创建，停止时释放；临时凭据的会话令牌、请求超时、尝试次数与 HTTP 代理也是选项（见「配置」）。选项仍然表达不了的（自定义凭据链等），应用在装配前向容器注册自己的 `IAmazonS3`，缺省实例沿用它，这时配置里的这几个键对它不起作用，应用也直接用到 AWS SDK 的类型，SDK 升大版本要跟着改。本包的公开类型不带 AWS SDK 的类型，`S3BlobStore` 没有公开构造：更多的实例经 `BlobStores` 按定义登记，各建各的客户端。各家兼容服务共用这一个包，不为每家云单独做包。
 
-`ServiceUrl` 为空时按 `Region` 访问 Amazon S3；有值时指向兼容服务，`Region` 作签名区域，并只在服务端要求时计算与校验校验和（多数兼容服务不支持分块尾部校验和）。`AccessKey` 与 `SecretKey` 都为空时走 SDK 的默认凭据链（环境变量、配置文件、实例角色）。
+`ServiceUrl` 为空时按 `Region` 访问 Amazon S3；有值时指向兼容服务，`Region` 作签名区域，并只在服务端要求时计算与校验校验和（多数兼容服务不支持分块尾部校验和）。`AccessKey` 与 `SecretKey` 都为空时走 SDK 的默认凭据链（环境变量、配置文件、实例角色），只给其中一项是配置错误。
 
 ## 何时使用
 
@@ -45,7 +45,7 @@ builder.AddXiHan(xihan => xihan.UseFullProfile().UseFeature<S3ObjectStorageFeatu
 | --- | --- | --- | --- |
 | `ServiceUrl` | 绝对 http / https 地址 | 空（Amazon S3） | 兼容服务的端点，如 `http://localhost:9000` |
 | `Region` | `string` | `us-east-1` | 访问 Amazon S3 时选端点，访问兼容服务时作签名区域 |
-| `AccessKey` | `string` | 空 | 访问密钥 ID；缺省实例与 `SecretKey` 都为空时走 SDK 默认凭据链（命名实例见下文）；与 `SecretKey` 一样在选项的 `ToString()` 里打印为 `***` |
+| `AccessKey` | `string` | 空 | 访问密钥 ID，必须与 `SecretKey` 同时给出或都不给；缺省实例两项都不给时走 SDK 默认凭据链（命名实例见下文）；与 `SecretKey` 一样在选项的 `ToString()` 里打印为 `***` |
 | `SecretKey` | `string` | 空 | 访问密钥 |
 | `SessionToken` | `string` | 空（没有令牌） | 临时凭据的会话令牌，必须与 `AccessKey`、`SecretKey` 同时给出；打印为 `***` |
 | `RequestTimeoutSeconds` | 正数，可带小数，不超过 86400（`MaxRequestTimeout`） | 不另设时限 | 单次 HTTP 请求的超时，每次尝试各算各的；超时返回 `OBJECTSTORAGE_UNAVAILABLE_001`。下载的内容流交给调用方之后的读取不在其内 |
@@ -78,7 +78,7 @@ builder.AddXiHan(xihan => xihan.UseFullProfile().UseFeature<S3ObjectStorageFeatu
 }
 ```
 
-会话令牌、请求超时、尝试次数与代理这七个键都不写时，建出的客户端与 SDK 的缺省相同。字符串键空白不算给出；数值键写了就必须合法，空串也不行。成组的键只给了一部分（有令牌没有两项密钥、代理只有主机或只有端口、代理凭据只给一项或没有代理）、数值不在范围内都是配置错误，读完选项（绑定覆盖之后）即核对：缺省实例启动失败，命名实例登记失败（`OBJECTSTORAGE_VALIDATION_003`）；报错带完整的键名，令牌、代理主机、代理用户名与口令的值从不进报错。
+会话令牌、请求超时、尝试次数与代理这七个键都不写时，建出的客户端与 SDK 的缺省相同。字符串键空白不算给出；数值键写了就必须合法，空串也不行。成组的键只给了一部分（两项密钥只给一项、有令牌没有两项密钥、代理只有主机或只有端口、代理凭据只给一项或没有代理）、数值不在范围内都是配置错误，读完选项（绑定覆盖之后，两项密钥可以一项来自绑定、一项来自配置节）即核对：缺省实例启动失败，命名实例登记失败（`OBJECTSTORAGE_VALIDATION_003`）；手工构造的选项在建客户端时同样核对。报错带完整的键名，带出的原值只限数值与布尔值：两项密钥、令牌、代理的主机、用户名与口令以及服务端点（`ServiceUrl` 与绑定的主值）不合法时只报键名或绑定名，带用户信息的端点写错也不会把口令带进异常与日志。
 
 绑定 `objectstorage` 存在时逐项覆盖配置：主值是服务端点，属性 `region`、`accessKey`、`secretKey`、`sessionToken`、`forcePathStyle`；空白的主值与属性不算给出，照读配置节。Kubernetes 里按 Service Binding 规范挂载的目录每个属性一个文件：
 
@@ -91,9 +91,26 @@ builder.AddXiHan(xihan => xihan.UseFullProfile().UseFeature<S3ObjectStorageFeatu
 
 绑定的解析规则见[配置与选项](/configuration/options)。命名实例（Provider 名 `s3`）的设置用同样的键，不含 `HealthProbeIntervalSeconds`（探测间隔由注册表统一），也不读绑定。
 
-命名实例的客户端过[出站地址策略](/security/outbound)，定义可能来自应用的库，端点不可信；自建的 MinIO 等要放行。命名实例配了代理时，本进程建的连接是连代理的，过策略的是代理的地址：代理落在被拒绝的地址上与端点被拒绝同样处理（不建连接，读写返回 `OBJECTSTORAGE_UNAVAILABLE_001`）；端点由代理去解析、去连，本进程的策略管不到，要限制经代理能到的目标，在代理上做。没配代理的命名实例不用系统代理。缺省实例的端点与代理都是运维配的，不过策略。
+命名实例的客户端过[出站地址策略](/security/outbound)，定义可能来自应用的库，端点不可信；自建的 MinIO 等要放行。命名实例配了代理时（要运营方打开下文的 `NamedInstancesAllowProxy`），本进程建的连接是连代理的，过策略的是代理的地址：代理落在被拒绝的地址上与端点被拒绝同样处理（不建连接，读写返回 `OBJECTSTORAGE_UNAVAILABLE_001`）；端点由代理去解析、去连，本进程的策略管不到，要限制经代理能到的目标，在代理上做。没配代理的命名实例不用系统代理。缺省实例的端点与代理都是运维配的，不过策略。
 
-命名实例必须给出 `AccessKey` 与 `SecretKey`，否则建实例失败（`OBJECTSTORAGE_VALIDATION_003`）。设置可以由租户填写，没给密钥就会用宿主的 AWS 凭据链，填设置的人就能以宿主的身份访问它能访问的任何桶。确实要让命名实例用实例角色等环境凭据时，由运营方在配置里打开 `XiHan:ObjectStorage:S3:NamedInstancesUseAmbientCredentials: true`；只给一项密钥总是拒绝。
+命名实例必须给出 `AccessKey` 与 `SecretKey`，否则建实例失败（`OBJECTSTORAGE_VALIDATION_003`）；只给一项密钥总是拒绝。命名实例的设置可以由租户填写：没给密钥就会用宿主的 AWS 凭据链，填设置的人就能以宿主的身份访问它能访问的任何桶；配了代理时过出站地址策略的是代理的地址，策略放行了一个内网代理，填设置的人就能经它到达策略本来拒绝的地址。所以这两件事由运营方的开关管，开关只写在配置节 `XiHan:ObjectStorage:S3` 里，不在实例设置的键里（实例设置写了它们是未知的键），实例自己打不开；缺省实例不受它们约束：
+
+| 键 | 缺省 | 打开之后 |
+| --- | --- | --- |
+| `NamedInstancesUseAmbientCredentials` | `false` | 命名实例可以不给两项密钥，用宿主的 AWS 凭据链；没打开时不给密钥即登记失败 |
+| `NamedInstancesAllowProxy` | `false`（`S3BlobStoreProvider.AllowProxyKey`） | 命名实例可以在设置里配 `ProxyHost` 等四项；没打开时配了代理即登记失败（`OBJECTSTORAGE_VALIDATION_003`，原因写明要打开哪个键、不带代理的取值），不建客户端、不发任何连接 |
+
+两项不是布尔值时，容器建 Provider（首次取用 `BlobStores`）即抛出 `ArgumentException`。
+
+S3 原样存取内容类型：AWS SDK 会把 `Content-Type` 交给 .NET 的 `MediaTypeHeaderValue` 解析后重新写出，写出的与原值不逐字符相同的内容类型存不进原值。这类内容类型的写入与分片上传的发起返回 `OBJECTSTORAGE_VALIDATION_007`（HTTP 400，参数 `contentType`），先于不覆盖写入的 HEAD，一个请求都不发：
+
+| 写法 | 结果 |
+| --- | --- |
+| `text/plain; charset=utf-8`、`application/pdf`、`Text/HTML`（.NET 的写法：`;` 之后一个空格） | 原样写入、原样读出 |
+| `text/plain;`、`text/plain; charset=utf-8;`、`text/plain;;charset=utf-8`（空参数，SDK 解析不了） | `OBJECTSTORAGE_VALIDATION_007` |
+| `text/plain;charset=utf-8`、`text/plain ; charset=utf-8`（`;` 两侧的空格与 `; ` 不同，浏览器常发 `text/plain;charset=UTF-8`） | `OBJECTSTORAGE_VALIDATION_007` |
+
+要写进去就换成 .NET 的写法（`; ` 一个空格、去掉空参数），或拒绝这个请求；文件系统存储不受影响。预签名上传限定的内容类型由客户端自己发送，不经 SDK，不受此限。读取一侧有已知的缺口：经预签名地址由别的客户端写入的对象，SDK 解析得了而写法不同的内容类型按 .NET 的写法交出（存储里的 `text/plain;charset=utf-8` 读出 `text/plain; charset=utf-8`）。
 
 ## 条件写入探测
 
@@ -146,7 +163,7 @@ done
 | `S3ObjectStorageFeature` | 特性入口（`IHostedFeature`、`IShadowAwareFeature`；被顶替或其余能力只是兜底选出时只登记命名实例 Provider）；常量 `ConnectionBinding` = `objectstorage`、`HealthName` = `objectstorage.s3.connection` |
 | `S3BlobStore` | 实现 `IBlobStore`、`IBlobMultipartStore`、`IBlobUrlSigner`；没有公开构造：缺省实例由 `S3ObjectStorageFeature` 建出，命名实例由 `S3BlobStoreProvider` 按定义建出，都按「条件写入探测」探测 |
 | `S3ObjectStorageOptions` | 选项；`FromConfiguration(configuration, binding)`、`FromSettings`（命名实例的设置，未知键抛出）；上限 `MaxRequestTimeout`（24 小时）与 `MaxAttemptsLimit`（10）；`ToString()` 把两项密钥、`SessionToken`、`ProxyUserName` 与 `ProxyPassword` 打印为 `***` |
-| `S3BlobStoreProvider` | 命名实例的 Provider，`ProviderName` = `s3`；每个实例按自己的端点、区域与密钥建客户端 |
+| `S3BlobStoreProvider` | 命名实例的 Provider，`ProviderName` = `s3`；每个实例按自己的端点、区域与密钥建客户端；运营方开关的完整配置键 `AmbientCredentialsKey`、`AllowProxyKey`，由带 `IConfiguration` 的构造读取，不带配置的构造按两项都关闭 |
 
 ## 使用示例
 
@@ -197,6 +214,7 @@ var link = (await signer.SignAsync(new ContainerName("invoices"), new BlobKey("2
 - `OBJECTSTORAGE_NOTFOUND_001`：键不存在；桶不存在时读取也是它，条件写入探测的桶不存在同样报它。
 - `OBJECTSTORAGE_UNAVAILABLE_001`：其余服务端错误、网络错误与 SDK 超时（含 `RequestTimeoutSeconds` 到点）；探测连不上或超时也是它，是唯一照常启动、后台重试的原因。
 - `OBJECTSTORAGE_UNAVAILABLE_003`、`OBJECTSTORAGE_UNAVAILABLE_004`、`OBJECTSTORAGE_DENIED_002`：只出自条件写入，何时返回见上文「条件写入探测」。
+- `OBJECTSTORAGE_VALIDATION_007`：内容类型合文法、但 SDK 写不出原值，写入与分片上传的发起在发请求之前返回，见上文「配置」末尾的表。
 
 ## 相关
 

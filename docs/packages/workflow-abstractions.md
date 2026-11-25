@@ -167,13 +167,13 @@ public sealed class GreetingFlow(IWorkflowDefinitionCatalog catalog, IWorkflowEn
 - `Start.Cron` 的定义在发布时排定时启动；定义还支持实例级超时（`Timeout` / `TimeoutAction`）与补偿（取消时 / 故障时）。
 - 启动的 `ReusePolicy` 幂等：查重与写入在同一把实例锁里，并发启动同一关联 ID 也只建一个实例。
 - 结果标签：节点以结果标签完成时（用户任务的 `approved` / `rejected` / `timeout`、事件网关的信号名、`ContinueOnError` 的 `error`、活动自定的标签），标签写进实例变量 `outcome`，当前节点与后继决策节点的出边条件都按它选边；条件都不成立时才走默认出边。
-- 表达式（RFC-0021「表达式」，ADR-0287）：最长 4000，嵌套最多 64 层（ADR-0120），`+` 拼出的字符串与模板渲染出的文本都不超过 4194304（ADR-0182），长度与位置按 UTF-16 码元计；`Evaluate` 与 `ActivityContext.EvaluateProperty` 的结果为 null（字面量、缺少的成员或键、值为 null 的变量、没有这个属性）是成功的无值，模板里渲染成空串。
-- 表达式的值：数字是 96 位整数加 0 到 28 位小数、只看数值，结果放不下是 `workflow.expression.number_out_of_range`；数字的文本不用指数、不带结尾的零（`19.90` 写 `19.9`），`WorkflowValues.AsString` 同此；数组与对象的文本是成员按名字排序的紧凑 JSON；`now()` 与 `date()` 返回字符串 `2026-01-02T03:04:05.0000000+00:00`，进程内用 `WorkflowValues.TryConvert<DateTimeOffset>` 读；成员名与变量名一律区分大小写；二元运算符与函数先求值全部操作数再核对。细节见[活动与扩展](/workflow/activities#表达式)。
+- 表达式（RFC-0021「表达式」，ADR-0287）：最长 4000，嵌套最多 64 层（ADR-0120），`+` 拼出的字符串与模板渲染出的文本都不超过 4194304（ADR-0182），长度与位置按 UTF-16 码元计；一次求值（一次渲染的全部占位合计）的工作量不超过 16777216，每个节点记 64、运算再记它读的字符串长度与容器里的值（每个 64），超过是 `workflow.expression.budget_exceeded`（`WorkflowMessages.ExpressionBudgetExceeded`，参数 `max`，ADR-0296）；`Evaluate` 与 `ActivityContext.EvaluateProperty` 的结果为 null（字面量、缺少的成员或键、值为 null 的变量、没有这个属性）是成功的无值，模板里渲染成空串。
+- 表达式的值：数字是 96 位整数加 0 到 28 位小数、只看数值，结果放不下是 `workflow.expression.number_out_of_range`；数字的文本不用指数、不带结尾的零（`19.90` 写 `19.9`），`WorkflowValues.AsString` 同此，定长小数位数用 `format(x, n)`（照 `round` 舍入后补零，`format(19.9, 2)` 是 `19.90`，不随区域）；数组与对象的文本是成员按名字排序的紧凑 JSON；`now()` 与 `date()` 返回字符串 `2026-01-02T03:04:05.0000000+00:00`，进程内用 `WorkflowValues.TryConvert<DateTimeOffset>` 读；`Delay.Until`、`UserTask.DueAt`、`WorkflowVariables.TryGet<DateTimeOffset>` 与 `WorkflowValues.TryConvert<DateTimeOffset>` / `<DateTime>` 只认表达式的时间文法，读成 UTC（ADR-0296）；成员名与变量名一律区分大小写；二元运算符与函数先求值全部操作数再核对。细节见[活动与扩展](/workflow/activities#表达式)。
 - `Http` 活动的地址由流程定义给出，不可信：缺省的 `WorkflowHttpClient` 过出站地址策略（ADR-0117），只能连公网地址，重定向的目标同样检查；目标被拒绝是节点故障，消息键 `workflow.http.address_denied`。
 - `Http` 活动的超时按引擎的 `TimeProvider` 计时、按令牌归因（ADR-0097）：活动的超时令牌已触发即节点故障 `WORKFLOW_UNEXPECTED_001`（消息键 `workflow.http.timed_out`），不论调用方是否也已取消、客户端是抛出还是交回了响应；只有调用方取消时抛出 `OperationCanceledException`（操作随调用回滚）；两个都没触发时客户端抛出的取消与 `TimeoutException` 也按超时。
 - 故障（ADR-0105、ADR-0106）：实例与节点实例的 `WorkflowFault` 存错误码、消息键、参数与内层原因，不存渲染好的文案；展示用 `Localize()`（按调用链里调用方的区域），返回给调用方用 `ToError()`；`Message` 按进程默认区域渲染，只供日志。引擎与内置活动的失败原因都是消息键，应用或第三方给的文本（异常消息、HTTP 原因短语、外部任务的错误、`Fault` 节点的消息）原样放在参数里。子流程回调输入 `childFault` 是子实例故障的 JSON，父节点的故障按子实例状态是 `workflow.child.faulted` / `canceled` / `terminated`，内层是子实例的故障。设计期诊断（校验的逐条问题、表达式诊断、`DeserializeDefinition` 的错误）、变量 `lastError`（故障的 JSON，表达式读 `code`）、活动描述符与状态名同样是消息键，状态的展示名用 `WorkflowStatusMessages`。
 - 轮询器每个周期覆盖平台与租户目录（`ITenantStore`，装配了多租户时）里启用的每个租户，逐个分区开调用；周期中途进入排空的，下一个失败的分区调用就让周期停下，剩下的分区不再调用、不告警（ADR-0087）。
-- 列表关键字去首尾空白，不变文化小写后按序数包含，任一字段匹配、不跨字段；`%`、`_`、`[`、反斜杠按字面、与全角字符不同（ADR-0096、ADR-0098、ADR-0099）。
+- 列表关键字去首尾空白，按逐个码位的 Unicode 简单小写映射折叠（`İ` 折成 `i`，平面以外的字母同样折叠，长度不变）后按序数包含，任一字段匹配、不跨字段；`%`、`_`、`[`、反斜杠按字面、与全角字符不同（ADR-0096、ADR-0098、ADR-0099、ADR-0296）。
 - 事件只在装配了消息能力时发布，发布失败只记日志。
 
 ## 错误码

@@ -24,11 +24,11 @@
 | `Kernel.Pipeline` | `IPipelineMiddleware`、`PipelineBuilder`、`PipelineStep`、`Placement`、`DeadlineMiddleware`、`IInvocationAccessor`、调用来源 `InvocationOrigin`、上下文扩展 |
 | `Kernel.Operations` | `[Operation]`、`IOperation<TRequest, TResponse>`、`OperationContract`、`OperationDescriptor`、`OperationSchema`、`OperationRegistry`、`IOperationInvoker` |
 | `Kernel.Validation` | `ValidationMiddleware`、`JsonSchemaValidator`、`SchemaViolation` |
-| `Kernel.Json` | `ResultJson`（Result 与 Error 的线上 JSON 编码，RFC-0001「Result」）、`JsonText` 与 `JsonTextProblem`（读取 JSON 文本的共同检查，RFC-0001「JSON 文本」） |
+| `Kernel.Json` | `ResultJson`（Result 与 Error 的线上 JSON 编码，RFC-0001「Result」）、`JsonText`、`JsonTextProblem` 与 `JsonTextProblemKind`（读取 JSON 文本的共同检查，RFC-0001「JSON 文本」） |
 | `Kernel.Resilience` | `ResilienceMiddleware`、`ResilienceOptions`、`ResiliencePolicy` |
 | `Kernel.Diagnostics` | `ObserveMiddleware`、`ActivitySource` 与 `Meter` 桥、`IAuditSink`、`UnreadableDeadlineLog`（截止时间读不出时的限频告警） |
 | `Kernel.Security` | `Principal`、`TenantContext`、`SecurityContext`、`ResourceName`、`IPolicy`（`EvaluateAsync` → `Result<AuthorizationDecision>`：成功是允许或拒绝，失败是无法判定）、`AuthorizationDecision`、`PermissionDefinition`、`PermissionRegistry` |
-| `Kernel.Plugins` | `IPlugin`、`IPluginHost`、`PluginContext`、`PluginPermissions` 抽象 |
+| `Kernel.Plugins` | `IPlugin`、`IPluginHost`、`PluginContext`、`PluginPermissions` 抽象，插件宿主共用的绑定核对 `PluginBindingRules` |
 | `Kernel.Localization` | 内核自己的消息目录 |
 
 `AddXiHan` 收集特性、求解能力图谱、按拓扑顺序调用 `Configure`，然后把 `App`、内置中间件、权限表、操作登记表、`IInvocationAccessor` 与一个宿主服务注册进容器；容器由宿主构建，内核只配置 `IServiceCollection`。宿主服务随 .NET 通用宿主启动与停止应用。
@@ -91,7 +91,8 @@ await builder.Build().RunAsync();
 | `IFeature` / `IHostedFeature` | 特性：`Manifest` + `Configure`；托管特性另有 `StartAsync` / `StopAsync` |
 | `IShadowAwareFeature` | 能力全部被顶替时内核改调 `ConfigureShadowed`，只登记与能力选择无关的服务（命名存储实例的 Provider）；不注册契约、不贡献中间件、不启动 |
 | `FeatureContext` | `Configure` 的入口：`Services`、`Configuration`、`Node`、`AddMiddleware`、`AddPermission`（归属为本特性的清单 ID）、`AddOperation`、`AddStartupCheck`（启动核对：容器建好之后、任何特性启动之前执行，抛出即终止启动，不归失败策略管，ADR-0085）、`GetBinding` / `FindBinding`、`Bindings`（装配时解析好的一份，此后不变）、`ServiceBindingRoot`（应用经 `UseServiceBindingRoot` 指定的根目录，没有指定时为 `null`；装配之后还要按同一套来源解析绑定的特性把它与 `Configuration` 交给 `BindingResolver.Resolve`，ADR-0268） |
-| `BindingResolver` / `BindingValue` | 资源绑定的解析与结果：`Resolve(configuration, serviceBindingRoot)` 先读 Service Binding 目录、再读 `XiHan:Bindings`；`BindingValue` 是初始化器记录，`Name`、`Type`、`Value`、`Properties` 都是 `required` 成员，`Property(key)` 取单个属性，`ToString()` 遮蔽主值、属性只列名字（按序数排序，如 `Properties = [password, username]`），值不打印 |
+| `BindingResolver` / `BindingValue` | 资源绑定的解析与结果：`Resolve(configuration, serviceBindingRoot)` 先读 Service Binding 目录、再读 `XiHan:Bindings`；绑定目录里一个文件最多 `MaxFileBytes`（524288）字节、一个绑定的文件合计最多 `MaxBindingBytes`（1048576）字节，按原始字节计、读到上限就停，超过即抛出 `KERNEL_HOSTING_005`（消息只带绑定名、文件名与上限），配置来源不受限；`BindingValue` 是初始化器记录，`Name`、`Type`、`Value`、`Properties` 都是 `required` 成员，`Property(key)` 取单个属性，`ToString()` 遮蔽主值、属性只列名字（按序数排序，如 `Properties = [password, username]`），值不打印 |
+| `PluginBindingRules` | 插件宿主对清单声明的绑定的核对（Preview），进程外、Wasm 与进程内三种宿主共用：`HasContent(binding)` 判断解析出的绑定有没有能交给插件的内容（主值或至少一个属性，只给了类型的没有）；`FindViolation(declared, resolved)` 返回写进错误 `reason` 的固定英文文本，必需（`required` 缺省 `true`）的绑定没有内容为 `binding '<名>' is required but not provided`，来源声明的类型与清单不同（按序数比较，必需与可选都核对）为 `binding '<名>' is of type '<来源的类型>' but the manifest declares '<清单的类型>'`，主值与属性都不出现。与内核装配特性时的核对（`KERNEL_HOSTING_001`）不同，见[资源绑定](/configuration/bindings#下发给插件的绑定) |
 | `KernelOptions` / `FailurePolicy` | 内核选项与失败策略 |
 | `ConfigurationValues` | 从配置逐键读标量：`ReadSeconds`、`ReadInt32`、`ReadInt64`、`ReadBoolean`、`ReadEnum<TEnum>`。键不存在返回 `null`；写了值（含空串）就必须合法，否则抛 `ArgumentException`，消息是 `'<完整配置键>' must be …, but was '<原值>'.`。各包的选项类都用它，自己写选项类时也用它，不要各写一份解析 |
 | `StartupBannerOptions` | 启动 Banner：`Enabled`（读 `XiHan:Kernel:Banner:Enabled`）、`Output`（写入目标，缺省标准输出）、`ApplicationVersion`（宿主包从入口程序集填入）；`FromConfiguration(configuration, defaults)` 让宿主给出自己的缺省 |
@@ -101,9 +102,9 @@ await builder.Build().RunAsync();
 | `IInvocationAccessor` | 作用域服务，取当前调用的上下文 |
 | `InvocationContextExtensions` | `FindOutcome` / `SetOutcome`、`FindOrigin` / `SetOrigin`、`Find` / `Set`（`ContextItemKey<T>`） |
 | `IOperationInvoker` / `OperationRegistry` / `OperationDescriptor` | 操作调用与登记；`OperationRegistry(permissions)` 绑定核对用的权限登记表，`AddRange(owner, operations, permissions)` 一个归属的一组操作连同它定义的权限码全进或全不进；`RemoveOwnedBy(owner)` 在锁里一次撤回该归属的全部操作与权限码（插件卸载时用，之后可以再登记，ADR-0085）；`Enforce(check)` 核对已登记的操作并挂上核对，此后每次登记都经过它（授权能力用它核对契约的策略名，ADR-0080）；`EnforceAdditions(check)` 挂整组的核对，`check(已登记的, 新增的)` 看得到同一组里的其他项（协议适配器用它挡住路由与 tool 名冲突）；`GetChangeToken()` 的令牌在内容每变一次时触发，协议适配器据此让端点、文档与 tool 表跟随登记表（ADR-0251） |
-| `SecurityContext` / `Principal` / `TenantContext` | 安全上下文，`context.GetSecurity()` 读取，未认证时为 `SecurityContext.Anonymous`。`SecurityContext` 与 `TenantContext` 是初始化器记录：`new SecurityContext { Principal = principal, Tenant = tenant }`，`Principal` 是 `required` 成员、不能为 `null`，`Tenant` 不给即无租户；`new TenantContext { Id = id, DisplayName = name }`，`Id` 是 `required` 成员、不能为空白。校验在设值时做，`with` 走同一校验；换主体时另建上下文要带上原来的 `Tenant` |
+| `SecurityContext` / `Principal` / `TenantContext` | 安全上下文，`context.GetSecurity()` 读取，未认证时为 `SecurityContext.Anonymous`。`SecurityContext` 与 `TenantContext` 是初始化器记录：`new SecurityContext { Principal = principal, Tenant = tenant }`，`Principal` 与 `Tenant` 都是 `required` 成员，`Principal` 不能为 `null`，`Tenant` 可以是 `null`（无租户写 `Tenant = null`）但必须写出，漏写是编译错误 CS9035；`new TenantContext { Id = id, DisplayName = name }`，`Id` 是 `required` 成员、不能为空白。校验在设值时做，`with` 走同一校验；换主体时写 `Tenant = existing.Tenant`，或用 `existing with { Principal = principal }` |
 | `UnreadableDeadlineLog` | 调用方给的截止时间读不出时的限频告警（Preview），内核登记为单例：`ReportHeader(header, length, operationId)` 报请求头，`ReportPluginMetadata(pluginId, length)` 报插件回调的元数据，两类各自在 `Window`（1 分钟）里最多记一条 Warning，下一条带上被压掉的条数；只带头名或插件 ID 与原值的字符数，不带原值。Warning 级别没开时不计数。自写载体读不出调用方给的截止时间时经它报告 |
-| `JsonText` / `JsonTextProblem` | 读取 JSON 文本的共同检查（Preview）：`Check(utf8)` 核对语法、嵌套不超过 `MaxDepth`（64）层、合法的 Unicode 与任何一层都没有重复的成员，没问题返回 `null`，否则返回第一个问题 `JsonTextProblem`（`IsSyntax` 区分语法错误与重复的成员，`Path` 在语法错误时是 `$`、重复的成员时是第二次出现的路径，如 `$.data.lines[0].sku`）；操作载荷、清单与消息信封都先过它 |
+| `JsonText` / `JsonTextProblem` / `JsonTextProblemKind` | 读取 JSON 文本的共同检查：`FindProblem(utf8)` 核对语法、嵌套不超过 `MaxDepth`（64）层、合法的 Unicode 与任何一层都没有重复的成员，通过时返回无值的 `Maybe<JsonTextProblem>`，否则是第一个问题。`JsonTextProblem` 是记录类，`Kind` 与 `Path` 都是 `required` 成员；`Kind` 是 `Syntax`（不合 RFC 8259 的文法）、`NestingTooDeep`（第一个落在第 65 层的对象或数组）、`InvalidUtf8`（字符串或成员名的原始字节不是合法的 UTF-8）、`LoneSurrogate`（不成对的代理项转义）或 `DuplicateMember`，前四种都是语法错误、`Path` 一律是 `$`，重复成员时 `Path` 是第二次出现的路径（如 `$.data.lines[0].sku`）。语法错误不论出现在哪里都优先于重复成员，几种语法错误之间报文本里第一处；按种类分支时给其余种类留缺省分支。操作载荷、清单与消息信封都先过它 |
 | `PermissionDefinition` / `PermissionRegistry` | 权限码登记，每个码记下归属（特性或插件的清单 ID）；`Add(owner, permission)` / `AddRange(owner, permissions)` 一批全进或全不进，`RemoveOwnedBy(owner)` 按归属撤回，写入与撤回在锁内（插件运行期加载与卸载也会登记、撤回） |
 | `OutboundAddressPolicy` / `OutboundAddressOptions` / `OutboundAddressDeniedException` | [出站地址策略](/security/outbound)：宿主登记的单例，`Apply(SocketsHttpHandler)` 让连接按实际 IP 过策略，`ConnectAsync(host, port, ct)` 给不是 HTTP 的连接，`IsAllowed(IPAddress)` 判断一个 IP |
 | `ResultJson` | Result 与 Error 的线上 JSON 编码：`Write` / `WriteMaybe` / `WriteError` 写出，`Read` / `ReadMaybe` / `ReadError` 读取；值经调用方给的 `JsonTypeInfo<T>`（源生成） |
@@ -157,6 +158,7 @@ app.MapGet("/diagnostics/state", (App xihan) => xihan.Health().State.ToString())
 | `KERNEL_HOSTING_001` | 必需绑定缺失或类型不匹配 |
 | `KERNEL_HOSTING_002` / `003` | 特性启动或停止失败 / 停止超时 |
 | `KERNEL_HOSTING_004` | 应用状态不允许该操作（重复构建、未就绪时调用） |
+| `KERNEL_HOSTING_005` | 绑定目录里的文件超过大小上限（一个文件 524288 字节、一个绑定合计 1048576 字节），装配时启动失败 |
 | `KERNEL_UNAVAILABLE_001` | 应用未就绪或正在停止（HTTP 503） |
 | `KERNEL_UNAVAILABLE_002` / `003` / `004` | 限流 / 并发上限 / 熔断拒绝 |
 | `KERNEL_UNAVAILABLE_005` | 周期健康探针失败或超时 |

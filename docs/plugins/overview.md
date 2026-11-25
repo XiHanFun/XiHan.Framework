@@ -58,6 +58,7 @@
 | `contributes.health` | 插件自报的健康项名，未声明的健康项是握手不一致 |
 | `contributes.pipeline` | 只用于 Wasm：中间件名与阶段。进程外与进程内插件写了非空值，在发现或加载时以 `PLUGINS_VALIDATION_001` 拒绝，不静默忽略 |
 | `contributes.permissions` | 插件定义的权限码，见下文 |
+| `bindings` | 插件要的资源绑定：每项 `name`、`type` 与 `required`（缺省 `true`），运营方在 `Grants` 里授予 `binding:<绑定名>` 才下发（进程内插件除外）。必需的绑定在部署里没有内容（没给或只给了类型）、来源声明的类型与清单不同时，进程外与 Wasm 插件配置失败，进程内插件加载失败；部署里可以没有的绑定写 `"required": false`，规则见[资源绑定](/configuration/bindings#下发给插件的绑定) |
 | `permissions` | 插件向宿主要的权限，见下一节 |
 | `activation` | `onStartup`（缺省）、`onOperation:<模式>`、`onEvent:<模式>`；只写后两种的插件懒激活，首次调用或投递时再启动。`onEvent:` 的模式与主题名同一字符集（小写字母、数字、`.`、`_`、`-`，外加通配的 `*`），`onOperation:` 的模式不能带下划线（操作 ID 里没有） |
 
@@ -213,7 +214,7 @@ if (loaded.IsFailure)
 await app.RunAsync();
 ```
 
-宿主核对清单种类、隔离级别、权限、`package` 与 `entry`，在新的可收集加载上下文里加载 `<package>.dll`，实例化 `entry` 类型（必须实现 `IPlugin`，自带清单的 ID 与文件一致），调用 `Configure` 后构建插件专属容器，再调用 `StartAsync`，成功即为 `Ready`。`UnloadAsync` 先调用 `StopAsync`，无论成败都释放容器并卸载加载上下文。构造函数标注了 `RequiresDynamicCode` 与 `RequiresUnreferencedCode`，项目开启裁剪或 AOT 分析时会报 IL2026 / IL3050：进程内插件不能进 Native AOT 应用。
+宿主核对清单种类、隔离级别、权限、`package` 与 `entry`，再按与另两种宿主相同的规则核对清单声明的绑定（必需的有没有、来源的类型与清单是否相同；按宿主配置与 `SERVICE_BINDING_ROOT` 解析，不合即 `PLUGINS_UNEXPECTED_001`，插件代码不加载），然后在新的可收集加载上下文里加载 `<package>.dll`，实例化 `entry` 类型（必须实现 `IPlugin`，自带清单的 ID 与文件一致），调用 `Configure` 后构建插件专属容器，再调用 `StartAsync`，成功即为 `Ready`。`UnloadAsync` 先调用 `StopAsync`，无论成败都释放容器并卸载加载上下文。构造函数标注了 `RequiresDynamicCode` 与 `RequiresUnreferencedCode`，项目开启裁剪或 AOT 分析时会报 IL2026 / IL3050：进程内插件不能进 Native AOT 应用。
 
 写进程内插件：类库项目设 `<EnableDynamicLoading>true</EnableDynamicLoading>`，引用 `XiHan.Framework.Kernel`，把 `xihan.manifest.json` 复制到输出目录，入口类型实现 `IPlugin`：`Manifest` 与文件一致（`Kind = ManifestKind.Plugin`、`Isolation = PluginIsolation.InProcess`、`Entry` 为类型全名），`Configure(PluginContext)` 里可以用 `context.Permissions.IsGranted(...)` 自检并向 `context.Services` 注册自己的服务，`StartAsync` 从插件私有容器解析它们。完整代码见 `samples/SamplePlugin` 与 [Plugins.InProcess](/packages/plugins-inprocess)。
 

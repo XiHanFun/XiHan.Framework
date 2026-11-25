@@ -94,6 +94,7 @@ if (opened.TryGetValue(out var part))
 | 清单为空、乱序、含未上传的片、ETag 不符或非末片过小 | `OBJECTSTORAGE_VALIDATION_002`，上传保留，可修正清单后再完成 |
 | 上传不存在或已结束 | `OBJECTSTORAGE_NOTFOUND_002` |
 | `Overwrite = false` 且对象已存在 | 发起与完成都返回 `OBJECTSTORAGE_CONFLICT_001` |
+| 发起时的内容类型存储写不出原值（S3：`text/plain;` 这类空参数、`text/plain;charset=utf-8` 这类 `;` 两侧的空格与 `; ` 不同的写法） | 发起返回 `OBJECTSTORAGE_VALIDATION_007`，不发请求；与单次写入相同，换成 `text/plain; charset=utf-8` 这种写法 |
 
 文件系统把分片暂存在容器下的 `uploads/<上传标识>/`，暂存的分片计入总配额，超过 `MultipartExpiryHours`（缺省 168 小时）仍未完成的上传即过期，拒绝再传分片与完成并被清掉，细则见 [ObjectStorage.FileSystem](/packages/objectstorage-filesystem)；S3 直接映射原生 multipart，未完成的上传按桶的生命周期规则清理。
 
@@ -107,7 +108,7 @@ if (opened.TryGetValue(out var part))
 | `BlobUrlRequest.ForUpload(expiresIn, contentType)` | `PUT` | 上传整个对象，可限定内容类型（须合 `BlobPutOptions.IsValidContentType`） |
 | `BlobUrlRequest.ForPart(upload, partNumber, expiresIn)` | `PUT` | 上传分片上传的某一片，响应头 `ETag` 就是这一片的 ETag |
 
-有效期缺省 30 分钟（`BlobUrlRequest.DefaultExpiresIn`），范围 1 秒到 7 天，超出时构造请求抛出 `ArgumentOutOfRangeException`。限定的内容类型不合文法（如 `;` 之后没有参数）、文件名为空白、含控制字符或按 UTF-8 编码后超过 255 字节（`BlobUrlRequest.MaxDownloadFileNameBytes`）时抛出 `ArgumentException`：签名的规范串以换行分隔各限定项，值里不能带换行（ADR-0219）。签出的 `BlobSignedUrl` 带地址、方法、失效时刻与 `Headers`：客户端必须原样发送这些请求头（例如限定的 `Content-Type`），否则验签不过。签名在本地计算，不检查对象是否存在。有效期按业务取最短可用值（下载几分钟、上传按文件大小估）；地址泄露时，宿主代收发轮换 `Secret` 即让全部已签地址失效，S3 的地址随凭据轮换失效。
+有效期缺省 30 分钟（`BlobUrlRequest.DefaultExpiresIn`），范围 1 秒到 7 天，超出时构造请求抛出 `ArgumentOutOfRangeException`。限定的内容类型不合文法（如带制表符）、文件名为空白、含控制字符或按 UTF-8 编码后超过 255 字节（`BlobUrlRequest.MaxDownloadFileNameBytes`）时抛出 `ArgumentException`：签名的规范串以换行分隔各限定项，值里不能带换行（ADR-0219）。签出的 `BlobSignedUrl` 带地址、方法、失效时刻与 `Headers`：客户端必须原样发送这些请求头（例如限定的 `Content-Type`），否则验签不过。签名在本地计算，不检查对象是否存在。有效期按业务取最短可用值（下载几分钟、上传按文件大小估）；地址泄露时，宿主代收发轮换 `Secret` 即让全部已签地址失效，S3 的地址随凭据轮换失效。
 
 S3 由存储自己签名（签名 V4），客户端直连存储。文件系统没有原生签名，由宿主代收发：装配 `HostedBlobUrlFeature` 并映射端点（见最小示例），签名是对方法、容器、键、过期时刻与各限定项的 HMAC-SHA256，无状态，持有同一密钥的多个实例互认。
 
@@ -116,7 +117,7 @@ S3 由存储自己签名（签名 V4），客户端直连存储。文件系统�
 | `XiHan:ObjectStorage:SignedUrls:BaseUrl` | `/blobs` | 签出地址的前缀：以 `/` 开头的路径（相对应用的源）或绝对地址；端点的路由前缀取它的路径部分 |
 | `XiHan:ObjectStorage:SignedUrls:Secret` | 无，必填 | 签名密钥，UTF-8 至少 32 字节；多实例部署必须一致；缺失或过短时装配抛出 `ArgumentException` |
 
-宿主端点 `GET` 支持单个 `Range` 区间（206 与 `Content-Range`，不可满足回 416），`PUT` 写整个对象或一片并在响应头带 `ETag`。端点经内核管道，Observe 照常记录，不要求凭据，签名即授权；上传解除了请求体大小上限，单对象上限由存储把关。签名不符或过期回 403（`OBJECTSTORAGE_DENIED_001`）。签名没有限定内容类型时对象的内容类型取请求的 `Content-Type`，不合文法（媒体类型，最长 255 个字符，`;` 之后必须有参数，`text/plain;` 这样的值也不合法）回 400（`OBJECTSTORAGE_VALIDATION_006`），不写入。没有装配 `HostedBlobUrlFeature` 就调用 `MapXiHanBlobs()`，调用处抛出 `FrameworkException`（`KERNEL_HOSTING_004`）。
+宿主端点 `GET` 支持单个 `Range` 区间（206 与 `Content-Range`，不可满足回 416），`PUT` 写整个对象或一片并在响应头带 `ETag`。端点经内核管道，Observe 照常记录，不要求凭据，签名即授权；上传解除了请求体大小上限，单对象上限由存储把关。签名不符或过期回 403（`OBJECTSTORAGE_DENIED_001`）。签名没有限定内容类型时对象的内容类型取请求的 `Content-Type`，原样保存（`text/plain;`、`text/plain; charset=utf-8;` 这类空参数照收）；不合文法（媒体类型，最长 255 个字符，`;` 两侧只收空格、不收制表符）回 400（`OBJECTSTORAGE_VALIDATION_006`），不写入。没有装配 `HostedBlobUrlFeature` 就调用 `MapXiHanBlobs()`，调用处抛出 `FrameworkException`（`KERNEL_HOSTING_004`）。
 
 端点的响应都带 `X-Content-Type-Options: nosniff`。写出内容时还带沙箱的 `Content-Security-Policy`：用户上传的 HTML、SVG 在这里跑不了脚本，图片、视频和 PDF 照常预览。把这个地址上的 HTML 当网页用的应用，在 `UseXiHan` 之前的中间件里设自己的 `Content-Security-Policy`，端点不覆盖。S3 直传直下的地址不经宿主，不受这一条影响。
 
@@ -224,7 +225,7 @@ var url = (await signer.SignAsync(new ContainerName("files"), new BlobKey("docs/
 
 每个实例一条健康项 `objectstorage.store.<name>`，按 `XiHan:ObjectStorage:StoreHealthProbeIntervalSeconds`（缺省 15 秒）在后台逐个探测，新实例建出后立即探一次；还没探过为 Started，探测失败为 Degraded，实例仍可取用。文件系统看总配额是否还有余量，S3 对实例的 `HealthBucket` 做 HEAD（没配时列桶），连通之后再看条件写入，尚未确认或不认时 Degraded。健康项的汇总见[生命周期与健康](/startup/lifecycle)。
 
-S3 命名实例的定义可能来自应用的库，端点可能是租户填的，所以它的客户端过[出站地址策略](/security/outbound)，缺省只能连公网地址。自建的 MinIO 等要放行，比如把主机名写进 `XiHan:Security:Outbound:AllowedHosts`。被拒绝与连不上同样处理：建实例时的探测只算尚未确认，读写返回 `OBJECTSTORAGE_UNAVAILABLE_001`，日志里有一条 Warning。实例的设置里配了 HTTP 代理（`ProxyHost`、`ProxyPort`）时，过策略的是代理的地址，端点由代理去连，要限制经代理能到的目标就在代理上做。缺省实例的端点与代理是运维配的，不过策略。S3 命名实例的设置与配置节同名，会话令牌、请求超时、尝试次数与代理也能按实例写，键表见 [ObjectStorage.S3](/packages/objectstorage-s3#配置)。
+S3 命名实例的定义可能来自应用的库，端点可能是租户填的，所以它的客户端过[出站地址策略](/security/outbound)，缺省只能连公网地址。自建的 MinIO 等要放行，比如把主机名写进 `XiHan:Security:Outbound:AllowedHosts`。被拒绝与连不上同样处理：建实例时的探测只算尚未确认，读写返回 `OBJECTSTORAGE_UNAVAILABLE_001`，日志里有一条 Warning。实例的设置里配 HTTP 代理（`ProxyHost`、`ProxyPort`）要运营方在配置节写 `XiHan:ObjectStorage:S3:NamedInstancesAllowProxy: true`（缺省 `false`，实例设置打不开它），没打开时带代理的定义登记失败（`OBJECTSTORAGE_VALIDATION_003`，原因不带代理的取值）：策略放行了一个内网代理时，能填实例设置的人就能经它到达策略本来拒绝的地址。打开之后过策略的是代理的地址，端点由代理去连，要限制经代理能到的目标就在代理上做。缺省实例的端点与代理是运维配的，不过策略，也不受这个开关约束。S3 命名实例的设置与配置节同名，会话令牌、请求超时、尝试次数与代理也能按实例写，键表见 [ObjectStorage.S3](/packages/objectstorage-s3#配置)。
 
 ::: warning 混装文件系统与 S3 时怎样指定缺省存储
 缺省的 `IBlobStore`、`IBlobMultipartStore`、`IBlobUrlSigner` 必须落在同一存储上，这条规则只约束被要求的契约：有特性在清单里依赖了这项能力，或 `XiHan:Providers` / `UseProvider` 指定了它的提供者。不指定时 S3 是显式 Provider，三项都归 S3，文件系统被顶替，但它的命名实例 Provider 照样登记（被顶替的存储包只登记命名实例，不建缺省实例、不启动）。

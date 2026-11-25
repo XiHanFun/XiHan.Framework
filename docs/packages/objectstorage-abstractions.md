@@ -64,7 +64,7 @@ dotnet add package XiHan.Framework.ObjectStorage.Abstractions --prerelease
 | `Blobs.IBlobStore` | `PutAsync(container, uploads)`、`GetAsync(container, key)`、`GetAsync(container, key, range)`、`HeadAsync`、`DeleteAsync(container, keys)`、`ListAsync(container, query)` |
 | `Blobs.BlobStoreExtensions` | `PutAsync(container, key, stream 或 bytes, options)`、`DeleteAsync(container, key)`、`ExistsAsync`、`ReadAllBytesAsync` |
 | `Blobs.BlobUpload` | 一项写入：键、内容流、选项 |
-| `Blobs.BlobPutOptions` | `ContentType`（缺省 `application/octet-stream`，媒体类型、最长 `MaxContentTypeLength` 255，之后可跟若干个参数：每个 `;` 两侧可以有空格、之后必须有参数，`text/plain;` 不合法；`IsValidContentType` 判定）、`Metadata`（名 `^[a-z0-9][a-z0-9-]{0,63}$`，值不含控制字符，名与值合计不超过 `MaxMetadataBytes` 2048 个 UTF-8 字节）、`Overwrite`（缺省 `true`）；`Default` |
+| `Blobs.BlobPutOptions` | `ContentType`（缺省 `application/octet-stream`，媒体类型、最长 `MaxContentTypeLength` 255，之后可跟若干个参数：每个 `;` 两侧可以有空格（不收制表符），参数可以为空，`text/plain;` 合法；`IsValidContentType` 判定；Provider 原样存取，存储客户端写不出原值的以 `OBJECTSTORAGE_VALIDATION_007` 拒绝写入）、`Metadata`（名 `^[a-z0-9][a-z0-9-]{0,63}$`，值不含控制字符，名与值合计不超过 `MaxMetadataBytes` 2048 个 UTF-8 字节）、`Overwrite`（缺省 `true`）；`Default` |
 | `Blobs.BlobMetadata` | 键、长度、内容类型、`ETag`、最后修改时间、自定义元数据 |
 | `Blobs.BlobContent` | 元数据、内容流与可选的实际范围 `Range`；`IAsyncDisposable`，释放时关闭流 |
 | `Blobs.BlobRange` / `BlobContentRange` | 范围请求（起点与可选长度）与实际范围（起点、长度、总长、`Last`） |
@@ -143,6 +143,7 @@ public sealed class AzureBlobStoreConformanceTests : BlobStoreConformance
 ## 行为与限制
 
 - 写入：已存在且 `Overwrite = false` 的项返回 `OBJECTSTORAGE_CONFLICT_001`，不写入；不覆盖写入是原子的，多个写入方同时写同一个新键只有一个成功（一致性套件核对，ADR-0089）；配额或单对象大小超限返回 `OBJECTSTORAGE_UNAVAILABLE_002`，不写入。空列表返回空，重复的键按顺序各执行一次。
+- 内容类型原样存取：写入（含分片上传的发起）把 `ContentType` 原样交给存储，读取把存储里的值原样放进 `BlobMetadata.ContentType`，Provider 不去掉空参数、不改 `;` 两侧的空格与大小写，读出的元数据原样写回得到同一个内容类型。存储客户端写不出原值的，写入与分片上传的发起在发出任何请求之前返回 `OBJECTSTORAGE_VALIDATION_007`，不改写之后照写（一致性套件核对）。
 - 删除：不存在的项成功并报告为不存在；同一批里重复的键第二次报告不存在。
 - 列举：键的序数顺序；续页标记不透明，原样带回。不符合键文法的对象（保留前缀 `.xihan` 下的框架对象，如 S3 的条件写入探测键；S3 的目录占位）跳过，所以一页可能少于 `PageSize` 条、甚至为空而仍带续页标记，取到续页标记为空为止（ADR-0090）。
 - 范围读取：长度为空读到末尾，超出末尾截断；起点不在对象内（含空对象）返回 `OBJECTSTORAGE_VALIDATION_001`；`BlobMetadata.Length` 仍是总长。
@@ -167,6 +168,7 @@ public sealed class AzureBlobStoreConformanceTests : BlobStoreConformance
 | `OBJECTSTORAGE_VALIDATION_004` | `StoreSelectionInvalid` | 缺省存储的能力选择不一致：被要求的分片上传或预签名与对象存储不在同一存储（装配时抛出，启动失败） |
 | `OBJECTSTORAGE_VALIDATION_005` | `PageSizeInvalid` | 列举的页大小不在 1 到 1000 之间（HTTP 400；不在构造时抛出，列举时以结果返回，不访问存储） |
 | `OBJECTSTORAGE_VALIDATION_006` | `ContentTypeInvalid` | 宿主直传端点：签名没有限定内容类型，请求的 `Content-Type` 不合内容类型文法（HTTP 400，不写入） |
+| `OBJECTSTORAGE_VALIDATION_007` | `ContentTypeUnsupported` | 内容类型合文法，但 Provider 所用的存储客户端写不出原值（S3：AWS SDK 改写 `Content-Type`）：写入与分片上传的发起在发出任何请求之前返回，HTTP 400，参数 `contentType`，消息键 `objectstorage.blob.content_type_unsupported` |
 | `OBJECTSTORAGE_DENIED_001` | `SignatureInvalid` | 预签名地址无效或已过期 |
 | `OBJECTSTORAGE_DENIED_002` | `ProbeDenied` | 条件写入探测被存储拒绝（403；S3：凭据无效、只读或无权写探测键）：启动或建实例时即失败；启动时连不上、之后才被拒的，健康项 Failed、后台照常重试 |
 | `OBJECTSTORAGE_CONFLICT_001` | `BlobExists` | 对象已存在且不允许覆盖 |

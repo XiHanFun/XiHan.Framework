@@ -26,7 +26,9 @@
 1. 环境变量 `SERVICE_BINDING_ROOT` 指向的目录。每个子目录是一个绑定，目录名是绑定名；目录里每个文件是一个属性，文件名是属性名、内容修剪首尾空白后是值；`type` 文件是类型，`uri` 文件既是主值也保留为属性；以 `.` 开头的文件跳过。`AppBuilder.UseServiceBindingRoot(directory)` 可以在代码里改用别的目录。
 2. 配置节 `XiHan:Bindings:<name>`。节本身的标量值或子键 `value` 是主值，子键 `type` 是类型，其余子键是属性。绑定名与 `type`、`value` 两个子键按字面比，区分大小写：写成 `XiHan:Bindings:Db:Value` 读不到绑定 `db` 的主值，得到的是另一个没有主值的绑定 `Db`，`Value` 只是它的一个属性。
 
-同名时配置整体覆盖目录来源，不逐属性合并。目录布局长这样：
+同名时配置整体覆盖目录来源，不逐属性合并。
+
+目录来源的文件有大小上限：一个文件最多 524288 字节（512 KiB，`BindingResolver.MaxFileBytes`），一个绑定目录里读的文件（`type`、`uri` 与其余属性文件，以 `.` 开头的不读也不计）合计最多 1048576 字节（1 MiB，`BindingResolver.MaxBindingBytes`，与 Kubernetes 一个 Secret 的上限相同），都按文件的原始字节计。读的时候到上限就停，不先把整个文件读进内存；超过即装配时启动失败（`KERNEL_HOSTING_005`，消息只带绑定名、文件名与上限，不带内容），把不属于绑定的文件（日志、备份、证书归档）挪出绑定目录。配置来源不受这道上限。目录布局长这样：
 
 ```text
 /bindings/
@@ -60,19 +62,26 @@
 
 - 只下发插件清单 `bindings` 里声明、且运营方授予了 `binding:<绑定名>` 的绑定，缺授予的插件在发现时以 `PLUGINS_DENIED_001` 拒绝；别的绑定不读、不下发。
 - 每次配置插件时解析一遍，不用宿主启动时的那一份：插件重启、运行期加载时拿到的是那一刻的值。
-- 下发的是名字、类型、主值与全部属性：`type` 取来源声明的，来源没有声明时取清单声明的；属性与宿主里的特性读到的 `BindingValue.Properties` 是同一份，属性名区分大小写、原样下发，值为空的属性照发。只给了属性、没有主值的绑定（只挂了 `host`、`password` 这类文件、没有 `uri`）照常下发、主值为空；主值与属性都没有的不下发，记一条 Warning。属性名、数量与大小另有一道核对，见下文。
+- 下发的是名字、类型、主值与全部属性：`type` 总是清单声明的类型（来源声明了别的类型即配置失败，见下文）；属性与宿主里的特性读到的 `BindingValue.Properties` 是同一份，属性名区分大小写、原样下发，值为空的属性照发。只给了属性、没有主值的绑定（只挂了 `host`、`password` 这类文件、没有 `uri`）照常下发、主值为空。可选的绑定两种来源都没给时不下发；只给了类型、没有主值也没有属性时不下发，记一条 Warning。必需的绑定这样即配置失败。
 
-属性随绑定一起受 `binding:<绑定名>` 约束，不单独授权；属性值与主值一样不进宿主的日志与错误。下发之前宿主按清单的顺序逐个核对绑定的属性：
+插件清单的 `bindings[].required` 缺省为 `true`，与特性的清单是同一个字段：部署里可以没有的绑定在清单里写 `"required": false`，插件自己处理没有它的情形。
 
-| 项 | 限制 |
-| --- | --- |
-| 属性名 | 1 到 253 个字符，只含 ASCII 字母、数字、`.`、`_`、`-`，不以 `.` 开头 |
-| 属性个数 | 一个绑定最多 64 个 |
-| 大小 | 一个绑定的属性名与属性值按 UTF-8 编码后合计不超过 262144 字节（256 KiB），主值不计入 |
+属性随绑定一起受 `binding:<绑定名>` 约束，不单独授权；属性值与主值一样不进宿主的日志与错误。下发之前宿主按清单的顺序逐个绑定核对，一个绑定里依次是有没有、类型、属性的个数、属性名与大小，报第一处不合的；全部合格之后再核对整个请求：
 
-不合时宿主不少发、不截断，也不发 `Configure`：这个插件配置失败（`PLUGINS_UNEXPECTED_001`，`reason` 只带绑定名与上限，不带属性名与值），进入 Failed 并按重启策略重试；把不该给插件的文件挪出绑定目录，或把属性名改到上面的字符集里，插件下一次重试时自己起来。这道核对只管下发给插件的那一份，宿主进程里的特性照常读到全部属性。
+| 核对 | 不合的情形 | `reason` |
+| --- | --- | --- |
+| 有没有 | 必需的绑定两种来源都没给，或只给了类型、没有主值也没有属性 | `binding '<绑定名>' is required but not provided` |
+| 类型 | 来源声明了类型（`type` 文件或 `XiHan:Bindings:<名字>:type`）而与清单不同，按序数比较，只差大小写也算；必需与可选的都核对 | `binding '<绑定名>' is of type '<来源的类型>' but the manifest declares '<清单的类型>'` |
+| 属性个数 | 一个绑定多于 64 个 | `binding '<绑定名>' has more than 64 properties` |
+| 属性名 | 不是 1 到 253 个 ASCII 字母、数字、`.`、`_`、`-`，或以 `.` 开头 | `binding '<绑定名>' has a property name that is not valid` |
+| 大小 | 一个绑定的属性名与属性值按 UTF-8 编码后合计超过 262144 字节（256 KiB），主值不计入 | `the properties of binding '<绑定名>' exceed 262144 bytes` |
+| 整个请求 | `Configure` 请求（配置节、授予的权限、全部绑定与工作目录）按 protobuf 二进制编码超过 2097152 字节（2 MiB）；没有声明绑定的插件同样核对，进程外与 Wasm 都按这个大小算 | `the configure request exceeds 2097152 bytes` |
 
-清单声明的绑定在目录里读不出来（文件在、权限不对）时，插件这一次配置失败，同样进入 Failed 并按重启策略重试；根目录不存在不算失败。见[进程外插件](/plugins/out-of-process)与 [Wasm 插件](/plugins/wasm)。
+不合时宿主不少发、不截断，也不发 `Configure`：这个插件配置失败（`PLUGINS_UNEXPECTED_001` + `plugins.process.failed`，`phase` 为 `configure`，`reason` 是表里的固定文本，只带绑定名、类型名与上限，不带主值、属性名与属性值），宿主记一条 Error（`The configure request of plugin <清单 ID> is not sent: <reason>; the plugin is not configured.`），插件进入 Failed 并按重启策略重试。补上或改正绑定、把不该给插件的文件挪出绑定目录，或把属性名改到上面的字符集里，插件下一次重试时自己起来。属性与请求的上限只管下发给插件的那一份，宿主进程里的特性照常读到全部属性。
+
+清单声明的绑定在目录里读不出来（文件在、权限不对）或文件超过上一节的大小上限时，插件这一次配置失败，同样进入 Failed 并按重启策略重试：读不出时 `reason` 只写异常类型，单个文件超限为 `a file of binding '<绑定名>' exceeds 524288 bytes`，合计超限为 `the files of binding '<绑定名>' exceed 1048576 bytes`（都不带文件名）；根目录不存在不算失败。清单声明的绑定按清单的顺序读，报第一个读不出或超限的。见[进程外插件](/plugins/out-of-process)与 [Wasm 插件](/plugins/wasm)。
+
+进程内插件拿的是整个宿主配置，宿主不下发绑定，插件自己经 `BindingResolver.Resolve(Configuration)` 读。宿主在加载插件代码之前按上表的有没有与类型两条核对清单声明的绑定（根目录取环境变量 `SERVICE_BINDING_ROOT`，与插件自己读到的相同），不合即加载失败（`PLUGINS_UNEXPECTED_001` + `plugins.plugin.load_failed`，`reason` 相同），插件程序集不加载；属性与请求的上限不核对。见 [Plugins.InProcess](/packages/plugins-inprocess)。
 
 插件一侧由各语言 SDK 把绑定交给作者：属性是一张只读的表，没有属性时是空表，只给了属性的绑定主值为空串；绑定类型的调试输出只带绑定名、类型与属性名。较早的 SDK 构建的插件不认这个字段，照旧读到名字、类型与主值，只是会多收到主值为空的绑定。各语言的写法见 [Go](/sdks/go)、[TypeScript](/sdks/typescript)、[Rust](/sdks/rust)、[Java](/sdks/java)、[Python](/sdks/python) 与 [PHP](/sdks/php)。
 
@@ -140,6 +149,9 @@ app.MapGet("/ledger", (LedgerConnection ledger) => ledger.ConnectionString.Lengt
 | 来源没有声明类型（空字符串） | 不比对类型，按名字匹配 |
 | 可选绑定（`{ Required = false }`）缺失 | 不报错，特性用 `FindBinding` 自行处理 |
 | `GetBinding` 取一个不存在的绑定 | 抛出 `KERNEL_HOSTING_001` |
+| 绑定目录里的文件超过大小上限（一个文件 512 KiB、一个绑定合计 1 MiB） | 抛出 `KERNEL_HOSTING_005`，应用不启动 |
+
+插件宿主也执行清单的 `required`，在下发或加载插件之前核对，判断比特性的严一些：只给了类型、没有主值也没有属性的绑定对特性算给出，对插件算没有；特性只核对必需绑定的类型，插件的可选绑定也核对类型。规则见上文[下发给插件的绑定](#下发给插件的绑定)。
 
 这正是「配置与编程错误抛异常、可恢复失败返回 `Result`」的分界：缺绑定是部署错误，不应该带着它运行，见[结果与错误处理](/web/errors)。
 

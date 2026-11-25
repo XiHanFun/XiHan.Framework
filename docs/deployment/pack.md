@@ -176,7 +176,7 @@ Compose 用于本地联调：`stop_grace_period` 取 `shutdown.graceSeconds`，�
 | `stream` | `stream` | `Messaging.Kafka` |
 | `nacos` | `configuration:remote` | `Configuration.Nacos` |
 
-`bindings.example.yaml` 只是 Secret 的样板，真实连接串由部署方另行创建，不进仓库；样板以注释列出各类型可单独给出的凭据键（`cache`、`queue`、`nacos` 的 `username` / `password`，`blob` 的 `accessKey` / `secretKey`，`stream` 的 SASL 四个键），写进 Secret 就覆盖应用配置节里的同类键，凭据可以不放进连接串。
+`bindings.example.yaml` 只是 Secret 的样板，真实连接串由部署方另行创建，不进仓库；样板以注释列出各类型可单独给出的凭据键（`cache`、`queue`、`nacos` 的 `username` / `password`，`blob` 的 `accessKey` / `secretKey` / `sessionToken`，`stream` 的 SASL 四个键），写进 Secret 就覆盖应用配置节里的同类键，凭据可以不放进连接串。
 
 ## 消息代理
 

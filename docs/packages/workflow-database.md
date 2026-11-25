@@ -194,8 +194,8 @@ UPDATE WorkflowInstanceRecord SET StatusOrder = CASE Status WHEN 'Running' THEN 
 
 关键字查询列（ADR-0096、ADR-0099、ADR-0101）：
 
-- 定义行与实例行的 `SearchText`、书签行的 `SearchTitle` 与 `SearchInstanceText` 都是折叠后的值，折叠只做不变文化小写，`%`、`_`、`[`、反斜杠原样保留（ADR-0099 第四节）。
-- 回填：定义行 `SearchText = WorkflowKeyword.Join(name, displayName, description)`，`Category` 取 `Document` 的 `category`；实例行 `SearchText = WorkflowKeyword.Join(title, correlationId)`（`title` 取 `Document` 的 `displayName`，为空取 `definitionName`；`correlationId` 取同名列）；书签行 `SearchTitle = WorkflowKeyword.Fold(Document.payload.title)`（没有标题为空），`SearchInstanceText` = 所属实例行回填后的 `SearchText` + U+001F + `WorkflowKeyword.Fold(definitionName)`。折叠用 .NET 的 `ToLowerInvariant` 加字符替换，SQL 的 `lower()` 在 SQLite 上只管 ASCII，用应用代码回填。没回填的行不被关键字匹配。
+- 定义行与实例行的 `SearchText`、书签行的 `SearchTitle` 与 `SearchInstanceText` 都是折叠后的值，折叠只做逐个码位的 Unicode 简单小写映射（`WorkflowKeyword.Fold`，见 [关键字](/workflow/definitions#关键字)），`%`、`_`、`[`、反斜杠原样保留（ADR-0099 第四节、ADR-0296）。
+- 回填：定义行 `SearchText = WorkflowKeyword.Join(name, displayName, description)`，`Category` 取 `Document` 的 `category`；实例行 `SearchText = WorkflowKeyword.Join(title, correlationId)`（`title` 取 `Document` 的 `displayName`，为空取 `definitionName`；`correlationId` 取同名列）；书签行 `SearchTitle = WorkflowKeyword.Fold(Document.payload.title)`（没有标题为空），`SearchInstanceText` = 所属实例行回填后的 `SearchText` + U+001F + `WorkflowKeyword.Fold(definitionName)`。折叠用 `WorkflowKeyword` 算（简单小写映射加字符替换），SQL 的 `lower()` 在 SQLite 上只管 ASCII、各库对 `İ` 与平面以外的字母也各不相同，用应用代码回填。没回填的行不被关键字匹配；查询列里的值与 `WorkflowKeyword` 算出的不同（如 `İ` 没有折成 `i`）时，关键字里的这些字符匹配不到它，重新算出回填即可。
 
 ## 相关
 

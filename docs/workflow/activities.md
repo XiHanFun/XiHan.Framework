@@ -19,7 +19,7 @@
 | `Decision` | Exclusive | — |
 | `Parallel` | All | — |
 | `Join` | AllMatched | `Mode`：`WaitAll`（缺省，入边全部到达才执行）/ `WaitAny`（首个到达执行） |
-| `Delay` | AllMatched | `Duration`（秒或表达式）、`Until`（时刻表达式）、`Cron` + `TimeZone`（文法与调度相同，见[作业与计划](/scheduling/jobs)） |
+| `Delay` | AllMatched | `Duration`（秒或表达式）、`Until`（时刻表达式，结果按下文「表达式」的时间文法读、换算成 UTC，不合文法是 `workflow.activity.property_not_datetime`）、`Cron` + `TimeZone`（文法与调度相同，见[作业与计划](/scheduling/jobs)） |
 | `UserTask` | AllMatched | 见[处理用户任务](/workflow/instances#处理用户任务) |
 | `PublishEvent` | AllMatched | `EventName`、`Payload`：发布 `workflow.custom` 消息 |
 | `WaitSignal` | AllMatched | `SignalName`、`AcceptAnyCorrelation` |
@@ -66,7 +66,7 @@
 | 运算符 | `\|\|`、`&&`、`==`、`!=`、`<`、`<=`、`>`、`>=`、`+`、`-`、`*`、`/`、`%`、一元 `!` 与 `-` |
 | 访问 | 成员 `.x`、索引 `[i]` |
 | 字面量 | 数字（十进制定点数，见下）、单双引号字符串、`true`、`false`、`null` |
-| 函数（名字不区分 ASCII 字母的大小写） | `len`、`contains`、`startsWith`、`endsWith`、`upper`、`lower`、`trim`、`isNullOrEmpty`、`abs`、`min`、`max`、`round`、`toNumber`、`toString`、`now`、`date` |
+| 函数（名字不区分 ASCII 字母的大小写） | `len`、`contains`、`startsWith`、`endsWith`、`upper`、`lower`、`trim`、`isNullOrEmpty`、`abs`、`min`、`max`、`round`、`format`、`toNumber`、`toString`、`now`、`date` |
 
 ::: v-pre
 `+` 任一侧是字符串即拼接，两侧各取值的文本接起来；`==` 两侧都能当数字时按数值比（`1 == '1'`、`'007' == '7'` 为真），否则按值的文本的序数比较，有容器时按结构深比较。标识符是实例变量，输出映射里另有 `outputs`（节点输出）；变量名与成员名一律区分大小写，不随 `JsonObject` 的大小写选项。节点属性里的字符串支持 `{{ 表达式 }}` 模板，引号内的 `}}` 不算结束，渲染出的结果总是字符串。
@@ -74,11 +74,13 @@
 
 值与它们的文本：
 
-- 数字是十进制定点数：96 位整数加 0 到 28 位小数（数值上就是 .NET 的 `decimal`），只看数值，`1.50` 与 `1.5` 是同一个数。运算的结果按一半取偶放进数字，放不下是 `workflow.expression.number_out_of_range`（参数 `operator`），`round` 的位数不在 0 到 28 之间同样。
-- 数字的文本只取决于数值：不用指数，不带结尾的零，零写 `0`。`19.90` 写 `19.9`，`1.5 + 1.5` 写 `3`；模板、拼接、`toString` 与 `WorkflowValues.AsString` 都是这一种写法。要固定小数位数的展示（金额）在流程之外格式化，或把格式化好的字符串放进变量。
+- 数字是十进制定点数：96 位整数加 0 到 28 位小数（数值上就是 .NET 的 `decimal`），只看数值，`1.50` 与 `1.5` 是同一个数。运算的结果按一半取偶放进数字，放不下是 `workflow.expression.number_out_of_range`（参数 `operator`），`round` 与 `format` 的位数不在 0 到 28 之间同样。
+- 数字的文本只取决于数值：不用指数，不带结尾的零，零写 `0`。`19.90` 写 `19.9`，`1.5 + 1.5` 写 `3`；模板、拼接、`toString` 与 `WorkflowValues.AsString` 都是这一种写法。
+- 要固定小数位数的展示（金额）用 `format(x, n)`：先照 `round(x, n)` 舍入（正好一半时远离零），再写成恰好 `n` 位小数的字符串，不足的补零，`n` 为 0 时不写小数点；负数以 `-` 开头，舍入成零的不写负号，没有千分位，不随区域。`format(19.9, 2)` 是 `19.90`，`format(2.5, 0)` 是 `3`，`format(-0.001, 2)` 是 `0.00`。`x` 与 `n` 都要能当数字（数字文本先读成数字），否则 `operands_not_numeric`；`n` 必须是 0 到 28 之间的整数（`2.0` 与 `'2'` 可以，`2.5` 不行），否则 `number_out_of_range`（`operator` 是 `format`）。结果是字符串：`format(1, 2) + 1` 是 `1.001`。
 - 字符串当数字用（算术、比较、下标与数字函数）时按一条文法读：首尾的空白只认 U+0009–U+000D 与空格，可选的符号，ASCII 数字与可选的小数点，可选的指数。
 - 数组与对象当文本用时是紧凑的 JSON：成员按名字的序数顺序，数字写上面的文本，字符串只转义 `"`、`\` 与 U+0000–U+001F，非 ASCII 字符原样，超过 64 层的容器写 `null`。按文本匹配对象的条件（`contains(obj, '"b":1')`）照这种写法写。
 - 时间是字符串。`now()` 与 `date()` 返回 UTC、七位小数、`+00:00` 的定宽文本（`2026-01-02T03:04:05.0000000+00:00`），进程内读这个结果用 `WorkflowValues.TryConvert<DateTimeOffset>`。`date()` 与比较只认 `YYYY-MM-DD`，或再加 `T` / 空格与 `HH:MM`，秒、一到九位小数与偏移可省（没有偏移是 UTC），首尾的空白不裁剪；`01/02/2026`、`Jan 2, 2026`、`12:30` 不是时间，`date()` 报 `workflow.expression.not_date`，比较时按文本。两侧都是时间文本时比较按时刻，比 100 纳秒更细的小数截断。
+- 活动自己读的时间用同一条文法：`Delay.Until`、`UserTask.DueAt`、`WorkflowVariables.TryGet<DateTimeOffset>`、`WorkflowValues.TryConvert<DateTimeOffset>` 与 `TryConvert<DateTime>` 只认上面的写法，读出的时刻换算成 UTC，数字、布尔与容器都不是时间；`12:30` 这样只有时间的写法改成在表达式里算出完整的时刻，或改用 `Duration` / `DueAfterSeconds`。
 
 求值的次序：二元运算符与函数先从左到右求值全部操作数，再从左到右核对类型，除法与取余最后才看除数，所以 `'x' / 0` 报 `operands_not_numeric`、`nope / 0` 报 `unknown_variable`；`&&` 与 `||` 短路，右操作数不需要时不求值也不核对；索引先求值被索引的值、再求值下标，下标超出数组是 `index_out_of_range`。
 
@@ -89,6 +91,13 @@
 - 写回变量、输出与子流程变量时，无值写成 JSON 的 `null`。
 
 表达式最长 4000，嵌套最多 64 层（括号、函数实参、索引、一元运算符都算，`a + b + c` 这样的链不算）。超限在发布时进校验结果，运行时是 `WORKFLOW_VALIDATION_003`（`workflow.expression.too_long`、`workflow.expression.too_deep`）。`+` 拼出的字符串与模板渲染出的文本都不超过 4194304，超过是 `workflow.expression.string_too_long`，渲染结果更长的模板改为分段或在活动里拼。长度与位置都按 UTF-16 码元计；错误里带出的文本（`expression` 参数与 `not_date` 的 `value`）最多 200 个码元，超过的截断后接 `…`，不切开代理对。
+
+一次求值的工作量也有上限：一次 `Evaluate` 或 `EvaluateCondition` 从 0 起累计，一次 `Render` 的全部占位共用一份，超过 16777216 即 `WORKFLOW_VALIDATION_003`（`workflow.expression.budget_exceeded`，参数 `max`）。计数只取决于表达式、值与求值的次序，与机器的快慢无关：
+
+- 每开始求值一个节点（字面量、变量、成员访问、索引、函数调用、一元与二元运算）记 64，括号不算，短路没有求值的右操作数不记。
+- 运算在核对操作数之前记它读的操作数：字符串记长度，数组与对象记它里面每个值 64 加上全部字符串与成员名的长度，`null`、布尔与数字记 0。拼接读两侧；算术、比较、一元负、数字函数与数组的下标只读字符串；相等在两侧都是标量时读字符串、都是容器时读两侧；在数组里 `contains` 读数组，再按元素个数读要找的值；别的字符串函数与 `toString`、`date` 读全部实参；模板的每个占位读结果。
+
+正常的表达式远在上限以内：把四个百万码元的字符串拼到拼接的上限、渲染出 4194304 个码元的模板都在以内。撞上的是把几十万个值的变量整个渲染进模板、在几十万个元素的数组里 `contains`、比两个很大的容器这类写法，改在活动里处理这样的数据，或只取需要的成员。
 
 ### 扇出与变量的上限
 
