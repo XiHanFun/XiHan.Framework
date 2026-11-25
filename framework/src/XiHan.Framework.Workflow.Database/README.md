@@ -40,12 +40,25 @@ builder.AddXiHan(xihan => xihan
 { "XiHan": { "Workflow": { "Database": { "PollIntervalSeconds": 1, "BatchSize": 100, "HolderId": "node-1" } } } }
 ```
 
+### 升级之后回填查询列
+
+定义、实例与书签的行另存了一些由文档算出、供 SQL 过滤与排序的查询列（关键字、标题、状态序号等）。规则变了或列是后来加的，升级之前的行里就是旧值或空值；升级之后为平台与每个租户跑一次回填，可以重复运行，已是新值的行不再改写：
+
+```csharp
+var backfill = app.Services.GetRequiredService<DatabaseWorkflowBackfill>();
+IReadOnlyList<string?> partitions = [null, .. tenantIds];
+var results = await backfill.RunAsync(partitions, batchSize: 500, cancellationToken);
+```
+
+每个分区一项结果；`Busy` 不为零时有实例的锁被占用而跳过，再跑一次即可。
+
 ## 主要类型
 
 此库提供的主要类型：
 
 * `DatabaseWorkflowFeature`：启用数据库工作流的特性
 * `DatabaseWorkflowOptions`：轮询周期、批量、租约时长与持有者，对应 `XiHan:Workflow:Database`
+* `DatabaseWorkflowBackfill`：升级之后按分区、分批回填已有行的查询列
 * `WorkflowLockRecord` 与四张租户表、四张平台表的实体：需要建表的九个实体
 
 ## 更多文档

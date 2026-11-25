@@ -250,20 +250,42 @@ internal sealed class DefinitionRows<TRow>(IRepository<TRow, string> repository)
     private static TRow ToRecord(WorkflowDefinition definition)
     {
         ArgumentNullException.ThrowIfNull(definition);
-        return new TRow
+        var row = new TRow
         {
             Id = definition.Id,
             Name = definition.Name.Value,
             Version = definition.Version,
             Status = definition.Status.ToString(),
-            StatusOrder = WorkflowStatusOrder.Of(definition.Status),
-            Category = definition.Category,
-            SearchText = WorkflowKeyword.Join(definition.Name.Value, definition.DisplayName, definition.Description),
-            Title = WorkflowSortKeys.Title(definition.Title),
             CreatedAt = definition.CreatedAt,
             PublishedAt = definition.PublishedAt,
             Document = WorkflowJson.Serialize(definition),
         };
+        RefreshQueryColumns(row, definition, apply: true);
+        return row;
+    }
+
+    /// <summary>
+    /// 由定义算出行的查询列，返回它们与行里现有的值是否不同
+    /// </summary>
+    /// <remarks>
+    /// 查询列是升级时给已有行的表加的四列：状态序号、分类、关键字查询列与排序标题（ADR-0096、ADR-0102、ADR-0103），都由文档里的定义算出。写入行与回填（<see cref="DatabaseWorkflowBackfill"/>，ADR-0304）共用这一份算法，回填才能认出已是新值的行而不改写。<paramref name="apply"/> 为假时只比较、不改行
+    /// </remarks>
+    internal static bool RefreshQueryColumns(TRow row, WorkflowDefinition definition, bool apply)
+    {
+        var statusOrder = WorkflowStatusOrder.Of(definition.Status);
+        var category = definition.Category;
+        var searchText = WorkflowKeyword.Join(definition.Name.Value, definition.DisplayName, definition.Description);
+        var title = WorkflowSortKeys.Title(definition.Title);
+        var stale = row.StatusOrder != statusOrder || !QueryColumns.SameText(row.Category, category) || !QueryColumns.SameText(row.SearchText, searchText) || !QueryColumns.SameText(row.Title, title);
+        if (apply)
+        {
+            row.StatusOrder = statusOrder;
+            row.Category = category;
+            row.SearchText = searchText;
+            row.Title = title;
+        }
+
+        return stale;
     }
 
     /// <summary>

@@ -1,4 +1,18 @@
 #nullable enable
+XiHan.Framework.Workflow.Database.DatabaseWorkflowBackfill
+XiHan.Framework.Workflow.Database.DatabaseWorkflowBackfill.RunAsync(System.Collections.Generic.IReadOnlyList<string?>! partitions, int batchSize, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<System.Collections.Generic.IReadOnlyList<XiHan.Framework.Primitives.Result<XiHan.Framework.Workflow.Database.DatabaseWorkflowBackfillReport!>>!>
+XiHan.Framework.Workflow.Database.DatabaseWorkflowBackfillReport
+XiHan.Framework.Workflow.Database.DatabaseWorkflowBackfillReport.<Clone>$() -> XiHan.Framework.Workflow.Database.DatabaseWorkflowBackfillReport!
+XiHan.Framework.Workflow.Database.DatabaseWorkflowBackfillReport.Batches.get -> int
+XiHan.Framework.Workflow.Database.DatabaseWorkflowBackfillReport.Batches.init -> void
+XiHan.Framework.Workflow.Database.DatabaseWorkflowBackfillReport.Busy.get -> long
+XiHan.Framework.Workflow.Database.DatabaseWorkflowBackfillReport.Busy.init -> void
+XiHan.Framework.Workflow.Database.DatabaseWorkflowBackfillReport.DatabaseWorkflowBackfillReport() -> void
+XiHan.Framework.Workflow.Database.DatabaseWorkflowBackfillReport.Equals(XiHan.Framework.Workflow.Database.DatabaseWorkflowBackfillReport? other) -> bool
+XiHan.Framework.Workflow.Database.DatabaseWorkflowBackfillReport.Rewritten.get -> long
+XiHan.Framework.Workflow.Database.DatabaseWorkflowBackfillReport.Rewritten.init -> void
+XiHan.Framework.Workflow.Database.DatabaseWorkflowBackfillReport.Scanned.get -> long
+XiHan.Framework.Workflow.Database.DatabaseWorkflowBackfillReport.Scanned.init -> void
 XiHan.Framework.Workflow.Database.DatabaseWorkflowFeature
 XiHan.Framework.Workflow.Database.DatabaseWorkflowFeature.Configure(XiHan.Framework.Kernel.Hosting.FeatureContext! context) -> void
 XiHan.Framework.Workflow.Database.DatabaseWorkflowFeature.DatabaseWorkflowFeature() -> void
@@ -196,11 +210,17 @@ XiHan.Framework.Workflow.Database.Storage.DatabaseWorkflowInstanceStore.ListAsyn
 XiHan.Framework.Workflow.Database.Storage.DatabaseWorkflowInstanceStore.NodeInstancesAsync(string? tenantId, string! instanceId, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<System.Collections.Generic.IReadOnlyList<XiHan.Framework.Workflow.Abstractions.Instances.WorkflowNodeInstance!>!>>
 XiHan.Framework.Workflow.Database.Storage.DatabaseWorkflowInstanceStore.SaveAsync(string? tenantId, System.Collections.Generic.IReadOnlyList<XiHan.Framework.Workflow.Abstractions.Instances.WorkflowInstance!>! instances, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result>
 XiHan.Framework.Workflow.Database.Storage.DatabaseWorkflowInstanceStore.SaveNodeInstancesAsync(string? tenantId, System.Collections.Generic.IReadOnlyList<XiHan.Framework.Workflow.Abstractions.Instances.WorkflowNodeInstance!>! nodeInstances, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result>
+const XiHan.Framework.Workflow.Database.DatabaseWorkflowBackfill.MaxBatchSize = 1000 -> int
 const XiHan.Framework.Workflow.Database.DatabaseWorkflowFeature.HealthName = "workflow.database.poller" -> string!
 const XiHan.Framework.Workflow.Database.DatabaseWorkflowOptions.ConfigurationSection = "XiHan:Workflow:Database" -> string!
+override XiHan.Framework.Workflow.Database.DatabaseWorkflowBackfillReport.Equals(object? obj) -> bool
+override XiHan.Framework.Workflow.Database.DatabaseWorkflowBackfillReport.GetHashCode() -> int
+override XiHan.Framework.Workflow.Database.DatabaseWorkflowBackfillReport.ToString() -> string!
 override XiHan.Framework.Workflow.Database.DatabaseWorkflowOptions.Equals(object? obj) -> bool
 override XiHan.Framework.Workflow.Database.DatabaseWorkflowOptions.GetHashCode() -> int
 override XiHan.Framework.Workflow.Database.DatabaseWorkflowOptions.ToString() -> string!
+static XiHan.Framework.Workflow.Database.DatabaseWorkflowBackfillReport.operator !=(XiHan.Framework.Workflow.Database.DatabaseWorkflowBackfillReport? left, XiHan.Framework.Workflow.Database.DatabaseWorkflowBackfillReport? right) -> bool
+static XiHan.Framework.Workflow.Database.DatabaseWorkflowBackfillReport.operator ==(XiHan.Framework.Workflow.Database.DatabaseWorkflowBackfillReport? left, XiHan.Framework.Workflow.Database.DatabaseWorkflowBackfillReport? right) -> bool
 static XiHan.Framework.Workflow.Database.DatabaseWorkflowOptions.FromConfiguration(Microsoft.Extensions.Configuration.IConfiguration! configuration) -> XiHan.Framework.Workflow.Database.DatabaseWorkflowOptions!
 static XiHan.Framework.Workflow.Database.DatabaseWorkflowOptions.operator !=(XiHan.Framework.Workflow.Database.DatabaseWorkflowOptions? left, XiHan.Framework.Workflow.Database.DatabaseWorkflowOptions? right) -> bool
 static XiHan.Framework.Workflow.Database.DatabaseWorkflowOptions.operator ==(XiHan.Framework.Workflow.Database.DatabaseWorkflowOptions? left, XiHan.Framework.Workflow.Database.DatabaseWorkflowOptions? right) -> bool

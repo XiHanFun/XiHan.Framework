@@ -295,17 +295,12 @@ internal sealed class BookmarkRows<TRow, TInstance>(IRepository<TRow, string> re
     private TRow ToRecord(WorkflowBookmark bookmark, TInstance? owner)
     {
         ArgumentNullException.ThrowIfNull(bookmark);
-        return new TRow
+        var row = new TRow
         {
             Id = bookmark.Id,
             Sequence = sequence.Next(),
             InstanceId = bookmark.InstanceId,
             NodeInstanceId = bookmark.NodeInstanceId,
-            NodeId = bookmark.NodeId,
-            DefinitionName = owner?.DefinitionName,
-            InstanceStatus = owner?.Status,
-            SearchTitle = TaskTitle(bookmark) is { } title ? WorkflowKeyword.Fold(title) : null,
-            SearchInstanceText = owner is null ? null : InstanceSearchText(owner),
             Kind = bookmark.Kind,
             Key = bookmark.Key,
             CorrelationId = bookmark.CorrelationId,
@@ -313,6 +308,38 @@ internal sealed class BookmarkRows<TRow, TInstance>(IRepository<TRow, string> re
             CreatedAt = bookmark.CreatedAt,
             Document = WorkflowJson.Serialize(bookmark),
         };
+        RefreshQueryColumns(row, bookmark, owner, apply: true);
+        return row;
+    }
+
+    /// <summary>
+    /// 由书签与所属实例行算出书签行的查询列，返回它们与行里现有的值是否不同
+    /// </summary>
+    /// <remarks>
+    /// 查询列是升级时给已有行的表加的五列：节点 ID、所属实例的定义名与状态、任务标题与实例一侧的关键字查询列（ADR-0096、ADR-0099）；前两类取自所属实例的行，所属实例的行不存在（定义级定时书签）时为空。写入行与回填（<see cref="DatabaseWorkflowBackfill"/>，ADR-0304）共用这一份算法。<paramref name="apply"/> 为假时只比较、不改行
+    /// </remarks>
+    internal static bool RefreshQueryColumns(TRow row, WorkflowBookmark bookmark, TInstance? owner, bool apply)
+    {
+        var nodeId = bookmark.NodeId;
+        var definitionName = owner?.DefinitionName;
+        var instanceStatus = owner?.Status;
+        var searchTitle = TaskTitle(bookmark) is { } title ? WorkflowKeyword.Fold(title) : null;
+        var searchInstanceText = owner is null ? null : InstanceSearchText(owner);
+        var stale = !QueryColumns.SameText(row.NodeId, nodeId)
+            || !QueryColumns.SameText(row.DefinitionName, definitionName)
+            || !QueryColumns.SameText(row.InstanceStatus, instanceStatus)
+            || !QueryColumns.SameText(row.SearchTitle, searchTitle)
+            || !QueryColumns.SameText(row.SearchInstanceText, searchInstanceText);
+        if (apply)
+        {
+            row.NodeId = nodeId;
+            row.DefinitionName = definitionName;
+            row.InstanceStatus = instanceStatus;
+            row.SearchTitle = searchTitle;
+            row.SearchInstanceText = searchInstanceText;
+        }
+
+        return stale;
     }
 
     /// <summary>

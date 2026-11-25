@@ -296,7 +296,7 @@ internal sealed class InstanceRows<TInstance, TNode>(IRepository<TInstance, stri
     private TInstance ToRecord(WorkflowInstance instance)
     {
         ArgumentNullException.ThrowIfNull(instance);
-        return new TInstance
+        var row = new TInstance
         {
             Id = instance.Id,
             Sequence = sequence.Next(),
@@ -304,16 +304,37 @@ internal sealed class InstanceRows<TInstance, TNode>(IRepository<TInstance, stri
             DefinitionName = instance.DefinitionName.Value,
             DefinitionVersion = instance.DefinitionVersion,
             Status = instance.Status.ToString(),
-            StatusOrder = WorkflowStatusOrder.Of(instance.Status),
             CorrelationId = instance.CorrelationId,
             StarterId = instance.StarterId,
             ParentInstanceId = instance.ParentInstanceId,
-            SearchText = WorkflowKeyword.Join(instance.Title, instance.CorrelationId),
-            Title = WorkflowSortKeys.Title(instance.Title),
             CreatedAt = instance.CreatedAt,
             EndedAt = instance.EndedAt,
             Document = WorkflowJson.Serialize(instance),
         };
+        RefreshQueryColumns(row, instance, apply: true);
+        return row;
+    }
+
+    /// <summary>
+    /// 由实例算出行的查询列，返回它们与行里现有的值是否不同
+    /// </summary>
+    /// <remarks>
+    /// 查询列是升级时给已有行的表加的三列：状态序号、关键字查询列（标题与关联 ID）与排序标题（ADR-0099、ADR-0102、ADR-0103），都由文档里的实例算出。写入行与回填（<see cref="DatabaseWorkflowBackfill"/>，ADR-0304）共用这一份算法。<paramref name="apply"/> 为假时只比较、不改行
+    /// </remarks>
+    internal static bool RefreshQueryColumns(TInstance row, WorkflowInstance instance, bool apply)
+    {
+        var statusOrder = WorkflowStatusOrder.Of(instance.Status);
+        var searchText = WorkflowKeyword.Join(instance.Title, instance.CorrelationId);
+        var title = WorkflowSortKeys.Title(instance.Title);
+        var stale = row.StatusOrder != statusOrder || !QueryColumns.SameText(row.SearchText, searchText) || !QueryColumns.SameText(row.Title, title);
+        if (apply)
+        {
+            row.StatusOrder = statusOrder;
+            row.SearchText = searchText;
+            row.Title = title;
+        }
+
+        return stale;
     }
 
     /// <summary>

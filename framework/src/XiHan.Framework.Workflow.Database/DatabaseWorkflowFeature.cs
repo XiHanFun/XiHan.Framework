@@ -99,6 +99,8 @@ public sealed class DatabaseWorkflowFeature : IHostedFeature
         context.Services.AddScoped<DatabaseWorkflowBookmarkStore>();
         context.Services.AddScoped<DatabaseWorkflowTransaction>();
         context.Services.AddSingleton<DatabaseWorkflowInstanceLock>();
+        // 查询列的回填按需由应用调用（升级之后），与引擎写这些行时取同一个实例锁；无论能力是否被选中都登记，表是本包的
+        context.Services.AddSingleton(static sp => new DatabaseWorkflowBackfill(sp, sp.GetRequiredService<DatabaseWorkflowInstanceLock>(), sp.GetRequiredService<ILoggerFactory>()));
         // 健康项按名字作键登记：几个 Provider 的探针各自独立，内核经 IHealthContributor 统一采集；无论能力是否被选中，租约表都是本包的存储
         context.Services.AddKeyedSingleton(HealthName, (sp, _) => new PeriodicHealthContributor(HealthName, new PollerLeaseProbe(sp, options, sp.GetRequiredService<ILoggerFactory>().CreateLogger<PollerLeaseProbe>()).ProbeAsync, options.HealthProbeInterval, sp.GetRequiredService<TimeProvider>(), sp.GetRequiredService<ILoggerFactory>()));
         context.Services.AddSingleton<IHealthContributor>(static sp => sp.GetRequiredKeyedService<PeriodicHealthContributor>(HealthName));
