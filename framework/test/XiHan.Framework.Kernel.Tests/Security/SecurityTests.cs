@@ -137,7 +137,7 @@ public sealed class SecurityTests
 
         Assert.Same(SecurityContext.Anonymous, context.GetSecurity());
 
-        context.SetSecurity(new SecurityContext { Principal = new Principal("u-1", "jwt") });
+        context.SetSecurity(new SecurityContext { Principal = new Principal("u-1", "jwt"), Tenant = null });
         context.SetTenant(new TenantContext { Id = "t-42" });
 
         Assert.Equal("u-1", context.GetSecurity().Principal.Id);
@@ -150,8 +150,8 @@ public sealed class SecurityTests
     {
         var alice = new Principal("alice", "jwt");
 
-        // 租户不给就是无租户；匿名上下文是匿名主体加无租户
-        var platform = new SecurityContext { Principal = alice };
+        // 无租户要写明 Tenant = null；匿名上下文是匿名主体加无租户
+        var platform = new SecurityContext { Principal = alice, Tenant = null };
         Assert.Null(platform.Tenant);
         Assert.Same(Principal.Anonymous, SecurityContext.Anonymous.Principal);
         Assert.Null(SecurityContext.Anonymous.Tenant);
@@ -165,7 +165,7 @@ public sealed class SecurityTests
         Assert.Equal(("bob", "acme"), (bob.Principal.Id, bob.Tenant?.Id));
 
         // 初始化器在设值时校验，with 走同一校验
-        Assert.Throws<ArgumentNullException>(() => new SecurityContext { Principal = null! });
+        Assert.Throws<ArgumentNullException>(() => new SecurityContext { Principal = null!, Tenant = null });
         Assert.Throws<ArgumentNullException>(() => scoped with { Principal = null! });
     }
 
@@ -187,7 +187,7 @@ public sealed class SecurityTests
     }
 
     [Theory]
-    [InlineData(typeof(SecurityContext), new[] { nameof(SecurityContext.Principal) })]
+    [InlineData(typeof(SecurityContext), new[] { nameof(SecurityContext.Principal), nameof(SecurityContext.Tenant) })]
     [InlineData(typeof(TenantContext), new[] { nameof(TenantContext.Id) })]
     public void ContextRecords_HaveNoPositionalConstructorOrDeconstruct(Type type, string[] required)
     {
@@ -196,7 +196,7 @@ public sealed class SecurityTests
         Assert.Empty(constructor.GetParameters());
         Assert.Null(type.GetMethod("Deconstruct"));
 
-        // 必填的只有这几项：以后加的成员都是可选的，已有的构造处不用改
+        // 必填的只有这几项：以后加的成员都是可选的，已有的构造处不用改；安全上下文的租户可以是 null 但必须写出来，换主体时不会漏带租户（ADR-0290）
         Assert.Equal(required.Order(StringComparer.Ordinal), type.GetProperties(BindingFlags.Public | BindingFlags.Instance).Where(static p => p.IsDefined(typeof(RequiredMemberAttribute), inherit: false)).Select(static p => p.Name).Order(StringComparer.Ordinal));
     }
 

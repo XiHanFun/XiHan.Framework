@@ -170,9 +170,9 @@ public sealed class IdempotencyMiddlewareTests
     {
         // 修之前作用域键是 idem:租户:主体:键，主体 a:b 配键 c 与主体 a 配键 b:c 拼出同一个键，后者回放前者的结果（ADR-0205）
         var first = Context("c");
-        first.SetSecurity(new SecurityContext { Principal = new Principal("a:b", "test") });
+        first.SetSecurity(new SecurityContext { Principal = new Principal("a:b", "test"), Tenant = null });
         var second = Context("b:c");
-        second.SetSecurity(new SecurityContext { Principal = new Principal("a", "test") });
+        second.SetSecurity(new SecurityContext { Principal = new Principal("a", "test"), Tenant = null });
 
         await _middleware.InvokeAsync(first, Handler);
         await _middleware.InvokeAsync(second, Handler);

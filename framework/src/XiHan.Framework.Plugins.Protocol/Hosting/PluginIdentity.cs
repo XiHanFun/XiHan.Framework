@@ -35,7 +35,8 @@ internal static class PluginIdentity
     public static InvocationContext CreateContext(IServiceProvider scopedServices, InvocationMetadata? metadata, string manifestId, DateTimeOffset? notAfter, CancellationToken cancellationToken)
     {
         var context = PluginMetadata.CreateContext(scopedServices, metadata, manifestId, cancellationToken, notAfter);
-        context.SetSecurity(new SecurityContext { Principal = new Principal(manifestId, Scheme) });
+        // 新建的上下文还没有租户可带：租户由 Tenant 阶段按 Baggage 解析
+        context.SetSecurity(new SecurityContext { Principal = new Principal(manifestId, Scheme), Tenant = null });
         return context;
     }
 }

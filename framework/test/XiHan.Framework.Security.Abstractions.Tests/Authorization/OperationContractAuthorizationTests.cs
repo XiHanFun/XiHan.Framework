@@ -46,7 +46,7 @@ public sealed class OperationContractAuthorizationTests
         context.SetOperation(Descriptor(contract));
         if (principal is not null)
         {
-            context.SetSecurity(new SecurityContext { Principal = principal });
+            context.SetSecurity(new SecurityContext { Principal = principal, Tenant = null });
         }
 
         return context;
