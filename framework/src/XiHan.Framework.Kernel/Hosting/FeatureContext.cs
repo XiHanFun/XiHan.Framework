@@ -185,7 +185,7 @@ public sealed class FeatureContext
     /// 取清单声明的绑定
     /// </summary>
     /// <remarks>
-    /// 缺失抛出 <see cref="KernelErrors.MissingBinding"/>
+    /// 必需的绑定在装配时已核对过有内容、类型与清单相同（ADR-0301），这里总取得到；取没给出的绑定抛出 <see cref="KernelErrors.MissingBinding"/>
     /// </remarks>
     public BindingValue GetBinding(string name)
     {

@@ -10,6 +10,7 @@ using XiHan.Framework.Kernel.Capabilities;
 using XiHan.Framework.Kernel.Diagnostics;
 using XiHan.Framework.Kernel.Operations;
 using XiHan.Framework.Kernel.Pipeline;
+using XiHan.Framework.Kernel.Plugins;
 using XiHan.Framework.Kernel.Resilience;
 using XiHan.Framework.Kernel.Validation;
 using XiHan.Framework.Kernel.Security;
@@ -242,18 +243,14 @@ public sealed class AppBuilder
                 continue;
             }
 
-            // 必需绑定在构建期就校验，让缺失的资源在启动前暴露；可选绑定由特性自己通过 FindBinding 处理
-            foreach (var binding in node.Manifest.Bindings.Where(static b => b.Required))
+            // 清单声明的绑定在构建期就核对，让缺的或错的资源在启动前暴露；规则与插件宿主是同一处（RFC-0016「资源绑定与配置节」第 8 条，ADR-0301）：
+            // 必需的没有内容（没给，或只给了类型）、来源声明了别的类型（可选的也核对，给出了特性就会拿它去连）即启动失败，按清单的顺序报第一处；
+            // 可选的没有内容由特性自己通过 FindBinding 处理。说明文本只带绑定名与类型，主值与属性不进异常
+            foreach (var binding in node.Manifest.Bindings)
             {
-                if (!bindings.TryGetValue(binding.Name, out var value))
+                if (PluginBindingRules.FindViolation(binding, bindings.TryGetValue(binding.Name, out var value) ? value : null).TryGetValue(out var violation))
                 {
-                    throw new FrameworkException(KernelErrors.MissingBinding, $"Binding '{binding.Name}' ({binding.Type}) required by feature '{node.Manifest.Id}' is not provided.");
-                }
-
-                // 来源未声明类型（空字符串）时不做类型比对，只有显式声明且不一致才算错误
-                if (value.Type.Length > 0 && !string.Equals(value.Type, binding.Type, StringComparison.Ordinal))
-                {
-                    throw new FrameworkException(KernelErrors.MissingBinding, $"Binding '{binding.Name}' required by feature '{node.Manifest.Id}' must be of type '{binding.Type}', but the provided binding is of type '{value.Type}'.");
+                    throw new FrameworkException(KernelErrors.MissingBinding, $"Feature '{node.Manifest.Id}' is not configured: {violation}.");
                 }
             }
 

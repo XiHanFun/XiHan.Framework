@@ -60,8 +60,11 @@ public static class KernelErrors
     public const string PipelineRegistration = "KERNEL_PIPELINE_003";
 
     /// <summary>
-    /// 必需绑定缺失
+    /// 清单声明的绑定与解析结果不合
     /// </summary>
+    /// <remarks>
+    /// 装配特性时按 <see cref="Plugins.PluginBindingRules"/> 核对：必需的绑定没有内容（没给，或只给了类型）、来源声明的类型与清单不同（必需与可选都核对）即启动失败；消息带特性的清单 ID 与规则给出的固定文本（RFC-0016「资源绑定与配置节」第 8 条，ADR-0301）。<see cref="Hosting.FeatureContext.GetBinding"/> 取没给出的绑定同此
+    /// </remarks>
     public const string MissingBinding = "KERNEL_HOSTING_001";
 
     /// <summary>

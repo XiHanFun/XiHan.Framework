@@ -8,10 +8,10 @@ using XiHan.Framework.Primitives.Manifests;
 namespace XiHan.Framework.Kernel.Tests.Plugins;
 
 /// <summary>
-/// 插件宿主对清单声明的绑定与解析结果的核对
+/// 清单声明的绑定与解析结果的核对
 /// </summary>
 /// <remarks>
-/// <c>spec/plugin/lifecycle.md</c> §2「<c>bindings</c> 的核对」（ADR-0292）：先有没有、再类型；三种插件宿主共用这一处。按 RFC-0016 解析出的绑定怎样到达这里、失败怎样成为配置或加载失败，由各宿主的测试核对
+/// <c>spec/plugin/lifecycle.md</c> §2「<c>bindings</c> 的核对」（ADR-0292、ADR-0301）：先有没有、再类型；内核装配特性与三种插件宿主共用这一处（装配特性的由 <c>FeatureBindingRulesTests</c> 核对）。按 RFC-0016 解析出的绑定怎样到达这里、失败怎样成为配置或加载失败，由各宿主的测试核对
 /// </remarks>
 public sealed class PluginBindingRulesTests
 {
