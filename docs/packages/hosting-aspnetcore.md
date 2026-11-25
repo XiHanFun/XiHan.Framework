@@ -126,7 +126,7 @@ SignalR Hub 的认证与在 Hub 里调用操作见[实时通信](/web/realtime)�
 | 未认证 / 凭据无效 | 401，带 `WWW-Authenticate` | `SECURITY_DENIED_001` / `SECURITY_DENIED_003` |
 | 策略拒绝 / 缺少权限 | 403 | `SECURITY_DENIED_002` / `SECURITY_DENIED_004` |
 | 预签名地址无效或已过期 | 403 | `OBJECTSTORAGE_DENIED_001` |
-| 直传请求的内容类型不合文法（签名没有限定内容类型时） | 400 | `OBJECTSTORAGE_VALIDATION_006` |
+| 直传请求的内容类型不合文法（签名没有限定内容类型时；含以空格结尾，经 Kestrel 时首尾的空白已先去掉） | 400 | `OBJECTSTORAGE_VALIDATION_006` |
 | 直传请求的内容类型合文法，但背后的存储写不出原值（S3） | 400 | `OBJECTSTORAGE_VALIDATION_007` |
 
 状态码按错误码 KIND 的完整映射见[结果与错误处理](/web/errors#错误码)，401 的质询规则见 [HTTP 路由与载荷](/web/routing#状态码与错误映射)。

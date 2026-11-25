@@ -64,7 +64,7 @@ dotnet add package XiHan.Framework.ObjectStorage.Abstractions --prerelease
 | `Blobs.IBlobStore` | `PutAsync(container, uploads)`、`GetAsync(container, key)`、`GetAsync(container, key, range)`、`HeadAsync`、`DeleteAsync(container, keys)`、`ListAsync(container, query)` |
 | `Blobs.BlobStoreExtensions` | `PutAsync(container, key, stream 或 bytes, options)`、`DeleteAsync(container, key)`、`ExistsAsync`、`ReadAllBytesAsync` |
 | `Blobs.BlobUpload` | 一项写入：键、内容流、选项 |
-| `Blobs.BlobPutOptions` | `ContentType`（缺省 `application/octet-stream`，媒体类型、最长 `MaxContentTypeLength` 255，之后可跟若干个参数：每个 `;` 两侧可以有空格（不收制表符），参数可以为空，`text/plain;` 合法；`IsValidContentType` 判定；Provider 原样存取，存储客户端写不出原值的以 `OBJECTSTORAGE_VALIDATION_007` 拒绝写入）、`Metadata`（名 `^[a-z0-9][a-z0-9-]{0,63}$`，值不含控制字符，名与值合计不超过 `MaxMetadataBytes` 2048 个 UTF-8 字节）、`Overwrite`（缺省 `true`）；`Default` |
+| `Blobs.BlobPutOptions` | `ContentType`（缺省 `application/octet-stream`，媒体类型、最长 `MaxContentTypeLength` 255，之后可跟若干个参数：每个 `;` 两侧可以有空格（不收制表符），参数可以为空，`text/plain;` 合法；整串不以空格结尾，`text/plain; ` 不合法、`text/plain ;` 合法；`IsValidContentType` 判定；Provider 原样存取，存储客户端写不出原值的以 `OBJECTSTORAGE_VALIDATION_007` 拒绝写入）、`Metadata`（名 `^[a-z0-9][a-z0-9-]{0,63}$`，值不含控制字符，名与值合计不超过 `MaxMetadataBytes` 2048 个 UTF-8 字节）、`Overwrite`（缺省 `true`）；`Default` |
 | `Blobs.BlobMetadata` | 键、长度、内容类型、`ETag`、最后修改时间、自定义元数据 |
 | `Blobs.BlobContent` | 元数据、内容流与可选的实际范围 `Range`；`IAsyncDisposable`，释放时关闭流 |
 | `Blobs.BlobRange` / `BlobContentRange` | 范围请求（起点与可选长度）与实际范围（起点、长度、总长、`Last`） |
@@ -74,7 +74,7 @@ dotnet add package XiHan.Framework.ObjectStorage.Abstractions --prerelease
 | `Multipart.BlobMultipartUpload` | 一次分片上传：容器、键、上传标识、是否覆盖；可持久化后续传 |
 | `Multipart.BlobPart` / `BlobMultipart` | 分片（编号、ETag、长度）；常量 `MaxPartNumber` = 10000、`MinPartBytes` = 5 MiB；`ValidatePartNumber`、`ValidateParts`（完成清单非空、编号严格升序）与 `ValidateUploads`（批量放弃的集合里没有 `null`）供 Provider 在访问存储前校验 |
 | `Signing.IBlobUrlSigner` | `SignAsync(container, key, request)` → `BlobSignedUrl` |
-| `Signing.BlobUrlRequest` | `ForDownload`、`ForUpload`、`ForPart`；`DefaultExpiresIn` = 30 分钟，`MaxExpiresIn` = 7 天；限定的内容类型须合文法，保存的文件名不为空、不全是空白、不含控制字符，按 UTF-8 编码后不超过 `MaxDownloadFileNameBytes`（255）字节 |
+| `Signing.BlobUrlRequest` | `ForDownload`、`ForUpload`、`ForPart`；`DefaultExpiresIn` = 30 分钟，`MaxExpiresIn` = 7 天；限定的内容类型须合文法（不以空格结尾），保存的文件名不为空、不全是空白、不含控制字符，按 UTF-8 编码后不超过 `MaxDownloadFileNameBytes`（255）字节 |
 | `Signing.BlobSignedUrl` | 地址 `Url`、方法 `Method`、失效时刻 `ExpiresAt` 与客户端必须发送的请求头 `Headers`；四项都是 `required` 的初始化成员，用对象初始化器构造，没有位置构造与解构 |
 | `Signing.BlobContentDisposition` | `Attachment(fileName)`：下载文件名的统一写法，非 ASCII 文件名带 `filename*` |
 | `Stores.BlobStores` | 命名实例注册表：`GetAsync(name)`、`GetOrAddAsync(definition)`、`RemoveAsync(names)`（批量，逐项返回是否存在过）、`Names`、`Providers`、`MaxCount`（登记数上限，常量 `MaxCountLimit` = 1024）；同时是健康项贡献者 |
@@ -167,7 +167,7 @@ public sealed class AzureBlobStoreConformanceTests : BlobStoreConformance
 | `OBJECTSTORAGE_VALIDATION_003` | `StoreDefinitionInvalid` | 命名存储实例的定义不合法（Provider 未登记或设置不合法） |
 | `OBJECTSTORAGE_VALIDATION_004` | `StoreSelectionInvalid` | 缺省存储的能力选择不一致：被要求的分片上传或预签名与对象存储不在同一存储（装配时抛出，启动失败） |
 | `OBJECTSTORAGE_VALIDATION_005` | `PageSizeInvalid` | 列举的页大小不在 1 到 1000 之间（HTTP 400；不在构造时抛出，列举时以结果返回，不访问存储） |
-| `OBJECTSTORAGE_VALIDATION_006` | `ContentTypeInvalid` | 宿主直传端点：签名没有限定内容类型，请求的 `Content-Type` 不合内容类型文法（HTTP 400，不写入） |
+| `OBJECTSTORAGE_VALIDATION_006` | `ContentTypeInvalid` | 宿主直传端点：签名没有限定内容类型，请求的 `Content-Type` 不合内容类型文法（含以空格结尾；经 Kestrel 时首尾的空白已先去掉）（HTTP 400，不写入） |
 | `OBJECTSTORAGE_VALIDATION_007` | `ContentTypeUnsupported` | 内容类型合文法，但 Provider 所用的存储客户端写不出原值（S3：AWS SDK 改写 `Content-Type`）：写入与分片上传的发起在发出任何请求之前返回，HTTP 400，参数 `contentType`，消息键 `objectstorage.blob.content_type_unsupported` |
 | `OBJECTSTORAGE_DENIED_001` | `SignatureInvalid` | 预签名地址无效或已过期 |
 | `OBJECTSTORAGE_DENIED_002` | `ProbeDenied` | 条件写入探测被存储拒绝（403；S3：凭据无效、只读或无权写探测键）：启动或建实例时即失败；启动时连不上、之后才被拒的，健康项 Failed、后台照常重试 |

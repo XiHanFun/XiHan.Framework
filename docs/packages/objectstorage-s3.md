@@ -104,15 +104,16 @@ builder.AddXiHan(xihan => xihan.UseFullProfile().UseFeature<S3ObjectStorageFeatu
 
 两项不是布尔值时，容器建 Provider（首次取用 `BlobStores`）即抛出 `ArgumentException`。两个开关由 `S3BlobStoreProvider` 读取，也收在命令行工具的配置索引里：MCP tool `xihan_framework_config` 按 `XiHan:ObjectStorage:S3` 或键路径查得到，输出带 `readBy`（读取它的类型），见 [Cli](/packages/cli#mcp)。
 
-S3 原样存取内容类型：AWS SDK 会把 `Content-Type` 交给 .NET 的 `MediaTypeHeaderValue` 解析后重新写出，写出的与原值不逐字符相同的内容类型存不进原值。这类内容类型的写入与分片上传的发起返回 `OBJECTSTORAGE_VALIDATION_007`（HTTP 400，参数 `contentType`），先于不覆盖写入的 HEAD，一个请求都不发：
+S3 原样存取内容类型：AWS SDK 会把 `Content-Type` 交给 .NET 的 `MediaTypeHeaderValue` 解析后重新写出，写出的与原值不逐字符相同的内容类型存不进原值。这类内容类型的写入与分片上传的发起返回 `OBJECTSTORAGE_VALIDATION_007`（HTTP 400，参数 `contentType`），先于不覆盖写入的 HEAD，一个请求都不发。下表「不拒绝时」一列是在 RustFS 1.0.6 上实测的（AWS SDK for .NET 4.0，经 http；Amazon S3 没有实测，按签名 V4 的规范请求头推断相同）：SDK 解析得了而写法不同的，线上发的是改写后的值，签名却按原值去掉首尾空白、合并连续空格之后计算。
 
-| 写法 | 结果 |
-| --- | --- |
-| `text/plain; charset=utf-8`、`application/pdf`、`Text/HTML`（.NET 的写法：`;` 之后一个空格） | 原样写入、原样读出 |
-| `text/plain;`、`text/plain; charset=utf-8;`、`text/plain;;charset=utf-8`（空参数，SDK 解析不了） | `OBJECTSTORAGE_VALIDATION_007` |
-| `text/plain;charset=utf-8`、`text/plain ; charset=utf-8`（`;` 两侧的空格与 `; ` 不同，浏览器常发 `text/plain;charset=UTF-8`） | `OBJECTSTORAGE_VALIDATION_007` |
+| 写法 | 不拒绝时 | 结果 |
+| --- | --- | --- |
+| `text/plain; charset=utf-8`、`application/pdf`、`Text/HTML`（.NET 的写法：`;` 之后一个空格） | — | 原样写入、原样读出 |
+| `text/plain;`、`text/plain; charset=utf-8;`、`text/plain;;charset=utf-8`（空参数） | SDK 解析不了、抛出，仍发出一条不带 `Content-Type` 的请求，服务 403 | `OBJECTSTORAGE_VALIDATION_007` |
+| `text/plain;charset=utf-8`、`text/plain ; charset=utf-8`（`;` 两侧的空格与 `; ` 不同，浏览器常发 `text/plain;charset=UTF-8`） | 合并空白之后仍与线上的值不同，验签失败（403 `SignatureDoesNotMatch`） | `OBJECTSTORAGE_VALIDATION_007` |
+| `text/plain;  charset=utf-8`（多了连续空格） | 合并空白之后相同，验签通过，服务悄悄存下改写后的值 | `OBJECTSTORAGE_VALIDATION_007` |
 
-要写进去就换成 .NET 的写法（`; ` 一个空格、去掉空参数），或拒绝这个请求；文件系统存储不受影响。预签名上传限定的内容类型由客户端自己发送，不经 SDK，不受此限。读取一侧有已知的缺口：经预签名地址由别的客户端写入的对象，SDK 解析得了而写法不同的内容类型按 .NET 的写法交出（存储里的 `text/plain;charset=utf-8` 读出 `text/plain; charset=utf-8`）。
+要写进去就换成 .NET 的写法（`; ` 一个空格、去掉空参数），或拒绝这个请求；文件系统存储不受影响。以空格结尾的写法（`text/plain; `）在任何存储上都不合文法，构造写入选项时就抛出，见 [ObjectStorage.Abstractions](/packages/objectstorage-abstractions)。预签名上传限定的内容类型由客户端自己发送，不经 SDK，不受此限。读取一侧有已知的缺口：经预签名地址由别的客户端写入的对象，SDK 解析得了而写法不同的内容类型按 .NET 的写法交出（存储里的 `text/plain;charset=utf-8` 读出 `text/plain; charset=utf-8`）。
 
 ## 条件写入探测
 
@@ -204,7 +205,7 @@ var link = (await signer.SignAsync(new ContainerName("invoices"), new BlobKey("2
 - 批量删除：S3 的删除不报告对象是否存在过，先逐键 HEAD 定存在性（同一批里重复的键只有第一次算存在），再把存在的键按每批 1000 个 `DeleteObjects`；删除失败只影响本次负责删除的项。
 - 列举：`ListObjectsV2` 按前缀分页，续页标记就是 S3 的 continuation token；条目只有键、长度、ETag 与修改时间，内容类型为缺省值、自定义元数据为空，需要时再 `HeadAsync`；不符合键文法的对象（以 `/` 结尾的「目录」占位、保留前缀 `.xihan` 下的框架对象如探测键）跳过，所以一页可能少于 `PageSize` 条、甚至为空而仍带续页标记，取到续页标记为空为止；桶不存在视作空容器。
 - 范围读取经 `Range` 头，`Content-Range` 给出实际范围与总长；起点越界（416）返回 `OBJECTSTORAGE_VALIDATION_001`。
-- 分片上传直接映射 S3 multipart，`ListPartsAsync` 分页取全；不覆盖的发起与完成同样要求条件写入已确认（探测也核对分片的条件完成），完成先 HEAD 再带 `If-None-Match: *`；服务端拒绝分片清单（`InvalidPart`、`EntityTooSmall` 等）返回 `OBJECTSTORAGE_VALIDATION_002`，`NoSuchUpload` 返回 `OBJECTSTORAGE_NOTFOUND_002`。发起的应答成功却没有可用的上传标识（缺失、为空，或不是 1 到 1024 个不含空白与控制字符的字符，兼容服务的缺陷或中间的代理改写了响应体时会这样）返回 `OBJECTSTORAGE_UNAVAILABLE_001`（`reason` 为 `InitiateMultipartUpload returned no usable UploadId`，不带应答里的值），记一条带桶名的 Warning，不重发；服务端可能已经建出这个上传而放弃不了，靠桶的生命周期规则清理未完成的分片上传。批量放弃没有原生接口，逐项请求 `AbortMultipartUpload`，上传或桶不存在都算成功。
+- 分片上传直接映射 S3 multipart，`ListPartsAsync` 分页取全；不覆盖的发起与完成同样要求条件写入已确认（探测也核对分片的条件完成），完成先 HEAD 再带 `If-None-Match: *`；服务端拒绝分片清单（`InvalidPart`、`EntityTooSmall` 等）返回 `OBJECTSTORAGE_VALIDATION_002`，`NoSuchUpload` 返回 `OBJECTSTORAGE_NOTFOUND_002`。发起的应答成功却没有可用的上传标识（缺失、为空，或不是 1 到 1024 个不含空白与控制字符的字符，兼容服务的缺陷或中间的代理改写了响应体时会这样）返回 `OBJECTSTORAGE_UNAVAILABLE_001`（`reason` 为 `InitiateMultipartUpload returned no usable UploadId`，不带应答里的值），记一条带桶名的 Warning，不重发；服务端可能已经建出这个上传而放弃不了，靠桶的生命周期规则清理未完成的分片上传。上传分片的应答没有可用的 `ETag`（缺失、为空，或去掉引号之后只有空白）同样返回它（`reason` 为 `UploadPart returned no usable ETag`），不重发，调用方重传同一编号即覆盖；列出分片的应答里有一片没有可用的编号（缺失或不在 1 到 10000）、没有可用的 `ETag` 或长度为负时整个列出返回它（`reason` 依次为 `ListParts returned a part without a usable PartNumber`、`ListParts returned a part without a usable ETag`、`ListParts returned a part with a negative Size`），不跳过那一片，长度缺失照旧当作 0；两处都记一条带请求名与桶名的 Warning，不带应答里的值。批量放弃没有原生接口，逐项请求 `AbortMultipartUpload`，上传或桶不存在都算成功。
 - 预签名经 SDK 在本地签出（签名 V4，端点是 http 时按 http 签）：下载可带 `Content-Disposition`，上传可限定内容类型，分片地址带上传标识与编号。
 - 没有配额，由桶策略管理。调用方的取消原样抛出。
 - 健康项 `objectstorage.s3.connection`：启动时与条件写入探测并行同步探一次，之后按 `HealthProbeIntervalSeconds` 在后台重探并缓存结果（只做 HEAD 或列桶）；失败或超时为 Degraded（`KERNEL_UNAVAILABLE_005`，`reason` 只写异常类型，完整异常进日志），应用仍在服务。条件写入的状态即时并入：数据 `conditionalWrites` 为 `confirmed` / `unconfirmed` / `unsupported` / `disabled`，连不上 Degraded，启动之后才被拒绝或缺桶 Failed（`OBJECTSTORAGE_DENIED_002` / `OBJECTSTORAGE_NOTFOUND_001`），探明不认 Failed（`OBJECTSTORAGE_UNAVAILABLE_003`）。
@@ -214,7 +215,7 @@ var link = (await signer.SignAsync(new ContainerName("invoices"), new BlobKey("2
 错误码的含义见 [ObjectStorage.Abstractions](/packages/objectstorage-abstractions#错误码)，本包特有的映射：
 
 - `OBJECTSTORAGE_NOTFOUND_001`：键不存在；桶不存在时读取也是它，条件写入探测的桶不存在同样报它。
-- `OBJECTSTORAGE_UNAVAILABLE_001`：其余服务端错误（含应答成功却缺了必需的内容，如发起分片上传没有可用的上传标识）、网络错误与 SDK 超时（含 `RequestTimeoutSeconds` 到点）；探测连不上或超时也是它，是唯一照常启动、后台重试的原因。
+- `OBJECTSTORAGE_UNAVAILABLE_001`：其余服务端错误（含应答成功却缺了必需的内容：发起分片上传没有可用的上传标识，上传分片没有可用的 `ETag`，列出的分片缺可用的编号或 `ETag`、长度为负）、网络错误与 SDK 超时（含 `RequestTimeoutSeconds` 到点）；探测连不上或超时也是它，是唯一照常启动、后台重试的原因。
 - `OBJECTSTORAGE_UNAVAILABLE_003`、`OBJECTSTORAGE_UNAVAILABLE_004`、`OBJECTSTORAGE_DENIED_002`：只出自条件写入，何时返回见上文「条件写入探测」。
 - `OBJECTSTORAGE_VALIDATION_007`：内容类型合文法、但 SDK 写不出原值，写入与分片上传的发起在发请求之前返回，见上文「配置」末尾的表。
 
