@@ -13,7 +13,7 @@ namespace XiHan.Framework.Workflow.Abstractions.Tests;
 /// 回放 <c>expression-limits.json</c>：表达式的上限、错误里带出的文本与工作量
 /// </summary>
 /// <remarks>
-/// 规范 RFC-0021「表达式」的「长度与上限」（ADR-0120、ADR-0182、ADR-0287、ADR-0296）：长度 4000、嵌套 64 层、拼接与渲染出的文本 4194304、错误里带出的文本 200、一次求值的工作量 16777216，长度都按 UTF-16 码元计。这个文件里的表达式由重复的片段拼出来。向量是规范的一部分，这里只回放，不另存一份
+/// 规范 RFC-0021「表达式」的「长度与上限」（ADR-0120、ADR-0182、ADR-0287、ADR-0296、ADR-0303）：长度 4000、嵌套 64 层、拼接与渲染出的文本 4194304、错误里带出的文本 200、一次求值的工作量 16777216，长度都按 UTF-16 码元计。这个文件里的表达式由重复的片段拼出来。向量是规范的一部分，这里只回放，不另存一份
 /// </remarks>
 public sealed class ExpressionLimitVectorTests
 {
@@ -28,7 +28,7 @@ public sealed class ExpressionLimitVectorTests
     private static readonly LimitVectors _vectors = SpecVectors.Read<LimitVectors>("workflow", "expression-limits.json");
 
     /// <summary>
-    /// 求值时的实例变量：文件里的变量加上几个很长的字符串与数组
+    /// 求值时的实例变量：文件里的变量加上几个很长的字符串、数组与原文很长的数字
     /// </summary>
     private static readonly JsonObject _variables = BuildVariables();
 
@@ -289,6 +289,12 @@ public sealed class ExpressionLimitVectorTests
         });
         Assert.Contains(_vectors.Budgets, static vector => vector.Mode == "render" && !vector.Valid && vector.Expression == ExpressionException.Echo(vector.Head + Repeat(vector.Link, vector.Count) + vector.Tail));
         Assert.Contains(_vectors.Budgets, static vector => vector.Mode == "render" && !vector.Valid && vector.Expression != ExpressionException.Echo(vector.Head + Repeat(vector.Link, vector.Count) + vector.Tail));
+
+        // 读数字（ADR-0303）：原文很长的数字要有，读它的用例要有正好到上限的与多一个码元就超过的；变量里的数字照文件里的原文，原文与数字的文本不同的也要有
+        Assert.NotEmpty(_vectors.Numerals);
+        Assert.All(_vectors.Numerals, static numeral => Assert.Contains(_vectors.Budgets, vector => vector.Valid && vector.Work == _vectors.MaxWork && vector.Head.Contains(numeral.Variable, StringComparison.Ordinal)));
+        Assert.All(_vectors.Numerals, static numeral => Assert.Contains(_vectors.Budgets, vector => !vector.Valid && vector.Head.Contains(numeral.Variable, StringComparison.Ordinal)));
+        Assert.Contains(_variables, static pair => pair.Value is JsonValue value && value.GetValueKind() == System.Text.Json.JsonValueKind.Number && value.ToJsonString() != WorkflowValues.AsString(value));
         Assert.All(_vectors.Budgets, static vector => Assert.True(vector.Valid ? vector.Work is > 0 && vector.Expression is null : vector.Work is null && vector.Expression is not null, vector.Name));
 
         // 带出的文本：不截断的、截断的、截断处是代理对的、三种求值方式
@@ -386,8 +392,11 @@ public sealed class ExpressionLimitVectorTests
     }
 
     /// <summary>
-    /// 文件里的变量加上 <c>blocks</c> 给出的长字符串与 <c>arrays</c> 给出的长数组
+    /// 文件里的变量加上很长的字符串、数组与数字
     /// </summary>
+    /// <remarks>
+    /// 字符串来自 <c>blocks</c>，数组来自 <c>arrays</c>，数字来自 <c>numerals</c>：数字从它的原文解析出来，读取量按原文的长度，不能先变成 CLR 的数字再写出来
+    /// </remarks>
     private static JsonObject BuildVariables()
     {
         var variables = (JsonObject)_vectors.Variables.DeepClone();
@@ -405,6 +414,13 @@ public sealed class ExpressionLimitVectorTests
             }
 
             variables[array.Variable] = items;
+        }
+
+        foreach (var numeral in _vectors.Numerals)
+        {
+            var parsed = JsonNode.Parse(numeral.Head + Repeat(numeral.Unit, numeral.Repeat));
+            Assert.Equal(System.Text.Json.JsonValueKind.Number, parsed?.GetValueKind());
+            variables[numeral.Variable] = parsed;
         }
 
         return variables;
@@ -428,6 +444,7 @@ public sealed class ExpressionLimitVectorTests
     /// <param name="Variables">实例变量</param>
     /// <param name="Blocks">很长的字符串变量</param>
     /// <param name="Arrays">很长的数组变量</param>
+    /// <param name="Numerals">原文很长的数字变量</param>
     /// <param name="Lengths">长度的用例</param>
     /// <param name="Nestings">嵌套的用例</param>
     /// <param name="Chains">链的用例</param>
@@ -446,6 +463,7 @@ public sealed class ExpressionLimitVectorTests
         JsonObject Variables,
         BlockCase[] Blocks,
         ArrayCase[] Arrays,
+        NumeralCase[] Numerals,
         LengthCase[] Lengths,
         NestingCase[] Nestings,
         ChainCase[] Chains,
@@ -469,6 +487,15 @@ public sealed class ExpressionLimitVectorTests
     /// <param name="Item">重复的元素</param>
     /// <param name="Repeat">元素的个数</param>
     private sealed record ArrayCase(string Variable, JsonNode? Item, int Repeat);
+
+    /// <summary>
+    /// 一个原文很长的数字变量
+    /// </summary>
+    /// <param name="Variable">变量名</param>
+    /// <param name="Head">原文的开头</param>
+    /// <param name="Unit">重复的片段</param>
+    /// <param name="Repeat">重复的次数</param>
+    private sealed record NumeralCase(string Variable, string Head, string Unit, int Repeat);
 
     /// <summary>
     /// 一条长度用例

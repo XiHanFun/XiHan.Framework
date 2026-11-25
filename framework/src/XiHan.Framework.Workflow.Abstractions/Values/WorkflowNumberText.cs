@@ -199,6 +199,34 @@ internal static class WorkflowNumberText
     }
 
     /// <summary>
+    /// 去掉 decimal 内部记着的结尾的零与负零，数值不变
+    /// </summary>
+    /// <remarks>
+    /// decimal 记着小数位数：<c>1.5 + 1.5</c> 是 <c>3.0</c>，字面量 <c>1.50</c> 是 <c>1.50</c>，写成 JSON 时照这个位数写。表达式得出的数字先经这里（RFC-0021「表达式」的「数字的文本」，ADR-0303）：写成 JSON 就是数字的文本，存进变量再读回来的原文与没存之前相同，读它的工作量也就相同
+    /// </remarks>
+    public static decimal Normalize(decimal number)
+    {
+        Span<int> bits = stackalloc int[4];
+        decimal.GetBits(number, bits);
+        var scale = (bits[3] >> 16) & 0xFF;
+        var negative = bits[3] < 0;
+        var mantissa = ((UInt128)(uint)bits[2] << 64) | ((UInt128)(uint)bits[1] << 32) | (uint)bits[0];
+        if (mantissa == 0)
+        {
+            // 零没有负号，也没有小数位
+            return 0m;
+        }
+
+        while (scale > 0 && mantissa % 10 == 0)
+        {
+            mantissa /= 10;
+            scale--;
+        }
+
+        return new decimal((int)(uint)mantissa, (int)(uint)(mantissa >> 32), (int)(uint)(mantissa >> 64), negative, (byte)scale);
+    }
+
+    /// <summary>
     /// 数字写成恰好 <paramref name="places"/> 位小数的定长文本
     /// </summary>
     /// <remarks>

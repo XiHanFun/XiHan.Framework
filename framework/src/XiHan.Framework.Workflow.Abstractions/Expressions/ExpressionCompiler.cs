@@ -15,7 +15,7 @@ namespace XiHan.Framework.Workflow.Abstractions.Expressions;
 /// </summary>
 /// <remarks>
 /// 递归下降解析成闭包树，文法与每个运算符、函数的语义照 RFC-0021「表达式」（ADR-0287）。优先级从低到高：<c>||</c>、<c>&amp;&amp;</c>、<c>== !=</c>、<c>&lt; &lt;= &gt; &gt;=</c>、<c>+ -</c>、<c>* / %</c>、一元 <c>! -</c>、后缀 <c>.x</c> / <c>[i]</c>、原子。数字为 decimal；<c>+</c> 任一侧是字符串即拼接；两边都是数字或数字文本时按数值比较，其余按文本的序数比较；未知根变量是错误，缺少的成员或键是 null。二元运算符与函数先从左到右求值全部操作数，再核对类型（<c>&amp;&amp;</c> 与 <c>||</c> 短路）
-/// 长度不超过 <see cref="MaxLength"/>，嵌套不超过 <see cref="MaxDepth"/>（ADR-0120）；<c>+</c> 拼出的字符串与模板渲染出的文本不超过 <see cref="MaxStringLength"/>（ADR-0182、ADR-0287）；一次求值的工作量不超过 <see cref="ExpressionRun.MaxWork"/>：每个节点开始求值时记一步，运算在核对操作数之前记它读的字符串与容器（ADR-0296）
+/// 长度不超过 <see cref="MaxLength"/>，嵌套不超过 <see cref="MaxDepth"/>（ADR-0120）；<c>+</c> 拼出的字符串与模板渲染出的文本不超过 <see cref="MaxStringLength"/>（ADR-0182、ADR-0287）；一次求值的工作量不超过 <see cref="ExpressionRun.MaxWork"/>：每个节点开始求值时记一步，运算在核对操作数之前记它读的字符串、数字与容器（ADR-0296、ADR-0303）；表达式得出的数字去掉 decimal 内部的结尾的零，写成 JSON 就是数字的文本（ADR-0303）
 /// </remarks>
 internal sealed class ExpressionCompiler
 {
@@ -195,9 +195,9 @@ internal sealed class ExpressionCompiler
             var captured = op;
             left = Binary(l, r, (run, a, b) =>
             {
-                // 两侧可能当数字、时间或文本读：只有字符串要读内容
-                run.ReadIfString(a);
-                run.ReadIfString(b);
+                // 两侧可能当数字、时间或文本读：字符串与数字要读内容（数字要从它的写法读出值）
+                run.ReadScalar(a);
+                run.ReadScalar(b);
                 var order = Compare(a, b, captured);
                 var holds = captured switch
                 {
@@ -297,8 +297,8 @@ internal sealed class ExpressionCompiler
             {
                 run.Step();
                 var value = operand(run);
-                run.ReadIfString(value);
-                return JsonValue.Create(-Number(value, "-"));
+                run.ReadScalar(value);
+                return NumberValue(-Number(value, "-"));
             };
         }
 
@@ -392,7 +392,8 @@ internal sealed class ExpressionCompiler
 
         if (char.IsDigit(c) || (c == '.' && _position + 1 < _text.Length && char.IsDigit(_text[_position + 1])))
         {
-            var number = ReadNumber();
+            // 字面量的数字也不带内部的小数位数：1.50 与 1.5 写成 JSON 是同一段文本（ADR-0303）
+            var number = WorkflowNumberText.Normalize(ReadNumber());
             return run =>
             {
                 run.Step();
@@ -483,12 +484,18 @@ internal sealed class ExpressionCompiler
         {
             case "len":
                 Arity(name, args, 1, 1);
-                return run => args[0](run) switch
+                return run =>
                 {
-                    null => JsonValue.Create(0),
-                    JsonArray array => JsonValue.Create(array.Count),
-                    JsonObject obj => JsonValue.Create(obj.Count),
-                    var value => JsonValue.Create(Text(value).Length),
+                    // 字符串的长度不用读内容；数字的长度是它的数字的文本的长度，要先从它的写法读出值（ADR-0303）
+                    var value = args[0](run);
+                    run.ReadIfNumber(value);
+                    return value switch
+                    {
+                        null => JsonValue.Create(0),
+                        JsonArray array => JsonValue.Create(array.Count),
+                        JsonObject obj => JsonValue.Create(obj.Count),
+                        _ => JsonValue.Create(Text(value).Length),
+                    };
                 };
             case "contains":
                 Arity(name, args, 2, 2);
@@ -541,24 +548,30 @@ internal sealed class ExpressionCompiler
                 return run => JsonValue.Create(ReadText(run, args[0](run)).Trim());
             case "isnullorempty":
                 Arity(name, args, 1, 1);
-                return run => args[0](run) switch
+                return run =>
                 {
-                    null => True,
-                    JsonArray array => array.Count == 0 ? True : False,
-                    JsonObject obj => obj.Count == 0 ? True : False,
-                    var value => Text(value).Length == 0 ? True : False,
+                    // 与 len 相同：数字要从它的写法读出值才写得出文本
+                    var value = args[0](run);
+                    run.ReadIfNumber(value);
+                    return value switch
+                    {
+                        null => True,
+                        JsonArray array => array.Count == 0 ? True : False,
+                        JsonObject obj => obj.Count == 0 ? True : False,
+                        _ => Text(value).Length == 0 ? True : False,
+                    };
                 };
             case "abs":
                 Arity(name, args, 1, 1);
-                return run => JsonValue.Create(Math.Abs(ReadNumber(run, args[0](run), "abs")));
+                return run => NumberValue(Math.Abs(ReadNumber(run, args[0](run), "abs")));
             case "min":
                 Arity(name, args, 2, 2);
                 return run =>
                 {
                     var first = args[0](run);
                     var second = args[1](run);
-                    ReadStrings(run, first, second);
-                    return JsonValue.Create(Math.Min(Number(first, "min"), Number(second, "min")));
+                    ReadScalars(run, first, second);
+                    return NumberValue(Math.Min(Number(first, "min"), Number(second, "min")));
                 };
             case "max":
                 Arity(name, args, 2, 2);
@@ -566,8 +579,8 @@ internal sealed class ExpressionCompiler
                 {
                     var first = args[0](run);
                     var second = args[1](run);
-                    ReadStrings(run, first, second);
-                    return JsonValue.Create(Math.Max(Number(first, "max"), Number(second, "max")));
+                    ReadScalars(run, first, second);
+                    return NumberValue(Math.Max(Number(first, "max"), Number(second, "max")));
                 };
             case "round":
                 Arity(name, args, 1, 2);
@@ -575,7 +588,7 @@ internal sealed class ExpressionCompiler
                 {
                     var value = args[0](run);
                     var places = args.Count == 2 ? args[1](run) : null;
-                    ReadStrings(run, value, places);
+                    ReadScalars(run, value, places);
                     var number = Number(value, "round");
                     var digits = 0m;
                     if (args.Count == 2)
@@ -588,7 +601,7 @@ internal sealed class ExpressionCompiler
                         }
                     }
 
-                    return JsonValue.Create(Math.Round(number, (int)digits, MidpointRounding.AwayFromZero));
+                    return NumberValue(Math.Round(number, (int)digits, MidpointRounding.AwayFromZero));
                 };
             case "format":
                 Arity(name, args, 2, 2);
@@ -596,7 +609,7 @@ internal sealed class ExpressionCompiler
                 {
                     var value = args[0](run);
                     var places = args[1](run);
-                    ReadStrings(run, value, places);
+                    ReadScalars(run, value, places);
                     var number = Number(value, "format");
                     var digits = Number(places, "format");
 
@@ -611,7 +624,7 @@ internal sealed class ExpressionCompiler
                 };
             case "tonumber":
                 Arity(name, args, 1, 1);
-                return run => JsonValue.Create(ReadNumber(run, args[0](run), "toNumber"));
+                return run => NumberValue(ReadNumber(run, args[0](run), "toNumber"));
             case "tostring":
                 Arity(name, args, 1, 1);
                 return run => JsonValue.Create(ReadText(run, args[0](run)));
@@ -686,7 +699,7 @@ internal sealed class ExpressionCompiler
     /// 加法：任一侧是字符串即拼接，否则数字相加
     /// </summary>
     /// <remarks>
-    /// 拼接读两侧（ADR-0296），工作量先于长度的核对记；加法的两侧都不是字符串，不读
+    /// 拼接读两侧（ADR-0296），工作量先于长度的核对记；加法读两侧里的数字（ADR-0303）：变量里的数字要从它的写法读出值
     /// </remarks>
     private static JsonValue Add(ExpressionRun run, JsonNode? left, JsonNode? right)
     {
@@ -706,11 +719,12 @@ internal sealed class ExpressionCompiler
             return JsonValue.Create(first + second);
         }
 
+        ReadScalars(run, left, right);
         var augend = Number(left, "+");
         var addend = Number(right, "+");
         try
         {
-            return JsonValue.Create(augend + addend);
+            return NumberValue(augend + addend);
         }
         catch (OverflowException)
         {
@@ -723,12 +737,12 @@ internal sealed class ExpressionCompiler
     /// </summary>
     private static JsonValue Subtract(ExpressionRun run, JsonNode? left, JsonNode? right)
     {
-        ReadStrings(run, left, right);
+        ReadScalars(run, left, right);
         var minuend = Number(left, "-");
         var subtrahend = Number(right, "-");
         try
         {
-            return JsonValue.Create(minuend - subtrahend);
+            return NumberValue(minuend - subtrahend);
         }
         catch (OverflowException)
         {
@@ -741,12 +755,12 @@ internal sealed class ExpressionCompiler
     /// </summary>
     private static JsonValue Multiply(ExpressionRun run, JsonNode? left, JsonNode? right)
     {
-        ReadStrings(run, left, right);
+        ReadScalars(run, left, right);
         var multiplicand = Number(left, "*");
         var multiplier = Number(right, "*");
         try
         {
-            return JsonValue.Create(multiplicand * multiplier);
+            return NumberValue(multiplicand * multiplier);
         }
         catch (OverflowException)
         {
@@ -759,7 +773,7 @@ internal sealed class ExpressionCompiler
     /// </summary>
     private static JsonValue Divide(ExpressionRun run, JsonNode? left, JsonNode? right)
     {
-        ReadStrings(run, left, right);
+        ReadScalars(run, left, right);
         var dividend = Number(left, "/");
         var divisor = Number(right, "/");
         if (divisor == 0)
@@ -769,7 +783,7 @@ internal sealed class ExpressionCompiler
 
         try
         {
-            return JsonValue.Create(dividend / divisor);
+            return NumberValue(dividend / divisor);
         }
         catch (OverflowException)
         {
@@ -782,10 +796,10 @@ internal sealed class ExpressionCompiler
     /// </summary>
     private static JsonValue Remainder(ExpressionRun run, JsonNode? left, JsonNode? right)
     {
-        ReadStrings(run, left, right);
+        ReadScalars(run, left, right);
         var dividend = Number(left, "%");
         var divisor = Number(right, "%");
-        return divisor == 0 ? throw new ExpressionException(WorkflowMessages.ExpressionDivisionByZero) : JsonValue.Create(dividend % divisor);
+        return divisor == 0 ? throw new ExpressionException(WorkflowMessages.ExpressionDivisionByZero) : NumberValue(dividend % divisor);
     }
 
     /// <summary>
@@ -807,13 +821,13 @@ internal sealed class ExpressionCompiler
     /// 相等：先按两侧的种类记读，再比较
     /// </summary>
     /// <remarks>
-    /// 两侧都是标量时只读字符串（可能当数字或文本比）；两侧都是容器时要逐层比，读两侧；有一侧是 null，或容器对标量，不必看内容，不读
+    /// 两侧都是标量时读字符串与数字（可能当数字或文本比）；两侧都是容器时要逐层比，读两侧；有一侧是 null，或容器对标量，不必看内容，不读
     /// </remarks>
     private static bool Equal(ExpressionRun run, JsonNode? left, JsonNode? right)
     {
         if (left is JsonValue && right is JsonValue)
         {
-            ReadStrings(run, left, right);
+            ReadScalars(run, left, right);
         }
         else if (left is JsonArray or JsonObject && right is JsonArray or JsonObject)
         {
@@ -828,14 +842,14 @@ internal sealed class ExpressionCompiler
     /// 记索引读的下标
     /// </summary>
     /// <remarks>
-    /// 被索引的是数组时只读字符串下标（当数字读），是对象时读下标（取它的文本作键），是 null 或标量时不读
+    /// 被索引的是数组时读字符串与数字的下标（当数字读），是对象时读下标（取它的文本作键），是 null 或标量时不读
     /// </remarks>
     private static void ReadIndex(ExpressionRun run, JsonNode? target, JsonNode? index)
     {
         switch (target)
         {
             case JsonArray:
-                run.ReadIfString(index);
+                run.ReadScalar(index);
                 break;
             case JsonObject:
                 run.Read(index);
@@ -844,12 +858,12 @@ internal sealed class ExpressionCompiler
     }
 
     /// <summary>
-    /// 记两个操作数里是字符串的
+    /// 记两个操作数里是字符串或数字的
     /// </summary>
-    private static void ReadStrings(ExpressionRun run, JsonNode? left, JsonNode? right)
+    private static void ReadScalars(ExpressionRun run, JsonNode? left, JsonNode? right)
     {
-        run.ReadIfString(left);
-        run.ReadIfString(right);
+        run.ReadScalar(left);
+        run.ReadScalar(right);
     }
 
     /// <summary>
@@ -872,13 +886,21 @@ internal sealed class ExpressionCompiler
     }
 
     /// <summary>
-    /// 记读一个是字符串的实参，再要求它能当数字
+    /// 记读一个是字符串或数字的实参，再要求它能当数字
     /// </summary>
     private static decimal ReadNumber(ExpressionRun run, JsonNode? node, string op)
     {
-        run.ReadIfString(node);
+        run.ReadScalar(node);
         return Number(node, op);
     }
+
+    /// <summary>
+    /// 表达式得出的数字
+    /// </summary>
+    /// <remarks>
+    /// 去掉 decimal 内部记着的结尾的零（RFC-0021「表达式」的「数字的文本」，ADR-0303）：结果写成 JSON（存进变量、作为输出）就是数字的文本，存进去再读回来，写法与读取量都不变
+    /// </remarks>
+    private static JsonValue NumberValue(decimal number) => JsonValue.Create(WorkflowNumberText.Normalize(number));
 
     /// <summary>
     /// 结果超出数字范围的错误

@@ -1,6 +1,8 @@
 // Copyright (c) XiHanFun Contributors. Licensed under the MIT License.
 // See the LICENSE file in the project root for full license text.
 
+using System.Globalization;
+using System.Runtime.InteropServices;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using XiHan.Framework.Primitives;
@@ -12,7 +14,7 @@ namespace XiHan.Framework.Workflow.Abstractions.Expressions;
 /// 一次求值或一次渲染的状态：作用域与累计的工作量
 /// </summary>
 /// <remarks>
-/// 工作量的规则来自 RFC-0021「表达式」的「长度与上限」（ADR-0296）：每开始求值一个节点记 <see cref="StepWork"/>；运算读到的字符串记它的长度，读到的数组与对象记它里面每个值 <see cref="StepWork"/>（它自己也算一个）加上全部字符串与成员名的长度；累计超过 <see cref="MaxWork"/> 即以 <see cref="WorkflowMessages.ExpressionBudgetExceeded"/> 失败。工作量只取决于表达式、值与求值的次序，与平台和机器的快慢无关，所以能写进向量。一次 <c>Render</c> 的全部占位共用一个实例
+/// 工作量的规则来自 RFC-0021「表达式」的「长度与上限」（ADR-0296、ADR-0303）：每开始求值一个节点记 <see cref="StepWork"/>；运算读到的字符串记它的长度，读到的数字记它的写法的长度（从 JSON 文本读来的是原文，别的是写成 JSON 的文本），读到的数组与对象记它里面每个值 <see cref="StepWork"/>（它自己也算一个）加上全部字符串、数字与成员名的长度；累计超过 <see cref="MaxWork"/> 即以 <see cref="WorkflowMessages.ExpressionBudgetExceeded"/> 失败。工作量只取决于表达式、值与求值的次序，与平台和机器的快慢无关，所以能写进向量。一次 <c>Render</c> 的全部占位共用一个实例
 /// </remarks>
 internal sealed class ExpressionRun
 {
@@ -65,21 +67,35 @@ internal sealed class ExpressionRun
     public void Step() => Add(StepWork);
 
     /// <summary>
-    /// 读一个值：字符串记它的长度，容器记它的规模，别的不记
+    /// 读一个值：字符串与数字记它的长度，容器记它的规模，别的不记
     /// </summary>
     public void Read(JsonNode? node) => Add(Measure(node, MaxWork - Work));
 
     /// <summary>
-    /// 读一个值，只在它是字符串时记它的长度
+    /// 读一个值，只在它是字符串或数字时记它的长度
     /// </summary>
     /// <remarks>
-    /// 算术、比较与数字函数只把字符串当数字文本读：容器与别的标量不读，它们在核对时就是错误或不必看内容
+    /// 算术、比较与数字函数把字符串当数字文本读、把数字从它的写法读出值：容器不读，它们在核对时就是错误；布尔与 null 的读取量本来是零
     /// </remarks>
-    public void ReadIfString(JsonNode? node)
+    public void ReadScalar(JsonNode? node)
     {
-        if (node is JsonValue value && value.GetValueKind() == JsonValueKind.String)
+        if (node is JsonValue value)
         {
-            Add(WorkflowValues.AsString(value).Length);
+            Add(MeasureScalar(value));
+        }
+    }
+
+    /// <summary>
+    /// 读一个值，只在它是数字时记它的写法的长度
+    /// </summary>
+    /// <remarks>
+    /// <c>len</c> 与 <c>isNullOrEmpty</c> 要的是值的文本：字符串的文本就是它自己，不用读内容；数字的文本要先从它的写法读出值再写出来（ADR-0303）
+    /// </remarks>
+    public void ReadIfNumber(JsonNode? node)
+    {
+        if (node is JsonValue value && value.GetValueKind() == JsonValueKind.Number)
+        {
+            Add(NumberLength(value));
         }
     }
 
@@ -122,7 +138,7 @@ internal sealed class ExpressionRun
             case null:
                 return 0;
             case JsonValue value:
-                return value.GetValueKind() == JsonValueKind.String ? WorkflowValues.AsString(value).Length : 0;
+                return MeasureScalar(value);
             default:
                 long total = 0;
                 MeasureContainer(node, 1, limit, ref total);
@@ -148,8 +164,8 @@ internal sealed class ExpressionRun
 
         switch (node)
         {
-            case JsonValue value when value.GetValueKind() == JsonValueKind.String:
-                total += WorkflowValues.AsString(value).Length;
+            case JsonValue value:
+                total += MeasureScalar(value);
                 return;
             case JsonArray array when depth <= MaxDepth:
                 foreach (var item in array)
@@ -177,6 +193,49 @@ internal sealed class ExpressionRun
             default:
                 return;
         }
+    }
+
+    /// <summary>
+    /// 一个标量的读取量：字符串是它的长度，数字是它的写法的长度，布尔是 0
+    /// </summary>
+    private static long MeasureScalar(JsonValue value) => value.GetValueKind() switch
+    {
+        JsonValueKind.String => WorkflowValues.AsString(value).Length,
+        JsonValueKind.Number => NumberLength(value),
+        _ => 0,
+    };
+
+    /// <summary>
+    /// 一个数字的写法的长度
+    /// </summary>
+    /// <remarks>
+    /// 读一个数字要扫描它的写法（RFC-0021「长度与上限」，ADR-0303）：从 JSON 文本读来的是原文（JSON 的数字只有 ASCII 字符，字节数就是码元数），原文几百万位的数字每读一次都要重新解析；由 CLR 类型构造的数字按它写成 JSON 的文本，与写进存储再读回来的原文相同。表达式得出的数字已经去掉结尾的零（<see cref="WorkflowNumberText.Normalize"/>），写成 JSON 就是数字的文本
+    /// </remarks>
+    private static long NumberLength(JsonValue value)
+    {
+        if (value.TryGetValue<JsonElement>(out var element))
+        {
+            return JsonMarshal.GetRawUtf8Value(element).Length;
+        }
+
+        // 常见的几种直接量出长度，不分配；与 System.Text.Json 的写法相同：不变文化、缺省格式
+        Span<char> buffer = stackalloc char[64];
+        if (value.TryGetValue<decimal>(out var number) && number.TryFormat(buffer, out var written, default, CultureInfo.InvariantCulture))
+        {
+            return written;
+        }
+
+        if (value.TryGetValue<int>(out var small) && small.TryFormat(buffer, out written, default, CultureInfo.InvariantCulture))
+        {
+            return written;
+        }
+
+        if (value.TryGetValue<long>(out var large) && large.TryFormat(buffer, out written, default, CultureInfo.InvariantCulture))
+        {
+            return written;
+        }
+
+        return value.ToJsonString().Length;
     }
 
     /// <summary>

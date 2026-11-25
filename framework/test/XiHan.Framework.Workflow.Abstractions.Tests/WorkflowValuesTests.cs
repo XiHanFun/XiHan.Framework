@@ -107,4 +107,24 @@ public sealed class WorkflowValuesTests
         Assert.Same(backing, variables.AsJsonObject());
         Assert.Throws<ArgumentException>(() => variables.Set(" ", null));
     }
+
+    [Theory]
+    [InlineData("1.50", "1.5")]
+    [InlineData("3.0", "3")]
+    [InlineData("100", "100")]
+    [InlineData("-0.0", "0")]
+    [InlineData("0.0000000000000000000000000000", "0")]
+    [InlineData("79228162514264337593543950335", "79228162514264337593543950335")]
+    [InlineData("-7.9228162514264337593543950000", "-7.922816251426433759354395")]
+    [InlineData("0.0000000000000000000000000010", "0.000000000000000000000000001")]
+    public void Normalize_DropsTheTrailingZeros_AndKeepsTheValue(string text, string written)
+    {
+        // decimal 记着小数位数，写成 JSON 时照它写：去掉之后写出的就是数字的文本（ADR-0303）
+        var number = decimal.Parse(text, System.Globalization.CultureInfo.InvariantCulture);
+        var normalized = WorkflowNumberText.Normalize(number);
+
+        Assert.Equal(number, normalized);
+        Assert.Equal(written, JsonValue.Create(normalized).ToJsonString());
+        Assert.Equal(WorkflowNumberText.Format(number), JsonValue.Create(normalized).ToJsonString());
+    }
 }

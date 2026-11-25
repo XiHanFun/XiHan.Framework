@@ -27,7 +27,7 @@ public interface IWorkflowExpressionEvaluator
     /// 求值
     /// </summary>
     /// <remarks>
-    /// 结果是 <see langword="null"/>（字面量 <c>null</c>、缺少的成员或键、值为 null 的变量）时是成功的无值，不是失败（ADR-0059）。一次求值的工作量超过 16777216 即失败（<see cref="WorkflowMessages.ExpressionBudgetExceeded"/>，ADR-0296）
+    /// 结果是 <see langword="null"/>（字面量 <c>null</c>、缺少的成员或键、值为 null 的变量）时是成功的无值，不是失败（ADR-0059）。一次求值的工作量超过 16777216 即失败（<see cref="WorkflowMessages.ExpressionBudgetExceeded"/>，ADR-0296；读数字按它的写法的长度记，ADR-0303）；得出的数字写成 JSON 是数字的文本，不带结尾的零（ADR-0303）
     /// </remarks>
     Result<Maybe<JsonNode>> Evaluate(string expression, ExpressionScope scope);
 

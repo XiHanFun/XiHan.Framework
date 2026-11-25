@@ -60,7 +60,7 @@ public sealed class WorkflowExpressionEvaluator : IWorkflowExpressionEvaluator
     /// 求值，并交出这次求值累计的工作量
     /// </summary>
     /// <remarks>
-    /// 工作量按 RFC-0021「表达式」的「长度与上限」计（ADR-0296）；失败时是失败之前记下的，超过上限时含使它超过的那一笔
+    /// 工作量按 RFC-0021「表达式」的「长度与上限」计（ADR-0296、ADR-0303）；失败时是失败之前记下的，超过上限时含使它超过的那一笔
     /// </remarks>
     /// <param name="expression">表达式</param>
     /// <param name="scope">作用域</param>
