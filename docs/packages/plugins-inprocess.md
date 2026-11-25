@@ -15,11 +15,11 @@
 
 ## 概述
 
-`InProcessPluginHost` 实现内核的 `IPluginHost`。`LoadAsync(PluginSource)` 的顺序是：读插件目录里的 `xihan.manifest.json`，要求 `kind: plugin` 与 `isolation: in-process`；核对清单 `permissions` 都在 `PluginSource.Permissions` 里；要求 `package` 与 `entry` 都有值且 `<package>.dll` 存在；核对清单声明的绑定（与进程外、Wasm 宿主同一条规则，规则在内核的 `PluginBindingRules`）：按宿主配置与环境变量 `SERVICE_BINDING_ROOT` 指向的目录解析，必需（`required` 缺省 `true`）的绑定两种来源都没给或只给了类型、来源声明的类型与清单不同（必需与可选都核对），即加载失败、插件程序集不加载；宿主不向插件下发绑定，插件自己经 `BindingResolver.Resolve(Configuration)` 读；在一个新的可收集加载上下文里加载程序集，按 `entry` 类型名实例化，要求它实现 `IPlugin` 且自带清单的 ID 与文件一致；调用 `IPlugin.Configure(PluginContext)`，构建插件专属的 `ServiceProvider`，再调用 `StartAsync`。成功后状态为 `Ready`。
+`InProcessPluginHost` 实现内核的 `IPluginHost`。`LoadAsync(PluginSource)` 的顺序是：读插件目录里的 `xihan.manifest.json`，要求 `kind: plugin` 与 `isolation: in-process`；核对清单 `permissions` 都在 `PluginSource.Permissions` 里；要求 `package` 与 `entry` 都有值且 `<package>.dll` 存在；核对清单声明的绑定（与内核装配特性、进程外与 Wasm 宿主同一条规则，规则在内核的 `PluginBindingRules`）：按宿主配置与构造时给的绑定根目录（没给时取环境变量 `SERVICE_BINDING_ROOT`）解析，必需（`required` 缺省 `true`）的绑定两种来源都没给或只给了类型、来源声明的类型与清单不同（必需与可选都核对），即加载失败、插件程序集不加载；宿主不向插件下发绑定，插件自己经 `BindingResolver.Resolve(context.Configuration, context.ServiceBindingRoot)` 读；在一个新的可收集加载上下文里加载程序集，按 `entry` 类型名实例化，要求它实现 `IPlugin` 且自带清单的 ID 与文件一致；调用 `IPlugin.Configure(PluginContext)`，构建插件专属的 `ServiceProvider`，再调用 `StartAsync`。成功后状态为 `Ready`。
 
 加载上下文把名字以 `XiHan.Framework.`、`Microsoft.Extensions.`、`System.`、`netstandard`、`mscorlib` 开头的程序集交给默认上下文，保证 `IPlugin` 等类型与宿主是同一个类型；插件的私有托管与原生依赖按它自己的 `.deps.json` 在插件目录里解析。
 
-插件拿到的 `PluginContext` 含清单、插件自己的 `IServiceCollection`、宿主配置的只读视图与授予的权限。插件容器不能解析宿主服务；`PluginContext.Pipeline` 恒为 `null`，插件不能贡献中间件，也不能向宿主登记操作。清单写了 `contributes.pipeline` 的在加载任何代码之前被拒（`PLUGINS_VALIDATION_001`），不会照常加载、把中间件静默忽略。
+插件拿到的 `PluginContext` 含清单、插件自己的 `IServiceCollection`、宿主配置的只读视图、授予的权限与绑定根目录 `ServiceBindingRoot`（构造宿主时给的值，没给时为 `null`）。应用经 `UseServiceBindingRoot` 指定了根目录时，把同一个值作 `InProcessPluginHost` 构造的第三个参数，宿主核对的、插件读到的与内核读的才是同一个目录。插件容器不能解析宿主服务；`PluginContext.Pipeline` 恒为 `null`，插件不能贡献中间件，也不能向宿主登记操作。清单写了 `contributes.pipeline` 的在加载任何代码之前被拒（`PLUGINS_VALIDATION_001`），不会照常加载、把中间件静默忽略。
 
 ## 何时使用
 
@@ -47,11 +47,11 @@ builder.Services.AddMessageCatalog(MessageCatalog.FromEmbeddedResources("plugins
 
 | 类型 | 说明 |
 | --- | --- |
-| `InProcessPluginHost` | 宿主：`LoadAsync`、`UnloadAsync`、`Plugins`（状态快照）、`DisposeAsync`（停止并卸载全部插件） |
+| `InProcessPluginHost` | 宿主：构造收宿主配置、日志工厂与可选的 `serviceBindingRoot`；`LoadAsync`、`UnloadAsync`、`Plugins`（状态快照）、`DisposeAsync`（停止并卸载全部插件） |
 | `PluginErrors` | 本宿主的错误码常量 |
 | `PluginMessages` | 对应的消息键，文案在本包 `Localization/<区域>.json` |
 | `IPlugin`（`XiHan.Framework.Kernel.Plugins`） | 插件契约：`Manifest`、`Configure(PluginContext)`、`StartAsync`、`StopAsync` |
-| `PluginContext`（同上） | 配置上下文：`Manifest`、`Services`、`Configuration`、`Permissions`、`Pipeline`（本宿主为 `null`） |
+| `PluginContext`（同上） | 配置上下文：`Manifest`、`Services`、`Configuration`、`Permissions`、`Pipeline`（本宿主为 `null`）、`ServiceBindingRoot`（宿主构造时给的绑定根目录） |
 | `PluginSource`（同上） | 插件目录与授予的权限 |
 | `PluginPermissions`（同上） | 授予集合：`IsGranted`、`Missing(manifest)`、`Empty` |
 
@@ -114,6 +114,7 @@ using Microsoft.Extensions.Logging.Abstractions;
 using XiHan.Framework.Kernel.Plugins;
 using XiHan.Framework.Plugins.InProcess;
 
+// 应用经 UseServiceBindingRoot 指定了绑定根目录时，把同一个值作第三个参数传进来；不传即取环境变量 SERVICE_BINDING_ROOT
 await using var host = new InProcessPluginHost(new ConfigurationBuilder().Build(), NullLoggerFactory.Instance);
 
 var loaded = await host.LoadAsync(new PluginSource("plugins/report", PluginPermissions.Empty), CancellationToken.None);
@@ -134,7 +135,7 @@ Console.WriteLine(unloaded.IsSuccess);
 | `PLUGINS_NOTFOUND_001` | `NotFound` | 程序集或入口类型不存在；卸载未加载的插件 |
 | `PLUGINS_DENIED_001` | `PermissionDenied` | 清单声明的权限未被授予（在加载任何代码之前判定） |
 | `PLUGINS_CONFLICT_001` | `AlreadyLoaded` | 同一清单 ID 已加载 |
-| `PLUGINS_UNEXPECTED_001` | `LoadFailed` | 清单声明的绑定不合（在加载任何代码之前判定，消息键 `plugins.plugin.load_failed`，`reason` 与进程外宿主相同：`binding '<绑定名>' is required but not provided` 或 `binding '<绑定名>' is of type '<来源的类型>' but the manifest declares '<清单的类型>'`，宿主记一条 Error `Plugin <清单 ID> is not loaded: <reason>.`），绑定读不出（`reason` 是异常类型的全名）或绑定目录的文件超过内核的大小上限（`reason` 是内核的消息）；`Configure` / `StartAsync` 抛出异常；`StopAsync` 抛出异常时状态记为 `Failed`，错误同码 |
+| `PLUGINS_UNEXPECTED_001` | `LoadFailed` | 清单声明的绑定不合（在加载任何代码之前判定，消息键 `plugins.plugin.load_failed`，`reason` 与进程外宿主相同：`binding '<绑定名>' is required but not provided` 或 `binding '<绑定名>' is of type '<来源的类型>' but the manifest declares '<清单的类型>'`，宿主记一条 Error `Plugin <清单 ID> is not loaded: <reason>.`），绑定读不出（`reason` 是异常类型的全名）或绑定目录超过内核的大小或条目数上限（`reason` 是内核的消息，如 `Binding '<绑定名>' has more than 128 files.`、`The service binding root contains more than 128 bindings.`）；`Configure` / `StartAsync` 抛出异常；`StopAsync` 抛出异常时状态记为 `Failed`，错误同码 |
 
 - 失败以 `Result` 返回，不抛出到宿主；加载失败时已建的容器被释放、加载上下文被卸载。取消异常原样传播。
 - 加载、卸载与释放由一个互斥量串行化，同一清单 ID 不会被并发加载两次。

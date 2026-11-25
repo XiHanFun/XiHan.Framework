@@ -36,7 +36,7 @@
 2. 为每条 `Requires` 选出唯一的提供者（规则见「选择 Provider」）；没有被任何特性依赖的能力也按同一规则选出提供者。
 3. 把选择结果回填到图谱节点：每个节点知道自己被选中提供哪些能力（`ResolvedNode.SelectedCapabilities`）。声明了能力却一个都没被选中的节点标为 shadowed，不装配、不启动；实现了 `IShadowAwareFeature` 的特性改调 `ConfigureShadowed`。节点还区分每项选中是不是被要求的（`IsRequestedFor`）：有特性依赖这项能力，或 `XiHan:Providers` / `UseProvider` 指定了提供者，是被要求的；没人依赖也没人指定、只在第 2 步兜底选出的不是。兜底选出照样算选中，图谱不变，特性可据此只为被要求的能力承担跨能力的约束。
 4. 拓扑排序：被依赖者在前，`UseFeature` 的顺序只决定同一层次内的次序。
-5. 解析资源绑定，校验每个特性的必需绑定（缺失报 `KERNEL_HOSTING_001`）。
+5. 解析资源绑定，按清单的顺序核对每个装配的特性声明的全部绑定：必需的没给或只给了类型、来源声明的类型与清单不同（可选的也核对类型）都报 `KERNEL_HOSTING_001`；被顶替的节点不核对。
 6. 按拓扑顺序调用各特性的 `Configure`，再把 `App`、内置中间件、权限表、操作登记表与宿主服务注册进容器。
 
 ## 可选依赖与 Degraded
@@ -183,7 +183,7 @@ builder.AddXiHan(xihan => xihan
 | `KERNEL_CAPABILITY_004` | 同一能力有多个候选且没有指定 | 用 `UseProvider` 或 `XiHan:Providers` 指定 |
 | `KERNEL_CAPABILITY_005` | 清单 ID 重复 | 同一特性加入了两次，或两个特性用了同一个 ID |
 
-同一阶段还可能遇到 `KERNEL_HOSTING_001`（必需的资源绑定缺失）与 `KERNEL_VALIDATION_005`（操作契约引用了未登记的权限码），它们不是求解错误，但同样在 `Build()` 里抛出。
+同一阶段还可能遇到 `KERNEL_HOSTING_001`（清单声明的资源绑定缺失或类型不符）、`KERNEL_HOSTING_005`（绑定目录超过大小或条目数的上限）与 `KERNEL_VALIDATION_005`（操作契约引用了未登记的权限码），它们不是求解错误，但同样在 `Build()` 里抛出。
 
 ## 查看图谱
 

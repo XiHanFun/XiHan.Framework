@@ -203,6 +203,7 @@ builder.AddXiHan(xihan => xihan.UseMinimalProfile());
 
 // app.UseXiHan() 之后
 // 插件目录：SamplePlugin.dll + xihan.manifest.json + 私有依赖；加载失败以结果返回，应用照常运行
+// 用了 UseServiceBindingRoot 的应用把同一个根目录作第三个参数，不传即取环境变量 SERVICE_BINDING_ROOT
 await using var plugins = new InProcessPluginHost(app.Configuration, app.Services.GetRequiredService<ILoggerFactory>());
 var source = new PluginSource(Path.Combine(AppContext.BaseDirectory, "plugins", "sample"), new PluginPermissions(["capability:kernel.diagnostics"]));
 var loaded = await plugins.LoadAsync(source, CancellationToken.None);
@@ -214,9 +215,9 @@ if (loaded.IsFailure)
 await app.RunAsync();
 ```
 
-宿主核对清单种类、隔离级别、权限、`package` 与 `entry`，再按与另两种宿主相同的规则核对清单声明的绑定（必需的有没有、来源的类型与清单是否相同；按宿主配置与 `SERVICE_BINDING_ROOT` 解析，不合即 `PLUGINS_UNEXPECTED_001`，插件代码不加载），然后在新的可收集加载上下文里加载 `<package>.dll`，实例化 `entry` 类型（必须实现 `IPlugin`，自带清单的 ID 与文件一致），调用 `Configure` 后构建插件专属容器，再调用 `StartAsync`，成功即为 `Ready`。`UnloadAsync` 先调用 `StopAsync`，无论成败都释放容器并卸载加载上下文。构造函数标注了 `RequiresDynamicCode` 与 `RequiresUnreferencedCode`，项目开启裁剪或 AOT 分析时会报 IL2026 / IL3050：进程内插件不能进 Native AOT 应用。
+宿主核对清单种类、隔离级别、权限、`package` 与 `entry`，再按与另两种宿主、内核装配特性相同的规则核对清单声明的绑定（必需的有没有、来源的类型与清单是否相同；按宿主配置与构造时给的绑定根目录解析，没给时取 `SERVICE_BINDING_ROOT`，不合即 `PLUGINS_UNEXPECTED_001`，插件代码不加载），然后在新的可收集加载上下文里加载 `<package>.dll`，实例化 `entry` 类型（必须实现 `IPlugin`，自带清单的 ID 与文件一致），调用 `Configure` 后构建插件专属容器，再调用 `StartAsync`，成功即为 `Ready`。`UnloadAsync` 先调用 `StopAsync`，无论成败都释放容器并卸载加载上下文。构造函数标注了 `RequiresDynamicCode` 与 `RequiresUnreferencedCode`，项目开启裁剪或 AOT 分析时会报 IL2026 / IL3050：进程内插件不能进 Native AOT 应用。
 
-写进程内插件：类库项目设 `<EnableDynamicLoading>true</EnableDynamicLoading>`，引用 `XiHan.Framework.Kernel`，把 `xihan.manifest.json` 复制到输出目录，入口类型实现 `IPlugin`：`Manifest` 与文件一致（`Kind = ManifestKind.Plugin`、`Isolation = PluginIsolation.InProcess`、`Entry` 为类型全名），`Configure(PluginContext)` 里可以用 `context.Permissions.IsGranted(...)` 自检并向 `context.Services` 注册自己的服务，`StartAsync` 从插件私有容器解析它们。完整代码见 `samples/SamplePlugin` 与 [Plugins.InProcess](/packages/plugins-inprocess)。
+写进程内插件：类库项目设 `<EnableDynamicLoading>true</EnableDynamicLoading>`，引用 `XiHan.Framework.Kernel`，把 `xihan.manifest.json` 复制到输出目录，入口类型实现 `IPlugin`：`Manifest` 与文件一致（`Kind = ManifestKind.Plugin`、`Isolation = PluginIsolation.InProcess`、`Entry` 为类型全名），`Configure(PluginContext)` 里可以用 `context.Permissions.IsGranted(...)` 自检并向 `context.Services` 注册自己的服务，要读绑定时写 `BindingResolver.Resolve(context.Configuration, context.ServiceBindingRoot)`（与宿主核对的是同一套来源），`StartAsync` 从插件私有容器解析它们。完整代码见 `samples/SamplePlugin` 与 [Plugins.InProcess](/packages/plugins-inprocess)。
 
 ## 常见问题
 

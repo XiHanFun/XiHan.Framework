@@ -208,7 +208,7 @@ builder.AddXiHan(xihan => xihan
 
 ### 装配失败时怎么定位
 
-`Build()` 抛出的 `FrameworkException` 带错误码与冲突双方的清单 ID。能力求解类错误是 `KERNEL_CAPABILITY_001` 到 `005`，必需绑定缺失是 `KERNEL_HOSTING_001`，契约引用了未登记的权限码是 `KERNEL_VALIDATION_005`。把特性逐个加回去并用命令行宿主的 `graph` 命令对照，通常几分钟内能定位。
+`Build()` 抛出的 `FrameworkException` 带错误码与冲突双方的清单 ID。能力求解类错误是 `KERNEL_CAPABILITY_001` 到 `005`，清单声明的绑定缺失或类型不符是 `KERNEL_HOSTING_001`（消息 `Feature '<清单 ID>' is not configured: <reason>.`），契约引用了未登记的权限码是 `KERNEL_VALIDATION_005`。把特性逐个加回去并用命令行宿主的 `graph` 命令对照，通常几分钟内能定位。
 
 ### Banner 里的中文寄语显示成问号
 

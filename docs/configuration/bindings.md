@@ -28,7 +28,9 @@
 
 同名时配置整体覆盖目录来源，不逐属性合并。
 
-目录来源的文件有大小上限：一个文件最多 524288 字节（512 KiB，`BindingResolver.MaxFileBytes`），一个绑定目录里读的文件（`type`、`uri` 与其余属性文件，以 `.` 开头的不读也不计）合计最多 1048576 字节（1 MiB，`BindingResolver.MaxBindingBytes`，与 Kubernetes 一个 Secret 的上限相同），都按文件的原始字节计。读的时候到上限就停，不先把整个文件读进内存；超过即装配时启动失败（`KERNEL_HOSTING_005`，消息只带绑定名、文件名与上限，不带内容），把不属于绑定的文件（日志、备份、证书归档）挪出绑定目录。配置来源不受这道上限。目录布局长这样：
+目录来源的文件有大小上限：一个文件最多 524288 字节（512 KiB，`BindingResolver.MaxFileBytes`），一个绑定目录里读的文件（`type`、`uri` 与其余属性文件，以 `.` 开头的不读也不计）合计最多 1048576 字节（1 MiB，`BindingResolver.MaxBindingBytes`，与 Kubernetes 一个 Secret 的上限相同），都按文件的原始字节计。读的时候到上限就停，不先把整个文件读进内存；超过即装配时启动失败（`KERNEL_HOSTING_005`，消息只带绑定名、文件名与上限，不带内容），把不属于绑定的文件（日志、备份、证书归档）挪出绑定目录。
+
+条目数同样有上限：一个绑定目录里读的文件（以 `.` 开头的不计）最多 128 个（`BindingResolver.MaxBindingFiles`），根目录下的子目录（每个都算一个绑定）最多 128 个（`BindingResolver.MaxBindings`）。先数、后读：多出一项时这一层一个文件也不读，装配时启动失败（`KERNEL_HOSTING_005`，消息为 `Binding '<绑定名>' has more than 128 files.` 或 `The service binding root contains more than 128 bindings.`，不带路径与文件名）。`SERVICE_BINDING_ROOT` 指错到日志目录、家目录这类大目录树时就是这样失败的：改正根目录，或把不属于绑定的文件与目录挪走。配置来源不受这两道上限。目录布局长这样：
 
 ```text
 /bindings/
@@ -79,9 +81,9 @@
 
 不合时宿主不少发、不截断，也不发 `Configure`：这个插件配置失败（`PLUGINS_UNEXPECTED_001` + `plugins.process.failed`，`phase` 为 `configure`，`reason` 是表里的固定文本，只带绑定名、类型名与上限，不带主值、属性名与属性值），宿主记一条 Error（`The configure request of plugin <清单 ID> is not sent: <reason>; the plugin is not configured.`），插件进入 Failed 并按重启策略重试。补上或改正绑定、把不该给插件的文件挪出绑定目录，或把属性名改到上面的字符集里，插件下一次重试时自己起来。属性与请求的上限只管下发给插件的那一份，宿主进程里的特性照常读到全部属性。
 
-清单声明的绑定在目录里读不出来（文件在、权限不对）或文件超过上一节的大小上限时，插件这一次配置失败，同样进入 Failed 并按重启策略重试：读不出时 `reason` 只写异常类型，单个文件超限为 `a file of binding '<绑定名>' exceeds 524288 bytes`，合计超限为 `the files of binding '<绑定名>' exceed 1048576 bytes`（都不带文件名）；根目录不存在不算失败。清单声明的绑定按清单的顺序读，报第一个读不出或超限的。见[进程外插件](/plugins/out-of-process)与 [Wasm 插件](/plugins/wasm)。
+清单声明的绑定在目录里读不出来（文件在、权限不对）或超过上一节的大小与文件数上限时，插件这一次配置失败，同样进入 Failed 并按重启策略重试：读不出时 `reason` 只写异常类型，单个文件超限为 `a file of binding '<绑定名>' exceeds 524288 bytes`，合计超限为 `the files of binding '<绑定名>' exceed 1048576 bytes`，文件多于 128 个为 `binding '<绑定名>' has more than 128 files`（都不带文件名）；根目录不存在不算失败。插件宿主只读清单声明的那几个绑定目录，根目录下有多少个绑定与它无关，不数。清单声明的绑定按清单的顺序读，报第一个读不出或超限的。见[进程外插件](/plugins/out-of-process)与 [Wasm 插件](/plugins/wasm)。
 
-进程内插件拿的是整个宿主配置，宿主不下发绑定，插件自己经 `BindingResolver.Resolve(Configuration)` 读。宿主在加载插件代码之前按上表的有没有与类型两条核对清单声明的绑定（根目录取环境变量 `SERVICE_BINDING_ROOT`，与插件自己读到的相同），不合即加载失败（`PLUGINS_UNEXPECTED_001` + `plugins.plugin.load_failed`，`reason` 相同），插件程序集不加载；属性与请求的上限不核对。见 [Plugins.InProcess](/packages/plugins-inprocess)。
+进程内插件拿的是整个宿主配置，宿主不下发绑定，插件自己经 `BindingResolver.Resolve(context.Configuration, context.ServiceBindingRoot)` 读。根目录在构造宿主时给：`new InProcessPluginHost(configuration, loggerFactory, serviceBindingRoot)`，应用用 `UseServiceBindingRoot` 指定了根目录时传同一个值，插件经 `PluginContext.ServiceBindingRoot` 拿到它；不传时宿主与插件都取环境变量 `SERVICE_BINDING_ROOT`。宿主在加载插件代码之前按这个根目录与宿主配置解析，按上表的有没有与类型两条核对清单声明的绑定，不合即加载失败（`PLUGINS_UNEXPECTED_001` + `plugins.plugin.load_failed`，`reason` 相同），插件程序集不加载；目录超过上一节的大小或条目数上限时同样加载失败，`reason` 是内核的消息；属性与请求的上限不核对。见 [Plugins.InProcess](/packages/plugins-inprocess)。
 
 插件一侧由各语言 SDK 把绑定交给作者：属性是一张只读的表，没有属性时是空表，只给了属性的绑定主值为空串；绑定类型的调试输出只带绑定名、类型与属性名。较早的 SDK 构建的插件不认这个字段，照旧读到名字、类型与主值，只是会多收到主值为空的绑定。各语言的写法见 [Go](/sdks/go)、[TypeScript](/sdks/typescript)、[Rust](/sdks/rust)、[Java](/sdks/java)、[Python](/sdks/python) 与 [PHP](/sdks/php)。
 
@@ -110,7 +112,7 @@ public sealed class BillingFeature : IFeature
         Stability = Stability.Experimental,
         Kind = ManifestKind.Capability,
         Requires = [new CapabilityRequirement(KernelCapabilities.Hosting, KernelCapabilities.Version)],
-        // 必需绑定：缺失时 AddXiHan 抛出 KERNEL_HOSTING_001，启动前就暴露
+        // 必需绑定：没给或只给了类型时 AddXiHan 抛出 KERNEL_HOSTING_001，启动前就暴露
         Bindings = [new Binding("ledger", "connection:relational")],
         Entry = typeof(BillingFeature).FullName,
     };
@@ -136,22 +138,22 @@ builder.AddXiHan(xihan => xihan.UseStandardProfile().UseFeature<BillingFeature>(
 app.MapGet("/ledger", (LedgerConnection ledger) => ledger.ConnectionString.Length);
 ```
 
-先不给任何绑定直接 `dotnet run`：`AddXiHan` 抛出错误码为 `KERNEL_HOSTING_001` 的 `FrameworkException`，消息指出缺少绑定 `ledger`，进程退出。再把上一节的 `XiHan:Bindings:ledger` 写进 `appsettings.json`，或设置环境变量 `XiHan__Bindings__ledger__value=...` 与 `XiHan__Bindings__ledger__type=connection:relational`，应用正常启动，`curl localhost:5000/ledger` 返回连接字符串的长度。换成 Kubernetes 时把同样的内容做成 Secret 挂到 `SERVICE_BINDING_ROOT`，代码不变。
+先不给任何绑定直接 `dotnet run`：`AddXiHan` 抛出错误码为 `KERNEL_HOSTING_001` 的 `FrameworkException`，消息是 `Feature 'xihan.shop.billing' is not configured: binding 'ledger' is required but not provided.`，进程退出。再把上一节的 `XiHan:Bindings:ledger` 写进 `appsettings.json`，或设置环境变量 `XiHan__Bindings__ledger__value=...` 与 `XiHan__Bindings__ledger__type=connection:relational`，应用正常启动，`curl localhost:5000/ledger` 返回连接字符串的长度。换成 Kubernetes 时把同样的内容做成 Secret 挂到 `SERVICE_BINDING_ROOT`，代码不变。
 
 ## 必需绑定与启动期失败
 
-清单里 `required: true`（缺省）的绑定在 `AddXiHan` 构建时校验：
+清单声明的每个绑定都在 `AddXiHan` 构建时按清单的顺序核对，报第一处不合的；规则与插件宿主是同一处（内核的 `PluginBindingRules`）：
 
 | 情形 | 结果 |
 | --- | --- |
-| 必需绑定缺失 | 抛出 `KERNEL_HOSTING_001`，应用不启动 |
-| 来源声明了类型且与清单不一致 | 同上 |
+| 必需绑定（`required` 缺省 `true`）两种来源都没给，或只给了类型、没有主值也没有属性 | 抛出 `KERNEL_HOSTING_001`，应用不启动 |
+| 来源声明了类型且与清单不一致（按序数比较，必需与可选的都核对） | 同上 |
 | 来源没有声明类型（空字符串） | 不比对类型，按名字匹配 |
-| 可选绑定（`{ Required = false }`）缺失 | 不报错，特性用 `FindBinding` 自行处理 |
+| 可选绑定（`{ Required = false }`）没给或只给了类型 | 照常装配，特性用 `FindBinding` 自行处理 |
 | `GetBinding` 取一个不存在的绑定 | 抛出 `KERNEL_HOSTING_001` |
-| 绑定目录里的文件超过大小上限（一个文件 512 KiB、一个绑定合计 1 MiB） | 抛出 `KERNEL_HOSTING_005`，应用不启动 |
+| 绑定目录超过大小上限（一个文件 512 KiB、一个绑定合计 1 MiB）或条目数上限（一个绑定 128 个文件、根目录下 128 个绑定） | 抛出 `KERNEL_HOSTING_005`，应用不启动 |
 
-插件宿主也执行清单的 `required`，在下发或加载插件之前核对，判断比特性的严一些：只给了类型、没有主值也没有属性的绑定对特性算给出，对插件算没有；特性只核对必需绑定的类型，插件的可选绑定也核对类型。规则见上文[下发给插件的绑定](#下发给插件的绑定)。
+核对不合时的消息是 `Feature '<清单 ID>' is not configured: <reason>.`，`<reason>` 与插件宿主写的相同（见上文[下发给插件的绑定](#下发给插件的绑定)表里有没有与类型两行），只带绑定名与类型，不带主值与属性；被顶替而不装配的特性不核对。框架内置包声明的绑定都是可选的，类型照样核对：把 `db` 挂成一个 `queue` 类型的绑定，应用在启动时失败，而不是拿着 AMQP 的地址去连关系库。插件宿主在下发或加载插件之前执行同一套规则，对同一份清单得出同一个结论。
 
 这正是「配置与编程错误抛异常、可恢复失败返回 `Result`」的分界：缺绑定是部署错误，不应该带着它运行，见[结果与错误处理](/web/errors)。
 
