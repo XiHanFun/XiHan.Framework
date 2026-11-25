@@ -21,6 +21,7 @@ CI 的作业并行，总时长取最慢的一个：`build`（带全部分析器�
 
 - 分片表是 `framework/test/shards.json`：只列要外部服务或工具链的测试项目，每片写明作业设置的门控环境变量（`variables`）与安装的工具链（`tools`）；没列的测试项目归 `core`，不带服务。
 - 各测试作业经 `.github/actions/test-shard` 只构建自己那一片（`-p:RunAnalyzers=false`，分析器门禁在 `build` 作业）再测试。
+- 测试项目是 `framework/test/<名>/<名>.csproj` 且名字以 `.Tests` 结尾的项目：`test/Directory.Build.props` 只按这个后缀设测试项目的属性与包，`New-TestShard.ps1` 从它的条件取后缀、只把这样的项目列进筛选器。给测试项目引用的类库（如 `XiHan.Framework.Testing.Workspace`）不以 `.Tests` 结尾，要列进架构测试 `TestProjectNamingTests` 的 `_libraries`；它核对含测试（`[Fact]` / `[Theory]` 或从一致性套件派生）的项目都以 `.Tests` 结尾、以 `.Tests` 结尾的都含测试，项目文件不自己设 `IsTestProject`、不引用 xUnit 与测试 SDK（ADR-0307）。
 - 新测试项目不用登记，自动进 `core`。用了 `XIHAN_TEST_*` 门控变量或要 Go 的测试项目必须列进提供它的分片，否则用例在 CI 上静默跳过；架构测试 `TestShardTests` 把这种情况变成失败。新增服务时同时改分片表的 `variables` 与 `ci.yml` 里那个作业的 `services`、`env`。
 - 本机跑一片：
 

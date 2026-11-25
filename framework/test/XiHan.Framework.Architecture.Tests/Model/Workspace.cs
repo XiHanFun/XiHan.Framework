@@ -98,6 +98,15 @@ internal static class Workspace
         Directory.EnumerateFiles(directory, "*.cs", SearchOption.AllDirectories).Where(static f => !IsBuildOutput(f));
 
     /// <summary>
+    /// 枚举目录下任意深度的全部项目文件，跳过构建输出
+    /// </summary>
+    /// <remarks>
+    /// 不像 <see cref="TestDirectoryProjects"/> 那样只认与目录同名的项目文件：放错位置的项目文件也要被看到
+    /// </remarks>
+    public static IEnumerable<string> ProjectFiles(string directory) =>
+        Directory.EnumerateFiles(directory, "*.csproj", SearchOption.AllDirectories).Where(static f => !IsBuildOutput(f));
+
+    /// <summary>
     /// 安全地加载 XML 文件：禁止 DTD 与外部解析，避免项目文件被当作攻击面
     /// </summary>
     public static XDocument LoadXml(string path)

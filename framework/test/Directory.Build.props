@@ -1,7 +1,7 @@
 <Project>
   <Import Project="$([MSBuild]::GetPathOfFileAbove('Directory.Build.props', '$(MSBuildThisFileDirectory)../'))" />
 
-  <!-- test 下名字以 .Tests 结尾的是测试项目；其余是给测试项目引用的类库（如 XiHan.Framework.Testing.Workspace），不打包、不当测试运行（ADR-0300） -->
+  <!-- test 下名字以 .Tests 结尾的是测试项目；其余是给测试项目引用的类库（如 XiHan.Framework.Testing.Workspace），不打包、不当测试运行（ADR-0300）。New-TestShard.ps1 从这里的条件取后缀，架构测试 TestProjectNamingTests 核对含测试的项目都以它结尾、类库都在名单里（ADR-0307） -->
   <PropertyGroup>
     <IsPackable>false</IsPackable>
     <!-- 生成文档文件只为让 IDE0005（未使用的 using）在构建期生效 -->
