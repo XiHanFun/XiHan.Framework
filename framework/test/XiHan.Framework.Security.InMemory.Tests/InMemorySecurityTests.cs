@@ -78,6 +78,26 @@ public sealed class InMemorySecurityTests
     }
 
     [Fact]
+    public void ApiKeys_ThatDifferOnlyInLoneSurrogates_AreNeverTheSameKey()
+    {
+        // 宽松的 UTF-8 把孤立的代理项都换成 U+FFFD：以前配置了 'dev-key-\uD800'，拿 'dev-key-\uDC00' 也能认证成它的主体。现在与长度一样在记录里拒收，从配置装载时就失败
+        Assert.Contains("lone surrogates", Assert.Throws<ArgumentException>(static () => new PrincipalRecord { Id = "eve", ApiKey = "dev-key-\uD800" }).Message, StringComparison.Ordinal);
+        Assert.Throws<ArgumentException>(static () => new PrincipalRecord { Id = "eve", ApiKey = "\uDC00dev-key" });
+        Assert.Throws<ArgumentException>(static () => InMemorySecurityOptions.FromConfiguration(new ConfigurationBuilder().AddInMemoryCollection([new("XiHan:Security:InMemory:Principals:eve:ApiKey", "dev-key-\uD800")]).Build()));
+
+        // 成对的代理项是一个字符，照收；正好是 U+FFFD 的 key 只与它自己相等，带孤立代理项的候选编码不成，不与任何 key 相等，也不抛出
+        var store = new InMemoryPrincipalStore(new InMemorySecurityOptions
+        {
+            Principals = [new PrincipalRecord { Id = "eve", ApiKey = "dev-key-�" }, new PrincipalRecord { Id = "mallory", ApiKey = "dev-key-😀" }],
+        });
+        Assert.True(store.FindByApiKey("dev-key-�").TryGetValue(out var eve) && eve.Id == "eve");
+        Assert.True(store.FindByApiKey("dev-key-😀").TryGetValue(out var mallory) && mallory.Id == "mallory");
+        Assert.False(store.FindByApiKey("dev-key-\uD800").HasValue);
+        Assert.False(store.FindByApiKey("dev-key-\uDC00").HasValue);
+        Assert.False(store.FindByApiKey("dev-key-\uDE00\uD83D").HasValue);
+    }
+
+    [Fact]
     public async Task Stores_AreBounded_AndSupportRuntimeChanges()
     {
         var principals = new InMemoryPrincipalStore(new InMemorySecurityOptions { MaxPrincipals = 1 });

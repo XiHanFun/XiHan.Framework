@@ -35,7 +35,7 @@ builder.AddXiHan(xihan => xihan.UseFeature<InMemorySecurityFeature>());
 }
 ```
 
-调用时带 `Authorization: ApiKey dev-alice-key`。
+调用时带 `Authorization: ApiKey dev-alice-key`。API Key 至少 8 个字符，不能有孤立的代理项（按严格的 UTF-8 字节做常量时间比较），不合要求的在装载配置时报错。
 
 ## 主要类型
 

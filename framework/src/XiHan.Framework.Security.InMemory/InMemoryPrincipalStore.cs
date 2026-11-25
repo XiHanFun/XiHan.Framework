@@ -15,6 +15,11 @@ namespace XiHan.Framework.Security.InMemory;
 public sealed class InMemoryPrincipalStore
 {
     /// <summary>
+    /// 严格的 UTF-8：遇到孤立的代理项抛出，不换成 U+FFFD
+    /// </summary>
+    private static readonly UTF8Encoding _strictUtf8 = new(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true);
+
+    /// <summary>
     /// 主体记录，按主体 ID 索引（区分大小写）
     /// </summary>
     private readonly Dictionary<string, PrincipalRecord> _byId = new(StringComparer.Ordinal);
@@ -97,18 +102,28 @@ public sealed class InMemoryPrincipalStore
     /// 按 API Key 查找
     /// </summary>
     /// <remarks>
-    /// 比较为常量时间
+    /// 比较为常量时间，按严格的 UTF-8 字节比较：有孤立代理项的 <paramref name="apiKey"/> 编码不成，与任何主体都不相等（<see cref="PrincipalRecord.ApiKey"/> 拒收孤立的代理项）
     /// </remarks>
     public Maybe<PrincipalRecord> FindByApiKey(string apiKey)
     {
         ArgumentNullException.ThrowIfNull(apiKey);
-        // 逐条做常量时间比较而不是字典查找，避免通过耗时差异推断 API Key；长度不同直接跳过，长度本身不是秘密
-        var candidate = Encoding.UTF8.GetBytes(apiKey);
+        byte[] candidate;
+        try
+        {
+            // 宽松的编码把孤立的代理项都换成 U+FFFD，两个不同的 key 编码后相等；编码不成的候选不等于任何一个已装载的 key，不必再比。提前返回只透露候选自己编码不成，与已装载的 key 无关
+            candidate = _strictUtf8.GetBytes(apiKey);
+        }
+        catch (EncoderFallbackException)
+        {
+            return default;
+        }
+
         lock (_gate)
         {
+            // 逐条做常量时间比较而不是字典查找，避免通过耗时差异推断 API Key；长度不同直接跳过，长度本身不是秘密
             foreach (var principal in _byId.Values)
             {
-                var expected = Encoding.UTF8.GetBytes(principal.ApiKey);
+                var expected = _strictUtf8.GetBytes(principal.ApiKey);
                 if (expected.Length == candidate.Length && CryptographicOperations.FixedTimeEquals(expected, candidate))
                 {
                     return Maybe.Some(principal);

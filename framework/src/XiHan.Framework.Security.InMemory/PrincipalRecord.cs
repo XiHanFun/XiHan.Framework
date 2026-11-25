@@ -13,6 +13,11 @@ namespace XiHan.Framework.Security.InMemory;
 public sealed record PrincipalRecord
 {
     /// <summary>
+    /// 严格的 UTF-8：遇到孤立的代理项抛出，不换成 U+FFFD
+    /// </summary>
+    private static readonly UTF8Encoding _strictUtf8 = new(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true);
+
+    /// <summary>
     /// 主体 ID
     /// </summary>
     public required string Id
@@ -25,12 +30,14 @@ public sealed record PrincipalRecord
     /// API Key
     /// </summary>
     /// <remarks>
-    /// 至少 8 个字符
+    /// 至少 8 个字符，不能有孤立的代理项：<see cref="InMemoryPrincipalStore.FindByApiKey"/> 按严格的 UTF-8 字节比较，宽松的编码把孤立的代理项都换成 U+FFFD，两个不同的 key 会相等。与长度一样在这里拒收，从配置装载时就是配置错误
     /// </remarks>
     public required string ApiKey
     {
         get => field;
-        init => field = value is { Length: >= 8 } ? value : throw new ArgumentException("The API key must be at least 8 characters long.", nameof(value));
+        init => field = value is not { Length: >= 8 }
+            ? throw new ArgumentException("The API key must be at least 8 characters long.", nameof(value))
+            : IsEncodable(value) ? value : throw new ArgumentException("The API key must not contain lone surrogates.", nameof(value));
     }
 
     /// <summary>
@@ -52,6 +59,22 @@ public sealed record PrincipalRecord
     /// 附加声明
     /// </summary>
     public IReadOnlyList<KeyValuePair<string, string>> Claims { get; init; } = [];
+
+    /// <summary>
+    /// 能不能严格编码成 UTF-8
+    /// </summary>
+    private static bool IsEncodable(string value)
+    {
+        try
+        {
+            _strictUtf8.GetByteCount(value);
+            return true;
+        }
+        catch (EncoderFallbackException)
+        {
+            return false;
+        }
+    }
 
     /// <summary>
     /// 打印成员，凭据以 <see cref="Redaction.Mask"/> 代替
