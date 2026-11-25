@@ -200,6 +200,7 @@ assert_eq!(failed, r#"{"ok":false,"error":{"code":"ORDERS_CONFLICT_001","message
 - `Result<()>` 是不带值的成功，只写 `{"ok":true}`；值类型是 `Maybe<T>`（`Option<T>`）时 `value` 可以是 `null`；`TypedId` 编码为底层值。
 - 线上文本用 `primitives::json::from_slice` 读：它先过共同的 JSON 读取检查，数字按值模型。直接用 `serde_json::from_str` 读不到这些检查。写出用 `json::to_vec`（类型化，非有限的浮点写不出）或 `json::Model` / `json::to_value`（无类型，非有限的浮点写成字符串）。
 - `Error::literal` 与 `Error::with_text` 的文案为空或只有空白时 panic，`try_literal` 与 `try_with_text` 返回 `PRIMITIVES_VALIDATION_001`。空白按 RFC-0001 写死的 25 个码位判断（`primitives::is_whitespace`、`is_blank`），不用 `char::is_whitespace`。
+- 应答与发布的数据：`Envelope.data`、`Host::invoke` 的载荷与操作的应答都是字节（`Vec<u8>`），收字符串的入口（`Host::invoke`、`Envelope::with_data`）经 `Into<Vec<u8>>`，`&str` 总是合法的 UTF-8，`plugin/invocation.md` §1、§5 的严格编码（ADR-0312、ADR-0315）对 Rust 不用改。
 
 ### 消息模板
 

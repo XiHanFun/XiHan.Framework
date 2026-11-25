@@ -204,7 +204,7 @@ Python 的写法与差异：
 - **JSON 读取**：不用 `json.loads`（它接受 `NaN`、孤立的代理项、重复成员与很深的嵌套），由 SDK 自己按 RFC 8259 读；`str` 里的代理项码点按不合法的 Unicode 处理。
 - **调用器**：进入 Resilience 阶段的 `DeadlineMiddleware` 就是 `Context.run`；`ctx.run(call)` 把一个派生的上下文交给 `call`，它的信号在调用方取消或到达截止时间时触发。响应里有 NaN 或无穷时调用以未处理失败结束，不写成 `null` 或字符串。
 - **插件运行时**：调用与事件处理器在 `grpc.aio` 的同一个事件循环里执行。grpcio 按截止时间中止的回调报的就是 `DeadlineExceeded`，映射之外不另按时钟改写。
-- **回调的载荷**：`Host.invoke` 的载荷只收 `bytes`，没有收 `str` 的接口，`plugin/invocation.md` §5 的严格编码一条（ADR-0312）对它不适用：字节原样发出，由宿主核对。
+- **回调的载荷**：`Host.invoke` 的载荷与发布的信封 `data` 都只收 `bytes`，处理器也没有以 `str` 交回应答的接口，`plugin/invocation.md` §1、§5 的严格编码（ADR-0312、ADR-0315）对它们不适用：字节原样发出，由宿主核对。
 
 ## 语言映射
 

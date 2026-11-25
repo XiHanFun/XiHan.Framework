@@ -145,6 +145,7 @@ Go 的写法与差异：
 - **清单**：`manifest.Read` / `ReadFile` 失败是 `*primitives.Error`（`KERNEL_CAPABILITY_006`），`Read` 不跳过 BOM、`ReadFile` 跳过；`Manifest.Validate` 的码是 `PRIMITIVES_VALIDATION_001`；`manifest.Write` 不做校验。可选的字符串 `Package`、`Entry` 与 `ConfigContribution.Schema` 是 `*string`（`nil` 是没写，指向空串是写了空串），用 `manifest.Text("…")` 赋值。`contributes.pipeline` 的规则由 `plugin.Serve` 核对，`manifest.Read` 不查。
 - **模板**：带区域的入口是 `FormatMessageIn`、`TryFormatMessageIn`、`FormatArgumentIn`，不带区域的 `FormatMessage` 等按不变文化。`Catalog.Resolve` 是严格解析（缺键或缺值即返回假），`FormatMessage` 是宽松的（缺值的占位符原样保留）。
 - **调用器**：`operation.NewInvoker` 在管道的副本里加上三个内置步骤 `ObserveMiddleware`、`DeadlineMiddleware`、`ValidationMiddleware`，管道里不能再登记同名的中间件，`Invoker.Pipeline()` 返回实际执行的管道。响应在管道结束之后才用 `encoding/json` 编码，中间件用 `operation.ResponseOf(ctx)` 看编码之前的对象；`operation.Current`、`RequestOf` 只在调用期间的上下文上可见。
+- **应答与发布的数据**：回调载荷、`Envelope.Data` 与操作的响应都是 `[]byte`，响应由 `encoding/json` 写出，`plugin/invocation.md` §1、§5 的严格编码（ADR-0312、ADR-0315）对 Go 不用改：字节原样发出，由宿主核对。
 - **远程缓存 Provider**：`caching.RegisterOperations` 的九个操作都先在适配层校验键、选项与 base64，再调 `Store`；`Store` 返回的错误是（或用 `%w` 包着）`*primitives.Error` 时原样交给宿主，别的按后端不可用。
 
 ## 语言映射
