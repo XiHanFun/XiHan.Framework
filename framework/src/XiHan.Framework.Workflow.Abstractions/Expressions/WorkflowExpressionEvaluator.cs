@@ -14,7 +14,7 @@ namespace XiHan.Framework.Workflow.Abstractions.Expressions;
 /// 默认求值器
 /// </summary>
 /// <remarks>
-/// <see cref="ExpressionCompiler"/> 的小语言，文法与语义照 RFC-0021「表达式」，编译结果按表达式文本缓存（超过上限整体清空）
+/// <see cref="ExpressionCompiler"/> 的小语言，文法与语义照 RFC-0021「表达式」，编译结果按表达式文本缓存（超过上限整体清空）。每次 <see cref="Evaluate(string, ExpressionScope)"/> 与 <see cref="EvaluateCondition"/> 各有一份工作量，一次 <see cref="Render(string, ExpressionScope)"/> 的全部占位共用一份（<see cref="ExpressionRun"/>，ADR-0296）
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class WorkflowExpressionEvaluator : IWorkflowExpressionEvaluator
@@ -54,19 +54,25 @@ public sealed class WorkflowExpressionEvaluator : IWorkflowExpressionEvaluator
     }
 
     /// <inheritdoc />
-    public Result<Maybe<JsonNode>> Evaluate(string expression, ExpressionScope scope)
+    public Result<Maybe<JsonNode>> Evaluate(string expression, ExpressionScope scope) => Evaluate(expression, scope, out _);
+
+    /// <summary>
+    /// 求值，并交出这次求值累计的工作量
+    /// </summary>
+    /// <remarks>
+    /// 工作量按 RFC-0021「表达式」的「长度与上限」计（ADR-0296）；失败时是失败之前记下的，超过上限时含使它超过的那一笔
+    /// </remarks>
+    /// <param name="expression">表达式</param>
+    /// <param name="scope">作用域</param>
+    /// <param name="work">累计的工作量</param>
+    internal Result<Maybe<JsonNode>> Evaluate(string expression, ExpressionScope scope, out long work)
     {
         ArgumentNullException.ThrowIfNull(expression);
         ArgumentNullException.ThrowIfNull(scope);
-        try
-        {
-            // 原语的成功结果不携带 null：null 结果是成功的无值
-            return Result.Success(Maybe.From(Get(expression)(scope)));
-        }
-        catch (ExpressionException exception)
-        {
-            return exception.ToError(expression);
-        }
+        var run = new ExpressionRun(scope);
+        var evaluated = Evaluate(expression, run);
+        work = run.Work;
+        return evaluated;
     }
 
     /// <inheritdoc />
@@ -88,10 +94,51 @@ public sealed class WorkflowExpressionEvaluator : IWorkflowExpressionEvaluator
     }
 
     /// <inheritdoc />
-    public Result<string> Render(string source, ExpressionScope scope)
+    public Result<string> Render(string source, ExpressionScope scope) => Render(source, scope, out _);
+
+    /// <summary>
+    /// 渲染模板，并交出全部占位累计的工作量
+    /// </summary>
+    /// <remarks>
+    /// 全部占位共用一份工作量：占位里的表达式照常记，结果在接进文本之前再记它的读取量（ADR-0296）
+    /// </remarks>
+    /// <param name="source">模板</param>
+    /// <param name="scope">作用域</param>
+    /// <param name="work">累计的工作量</param>
+    internal Result<string> Render(string source, ExpressionScope scope, out long work)
     {
         ArgumentNullException.ThrowIfNull(source);
         ArgumentNullException.ThrowIfNull(scope);
+        var run = new ExpressionRun(scope);
+        var rendered = Render(source, run);
+        work = run.Work;
+        return rendered;
+    }
+
+    /// <summary>
+    /// 在一次求值的状态上求值
+    /// </summary>
+    /// <remarks>
+    /// 语法与求值的错误都带这段表达式
+    /// </remarks>
+    private Result<Maybe<JsonNode>> Evaluate(string expression, ExpressionRun run)
+    {
+        try
+        {
+            // 原语的成功结果不携带 null：null 结果是成功的无值
+            return Result.Success(Maybe.From(Get(expression)(run)));
+        }
+        catch (ExpressionException exception)
+        {
+            return exception.ToError(expression);
+        }
+    }
+
+    /// <summary>
+    /// 在一次渲染的状态上渲染
+    /// </summary>
+    private Result<string> Render(string source, ExpressionRun run)
+    {
         var builder = new StringBuilder(source.Length);
         var position = 0;
         while (position < source.Length)
@@ -116,10 +163,20 @@ public sealed class WorkflowExpressionEvaluator : IWorkflowExpressionEvaluator
             }
 
             var expression = source[(open + 2)..close].Trim();
-            var evaluated = Evaluate(expression, scope);
+            var evaluated = Evaluate(expression, run);
             if (!evaluated.TryGetValue(out var value))
             {
                 return evaluated.Error!;
+            }
+
+            // 写成文本之前记它的读取量：占位可以是整个变量，几十万个值的容器写成文本要遍历一遍；在这里超过的，错误带的是模板，与长度超过上限相同
+            try
+            {
+                run.Read(value.OrNull());
+            }
+            catch (ExpressionException exception)
+            {
+                return exception.ToError(source);
             }
 
             var text = WorkflowValueText.Of(value.OrNull());

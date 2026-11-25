@@ -15,7 +15,7 @@ namespace XiHan.Framework.Workflow.Abstractions.Expressions;
 /// </summary>
 /// <remarks>
 /// 递归下降解析成闭包树，文法与每个运算符、函数的语义照 RFC-0021「表达式」（ADR-0287）。优先级从低到高：<c>||</c>、<c>&amp;&amp;</c>、<c>== !=</c>、<c>&lt; &lt;= &gt; &gt;=</c>、<c>+ -</c>、<c>* / %</c>、一元 <c>! -</c>、后缀 <c>.x</c> / <c>[i]</c>、原子。数字为 decimal；<c>+</c> 任一侧是字符串即拼接；两边都是数字或数字文本时按数值比较，其余按文本的序数比较；未知根变量是错误，缺少的成员或键是 null。二元运算符与函数先从左到右求值全部操作数，再核对类型（<c>&amp;&amp;</c> 与 <c>||</c> 短路）
-/// 长度不超过 <see cref="MaxLength"/>，嵌套不超过 <see cref="MaxDepth"/>（ADR-0120）；<c>+</c> 拼出的字符串与模板渲染出的文本不超过 <see cref="MaxStringLength"/>（ADR-0182、ADR-0287）
+/// 长度不超过 <see cref="MaxLength"/>，嵌套不超过 <see cref="MaxDepth"/>（ADR-0120）；<c>+</c> 拼出的字符串与模板渲染出的文本不超过 <see cref="MaxStringLength"/>（ADR-0182、ADR-0287）；一次求值的工作量不超过 <see cref="ExpressionRun.MaxWork"/>：每个节点开始求值时记一步，运算在核对操作数之前记它读的字符串与容器（ADR-0296）
 /// </remarks>
 internal sealed class ExpressionCompiler
 {
@@ -109,7 +109,12 @@ internal sealed class ExpressionCompiler
         {
             var l = left;
             var r = ParseAnd();
-            left = scope => Boolean(l(scope), "||") || Boolean(r(scope), "||") ? True : False;
+            left = run =>
+            {
+                // 步先于操作数记；短路没有求值的右操作数不记
+                run.Step();
+                return Boolean(l(run), "||") || Boolean(r(run), "||") ? True : False;
+            };
         }
 
         return left;
@@ -125,7 +130,11 @@ internal sealed class ExpressionCompiler
         {
             var l = left;
             var r = ParseEquality();
-            left = scope => Boolean(l(scope), "&&") && Boolean(r(scope), "&&") ? True : False;
+            left = run =>
+            {
+                run.Step();
+                return Boolean(l(run), "&&") && Boolean(r(run), "&&") ? True : False;
+            };
         }
 
         return left;
@@ -143,13 +152,13 @@ internal sealed class ExpressionCompiler
             {
                 var l = left;
                 var r = ParseComparison();
-                left = scope => AreEqual(l(scope), r(scope)) ? True : False;
+                left = Binary(l, r, static (run, a, b) => Equal(run, a, b) ? True : False);
             }
             else if (TryConsume("!="))
             {
                 var l = left;
                 var r = ParseComparison();
-                left = scope => AreEqual(l(scope), r(scope)) ? False : True;
+                left = Binary(l, r, static (run, a, b) => Equal(run, a, b) ? False : True);
             }
             else
             {
@@ -184,9 +193,12 @@ internal sealed class ExpressionCompiler
             var l = left;
             var r = ParseAdditive();
             var captured = op;
-            left = scope =>
+            left = Binary(l, r, (run, a, b) =>
             {
-                var order = Compare(l(scope), r(scope), captured);
+                // 两侧可能当数字、时间或文本读：只有字符串要读内容
+                run.ReadIfString(a);
+                run.ReadIfString(b);
+                var order = Compare(a, b, captured);
                 var holds = captured switch
                 {
                     "<" => order < 0,
@@ -195,7 +207,7 @@ internal sealed class ExpressionCompiler
                     _ => order >= 0,
                 };
                 return holds ? True : False;
-            };
+            });
         }
     }
 
@@ -211,13 +223,13 @@ internal sealed class ExpressionCompiler
             {
                 var l = left;
                 var r = ParseMultiplicative();
-                left = scope => Add(l(scope), r(scope));
+                left = Binary(l, r, Add);
             }
             else if (TryConsume("-"))
             {
                 var l = left;
                 var r = ParseMultiplicative();
-                left = scope => Subtract(l(scope), r(scope));
+                left = Binary(l, r, Subtract);
             }
             else
             {
@@ -238,19 +250,19 @@ internal sealed class ExpressionCompiler
             {
                 var l = left;
                 var r = ParseUnary();
-                left = scope => Multiply(l(scope), r(scope));
+                left = Binary(l, r, Multiply);
             }
             else if (TryConsume("/"))
             {
                 var l = left;
                 var r = ParseUnary();
-                left = scope => Divide(l(scope), r(scope));
+                left = Binary(l, r, Divide);
             }
             else if (TryConsume("%"))
             {
                 var l = left;
                 var r = ParseUnary();
-                left = scope => Remainder(l(scope), r(scope));
+                left = Binary(l, r, Remainder);
             }
             else
             {
@@ -269,7 +281,11 @@ internal sealed class ExpressionCompiler
             EnterNesting();
             var operand = ParseUnary();
             _depth--;
-            return scope => Boolean(operand(scope), "!") ? False : True;
+            return run =>
+            {
+                run.Step();
+                return Boolean(operand(run), "!") ? False : True;
+            };
         }
 
         if (TryConsume("-"))
@@ -277,7 +293,13 @@ internal sealed class ExpressionCompiler
             EnterNesting();
             var operand = ParseUnary();
             _depth--;
-            return scope => JsonValue.Create(-Number(operand(scope), "-"));
+            return run =>
+            {
+                run.Step();
+                var value = operand(run);
+                run.ReadIfString(value);
+                return JsonValue.Create(-Number(value, "-"));
+            };
         }
 
         return ParsePostfix();
@@ -296,7 +318,11 @@ internal sealed class ExpressionCompiler
             {
                 var member = ReadIdentifier() ?? throw new ExpressionException(WorkflowMessages.ExpressionMemberExpected, MessageArguments.Of(("position", _position + 1)));
                 var t = target;
-                target = scope => Member(t(scope), member);
+                target = run =>
+                {
+                    run.Step();
+                    return Member(t(run), member);
+                };
             }
             else if (TryConsume("["))
             {
@@ -310,7 +336,14 @@ internal sealed class ExpressionCompiler
                 }
 
                 var t = target;
-                target = scope => Index(t(scope), index(scope));
+                target = run =>
+                {
+                    run.Step();
+                    var value = t(run);
+                    var key = index(run);
+                    ReadIndex(run, value, key);
+                    return Index(value, key);
+                };
             }
             else
             {
@@ -350,24 +383,44 @@ internal sealed class ExpressionCompiler
         {
             var text = ReadString(c);
             var value = JsonValue.Create(text);
-            return _ => value.DeepClone();
+            return run =>
+            {
+                run.Step();
+                return value.DeepClone();
+            };
         }
 
         if (char.IsDigit(c) || (c == '.' && _position + 1 < _text.Length && char.IsDigit(_text[_position + 1])))
         {
             var number = ReadNumber();
-            return _ => JsonValue.Create(number);
+            return run =>
+            {
+                run.Step();
+                return JsonValue.Create(number);
+            };
         }
 
         var identifier = ReadIdentifier() ?? throw new ExpressionException(WorkflowMessages.ExpressionUnexpectedCharacter, MessageArguments.Of(("character", CharacterAt(_position)), ("position", _position + 1)));
         switch (identifier)
         {
             case "true":
-                return _ => True;
+                return static run =>
+                {
+                    run.Step();
+                    return True;
+                };
             case "false":
-                return _ => False;
+                return static run =>
+                {
+                    run.Step();
+                    return False;
+                };
             case "null":
-                return _ => null;
+                return static run =>
+                {
+                    run.Step();
+                    return null;
+                };
         }
 
         SkipWhitespace();
@@ -391,19 +444,28 @@ internal sealed class ExpressionCompiler
                 }
             }
 
-            return BindFunction(identifier, arguments);
+            var call = BindFunction(identifier, arguments);
+            return run =>
+            {
+                run.Step();
+                return call(run);
+            };
         }
 
         var name = identifier;
         // 未知根变量是错误：条件里写错变量名应当暴露，而不是悄悄变成 null
-        return scope => scope.TryResolve(name, out var value) ? value : throw new ExpressionException(WorkflowMessages.ExpressionUnknownVariable, MessageArguments.Of(("name", name)));
+        return run =>
+        {
+            run.Step();
+            return run.Scope.TryResolve(name, out var value) ? value : throw new ExpressionException(WorkflowMessages.ExpressionUnknownVariable, MessageArguments.Of(("name", name)));
+        };
     }
 
     /// <summary>
     /// 内置函数（名字不区分大小写）
     /// </summary>
     /// <remarks>
-    /// 参数个数在编译期校验。求值时先从左到右求值全部实参，再核对类型
+    /// 参数个数在编译期校验。求值时先从左到右求值全部实参，再记它读的实参的工作量（ADR-0296），再核对类型；调用节点自己的一步由调用方记
     /// </remarks>
     private static CompiledExpression BindFunction(string name, List<CompiledExpression> args)
     {
@@ -421,7 +483,7 @@ internal sealed class ExpressionCompiler
         {
             case "len":
                 Arity(name, args, 1, 1);
-                return scope => args[0](scope) switch
+                return run => args[0](run) switch
                 {
                     null => JsonValue.Create(0),
                     JsonArray array => JsonValue.Create(array.Count),
@@ -430,12 +492,15 @@ internal sealed class ExpressionCompiler
                 };
             case "contains":
                 Arity(name, args, 2, 2);
-                return scope =>
+                return run =>
                 {
-                    var haystack = args[0](scope);
-                    var needle = args[1](scope);
+                    var haystack = args[0](run);
+                    var needle = args[1](run);
                     if (haystack is JsonArray array)
                     {
+                        // 每个元素都与要找的值比一次：读数组一遍，再按元素个数读要找的值
+                        run.Read(array);
+                        run.ReadTimes(needle, array.Count);
                         foreach (var item in array)
                         {
                             if (AreEqual(item, needle))
@@ -447,26 +512,35 @@ internal sealed class ExpressionCompiler
                         return False;
                     }
 
-                    return Text(haystack).Contains(Text(needle), StringComparison.Ordinal) ? True : False;
+                    var (text, part) = ReadTexts(run, haystack, needle);
+                    return text.Contains(part, StringComparison.Ordinal) ? True : False;
                 };
             case "startswith":
                 Arity(name, args, 2, 2);
-                return scope => Text(args[0](scope)).StartsWith(Text(args[1](scope)), StringComparison.Ordinal) ? True : False;
+                return run =>
+                {
+                    var (text, prefix) = ReadTexts(run, args[0](run), args[1](run));
+                    return text.StartsWith(prefix, StringComparison.Ordinal) ? True : False;
+                };
             case "endswith":
                 Arity(name, args, 2, 2);
-                return scope => Text(args[0](scope)).EndsWith(Text(args[1](scope)), StringComparison.Ordinal) ? True : False;
+                return run =>
+                {
+                    var (text, suffix) = ReadTexts(run, args[0](run), args[1](run));
+                    return text.EndsWith(suffix, StringComparison.Ordinal) ? True : False;
+                };
             case "upper":
                 Arity(name, args, 1, 1);
-                return scope => JsonValue.Create(Text(args[0](scope)).ToUpperInvariant());
+                return run => JsonValue.Create(ReadText(run, args[0](run)).ToUpperInvariant());
             case "lower":
                 Arity(name, args, 1, 1);
-                return scope => JsonValue.Create(Text(args[0](scope)).ToLowerInvariant());
+                return run => JsonValue.Create(ReadText(run, args[0](run)).ToLowerInvariant());
             case "trim":
                 Arity(name, args, 1, 1);
-                return scope => JsonValue.Create(Text(args[0](scope)).Trim());
+                return run => JsonValue.Create(ReadText(run, args[0](run)).Trim());
             case "isnullorempty":
                 Arity(name, args, 1, 1);
-                return scope => args[0](scope) switch
+                return run => args[0](run) switch
                 {
                     null => True,
                     JsonArray array => array.Count == 0 ? True : False,
@@ -475,29 +549,32 @@ internal sealed class ExpressionCompiler
                 };
             case "abs":
                 Arity(name, args, 1, 1);
-                return scope => JsonValue.Create(Math.Abs(Number(args[0](scope), "abs")));
+                return run => JsonValue.Create(Math.Abs(ReadNumber(run, args[0](run), "abs")));
             case "min":
                 Arity(name, args, 2, 2);
-                return scope =>
+                return run =>
                 {
-                    var first = args[0](scope);
-                    var second = args[1](scope);
+                    var first = args[0](run);
+                    var second = args[1](run);
+                    ReadStrings(run, first, second);
                     return JsonValue.Create(Math.Min(Number(first, "min"), Number(second, "min")));
                 };
             case "max":
                 Arity(name, args, 2, 2);
-                return scope =>
+                return run =>
                 {
-                    var first = args[0](scope);
-                    var second = args[1](scope);
+                    var first = args[0](run);
+                    var second = args[1](run);
+                    ReadStrings(run, first, second);
                     return JsonValue.Create(Math.Max(Number(first, "max"), Number(second, "max")));
                 };
             case "round":
                 Arity(name, args, 1, 2);
-                return scope =>
+                return run =>
                 {
-                    var value = args[0](scope);
-                    var places = args.Count == 2 ? args[1](scope) : null;
+                    var value = args[0](run);
+                    var places = args.Count == 2 ? args[1](run) : null;
+                    ReadStrings(run, value, places);
                     var number = Number(value, "round");
                     var digits = 0m;
                     if (args.Count == 2)
@@ -514,10 +591,11 @@ internal sealed class ExpressionCompiler
                 };
             case "format":
                 Arity(name, args, 2, 2);
-                return scope =>
+                return run =>
                 {
-                    var value = args[0](scope);
-                    var places = args[1](scope);
+                    var value = args[0](run);
+                    var places = args[1](run);
+                    ReadStrings(run, value, places);
                     var number = Number(value, "format");
                     var digits = Number(places, "format");
 
@@ -532,19 +610,19 @@ internal sealed class ExpressionCompiler
                 };
             case "tonumber":
                 Arity(name, args, 1, 1);
-                return scope => JsonValue.Create(Number(args[0](scope), "toNumber"));
+                return run => JsonValue.Create(ReadNumber(run, args[0](run), "toNumber"));
             case "tostring":
                 Arity(name, args, 1, 1);
-                return scope => JsonValue.Create(Text(args[0](scope)));
+                return run => JsonValue.Create(ReadText(run, args[0](run)));
             case "now":
                 Arity(name, args, 0, 0);
                 // 时间在值模型里是字符串：写成定宽的规范文本，过不过存储都是同一个值
-                return scope => JsonValue.Create(WorkflowTimeText.Format(scope.Now));
+                return static run => JsonValue.Create(WorkflowTimeText.Format(run.Scope.Now));
             case "date":
                 Arity(name, args, 1, 1);
-                return scope =>
+                return run =>
                 {
-                    var text = Text(args[0](scope));
+                    var text = ReadText(run, args[0](run));
                     return WorkflowTimeText.TryParse(text, out var when)
                         ? JsonValue.Create(WorkflowTimeText.Format(when))
                         : throw new ExpressionException(WorkflowMessages.ExpressionNotDate, MessageArguments.Of(("value", ExpressionException.Echo(text))));
@@ -606,10 +684,15 @@ internal sealed class ExpressionCompiler
     /// <summary>
     /// 加法：任一侧是字符串即拼接，否则数字相加
     /// </summary>
-    private static JsonValue Add(JsonNode? left, JsonNode? right)
+    /// <remarks>
+    /// 拼接读两侧（ADR-0296），工作量先于长度的核对记；加法的两侧都不是字符串，不读
+    /// </remarks>
+    private static JsonValue Add(ExpressionRun run, JsonNode? left, JsonNode? right)
     {
         if (IsString(left) || IsString(right))
         {
+            run.Read(left);
+            run.Read(right);
             var first = Text(left);
             var second = Text(right);
             // 先按长度核对再拼接：超长的结果一次也不分配
@@ -637,8 +720,9 @@ internal sealed class ExpressionCompiler
     /// <summary>
     /// 减法
     /// </summary>
-    private static JsonValue Subtract(JsonNode? left, JsonNode? right)
+    private static JsonValue Subtract(ExpressionRun run, JsonNode? left, JsonNode? right)
     {
+        ReadStrings(run, left, right);
         var minuend = Number(left, "-");
         var subtrahend = Number(right, "-");
         try
@@ -654,8 +738,9 @@ internal sealed class ExpressionCompiler
     /// <summary>
     /// 乘法
     /// </summary>
-    private static JsonValue Multiply(JsonNode? left, JsonNode? right)
+    private static JsonValue Multiply(ExpressionRun run, JsonNode? left, JsonNode? right)
     {
+        ReadStrings(run, left, right);
         var multiplicand = Number(left, "*");
         var multiplier = Number(right, "*");
         try
@@ -671,8 +756,9 @@ internal sealed class ExpressionCompiler
     /// <summary>
     /// 除法：两个操作数都是数字之后才看除数是不是零
     /// </summary>
-    private static JsonValue Divide(JsonNode? left, JsonNode? right)
+    private static JsonValue Divide(ExpressionRun run, JsonNode? left, JsonNode? right)
     {
+        ReadStrings(run, left, right);
         var dividend = Number(left, "/");
         var divisor = Number(right, "/");
         if (divisor == 0)
@@ -693,11 +779,104 @@ internal sealed class ExpressionCompiler
     /// <summary>
     /// 取余：截断除法的余数，符号随被除数，结果总是放得下
     /// </summary>
-    private static JsonValue Remainder(JsonNode? left, JsonNode? right)
+    private static JsonValue Remainder(ExpressionRun run, JsonNode? left, JsonNode? right)
     {
+        ReadStrings(run, left, right);
         var dividend = Number(left, "%");
         var divisor = Number(right, "%");
         return divisor == 0 ? throw new ExpressionException(WorkflowMessages.ExpressionDivisionByZero) : JsonValue.Create(dividend % divisor);
+    }
+
+    /// <summary>
+    /// 二元运算符：记一步，从左到右求值两个操作数，再交给 <paramref name="apply"/>
+    /// </summary>
+    /// <remarks>
+    /// 步先于操作数记（RFC-0021「长度与上限」，ADR-0296）；读与类型的核对在 <paramref name="apply"/> 里，读在前
+    /// </remarks>
+    private static CompiledExpression Binary(CompiledExpression left, CompiledExpression right, Func<ExpressionRun, JsonNode?, JsonNode?, JsonNode?> apply)
+        => run =>
+        {
+            run.Step();
+            var a = left(run);
+            var b = right(run);
+            return apply(run, a, b);
+        };
+
+    /// <summary>
+    /// 相等：先按两侧的种类记读，再比较
+    /// </summary>
+    /// <remarks>
+    /// 两侧都是标量时只读字符串（可能当数字或文本比）；两侧都是容器时要逐层比，读两侧；有一侧是 null，或容器对标量，不必看内容，不读
+    /// </remarks>
+    private static bool Equal(ExpressionRun run, JsonNode? left, JsonNode? right)
+    {
+        if (left is JsonValue && right is JsonValue)
+        {
+            ReadStrings(run, left, right);
+        }
+        else if (left is JsonArray or JsonObject && right is JsonArray or JsonObject)
+        {
+            run.Read(left);
+            run.Read(right);
+        }
+
+        return AreEqual(left, right);
+    }
+
+    /// <summary>
+    /// 记索引读的下标
+    /// </summary>
+    /// <remarks>
+    /// 被索引的是数组时只读字符串下标（当数字读），是对象时读下标（取它的文本作键），是 null 或标量时不读
+    /// </remarks>
+    private static void ReadIndex(ExpressionRun run, JsonNode? target, JsonNode? index)
+    {
+        switch (target)
+        {
+            case JsonArray:
+                run.ReadIfString(index);
+                break;
+            case JsonObject:
+                run.Read(index);
+                break;
+        }
+    }
+
+    /// <summary>
+    /// 记两个操作数里是字符串的
+    /// </summary>
+    private static void ReadStrings(ExpressionRun run, JsonNode? left, JsonNode? right)
+    {
+        run.ReadIfString(left);
+        run.ReadIfString(right);
+    }
+
+    /// <summary>
+    /// 记读一个实参，再取它的文本
+    /// </summary>
+    private static string ReadText(ExpressionRun run, JsonNode? node)
+    {
+        run.Read(node);
+        return Text(node);
+    }
+
+    /// <summary>
+    /// 记读两个实参，再取它们的文本
+    /// </summary>
+    private static (string First, string Second) ReadTexts(ExpressionRun run, JsonNode? first, JsonNode? second)
+    {
+        run.Read(first);
+        run.Read(second);
+        return (Text(first), Text(second));
+    }
+
+    /// <summary>
+    /// 记读一个是字符串的实参，再要求它能当数字
+    /// </summary>
+    private static decimal ReadNumber(ExpressionRun run, JsonNode? node, string op)
+    {
+        run.ReadIfString(node);
+        return Number(node, op);
     }
 
     /// <summary>

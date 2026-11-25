@@ -27,7 +27,7 @@ public interface IWorkflowExpressionEvaluator
     /// 求值
     /// </summary>
     /// <remarks>
-    /// 结果是 <see langword="null"/>（字面量 <c>null</c>、缺少的成员或键、值为 null 的变量）时是成功的无值，不是失败（ADR-0059）
+    /// 结果是 <see langword="null"/>（字面量 <c>null</c>、缺少的成员或键、值为 null 的变量）时是成功的无值，不是失败（ADR-0059）。一次求值的工作量超过 16777216 即失败（<see cref="WorkflowMessages.ExpressionBudgetExceeded"/>，ADR-0296）
     /// </remarks>
     Result<Maybe<JsonNode>> Evaluate(string expression, ExpressionScope scope);
 
@@ -43,7 +43,7 @@ public interface IWorkflowExpressionEvaluator
     /// 渲染模板：<c>{{ 表达式 }}</c> 占位换成求值结果的文本
     /// </summary>
     /// <remarks>
-    /// 无值是空串，数字是不带多余零的规范文本，字符串原样，数组与对象是成员按名字排序的紧凑 JSON。结果总是字符串；写出的文本累计超过 4194304 个字符即失败（<see cref="WorkflowMessages.ExpressionStringTooLong"/>）
+    /// 无值是空串，数字是不带多余零的规范文本，字符串原样，数组与对象是成员按名字排序的紧凑 JSON。结果总是字符串；写出的文本累计超过 4194304 个字符即失败（<see cref="WorkflowMessages.ExpressionStringTooLong"/>）；全部占位共用一份工作量（ADR-0296）
     /// </remarks>
     Result<string> Render(string source, ExpressionScope scope);
 }

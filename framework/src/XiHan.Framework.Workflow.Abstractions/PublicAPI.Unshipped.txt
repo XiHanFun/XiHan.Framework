@@ -1502,6 +1502,7 @@ const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.DefinitionVariableN
 const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.DefinitionVersionInvalid = "workflow.definition.version_invalid" -> string!
 const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.ExpressionArgumentCount = "workflow.expression.argument_count" -> string!
 const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.ExpressionArgumentRange = "workflow.expression.argument_range" -> string!
+const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.ExpressionBudgetExceeded = "workflow.expression.budget_exceeded" -> string!
 const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.ExpressionDivisionByZero = "workflow.expression.division_by_zero" -> string!
 const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.ExpressionEmpty = "workflow.expression.empty" -> string!
 const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.ExpressionIndexOfScalar = "workflow.expression.index_of_scalar" -> string!

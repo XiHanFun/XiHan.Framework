@@ -129,6 +129,7 @@
   "workflow.definition_status.published": "게시됨",
   "workflow.expression.argument_count": "식 '{expression}': 함수 '{function}'에는 인수가 {count}개 필요합니다.",
   "workflow.expression.argument_range": "식 '{expression}': 함수 '{function}'에는 인수가 {min}~{max}개 필요합니다.",
+  "workflow.expression.budget_exceeded": "식 '{expression}'의 평가 작업량이 상한 {max}을(를) 초과합니다.",
   "workflow.expression.division_by_zero": "식 '{expression}'에서 0으로 나누었습니다.",
   "workflow.expression.empty": "식이 비어 있습니다.",
   "workflow.expression.index_of_scalar": "식 '{expression}': 스칼라 값에는 인덱스를 사용할 수 없습니다.",

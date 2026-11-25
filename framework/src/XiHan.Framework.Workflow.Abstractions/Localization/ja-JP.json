@@ -129,6 +129,7 @@
   "workflow.definition_status.published": "公開済み",
   "workflow.expression.argument_count": "式 '{expression}': 関数 '{function}' の引数は {count} 個です。",
   "workflow.expression.argument_range": "式 '{expression}': 関数 '{function}' の引数は {min} ～ {max} 個です。",
+  "workflow.expression.budget_exceeded": "式 '{expression}' の評価の作業量が上限 {max} を超えています。",
   "workflow.expression.division_by_zero": "式 '{expression}' でゼロ除算が発生しました。",
   "workflow.expression.empty": "式が空です。",
   "workflow.expression.index_of_scalar": "式 '{expression}': スカラー値にはインデックスを付けられません。",

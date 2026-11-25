@@ -9,6 +9,6 @@ namespace XiHan.Framework.Workflow.Abstractions.Expressions;
 /// 编译好的表达式
 /// </summary>
 /// <remarks>
-/// 在作用域上求值；运行期错误抛 <see cref="ExpressionException"/>
+/// 在一次求值的状态（作用域与累计的工作量）上求值；运行期错误抛 <see cref="ExpressionException"/>
 /// </remarks>
-internal delegate JsonNode? CompiledExpression(ExpressionScope scope);
+internal delegate JsonNode? CompiledExpression(ExpressionRun run);

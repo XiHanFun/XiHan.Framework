@@ -129,6 +129,7 @@
   "workflow.definition_status.published": "Опубликовано",
   "workflow.expression.argument_count": "Выражение '{expression}': функция '{function}' принимает аргументов: {count}.",
   "workflow.expression.argument_range": "Выражение '{expression}': функция '{function}' принимает от {min} до {max} аргументов.",
+  "workflow.expression.budget_exceeded": "Вычисление выражения '{expression}' требует больше {max} единиц работы.",
   "workflow.expression.division_by_zero": "Выражение '{expression}' делит на ноль.",
   "workflow.expression.empty": "Выражение пустое.",
   "workflow.expression.index_of_scalar": "Выражение '{expression}': скалярное значение нельзя индексировать.",

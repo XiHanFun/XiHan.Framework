@@ -832,6 +832,14 @@ public static class WorkflowMessages
     public const string ExpressionStringTooLong = "workflow.expression.string_too_long";
 
     /// <summary>
+    /// 一次求值或渲染的工作量超过上限
+    /// </summary>
+    /// <remarks>
+    /// 参数：<c>expression</c>（截断的表达式；渲染时记占位的结果超过的是截断的模板）、<c>max</c>（ADR-0296）
+    /// </remarks>
+    public const string ExpressionBudgetExceeded = "workflow.expression.budget_exceeded";
+
+    /// <summary>
     /// 表达式超过嵌套上限
     /// </summary>
     /// <remarks>

@@ -10,10 +10,10 @@ using XiHan.Framework.Workflow.Abstractions.Values;
 namespace XiHan.Framework.Workflow.Abstractions.Tests;
 
 /// <summary>
-/// 回放 <c>expression-limits.json</c>：表达式的上限与错误里带出的文本
+/// 回放 <c>expression-limits.json</c>：表达式的上限、错误里带出的文本与工作量
 /// </summary>
 /// <remarks>
-/// 规范 RFC-0021「表达式」的「长度与上限」（ADR-0120、ADR-0182、ADR-0287）：长度 4000、嵌套 64 层、拼接与渲染出的文本 4194304、错误里带出的文本 200，长度都按 UTF-16 码元计。这个文件里的表达式由重复的片段拼出来。向量是规范的一部分，这里只回放，不另存一份
+/// 规范 RFC-0021「表达式」的「长度与上限」（ADR-0120、ADR-0182、ADR-0287、ADR-0296）：长度 4000、嵌套 64 层、拼接与渲染出的文本 4194304、错误里带出的文本 200、一次求值的工作量 16777216，长度都按 UTF-16 码元计。这个文件里的表达式由重复的片段拼出来。向量是规范的一部分，这里只回放，不另存一份
 /// </remarks>
 public sealed class ExpressionLimitVectorTests
 {
@@ -28,7 +28,7 @@ public sealed class ExpressionLimitVectorTests
     private static readonly LimitVectors _vectors = SpecVectors.Read<LimitVectors>("workflow", "expression-limits.json");
 
     /// <summary>
-    /// 求值时的实例变量：文件里的变量加上几个很长的字符串
+    /// 求值时的实例变量：文件里的变量加上几个很长的字符串与数组
     /// </summary>
     private static readonly JsonObject _variables = BuildVariables();
 
@@ -41,6 +41,57 @@ public sealed class ExpressionLimitVectorTests
         Assert.Equal(ExpressionCompiler.MaxStringLength, _vectors.MaxStringLength);
         Assert.Equal(_vectors.MaxEchoLength, ExpressionException.Echo(new string('a', _vectors.MaxEchoLength)).Length);
         Assert.Equal(_vectors.MaxEchoLength + 1, ExpressionException.Echo(new string('a', _vectors.MaxEchoLength + 1)).Length);
+        Assert.Equal(ExpressionRun.MaxWork, _vectors.MaxWork);
+        Assert.Equal(ExpressionRun.StepWork, _vectors.StepWork);
+    }
+
+    [Fact]
+    public void Budgets_CountTheWork_AndFailBeyondTheLimit()
+    {
+        Assert.NotEmpty(_vectors.Budgets);
+        var failures = new List<string>();
+        foreach (var vector in _vectors.Budgets)
+        {
+            var source = vector.Head + Repeat(vector.Link, vector.Count) + vector.Tail;
+            var scope = ExpressionVectorReplay.Scope(_variables);
+            long work;
+            var error = vector.Mode switch
+            {
+                "evaluate" => ExpressionVectorReplay.Evaluator.Evaluate(source, scope, out work).Error,
+                "render" => ExpressionVectorReplay.Evaluator.Render(source, scope, out work).Error,
+                _ => throw new InvalidOperationException($"Budget case '{vector.Name}' has the unknown mode '{vector.Mode}'."),
+            };
+            if (vector.Valid)
+            {
+                if (error is not null)
+                {
+                    failures.Add($"{vector.Name}: must succeed, fails with '{error.MessageKey}' after {work} units of work.");
+                }
+                else if (work != vector.Work)
+                {
+                    failures.Add($"{vector.Name}: counts {work} units of work, the vector has {vector.Work}.");
+                }
+
+                continue;
+            }
+
+            // 失败的用例核对全部参数：expression 是带出的文本，求值占位里的表达式时超过是那段表达式，读占位的结果时超过是模板
+            var expected = new JsonObject { ["expression"] = vector.Expression, ["max"] = _vectors.MaxWork };
+            if (error is null)
+            {
+                failures.Add($"{vector.Name}: succeeds after {work} units of work, the vector has '{WorkflowMessages.ExpressionBudgetExceeded}'.");
+            }
+            else if (error.Code != _vectors.ErrorCode || error.MessageKey != WorkflowMessages.ExpressionBudgetExceeded || !JsonNode.DeepEquals(ExpressionVectorReplay.ArgumentsOf(error), expected))
+            {
+                failures.Add($"{vector.Name}: fails with '{error.MessageKey}' {ExpressionVectorReplay.ArgumentsOf(error).ToJsonString()}, the vector has '{WorkflowMessages.ExpressionBudgetExceeded}' {expected.ToJsonString()}.");
+            }
+            else if (work <= _vectors.MaxWork)
+            {
+                failures.Add($"{vector.Name}: stops at {work} units of work, which is not over the limit.");
+            }
+        }
+
+        Assert.True(failures.Count == 0, string.Join(Environment.NewLine, failures));
     }
 
     [Fact]
@@ -230,6 +281,16 @@ public sealed class ExpressionLimitVectorTests
         Assert.Contains(_vectors.Renderings, static vector => vector.Valid && vector.Length == _vectors.MaxStringLength);
         Assert.Contains(_vectors.Renderings, static vector => !vector.Valid && vector.Length == _vectors.MaxStringLength + 1);
 
+        // 工作量：求值与渲染都有正好到上限的与超过的；读占位的结果时超过（带模板）与求值占位时超过（带那段表达式）都有
+        Assert.All<string>(["evaluate", "render"], static mode =>
+        {
+            Assert.Contains(_vectors.Budgets, vector => vector.Mode == mode && vector.Valid && vector.Work == _vectors.MaxWork);
+            Assert.Contains(_vectors.Budgets, vector => vector.Mode == mode && !vector.Valid);
+        });
+        Assert.Contains(_vectors.Budgets, static vector => vector.Mode == "render" && !vector.Valid && vector.Expression == ExpressionException.Echo(vector.Head + Repeat(vector.Link, vector.Count) + vector.Tail));
+        Assert.Contains(_vectors.Budgets, static vector => vector.Mode == "render" && !vector.Valid && vector.Expression != ExpressionException.Echo(vector.Head + Repeat(vector.Link, vector.Count) + vector.Tail));
+        Assert.All(_vectors.Budgets, static vector => Assert.True(vector.Valid ? vector.Work is > 0 && vector.Expression is null : vector.Work is null && vector.Expression is not null, vector.Name));
+
         // 带出的文本：不截断的、截断的、截断处是代理对的、三种求值方式
         Assert.Contains(_vectors.Echoes, static vector => vector.Arguments["expression"]!.GetValue<string>() == vector.Source);
         Assert.Contains(_vectors.Echoes, static vector => vector.Arguments["expression"]!.GetValue<string>().Length == _vectors.MaxEchoLength + 1);
@@ -261,6 +322,11 @@ public sealed class ExpressionLimitVectorTests
         if (_vectors.Concatenations.Any(static vector => !vector.Valid) && _vectors.Renderings.Any(static vector => !vector.Valid))
         {
             covered.Add(WorkflowMessages.ExpressionStringTooLong);
+        }
+
+        if (_vectors.Budgets.Any(static vector => !vector.Valid))
+        {
+            covered.Add(WorkflowMessages.ExpressionBudgetExceeded);
         }
 
         var keys = ExpressionVectorReplay.MessageKeys();
@@ -320,7 +386,7 @@ public sealed class ExpressionLimitVectorTests
     }
 
     /// <summary>
-    /// 文件里的变量加上 <c>blocks</c> 给出的长字符串
+    /// 文件里的变量加上 <c>blocks</c> 给出的长字符串与 <c>arrays</c> 给出的长数组
     /// </summary>
     private static JsonObject BuildVariables()
     {
@@ -328,6 +394,17 @@ public sealed class ExpressionLimitVectorTests
         foreach (var block in _vectors.Blocks)
         {
             variables[block.Variable] = Repeat(block.Unit, block.Repeat);
+        }
+
+        foreach (var array in _vectors.Arrays)
+        {
+            var items = new JsonArray();
+            for (var index = 0; index < array.Repeat; index++)
+            {
+                items.Add(array.Item?.DeepClone());
+            }
+
+            variables[array.Variable] = items;
         }
 
         return variables;
@@ -346,28 +423,36 @@ public sealed class ExpressionLimitVectorTests
     /// <param name="MaxDepth">嵌套的层数上限</param>
     /// <param name="MaxStringLength">拼接与渲染出的文本的长度上限</param>
     /// <param name="MaxEchoLength">错误里带出的文本的长度上限</param>
+    /// <param name="MaxWork">一次求值的工作量上限</param>
+    /// <param name="StepWork">一步的工作量</param>
     /// <param name="Variables">实例变量</param>
     /// <param name="Blocks">很长的字符串变量</param>
+    /// <param name="Arrays">很长的数组变量</param>
     /// <param name="Lengths">长度的用例</param>
     /// <param name="Nestings">嵌套的用例</param>
     /// <param name="Chains">链的用例</param>
     /// <param name="Concatenations">拼接的用例</param>
     /// <param name="Renderings">渲染的用例</param>
     /// <param name="Echoes">带出文本的用例</param>
+    /// <param name="Budgets">工作量的用例</param>
     private sealed record LimitVectors(
         string ErrorCode,
         int MaxLength,
         int MaxDepth,
         int MaxStringLength,
         int MaxEchoLength,
+        int MaxWork,
+        int StepWork,
         JsonObject Variables,
         BlockCase[] Blocks,
+        ArrayCase[] Arrays,
         LengthCase[] Lengths,
         NestingCase[] Nestings,
         ChainCase[] Chains,
         ConcatenationCase[] Concatenations,
         RenderingCase[] Renderings,
-        EchoCase[] Echoes);
+        EchoCase[] Echoes,
+        BudgetCase[] Budgets);
 
     /// <summary>
     /// 一个很长的字符串变量
@@ -376,6 +461,14 @@ public sealed class ExpressionLimitVectorTests
     /// <param name="Unit">重复的片段</param>
     /// <param name="Repeat">重复的次数</param>
     private sealed record BlockCase(string Variable, string Unit, int Repeat);
+
+    /// <summary>
+    /// 一个很长的数组变量
+    /// </summary>
+    /// <param name="Variable">变量名</param>
+    /// <param name="Item">重复的元素</param>
+    /// <param name="Repeat">元素的个数</param>
+    private sealed record ArrayCase(string Variable, JsonNode? Item, int Repeat);
 
     /// <summary>
     /// 一条长度用例
@@ -438,4 +531,18 @@ public sealed class ExpressionLimitVectorTests
     /// <param name="MessageKey">消息键</param>
     /// <param name="Arguments">全部参数，含 <c>expression</c></param>
     private sealed record EchoCase(string Name, string Mode, string Source, string MessageKey, JsonObject Arguments);
+
+    /// <summary>
+    /// 一条工作量的用例
+    /// </summary>
+    /// <param name="Name">用例的说明</param>
+    /// <param name="Mode">求值的方式：<c>evaluate</c> 或 <c>render</c></param>
+    /// <param name="Head">开头</param>
+    /// <param name="Link">重复的片段</param>
+    /// <param name="Count">重复的次数</param>
+    /// <param name="Tail">结尾</param>
+    /// <param name="Valid">是否在上限以内</param>
+    /// <param name="Work">成功时累计的工作量；失败的用例没有</param>
+    /// <param name="Expression">失败时错误带出的文本；成功的用例没有</param>
+    private sealed record BudgetCase(string Name, string Mode, string Head, string Link, int Count, string Tail, bool Valid, long? Work = null, string? Expression = null);
 }

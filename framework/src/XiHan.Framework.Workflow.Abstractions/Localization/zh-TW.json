@@ -129,6 +129,7 @@
   "workflow.definition_status.published": "已發布",
   "workflow.expression.argument_count": "運算式 '{expression}'：函式 '{function}' 需要 {count} 個參數。",
   "workflow.expression.argument_range": "運算式 '{expression}'：函式 '{function}' 需要 {min} 到 {max} 個參數。",
+  "workflow.expression.budget_exceeded": "運算式 '{expression}' 的求值工作量超過上限 {max}。",
   "workflow.expression.division_by_zero": "運算式 '{expression}' 除以零。",
   "workflow.expression.empty": "運算式為空。",
   "workflow.expression.index_of_scalar": "運算式 '{expression}'：純量值不能取索引。",

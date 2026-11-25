@@ -129,6 +129,7 @@
   "workflow.definition_status.published": "Veröffentlicht",
   "workflow.expression.argument_count": "Ausdruck '{expression}': Die Funktion '{function}' erwartet {count} Argument(e).",
   "workflow.expression.argument_range": "Ausdruck '{expression}': Die Funktion '{function}' erwartet {min} bis {max} Argumente.",
+  "workflow.expression.budget_exceeded": "Die Auswertung des Ausdrucks '{expression}' erfordert mehr als {max} Arbeitseinheiten.",
   "workflow.expression.division_by_zero": "Der Ausdruck '{expression}' teilt durch null.",
   "workflow.expression.empty": "Der Ausdruck ist leer.",
   "workflow.expression.index_of_scalar": "Ausdruck '{expression}': Ein skalarer Wert kann nicht indiziert werden.",

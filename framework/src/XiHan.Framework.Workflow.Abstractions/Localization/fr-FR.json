@@ -129,6 +129,7 @@
   "workflow.definition_status.published": "Publié",
   "workflow.expression.argument_count": "Expression '{expression}' : la fonction '{function}' attend {count} argument(s).",
   "workflow.expression.argument_range": "Expression '{expression}' : la fonction '{function}' attend de {min} à {max} arguments.",
+  "workflow.expression.budget_exceeded": "L'évaluation de l'expression '{expression}' demande plus de {max} unités de travail.",
   "workflow.expression.division_by_zero": "L'expression '{expression}' divise par zéro.",
   "workflow.expression.empty": "L'expression est vide.",
   "workflow.expression.index_of_scalar": "Expression '{expression}' : une valeur scalaire ne peut pas être indexée.",
