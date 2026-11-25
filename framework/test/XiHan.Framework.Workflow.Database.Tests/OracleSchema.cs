@@ -94,6 +94,8 @@ internal sealed class OracleSchema : IGatedDatabase
             ["XiHan:Persistence:SqlSugar:InitTables"] = "true",
             [$"{DatabaseWorkflowOptions.ConfigurationSection}:PollIntervalSeconds"] = "3600",
             [$"{WorkflowOptions.ConfigurationSection}:LockTimeoutSeconds"] = "2",
+            // 每个用例新建用户、在空库上建全部工作流表：CI 上 Oracle Free 的 DDL 偶尔超过缺省的 30 秒启动期限，宿主启动被取消
+            ["XiHan:Kernel:StartTimeoutSeconds"] = "180",
         };
         foreach (var pair in configuration ?? [])
         {
