@@ -122,7 +122,7 @@ xihan-conformance vectors
 
 ## 回放规范向量
 
-这一节面向向框架仓库提交代码的人。`framework/test/XiHan.Framework.Testing.Workspace` 是给测试项目引用的类库：不打包、不发布，没有公开面文件，也不当测试运行；它只在框架仓库的检出里有用，框架仓库之外的测试不引用它。测试项目加上 `<ProjectReference Include="../XiHan.Framework.Testing.Workspace/XiHan.Framework.Testing.Workspace.csproj" />` 与 `using XiHan.Framework.Testing.Workspace;`。
+这一节面向向框架仓库提交代码的人。`framework/test/XiHan.Framework.Testing.Workspace` 是给测试项目引用的类库：不打包、不发布，没有公开面文件，也不当测试运行；它只在框架仓库的检出里有用，框架仓库之外的测试不引用它。它的名字不以 `.Tests` 结尾、列在测试项目命名门禁的名单里，也不进 CI 分片的筛选器，由引用它的测试项目带进构建（ADR-0307）。测试项目加上 `<ProjectReference Include="../XiHan.Framework.Testing.Workspace/XiHan.Framework.Testing.Workspace.csproj" />` 与 `using XiHan.Framework.Testing.Workspace;`。
 
 | 类型 | 说明 |
 | --- | --- |
@@ -199,6 +199,7 @@ public sealed class CacheKeyVectorTests
 | `RecordsCarryingCredentials_MaskThemInToString` | 携带凭据的记录在 `ToString` 里遮蔽凭据 |
 | `EveryVectorOfTheClaimedProfiles_IsReplayedOrAGap`、`VectorCalls_NameAFileOfThatDirectory`（`SpecVectorCoverageTests`） | 认领的档里每个规范向量都有回放或登记为缺口，回放的调用按（目录, 文件）成对识别、目录下要有那个文件，见上文[回放规范向量](#回放规范向量) |
 | `TestSources_UseTheSharedWorkspaceAndTelemetryEntries`（`TestToolingTests`） | `framework/test` 下的源码不手写工作区查找与遥测监听：解决方案文件名 `XiHan.Framework.slnx` 只许出现在 `FrameworkWorkspace` 里，不许构造 `ActivityListener` 与 `MeterListener`（含目标类型的 `new()`），定位工作区、收 Span 与指标只用 `FrameworkWorkspace`、`SpanCapture` 与 `MetricCapture` |
+| `DirectoryProps_MarksTestProjectsByTheNameSuffixAlone`、`ProjectFiles_SitInADirectoryOfTheirName`、`ProjectsUnderTest_ContainTestsExactlyWhenNamedAsTestProjects`、`ProjectFiles_LeaveTestProjectSettingsToTheDirectoryProps`（`TestProjectNamingTests`） | 测试项目只由名字决定：`framework/test` 下含测试（`[Fact]` / `[Theory]`，或从一致性套件派生的类）的项目名字以 `.Tests` 结尾，以 `.Tests` 结尾的都含测试；不以它结尾的类库只能是门禁名单里的（现在只有 `Testing.Workspace`），新加给测试项目引用的类库要改门禁；项目文件放在 `test/<名>/<名>.csproj`，不自己设 `IsTestProject`、不引用 `test/Directory.Build.props` 给测试项目加的包。名字写错、因而不当测试运行的项目在这里失败，不会构建是绿的、用例一条也不跑（ADR-0307） |
 
 ## 常见问题
 
