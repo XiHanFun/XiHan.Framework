@@ -94,13 +94,158 @@ public sealed class S3ConditionalWriteRetryTests
         Assert.Equal("unconfirmed", status.Data["conditionalWrites"]);
         Assert.DoesNotContain("UploadPart", fake.Requests);
 
-        // 服务恢复正常的应答后，下一次后台重试确认
+        // 这种应答单独退避，第一次重试排在健康探测间隔（缺省 15 秒）之后（ADR-0317）；服务恢复正常的应答后，那一次后台重试确认
         var gate = host.Services.GetRequiredService<S3ConditionalWriteGate>();
         await Within(gate.WhenRetryScheduledAsync(1));
+        Assert.Equal(TimeSpan.FromSeconds(15), gate.ScheduledDelays[0]);
         fake.NextUploadId = static () => Guid.NewGuid().ToString("N");
-        clock.Advance(TimeSpan.FromSeconds(1));
+        clock.Advance(TimeSpan.FromSeconds(15));
         await Within(gate.Settled);
         Assert.Equal("confirmed", Connection(host).Data["conditionalWrites"]);
+    }
+
+    [Fact]
+    public async Task Background_BacksOffAnswersWithoutAnUploadId_FromTheHealthProbeInterval_AndStopsAfterTen()
+    {
+        // 服务若确实建了上传，每次重试都留下一个放弃不了的上传：从健康探测间隔起加倍，最长 1 小时，累计 10 次之后不再探测（ADR-0317）
+        var fake = FakeS3Client.Create(Bucket);
+        fake.NextUploadId = static () => null;
+        var clock = new FakeTimeProvider();
+        var logs = new LogCapture();
+        await using var host = await StartAsync(fake, clock, logs);
+        var gate = host.Services.GetRequiredService<S3ConditionalWriteGate>();
+        var store = host.Services.GetRequiredService<IBlobStore>();
+
+        // 启动时那一次是第 1 次；之后 15、30 秒，1、2、4、8、16、32 分钟，第 9 次之后的 64 分钟封顶为 1 小时
+        TimeSpan[] expected =
+        [
+            TimeSpan.FromSeconds(15), TimeSpan.FromSeconds(30), TimeSpan.FromMinutes(1), TimeSpan.FromMinutes(2), TimeSpan.FromMinutes(4),
+            TimeSpan.FromMinutes(8), TimeSpan.FromMinutes(16), TimeSpan.FromMinutes(32), TimeSpan.FromHours(1),
+        ];
+        for (var index = 0; index < expected.Length; index++)
+        {
+            await Within(gate.WhenRetryScheduledAsync(index + 1));
+            Assert.Equal(expected[index], gate.ScheduledDelays[index]);
+            clock.Advance(expected[index]);
+        }
+
+        // 第 10 次之后后台停止：发起一共 10 次，留下的上传有界
+        await Within(gate.RetriesEnded);
+        Assert.Equal(10, fake.Requests.Count(static request => request == "InitiateMultipartUpload"));
+        Assert.Equal(expected, gate.ScheduledDelays);
+
+        // 不再探测：时钟再走一天、写入到来都不发探测的请求，不覆盖写入一律暂不可用，原因仍是那次的不合规应答
+        var probes = ProbeRequests(fake);
+        clock.Advance(TimeSpan.FromDays(1));
+        var refused = await Put(store, "a.txt");
+        Assert.Equal((ObjectStorageErrors.ConditionalWriteUnconfirmed, ObjectStorageErrors.StoreUnavailable), (refused.Error?.Code, (string?)refused.Error!.Details!["reason"]));
+        Assert.Equal(probes, ProbeRequests(fake));
+        Assert.Equal(expected, gate.ScheduledDelays);
+
+        // 不再自动恢复、要人处理：健康项 Failed（与还在重试的 Degraded 区分开），状态仍是尚未确认，应用仍就绪；记一条 Error 日志
+        var status = Connection(host);
+        Assert.Equal((LifecycleState.Failed, ObjectStorageErrors.StoreUnavailable, "unconfirmed"), (status.State, status.Error?.Code, status.Data["conditionalWrites"]));
+        Assert.Contains("UploadId", (string?)status.Error!.Details!["reason"], StringComparison.Ordinal);
+        Assert.True(host.App.Health().Ready);
+        Assert.False(gate.Settled.IsCompleted);
+        var stopped = Assert.Single(GateLogs(logs), static entry => entry.Level == LogLevel.Error);
+        Assert.Contains("10", stopped.Message, StringComparison.Ordinal);
+        Assert.Contains(Bucket, stopped.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task Writes_DoNotProbeInPlace_WhileAnswersWithoutAnUploadIdAreBackedOff()
+    {
+        // 以前写入距上一次探测满 1 秒就就地探测，写入密集时至多每秒留下一个上传；退避期间只由后台探测（ADR-0317）
+        var fake = FakeS3Client.Create(Bucket);
+        fake.NextUploadId = static () => null;
+        var clock = new FakeTimeProvider();
+        await using var host = await StartAsync(fake, clock);
+        var gate = host.Services.GetRequiredService<S3ConditionalWriteGate>();
+        var store = host.Services.GetRequiredService<IBlobStore>();
+        await Within(gate.WhenRetryScheduledAsync(1));
+
+        var probes = ProbeRequests(fake);
+        clock.Advance(TimeSpan.FromSeconds(5));
+        var refused = await Put(store, "a.txt");
+        var multipart = host.Services.GetRequiredService<IBlobMultipartStore>();
+        var started = await multipart.StartAsync(new ContainerName(Bucket), new BlobKey("b.bin"), new BlobPutOptions { Overwrite = false }, CancellationToken.None);
+
+        Assert.Equal((ObjectStorageErrors.ConditionalWriteUnconfirmed, ObjectStorageErrors.StoreUnavailable), (refused.Error?.Code, (string?)refused.Error!.Details!["reason"]));
+        Assert.Equal(ObjectStorageErrors.ConditionalWriteUnconfirmed, started.Error?.Code);
+        Assert.Equal(probes, ProbeRequests(fake));
+
+        // 后台到点照常探测
+        clock.Advance(TimeSpan.FromSeconds(10));
+        await Within(gate.WhenRetryScheduledAsync(2));
+        Assert.Equal(2, fake.Requests.Count(static request => request == "InitiateMultipartUpload"));
+    }
+
+    [Fact]
+    public async Task TheBackoff_StartsOver_OnceAnInitiateAnswerCarriesAnUploadIdAgain()
+    {
+        var fake = FakeS3Client.Create(Bucket);
+        fake.NextUploadId = static () => null;
+        var clock = new FakeTimeProvider();
+        await using var host = await StartAsync(fake, clock);
+        var gate = host.Services.GetRequiredService<S3ConditionalWriteGate>();
+
+        // 连续三次缺上传标识：15、30、60 秒
+        await Within(gate.WhenRetryScheduledAsync(1));
+        clock.Advance(TimeSpan.FromSeconds(15));
+        await Within(gate.WhenRetryScheduledAsync(2));
+        clock.Advance(TimeSpan.FromSeconds(30));
+        await Within(gate.WhenRetryScheduledAsync(3));
+
+        // 发起恢复正常，探测在上传分片那一步连不上（仍未确认）：退避清零，回到连不上时的节奏（1 秒起，每次探测之后加倍，已到 8 秒）
+        fake.NextUploadId = static () => Guid.NewGuid().ToString("N");
+        fake.Fault = static request => request == "UploadPart" ? new HttpRequestException("Connection reset.") : null;
+        clock.Advance(TimeSpan.FromSeconds(60));
+        await Within(gate.WhenRetryScheduledAsync(4));
+
+        // 之后又缺上传标识：从健康探测间隔重新起
+        fake.NextUploadId = static () => null;
+        fake.Fault = static _ => null;
+        clock.Advance(TimeSpan.FromSeconds(8));
+        await Within(gate.WhenRetryScheduledAsync(5));
+
+        Assert.Equal([TimeSpan.FromSeconds(15), TimeSpan.FromSeconds(30), TimeSpan.FromSeconds(60), TimeSpan.FromSeconds(8), TimeSpan.FromSeconds(15)], gate.ScheduledDelays);
+        Assert.Equal(0, fake.OpenUploads);
+    }
+
+    [Fact]
+    public async Task TheLimit_CountsEveryAnswerWithoutAnUploadId_SoTheAbandonedUploadsStayBounded()
+    {
+        // 缺上传标识与正常的发起交替出现时退避一再清零，次数上限按累计计：每个实例至多留下 10 个放弃不了的上传（ADR-0317）
+        var initiated = 0;
+        var fake = FakeS3Client.Create(Bucket);
+        fake.NextUploadId = () => Interlocked.Increment(ref initiated) % 2 == 1 ? null : Guid.NewGuid().ToString("N");
+        fake.Fault = static request => request == "UploadPart" ? new HttpRequestException("Connection reset.") : null;
+        var clock = new FakeTimeProvider();
+        await using var host = await StartAsync(fake, clock);
+        var gate = host.Services.GetRequiredService<S3ConditionalWriteGate>();
+
+        // 每排定一次就推进那么久，直到后台停止（上限 100 轮，只为失败时不挂死）
+        for (var scheduled = 1; scheduled <= 100; scheduled++)
+        {
+            var next = gate.WhenRetryScheduledAsync(scheduled);
+            await Within(Task.WhenAny(next, gate.RetriesEnded));
+            if (!next.IsCompleted)
+            {
+                break;
+            }
+
+            clock.Advance(gate.ScheduledDelays[scheduled - 1]);
+        }
+
+        // 缺上传标识的 10 次之间夹着 9 次正常的发起，第 10 次之后后台停止
+        Assert.True(gate.RetriesEnded.IsCompleted);
+        Assert.Equal(19, Volatile.Read(ref initiated));
+        Assert.Equal(19, fake.Requests.Count(static request => request == "InitiateMultipartUpload"));
+
+        // 拿到上传标识的 9 个上传在上传分片失败之后都放弃了
+        Assert.Equal(0, fake.OpenUploads);
+        Assert.Equal(LifecycleState.Failed, Connection(host).State);
     }
 
     [Fact]
@@ -354,6 +499,14 @@ public sealed class S3ConditionalWriteRetryTests
     /// </summary>
     private static Task<Result<BlobMetadata>> Put(IBlobStore store, string key)
         => store.PutAsync(new ContainerName(Bucket), new BlobKey(key), Encoding.UTF8.GetBytes(key), new BlobPutOptions { Overwrite = false }, CancellationToken.None).AsTask();
+
+    /// <summary>
+    /// 条件写入探测发出的请求数
+    /// </summary>
+    /// <remarks>
+    /// 不算健康项按周期发的连通性探测（HEAD 桶或列桶）：推进时钟时它照常发出
+    /// </remarks>
+    private static int ProbeRequests(FakeS3Client fake) => fake.Requests.Count(static request => request is not ("HeadBucket" or "ListBuckets"));
 
     /// <summary>
     /// 缺省实例的健康项

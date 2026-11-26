@@ -15,7 +15,7 @@ namespace XiHan.Framework.ObjectStorage.S3;
 /// 一个 S3 存储实例的条件写入状态：探明服务认条件写入之前，不放行不覆盖写入
 /// </summary>
 /// <remarks>
-/// 状态只往前走：尚未确认 → 已确认，或尚未确认 → 不认；关闭条件写入时一直是关闭（ADR-0089、ADR-0090）。启动或建实例时经 <see cref="StartAsync"/> 探一次：探明不认、被拒绝、探测桶不存在都返回失败（配置问题要早暴露，调用方启动失败或不建实例，ADR-0093）；只有连不上（含服务的应答不合规，ADR-0313）是尚未确认，照常启动，在后台按退避重试（第一次 <see cref="InitialRetryDelay"/> 后，每次加倍，最长 <see cref="S3ObjectStorageOptions.HealthProbeInterval"/>，按注入的时钟计时），有了终态即停止。启动之后的探测才被拒绝或缺桶时仍是尚未确认、照常重试，健康项 Failed。不覆盖写入经 <see cref="RefuseAsync"/> 放行或拒绝：尚未确认时等正在进行的探测，或距上一次探测满最小间隔时就地探一次（每个实例同一时刻只有一个探测，后台重试与写入共用），仍未确认返回 <see cref="ObjectStorageErrors.ConditionalWriteUnconfirmed"/>，探明不认返回 <see cref="ObjectStorageErrors.ConditionalWriteUnavailable"/>。健康项经 <see cref="Annotate"/> 与 <see cref="Health"/> 反映当前状态
+/// 状态只往前走：尚未确认 → 已确认，或尚未确认 → 不认；关闭条件写入时一直是关闭（ADR-0089、ADR-0090）。启动或建实例时经 <see cref="StartAsync"/> 探一次：探明不认、被拒绝、探测桶不存在都返回失败（配置问题要早暴露，调用方启动失败或不建实例，ADR-0093）；只有连不上（含服务的应答不合规，ADR-0313）是尚未确认，照常启动，在后台按退避重试（第一次 <see cref="InitialRetryDelay"/> 后，每次加倍，最长 <see cref="S3ObjectStorageOptions.HealthProbeInterval"/>，按注入的时钟计时），有了终态即停止。发起分片上传的应答缺上传标识时改从健康探测间隔起加倍、最长 <see cref="UploadIdMissingRetryDelayLimit"/>，其间写入不就地探测，累计 <see cref="UploadIdMissingLimit"/> 次之后不再探测、健康项 Failed：这种应答每次都可能留下一个放弃不了的上传（ADR-0317）。启动之后的探测才被拒绝或缺桶时仍是尚未确认、照常重试，健康项 Failed。不覆盖写入经 <see cref="RefuseAsync"/> 放行或拒绝：尚未确认时等正在进行的探测，或距上一次探测满最小间隔时就地探一次（每个实例同一时刻只有一个探测，后台重试与写入共用），仍未确认返回 <see cref="ObjectStorageErrors.ConditionalWriteUnconfirmed"/>，探明不认返回 <see cref="ObjectStorageErrors.ConditionalWriteUnavailable"/>。健康项经 <see cref="Annotate"/> 与 <see cref="Health"/> 反映当前状态
 /// </remarks>
 internal sealed partial class S3ConditionalWriteGate : IAsyncDisposable, IDisposable
 {
@@ -23,9 +23,25 @@ internal sealed partial class S3ConditionalWriteGate : IAsyncDisposable, IDispos
     /// 第一次后台重试的延迟，也是写入时就地探测的最小间隔
     /// </summary>
     /// <remarks>
-    /// <see cref="S3ObjectStorageOptions.HealthProbeInterval"/> 比它短时两者都取那个间隔
+    /// <see cref="S3ObjectStorageOptions.HealthProbeInterval"/> 比它短时两者都取那个间隔。发起分片上传的应答缺上传标识时不用它，按 <see cref="UploadIdMissingDelay"/> 退避（ADR-0317）
     /// </remarks>
     internal static readonly TimeSpan InitialRetryDelay = TimeSpan.FromSeconds(1);
+
+    /// <summary>
+    /// 发起分片上传的应答缺上传标识时重试间隔的上限：1 小时
+    /// </summary>
+    /// <remarks>
+    /// 间隔从 <see cref="S3ObjectStorageOptions.HealthProbeInterval"/> 起每次加倍，到它为止；健康探测间隔比它长时每次都取健康探测间隔（ADR-0317）
+    /// </remarks>
+    internal static readonly TimeSpan UploadIdMissingRetryDelayLimit = TimeSpan.FromHours(1);
+
+    /// <summary>
+    /// 发起分片上传的应答缺上传标识累计到这么多次即不再探测
+    /// </summary>
+    /// <remarks>
+    /// 每次这种应答都可能在服务端留下一个放弃不了的上传：累计计数（不因中间正常的应答清零），每个实例至多留下这么多个（ADR-0317）
+    /// </remarks>
+    internal const int UploadIdMissingLimit = 10;
 
     /// <summary>
     /// 客户端
@@ -146,6 +162,30 @@ internal sealed partial class S3ConditionalWriteGate : IAsyncDisposable, IDispos
     private bool _stopped;
 
     /// <summary>
+    /// 探测的发起连续几次拿到缺上传标识的应答
+    /// </summary>
+    /// <remarks>
+    /// 不为 0 时后台按它退避、写入不就地探测；发起的应答带着可用的上传标识即清零，没走到发起的探测不增不减（ADR-0317）
+    /// </remarks>
+    private int _uploadIdMissingStreak;
+
+    /// <summary>
+    /// 探测的发起累计几次拿到缺上传标识的应答
+    /// </summary>
+    /// <remarks>
+    /// 不清零：到 <see cref="UploadIdMissingLimit"/> 即不再探测（ADR-0317）
+    /// </remarks>
+    private int _uploadIdMissingTotal;
+
+    /// <summary>
+    /// 是否因缺上传标识的应答到了次数上限而不再探测
+    /// </summary>
+    /// <remarks>
+    /// 状态仍是尚未确认；后台停止、写入不探，健康项 Failed，重启或重建实例才再探测（ADR-0317）
+    /// </remarks>
+    private bool _abandoned;
+
+    /// <summary>
     /// 是否已释放
     /// </summary>
     private bool _disposed;
@@ -221,6 +261,23 @@ internal sealed partial class S3ConditionalWriteGate : IAsyncDisposable, IDispos
     }
 
     /// <summary>
+    /// 后台重试结束时完成
+    /// </summary>
+    /// <remarks>
+    /// 测试钩子：有了终态、停止，或缺上传标识的应答到了次数上限（ADR-0317）；还没起后台重试时已完成
+    /// </remarks>
+    internal Task RetriesEnded
+    {
+        get
+        {
+            lock (_sync)
+            {
+                return _retrying ?? Task.CompletedTask;
+            }
+        }
+    }
+
+    /// <summary>
     /// 建一个要探测的状态
     /// </summary>
     /// <remarks>
@@ -276,8 +333,8 @@ internal sealed partial class S3ConditionalWriteGate : IAsyncDisposable, IDispos
             }
 
             _started = true;
-            // 只剩连不上（S3 晚于应用就绪、网络抖动）：不阻止启动，在后台按退避重试；停止后不再起
-            if (_state is GateState.Unconfirmed && _retrying is null && !_stopped)
+            // 只剩连不上（S3 晚于应用就绪、网络抖动）：不阻止启动，在后台按退避重试；停止后、不再探测时不再起
+            if (_state is GateState.Unconfirmed && _retrying is null && !_stopped && !_abandoned)
             {
                 var stopping = _stopping.Token;
                 _retrying = Task.Run(() => RetryAsync(stopping), CancellationToken.None);
@@ -291,7 +348,7 @@ internal sealed partial class S3ConditionalWriteGate : IAsyncDisposable, IDispos
     /// 不覆盖写入之前调用：放行返回 <see langword="null"/>，否则返回拒绝的原因
     /// </summary>
     /// <remarks>
-    /// 已确认放行；关闭返回 <see cref="ObjectStorageErrors.ConditionalWriteUnavailable"/>（消息键 <see cref="ObjectStorageMessages.ConditionalWriteDisabled"/>）；不认返回探明时的 <see cref="ObjectStorageErrors.ConditionalWriteUnavailable"/>。尚未确认时有探测在进行就等它；没有而距上一次探测结束已满最小间隔就地探一次；否则不探测。之后仍未确认返回 <see cref="ObjectStorageErrors.ConditionalWriteUnconfirmed"/>（参数 <c>reason</c> 是最近一次探测失败的错误码）。调用方的取消原样抛出；共用的探测不因某个写入方取消而中止
+    /// 已确认放行；关闭返回 <see cref="ObjectStorageErrors.ConditionalWriteUnavailable"/>（消息键 <see cref="ObjectStorageMessages.ConditionalWriteDisabled"/>）；不认返回探明时的 <see cref="ObjectStorageErrors.ConditionalWriteUnavailable"/>。尚未确认时有探测在进行就等它；没有而距上一次探测结束已满最小间隔、发起的应答也没有连续缺上传标识（ADR-0317）时就地探一次；否则不探测。之后仍未确认返回 <see cref="ObjectStorageErrors.ConditionalWriteUnconfirmed"/>（参数 <c>reason</c> 是最近一次探测失败的错误码）。调用方的取消原样抛出；共用的探测不因某个写入方取消而中止
     /// </remarks>
     internal async ValueTask<Error?> RefuseAsync(ContainerName container, BlobKey key, CancellationToken cancellationToken)
     {
@@ -303,12 +360,13 @@ internal sealed partial class S3ConditionalWriteGate : IAsyncDisposable, IDispos
                 return Refusal(container, key);
             }
 
-            // 尚未确认：已有探测就等它；没有就看间隔——写入密集时不能把探测压成连发，最小间隔内直接拒绝
+            // 尚未确认：已有探测就等它；没有就看间隔——写入密集时不能把探测压成连发，最小间隔内直接拒绝。
+            // 发起的应答缺上传标识时不就地探测：每次探测都可能留下一个放弃不了的上传，只由后台按退避探测（ADR-0317）
             if (_inflight is not null)
             {
                 probe = _inflight;
             }
-            else if (!_stopped && (_lastAttemptEnded is not { } ended || _clock.GetUtcNow() - ended >= _firstDelay))
+            else if (!_stopped && !_abandoned && _uploadIdMissingStreak == 0 && (_lastAttemptEnded is not { } ended || _clock.GetUtcNow() - ended >= _firstDelay))
             {
                 probe = StartProbeLocked();
             }
@@ -329,17 +387,19 @@ internal sealed partial class S3ConditionalWriteGate : IAsyncDisposable, IDispos
     /// 把条件写入的状态并进连通性的健康条目
     /// </summary>
     /// <remarks>
-    /// 数据 <c>conditionalWrites</c> 为 <c>confirmed</c> / <c>unconfirmed</c> / <c>unsupported</c> / <c>disabled</c>。尚未确认时错误是最近一次探测失败（连通性探测成功也一样）：连不上 Degraded，被拒绝或探测桶不存在 Failed；不认时 Failed，错误是不认的错误；其余照连通性的状态
+    /// 数据 <c>conditionalWrites</c> 为 <c>confirmed</c> / <c>unconfirmed</c> / <c>unsupported</c> / <c>disabled</c>。尚未确认时错误是最近一次探测失败（连通性探测成功也一样）：连不上 Degraded，被拒绝或探测桶不存在 Failed，发起的应答缺上传标识到了次数上限、不再探测时 Failed（ADR-0317）；不认时 Failed，错误是不认的错误；其余照连通性的状态
     /// </remarks>
     internal ContributorStatus Annotate(ContributorStatus status)
     {
         ArgumentNullException.ThrowIfNull(status);
         GateState state;
         Error? error;
+        bool abandoned;
         lock (_sync)
         {
             state = _state;
             error = _error;
+            abandoned = _abandoned;
         }
 
         var data = new Dictionary<string, object?>(status.Data, StringComparer.Ordinal) { ["conditionalWrites"] = Describe(state) };
@@ -347,6 +407,8 @@ internal sealed partial class S3ConditionalWriteGate : IAsyncDisposable, IDispos
         {
             // 不认是终态，要换服务或关闭条件写入后重启：与"暂时降级"区分开
             GateState.Unsupported => status with { State = LifecycleState.Failed, Error = error, Data = data },
+            // 缺上传标识的应答到了次数上限、不再探测：不会自己恢复，要人修好服务后重启，同样 Failed（ADR-0317）
+            GateState.Unconfirmed when abandoned => status with { State = LifecycleState.Failed, Error = error ?? status.Error, Data = data },
             // 启动之后才被拒绝或缺桶是配置错误，要人改凭据或建桶（改好后重试自动恢复）：同样 Failed，不混同于连不上
             GateState.Unconfirmed when error is not null && IsConfigurationError(error) => status with { State = LifecycleState.Failed, Error = error, Data = data },
             GateState.Unconfirmed => status with { State = LifecycleState.Degraded, Error = error ?? status.Error, Data = data },
@@ -528,9 +590,11 @@ internal sealed partial class S3ConditionalWriteGate : IAsyncDisposable, IDispos
     private async Task<Result> ProbeAndRecordAsync()
     {
         Result outcome;
+        // 发起分片上传有了应答时，应答里的上传标识是否可用；没走到发起为 null（ADR-0317）
+        bool? uploadIdUsable = null;
         try
         {
-            outcome = await S3ConditionalWriteProbe.RunAsync(_client, _options, _multipart, _clock, ReportProbeFailure, _stopping.Token).ConfigureAwait(false);
+            outcome = await S3ConditionalWriteProbe.RunAsync(_client, _options, _multipart, _clock, ReportProbeFailure, usable => uploadIdUsable = usable, _stopping.Token).ConfigureAwait(false);
             if (outcome.IsSuccess)
             {
                 _lastProbeFailure = null;
@@ -554,7 +618,7 @@ internal sealed partial class S3ConditionalWriteGate : IAsyncDisposable, IDispos
             outcome = Error.Unavailable(ObjectStorageErrors.StoreUnavailable, ObjectStorageMessages.StoreUnavailable, MessageArguments.Of(("reason", type.FullName ?? type.Name)));
         }
 
-        Record(outcome);
+        Record(outcome, uploadIdUsable);
         return outcome;
     }
 
@@ -583,15 +647,16 @@ internal sealed partial class S3ConditionalWriteGate : IAsyncDisposable, IDispos
     /// 记下一次探测的结论
     /// </summary>
     /// <remarks>
-    /// 只在尚未确认时改变状态：通过 → 已确认，不认 → 不认，其余仍是尚未确认、记下错误；状态或错误码变化时记日志（启动或建实例那次探测的配置错误除外，调用方以失败报告它）
+    /// 只在尚未确认时改变状态：通过 → 已确认，不认 → 不认，其余仍是尚未确认、记下错误；状态或错误码变化时记日志（启动或建实例那次探测的配置错误除外，调用方以失败报告它）。<paramref name="uploadIdUsable"/> 为假时缺上传标识的连续与累计次数各加一，累计到上限即不再探测、记一条 Error 日志；为真时连续次数清零；为 <see langword="null"/>（没走到发起）不动（ADR-0317）
     /// </remarks>
-    private void Record(Result outcome)
+    private void Record(Result outcome, bool? uploadIdUsable)
     {
         GateState previous;
         GateState current;
         string? previousCode;
         Error? error;
         bool started;
+        var abandonedNow = false;
         lock (_sync)
         {
             previous = _state;
@@ -615,6 +680,23 @@ internal sealed partial class S3ConditionalWriteGate : IAsyncDisposable, IDispos
                 else
                 {
                     _error = failure;
+                }
+            }
+
+            // 发起的应答缺上传标识：服务可能已经建了上传，探测没有标识、放弃不了它。连续次数定退避，
+            // 累计次数定上限——中间夹着正常的应答也照样累计，留下的上传才有界（ADR-0317）
+            if (uploadIdUsable is true)
+            {
+                _uploadIdMissingStreak = 0;
+            }
+            else if (uploadIdUsable is false)
+            {
+                _uploadIdMissingStreak++;
+                _uploadIdMissingTotal++;
+                if (_uploadIdMissingTotal >= UploadIdMissingLimit && _state is GateState.Unconfirmed && !_abandoned)
+                {
+                    _abandoned = true;
+                    abandonedNow = true;
                 }
             }
 
@@ -645,6 +727,11 @@ internal sealed partial class S3ConditionalWriteGate : IAsyncDisposable, IDispos
                 break;
         }
 
+        if (abandonedNow)
+        {
+            LogAbandoned(_logger, _store, UploadIdMissingLimit, _options.HealthBucket);
+        }
+
         // 记完日志再宣告终态：等终态的一方（测试、停止流程）看到的日志已经完整
         if (current != previous)
         {
@@ -653,16 +740,30 @@ internal sealed partial class S3ConditionalWriteGate : IAsyncDisposable, IDispos
     }
 
     /// <summary>
-    /// 后台重试：按退避等待，再共用探测，直到有了终态或停止
+    /// 后台重试：按退避等待，再共用探测，直到有了终态、停止或不再探测
     /// </summary>
+    /// <remarks>
+    /// 连不上时每次探测之后间隔加倍，上限是健康探测间隔；发起的应答缺上传标识时改按 <see cref="UploadIdMissingDelay"/>，从上一次探测结束起算（ADR-0317）
+    /// </remarks>
     private async Task RetryAsync(CancellationToken stopping)
     {
         var delay = _firstDelay;
         while (true)
         {
+            TimeSpan next;
+            lock (_sync)
+            {
+                if (_state is not GateState.Unconfirmed || _stopped || _abandoned)
+                {
+                    return;
+                }
+
+                next = _uploadIdMissingStreak > 0 ? UploadIdMissingRemainingLocked() : delay;
+            }
+
             // 先排定计时器再报告排定：测试推进假时钟时计时器已经在等，不会错过
-            var wait = Task.Delay(delay, _clock, stopping);
-            MarkScheduled(delay);
+            var wait = Task.Delay(next, _clock, stopping);
+            MarkScheduled(next);
             try
             {
                 await wait.ConfigureAwait(false);
@@ -675,10 +776,17 @@ internal sealed partial class S3ConditionalWriteGate : IAsyncDisposable, IDispos
             Task<Result> probe;
             lock (_sync)
             {
-                // 期间写入的就地探测可能已经有了终态；已停止则不再探
-                if (_state is not GateState.Unconfirmed || _stopped)
+                // 期间写入的就地探测可能已经有了终态；已停止或不再探测则不再探
+                if (_state is not GateState.Unconfirmed || _stopped || _abandoned)
                 {
                     return;
+                }
+
+                // 期间写入的就地探测（只在没有缺上传标识时才会有）可能刚拿到缺上传标识的应答：
+                // 退避从那次探测结束起算，没满就回到开头等剩下的，不紧接着再发一次（ADR-0317）
+                if (_inflight is null && UploadIdMissingRemainingLocked() > TimeSpan.Zero)
+                {
+                    continue;
                 }
 
                 probe = _inflight ?? StartProbeLocked();
@@ -687,7 +795,7 @@ internal sealed partial class S3ConditionalWriteGate : IAsyncDisposable, IDispos
             await probe.ConfigureAwait(false);
             lock (_sync)
             {
-                if (_state is not GateState.Unconfirmed || _stopped)
+                if (_state is not GateState.Unconfirmed || _stopped || _abandoned)
                 {
                     return;
                 }
@@ -697,6 +805,47 @@ internal sealed partial class S3ConditionalWriteGate : IAsyncDisposable, IDispos
             var doubled = delay * 2;
             delay = doubled < _options.HealthProbeInterval ? doubled : _options.HealthProbeInterval;
         }
+    }
+
+    /// <summary>
+    /// 发起的应答连续缺上传标识 <paramref name="streak"/> 次之后，下一次探测要等多久
+    /// </summary>
+    /// <remarks>
+    /// 健康探测间隔 × 2^(<paramref name="streak"/> − 1)，最长 <see cref="UploadIdMissingRetryDelayLimit"/>；健康探测间隔比它长时每次都取健康探测间隔。起点是连不上时退避的上限，不比连不上时重试得快（ADR-0317）
+    /// </remarks>
+    private TimeSpan UploadIdMissingDelay(int streak)
+    {
+        var interval = _options.HealthProbeInterval;
+        if (interval >= UploadIdMissingRetryDelayLimit)
+        {
+            return interval;
+        }
+
+        // 到上限即停：倍增只发生在不到 1 小时的值上，不会溢出
+        var delay = interval;
+        for (var count = 1; count < streak && delay < UploadIdMissingRetryDelayLimit; count++)
+        {
+            delay *= 2;
+        }
+
+        return delay < UploadIdMissingRetryDelayLimit ? delay : UploadIdMissingRetryDelayLimit;
+    }
+
+    /// <summary>
+    /// 缺上传标识的退避还剩多久（在锁内调用）
+    /// </summary>
+    /// <remarks>
+    /// 从上一次探测结束起算；连续次数为 0、还没探过或已经等满时为 0
+    /// </remarks>
+    private TimeSpan UploadIdMissingRemainingLocked()
+    {
+        if (_uploadIdMissingStreak == 0 || _lastAttemptEnded is not { } ended)
+        {
+            return TimeSpan.Zero;
+        }
+
+        var remaining = UploadIdMissingDelay(_uploadIdMissingStreak) - (_clock.GetUtcNow() - ended);
+        return remaining > TimeSpan.Zero ? remaining : TimeSpan.Zero;
     }
 
     /// <summary>
@@ -747,6 +896,15 @@ internal sealed partial class S3ConditionalWriteGate : IAsyncDisposable, IDispos
     /// </summary>
     [LoggerMessage(Level = LogLevel.Error, Message = "The service behind S3 store '{Store}' ignores conditional writes ({Code}: {Message}); writes without overwrite are refused. Use a service that honours 'If-None-Match: *', or set 'ConditionalWrites' to 'false' and restart.")]
     private static partial void LogUnsupported(ILogger logger, string store, string code, string message);
+
+    /// <summary>
+    /// 发起分片上传的应答缺上传标识到了次数上限，不再探测
+    /// </summary>
+    /// <remarks>
+    /// 只记一次：之后不再探测，不会再有这条
+    /// </remarks>
+    [LoggerMessage(Level = LogLevel.Error, Message = "The conditional write probe of S3 store '{Store}' got {Count} answers to CreateMultipartUpload without a usable upload ID and stops probing; writes without overwrite are refused until the store is restarted. Each of those answers may have left an incomplete multipart upload in bucket '{Bucket}' that cannot be aborted: fix the service or the proxy in front of it, and let a lifecycle rule abort incomplete multipart uploads.")]
+    private static partial void LogAbandoned(ILogger logger, string store, int count, string? bucket);
 
     /// <summary>
     /// 探测抛出了没有归类的异常

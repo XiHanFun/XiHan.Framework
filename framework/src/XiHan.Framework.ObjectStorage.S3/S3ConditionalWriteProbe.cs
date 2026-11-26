@@ -61,8 +61,9 @@ internal static class S3ConditionalWriteProbe
     /// <param name="multipart">是否也探测分片上传的完成</param>
     /// <param name="clock">时钟（超时按它计）</param>
     /// <param name="onFailure">探测抛出时收到操作名与完整异常；错误里只写异常类型，由调用方记日志</param>
+    /// <param name="onInitiated">发起分片上传有了应答时收到应答里的上传标识是否可用，至多一次；没走到发起或发起抛出时不调用。调用方据此给缺上传标识的应答退避（ADR-0317）</param>
     /// <param name="cancellationToken">取消令牌</param>
-    internal static async ValueTask<Result> RunAsync(IAmazonS3 client, S3ObjectStorageOptions options, bool multipart, TimeProvider clock, Action<string, Exception> onFailure, CancellationToken cancellationToken)
+    internal static async ValueTask<Result> RunAsync(IAmazonS3 client, S3ObjectStorageOptions options, bool multipart, TimeProvider clock, Action<string, Exception> onFailure, Action<bool> onInitiated, CancellationToken cancellationToken)
     {
         var bucket = options.HealthBucket ?? throw new ArgumentException("The conditional write probe needs a health bucket.", nameof(options));
         using var deadline = new CancellationTokenSource(options.HealthProbeInterval, clock);
@@ -84,7 +85,7 @@ internal static class S3ConditionalWriteProbe
 
             if (multipart)
             {
-                var completion = await CompleteRefusedAsync(client, bucket, Step, linked.Token).ConfigureAwait(false);
+                var completion = await CompleteRefusedAsync(client, bucket, Step, onInitiated, linked.Token).ConfigureAwait(false);
                 if (!completion.TryGetValue(out var refused))
                 {
                     return completion.Error!;
@@ -164,18 +165,21 @@ internal static class S3ConditionalWriteProbe
     /// 以探测键带条件完成一次分片上传
     /// </summary>
     /// <remarks>
-    /// 被条件拒绝（412）返回 <see langword="true"/> 并放弃这个上传（不留未完成的分片上传；服务已自行清掉时不算错）；完成了返回 <see langword="false"/>（服务忽略了条件，探测键被同样为空的内容覆盖，无害）。发起的应答没有可用的上传标识时返回 <see cref="ObjectStorageErrors.StoreUnavailable"/>，不再发后面的请求（ADR-0313）。中途出错时尽力放弃上传，再抛出原来的错误。<paramref name="step"/> 记录当前请求名，供报错
+    /// 被条件拒绝（412）返回 <see langword="true"/> 并放弃这个上传（不留未完成的分片上传；服务已自行清掉时不算错）；完成了返回 <see langword="false"/>（服务忽略了条件，探测键被同样为空的内容覆盖，无害）。发起的应答没有可用的上传标识时返回 <see cref="ObjectStorageErrors.StoreUnavailable"/>，不再发后面的请求（ADR-0313）。中途出错时尽力放弃上传，再抛出原来的错误。<paramref name="step"/> 记录当前请求名，供报错；发起有了应答时把上传标识是否可用交给 <paramref name="initiated"/>（ADR-0317）
     /// </remarks>
-    private static async ValueTask<Result<bool>> CompleteRefusedAsync(IAmazonS3 client, string bucket, Action<string> step, CancellationToken cancellationToken)
+    private static async ValueTask<Result<bool>> CompleteRefusedAsync(IAmazonS3 client, string bucket, Action<string> step, Action<bool> initiated, CancellationToken cancellationToken)
     {
         step("CreateMultipartUpload");
         var uploadId = (await client.InitiateMultipartUploadAsync(new InitiateMultipartUploadRequest { BucketName = bucket, Key = ProbeKey }, cancellationToken).ConfigureAwait(false)).UploadId;
         // 服务回了成功却没给当得了句柄的上传标识，是不合规的应答：拿它发上传分片只会报成那一步的错误。同其余服务端错误，
-        // 不说明服务认不认条件写入；这个上传放弃不了（没有标识），留给桶的生命周期规则（ADR-0313）
+        // 不说明服务认不认条件写入；这个上传放弃不了（没有标识），留给桶的生命周期规则（ADR-0313），重试的退避与次数上限由调用方定（ADR-0317）
         if (!S3BlobStore.IsUsableUploadId(uploadId))
         {
+            initiated(false);
             return Error.Unavailable(ObjectStorageErrors.StoreUnavailable, ObjectStorageMessages.StoreUnavailable, MessageArguments.Of(("reason", UploadIdMissingReason)));
         }
+
+        initiated(true);
 
         try
         {

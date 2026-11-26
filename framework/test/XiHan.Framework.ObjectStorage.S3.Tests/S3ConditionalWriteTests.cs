@@ -152,7 +152,7 @@ public sealed class S3ConditionalWriteTests
         Assert.Contains(typeof(HttpRequestException).FullName!, (string?)down.Error!.Details!["reason"], StringComparison.Ordinal);
         Assert.DoesNotContain("Connection refused.", (string?)down.Error.Details["reason"], StringComparison.Ordinal);
         var reported = new List<(string Operation, Exception Exception)>();
-        await S3ConditionalWriteProbe.RunAsync(unreachable.AsClient(), Options(), multipart: true, TimeProvider.System, (operation, exception) => reported.Add((operation, exception)), CancellationToken.None);
+        await S3ConditionalWriteProbe.RunAsync(unreachable.AsClient(), Options(), multipart: true, TimeProvider.System, (operation, exception) => reported.Add((operation, exception)), static _ => { }, CancellationToken.None);
         Assert.IsType<HttpRequestException>(Assert.Single(reported).Exception);
 
         // 分片上传中途出错：尽力放弃上传，报原来的错误
@@ -173,8 +173,9 @@ public sealed class S3ConditionalWriteTests
         var fake = FakeS3Client.Create(Bucket);
         fake.NextUploadId = () => uploadId;
         var reported = new List<string>();
+        var initiated = new List<bool>();
 
-        var result = await S3ConditionalWriteProbe.RunAsync(fake.AsClient(), Options(), multipart: true, TimeProvider.System, (operation, _) => reported.Add(operation), CancellationToken.None);
+        var result = await S3ConditionalWriteProbe.RunAsync(fake.AsClient(), Options(), multipart: true, TimeProvider.System, (operation, _) => reported.Add(operation), initiated.Add, CancellationToken.None);
 
         // 与其余服务端错误同一类（尚未确认）：reason 写明是发起那一步的应答缺了上传标识，不带应答里的值；没有异常可报
         Assert.Equal(ObjectStorageErrors.StoreUnavailable, result.Error?.Code);
@@ -184,8 +185,9 @@ public sealed class S3ConditionalWriteTests
         Assert.DoesNotContain("upload id", reason, StringComparison.Ordinal);
         Assert.Empty(reported);
 
-        // 不发上传分片，也放弃不了（没有标识）
+        // 不发上传分片，也放弃不了（没有标识）；调用方得知发起的应答缺上传标识，据此退避（ADR-0317）
         Assert.Equal(["PutObject", "PutObject", "InitiateMultipartUpload"], fake.Requests);
+        Assert.Equal([false], initiated);
     }
 
     [Fact]
@@ -212,7 +214,7 @@ public sealed class S3ConditionalWriteTests
         var clock = new FakeTimeProvider();
         var options = Options(TimeSpan.FromSeconds(5));
 
-        var probing = S3ConditionalWriteProbe.RunAsync(fake.AsClient(), options, multipart: true, clock, static (_, _) => { }, CancellationToken.None).AsTask();
+        var probing = S3ConditionalWriteProbe.RunAsync(fake.AsClient(), options, multipart: true, clock, static (_, _) => { }, static _ => { }, CancellationToken.None).AsTask();
         Assert.False(probing.IsCompleted);
         clock.Advance(TimeSpan.FromSeconds(5));
         var result = await probing;
@@ -228,7 +230,7 @@ public sealed class S3ConditionalWriteTests
         fake.Hang = "PutObject";
         using var cancellation = new CancellationTokenSource();
 
-        var probing = S3ConditionalWriteProbe.RunAsync(fake.AsClient(), Options(), multipart: true, new FakeTimeProvider(), static (_, _) => { }, cancellation.Token).AsTask();
+        var probing = S3ConditionalWriteProbe.RunAsync(fake.AsClient(), Options(), multipart: true, new FakeTimeProvider(), static (_, _) => { }, static _ => { }, cancellation.Token).AsTask();
         await cancellation.CancelAsync();
 
         await Assert.ThrowsAnyAsync<OperationCanceledException>(() => probing);
@@ -481,7 +483,7 @@ public sealed class S3ConditionalWriteTests
     /// 对替身探测一次
     /// </summary>
     private static async Task<Result> Probe(FakeS3Client fake, bool multipart, bool ensureBuckets = false)
-        => await S3ConditionalWriteProbe.RunAsync(fake.AsClient(), Options() with { EnsureBuckets = ensureBuckets }, multipart, TimeProvider.System, static (_, _) => { }, CancellationToken.None);
+        => await S3ConditionalWriteProbe.RunAsync(fake.AsClient(), Options() with { EnsureBuckets = ensureBuckets }, multipart, TimeProvider.System, static (_, _) => { }, static _ => { }, CancellationToken.None);
 
     /// <summary>
     /// 以替身的探测桶为健康桶的选项
