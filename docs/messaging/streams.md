@@ -85,7 +85,7 @@ public sealed class OrderStream(IMessagePublisher publisher, IMessageReplayer re
 
 选型时要知道的行为：
 
-- 消息发到一个 direct 交换机，路由键 `<QueuePrefix><topic>`（前缀缺省 `xihan.`）。持久队列只由订阅方在启动时声明并绑定，发布方不声明队列。
+- 消息发到一个 direct 交换机，路由键 `<QueuePrefix><topic>`（前缀缺省 `xihan.`；前缀与交换机名有孤立的代理项时启动失败，它们经客户端宽松编码，两套配置会落到同一个队列上，ADR-0321）。持久队列只由订阅方在启动时声明并绑定，发布方不声明队列。
 - 发布开启了发布确认，代理确认后才返回成功；消费手动确认。
 - 处理失败的消息重新发布到队尾，后面的消息先于重试被处理；到 `MaxAttempts` 进死信队列 `<QueuePrefix><topic><DeadLetterSuffix>`。
 - 广播订阅是每个实例一条独占、随连接删除的队列 `<QueuePrefix><topic>@<InstanceId>`，重试到上限时确认掉并记 Warning，不进死信。
@@ -99,7 +99,7 @@ public sealed class OrderStream(IMessagePublisher publisher, IMessageReplayer re
 
 差别表之外，选型时要知道的行为：
 
-- 主题映射为 `<TopicPrefix><topic>`（前缀缺省 `xihan.`）。没有分区键的消息由 Kafka 分配分区，只在主题只有一个分区时全局有序。
+- 主题映射为 `<TopicPrefix><topic>`（前缀缺省 `xihan.`；前缀与 `ConsumerGroup` 有孤立的代理项时启动失败，ADR-0321）。没有分区键的消息由 Kafka 分配分区，只在主题只有一个分区时全局有序。
 - 竞争订阅没有已提交位点时从最早位点开始，订阅前发布的消息也会收到。
 - 处理失败在原位重试到 `MaxAttempts`，竞争订阅仍失败就发布到死信主题 `<TopicPrefix><topic><DeadLetterSuffix>`。原位重试是分区内有序的代价：一条消息重试期间，同分区后面的消息等待。处理器对暂时性故障应快速失败，对永久性故障尽早返回失败让它进死信。
 - 广播订阅用本实例独占的消费组 `<ConsumerGroup>@<InstanceId>`，从最新位点开始、不提交位点，重启不回放历史；重试耗尽时丢弃并记 Warning，不发布死信。
@@ -132,7 +132,7 @@ Kafka 缺省开启 `auto.create.topics.enable`，主题由 broker 建出来。�
 
 选型时要知道的行为：
 
-- 每个主题一条流 `<KeyPrefix><topic>`（前缀缺省 `xihan:messaging:`），只由订阅方在启动时连同消费组一起建立，发布不建流。
+- 每个主题一条流 `<KeyPrefix><topic>`（前缀缺省 `xihan:messaging:`，有孤立的代理项时启动失败，ADR-0321），只由订阅方在启动时连同消费组一起建立，发布不建流。
 - 竞争订阅在消费组 `ConsumerGroup` 里分摊条目，广播订阅每个实例一个组 `<ConsumerGroup>@<InstanceId>`。消费是轮询：客户端的多路复用连接不支持阻塞读，没取到就等 `PollIntervalSeconds`（缺省 0.2）再取。
 - 处理失败在原位立即重试到 `MaxAttempts`；竞争订阅仍失败就写进死信流 `<KeyPrefix><topic><DeadLetterSuffix>`，广播订阅确认掉并记 Warning，不进死信。
 - 实例崩溃时没确认的条目，空闲超过 `ClaimIdleTimeSeconds`（缺省 60）后由别的实例认领、接着计数投递。它必须大于一批条目的最长处理时间，否则还在处理的条目会被别的实例认领、重复处理。

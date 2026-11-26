@@ -62,7 +62,7 @@ public sealed class InMemoryMessageBrokerConformanceTests : MessageBrokerConform
 
 ## 依赖真实服务的套件
 
-依赖真实服务的 Provider（Redis、RabbitMQ、Kafka、PostgreSQL、SQL Server、MySQL、Oracle、S3、Nacos、Qdrant 等）在框架仓库里只在设置了对应环境变量时运行，没有就用 `Assert.SkipWhen` 跳过：`XIHAN_TEST_REDIS`、`XIHAN_TEST_RABBITMQ`、`XIHAN_TEST_KAFKA`、`XIHAN_TEST_POSTGRES`、`XIHAN_TEST_SQLSERVER`、`XIHAN_TEST_MYSQL`、`XIHAN_TEST_ORACLE`、`XIHAN_TEST_S3`、`XIHAN_TEST_NACOS`、`XIHAN_TEST_QDRANT`。CI 以服务容器提供这些服务。自己的 Provider 照这个做法：工厂方法里读环境变量，没有就跳过，这样本机没有服务也能跑其余用例，CI 再接真实服务。给不可达的存储做用例时只让被测存储的连接不可达，不要让整个宿主的库不可达：宿主里别的子系统的后台循环会如实报不可用，那是真实的故障信号而不是测试噪音。
+依赖真实服务的 Provider（Redis、RabbitMQ、Kafka、PostgreSQL、SQL Server、MySQL、Oracle、S3、Nacos、Qdrant 等）在框架仓库里只在设置了对应环境变量时运行，没有就用 `Assert.SkipWhen` 跳过：`XIHAN_TEST_REDIS`、`XIHAN_TEST_RABBITMQ`、`XIHAN_TEST_KAFKA`、`XIHAN_TEST_POSTGRES`、`XIHAN_TEST_SQLSERVER`、`XIHAN_TEST_MYSQL`、`XIHAN_TEST_ORACLE`、`XIHAN_TEST_S3`、`XIHAN_TEST_NACOS`、`XIHAN_TEST_QDRANT`。CI 以服务容器提供 Redis、RabbitMQ、Qdrant、S3（RustFS）与 PostgreSQL、SQL Server、MySQL、Oracle 四种数据库，版本钉在 `.github/workflows/ci.yml` 里；CI 上没有 Kafka 与 Nacos，`XIHAN_TEST_KAFKA`、`XIHAN_TEST_NACOS` 的门控用例只在本机设了变量时跑，改到这两个 Provider 要另有不靠真实服务的用例兜住。自己的 Provider 照这个做法：工厂方法里读环境变量，没有就跳过，这样本机没有服务也能跑其余用例，CI 再接真实服务。给不可达的存储做用例时只让被测存储的连接不可达，不要让整个宿主的库不可达：宿主里别的子系统的后台循环会如实报不可用，那是真实的故障信号而不是测试噪音。
 
 ## Plugins.Conformance 与 xihan-conformance
 
@@ -94,13 +94,13 @@ public sealed class EchoWasmPluginConformanceTests : WasmPluginConformance
 }
 ```
 
-可覆写的成员：`Timeout`（每次协议调用，缺省 15 秒，进程外）、`VerifiesSessionToken`（进程外，缺省为真；只在插件 SDK 还没有发布校验会话令牌的版本时临时关掉）、`ConfigurationJson`（`Configure` 下发的配置节，缺省 `{}`）、`SampleRequests`（没有样例的操作以 `{}` 调用）、`ExcludedOperations`（故意崩溃或依赖宿主回调的操作）、`TrapOperation`（Wasm，给出时才跑陷阱后重建用例）。跑 Wasm 套件的测试项目在 Windows 上要设 `<CETCompat>false</CETCompat>`：套件会故意触发陷阱，影子栈强制时整个测试进程 fail-fast（[Wasm 插件](/plugins/wasm)）。
+可覆写的成员：`Timeout`（每次协议调用，缺省 15 秒，进程外）、`VerifiesSessionToken`（进程外，缺省为真；只在插件 SDK 还没有发布校验会话令牌的版本时临时关掉）、`ConfigurationJson`（`Configure` 下发的配置节，缺省 `{}`）、`SampleRequests`（没有样例的操作以 `{}` 调用；样例严格编码成 UTF-8，有孤立的代理项即用例以 `InvalidOperationException` 失败）、`ExcludedOperations`（故意崩溃或依赖宿主回调的操作）、`EnvelopeOperation`（进程外，回显交给处理器的信封的操作，以 `{}` 调用、载荷是 `{"envelopes":[{"id":…,"dataSchema":…}]}`，没有的写 `null`；缺省为空，`event-envelope` 那条用例跳过）、`TrapOperation`（Wasm，给出时才跑陷阱后重建用例）。跑 Wasm 套件的测试项目在 Windows 上要设 `<CETCompat>false</CETCompat>`：套件会故意触发陷阱，影子栈强制时整个测试进程 fail-fast（[Wasm 插件](/plugins/wasm)）。
 
 非 .NET 的插件用 Go 运行器，不需要 .NET 环境：
 
 ```bash
 go install github.com/xihanfun/framework-spec/conformance/cmd/xihan-conformance@latest
-xihan-conformance plugin --dir ./bin --exclude echoes.crash --sample 'echoes.create={"text":"hi"}'
+xihan-conformance plugin --dir ./bin --exclude echoes.crash --sample 'echoes.create={"text":"hi"}' --envelopes events.list
 xihan-conformance plugin --dir ./bin --json
 xihan-conformance vectors
 ```
@@ -112,11 +112,12 @@ xihan-conformance vectors
 | `--config` | `Configure` 下发的配置节 JSON，缺省 `{}` |
 | `--sample op=json` | 某个操作的请求样例，可重复；没有样例的操作以 `{}` 调用 |
 | `--exclude op` | 不调用的操作，可重复 |
+| `--envelopes op` | 回显交给作者的信封的操作（载荷形态同上文的 `EnvelopeOperation`），用例 `event-envelope` 用它；不给时那个用例跳过 |
 | `--case name` | 只跑指定用例，可重复 |
 | `--json` | 结果输出为 JSON |
 | `--quiet` | 不转发插件的 stderr |
 
-用例：`handshake`（握手行、版本协商、原语层版本、清单一致、声明在清单范围内、目录至少一种区域；`primitives` 取自清单、清单不以 BOM 开头、只声明一元操作、订阅方式总是写出）、`refusal`（没有共同版本时以 `FailedPrecondition` 拒绝）、`session`（不带、带错、带两个会话令牌值都以 `Unauthenticated` 拒绝）、`lifecycle`（`Configure` / `Start` / `Health` / `WatchHealth` / `Stop`，`Start` 之后报 `Ready` 或 `Degraded`，进程在宽限内退出）、`order`（调用次序不对以 `FailedPrecondition` 拒绝，`Start` 之前的 `Health` 报本地状态）、`unknown-operation`（`Unimplemented`）、`declared-operations`（每个声明的操作都返回 `status`）、`unavailable`（`Start` 之前的调用与投递报 `plugins.process.unavailable`）、`event`（订阅投递得到确认，没有订阅时跳过）、`unsubscribed`（找不到订阅报 `plugins.event.unsubscribed`，未知方式与没有信封为 `InvalidArgument`）、`stream`（`InvokeStream` 按第一帧以 `InvalidArgument` 或 `Unimplemented` 结束）、`configuration`（配置节不是对象时进入 `Failed`，`Stop` 后以退出码 0 退出）、`stop-early`（握手后直接 `Stop`，以退出码 0 退出）、`stdin`（关闭 stdin 后进程自行退出）。.NET 套件的用例说明里写着它对应的运行器用例名。每个用例单独启动一次插件进程，`XIHAN_PLUGIN_HOST_ADDRESS` 与 .NET 宿主一样是两项的列表（首选端点加回环 TCP，都没人监听）。退出码：`0` 全部通过（含跳过），`1` 有用例失败，`2` 参数或目录错误。`xihan-conformance vectors` 自检规范仓库 `conformance/vectors/` 下的数据向量（错误码、Baggage 键、握手行、版本协商等的合法与非法样例），各语言 SDK 的单元测试也直接读这些文件。
+用例：`handshake`（握手行、版本协商、原语层版本、清单一致、声明在清单范围内、目录至少一种区域；`primitives` 取自清单、清单不以 BOM 开头、只声明一元操作、订阅方式总是写出）、`refusal`（没有共同版本时以 `FailedPrecondition` 拒绝）、`session`（不带、带错、带两个会话令牌值都以 `Unauthenticated` 拒绝）、`lifecycle`（`Configure` / `Start` / `Health` / `WatchHealth` / `Stop`，`Start` 之后报 `Ready` 或 `Degraded`，进程在宽限内退出）、`order`（调用次序不对以 `FailedPrecondition` 拒绝，`Start` 之前的 `Health` 报本地状态）、`unknown-operation`（`Unimplemented`）、`declared-operations`（每个声明的操作都返回 `status`）、`unavailable`（`Start` 之前的调用与投递报 `plugins.process.unavailable`）、`event`（订阅投递得到确认，没有订阅时跳过）、`event-envelope`（`--envelopes` 指明回显信封的操作时，向第一个订阅投递三条 `data_schema` 不同的信封，再调那个操作核对交给作者的 `dataSchema` 与投递时逐字符相同、空串那条为没有；没有订阅或没有指明时跳过）、`unsubscribed`（找不到订阅报 `plugins.event.unsubscribed`，未知方式、没有信封与读不出的信封 `time` 为 `InvalidArgument`，读不出的 `time` 排在找订阅之前）、`stream`（`InvokeStream` 按第一帧以 `InvalidArgument` 或 `Unimplemented` 结束）、`configuration`（配置节不是对象时进入 `Failed`，`Stop` 后以退出码 0 退出）、`stop-early`（握手后直接 `Stop`，以退出码 0 退出）、`stdin`（关闭 stdin 后进程自行退出）。.NET 套件的用例说明里写着它对应的运行器用例名。每个用例单独启动一次插件进程，`XIHAN_PLUGIN_HOST_ADDRESS` 与 .NET 宿主一样是两项的列表（首选端点加回环 TCP，都没人监听）。退出码：`0` 全部通过（含跳过），`1` 有用例失败，`2` 参数或目录错误。`xihan-conformance vectors` 自检规范仓库 `conformance/vectors/` 下的数据向量（错误码、Baggage 键、握手行、版本协商等的合法与非法样例），各语言 SDK 的单元测试也直接读这些文件。
 
 两份套件都不提供宿主回调服务，`Host.Invoke` / `Host.Publish` 的令牌与权限、崩溃重启由宿主实现的测试覆盖。
 

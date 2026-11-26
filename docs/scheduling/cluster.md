@@ -157,7 +157,7 @@ public sealed class IndexRebuilder(ILeaderElection election)
 
 ## 事件
 
-装配了消息能力时，引擎经 `IMessagePublisher` 发布 CloudEvents 信封：`Source` 为 `/scheduling`，`Subject` 为运行 ID（作业级事件为作业名），`Data` 是 `SchedulingEventData` 的 JSON（作业、触发器名、运行 ID、触发来源、状态、各时刻、错误码与消息、`Attempt`、`RetryOf`、节点）。没有发布者时跳过，发布失败只记日志。
+装配了消息能力时，引擎经 `IMessagePublisher` 发布 CloudEvents 信封：`Source` 为 `/scheduling`，`Subject` 为运行 ID（作业级事件为作业名），`Data` 是 `SchedulingEventData` 的 JSON（作业、触发器名、运行 ID、触发来源、状态、各时刻、错误码与消息、`Attempt`、`RetryOf`、节点）。没有发布者时跳过，发布失败只记日志。信封的 `Type` 是主题；应用用 `services.AddMessageDataSchema(SchedulingTopics.RunFailed, "https://schemas.example.com/scheduling/run.json")` 给某个主题登记了数据模式时，信封带上这个 `dataschema`，没登记的不带（ADR-0323，见[领域事件](/messaging/domain-events)）。
 
 | 主题（`SchedulingTopics`） | 时机 |
 | --- | --- |

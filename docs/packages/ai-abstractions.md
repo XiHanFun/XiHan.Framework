@@ -104,7 +104,7 @@ dotnet add package XiHan.Framework.AI.Abstractions --prerelease
 | `Knowledge.IKnowledgeIngestor`、`IKnowledgeRetriever`、`IRagPromptAugmenter`、`IChunkingStrategy` | 流水线；`KnowledgeIngestorExtensions` 提供单篇的 `IngestAsync` 与 `RemoveAsync` |
 | `Knowledge.KnowledgeMetadataKeys` | 框架认识的块元数据键：`Title`（`title`）、`Source`（`source`），提示增强依次用它们写片段的来源，都没有时用文档 ID |
 | `Knowledge.IKnowledgeStore` | Provider 契约：`UpsertAsync`、`DeleteAsync`、`TrimAsync`（按 `KnowledgeTrim` 列表删每篇文档里块序号不小于给定值的记录）、`SearchAsync`（收 `KnowledgeSearch`：向量、条数、过滤与最低得分，按 `Score` 降序） |
-| `Knowledge.KnowledgeIngestRequest`、`KnowledgeQuery`、`KnowledgeRecord`、`RetrievedChunk`、`RetrievalFilter`、`ChunkingOptions`、`KnowledgeOptions` | 知识库的数据类型；`KnowledgeRecord.IdOf(documentId, chunkIndex)` 生成 `<documentId>#<chunkIndex>` |
+| `Knowledge.KnowledgeIngestRequest`、`KnowledgeQuery`、`KnowledgeRecord`、`RetrievedChunk`、`RetrievalFilter`、`ChunkingOptions`、`KnowledgeOptions` | 知识库的数据类型；`KnowledgeRecord.IdOf(documentId, chunkIndex)` 生成 `<documentId>#<chunkIndex>`；文档 ID 不能有孤立的代理项（向量键按记录 ID 的 UTF-8 散列，只差在它上面的两篇文档会互相覆盖分块），`RetrievalFilter.DocumentIds` 里有这样的 ID 时构造抛 `ArgumentException`（ADR-0321） |
 | `AIIdentifiers` | 名字文法 `^[a-z0-9][a-z0-9._-]{0,63}$`，工具名 `^[A-Za-z0-9_-]{1,64}$` |
 | `AIErrors`、`AIMessages` | 错误码与消息键 |
 
@@ -171,7 +171,7 @@ public sealed class EmbeddingService(IAIProviderCatalog catalog)
 
 | 错误码 | 常量 | 何时出现 |
 | --- | --- | --- |
-| `AI_VALIDATION_001` | `RequestInvalid` | 请求不合法：Provider 缺 `ChatModel` / `EmbeddingModel`、提示词缺参数、摄入的文档 ID 为空、检索的问题为空、按租户派生的默认集合名超过 64 个字符、工具参数序列化不了（以 JSON 错误交给模型）；工具名不合法或重名、知识库提示词用了 `{context}`、`{question}` 以外的占位符（启动失败） |
+| `AI_VALIDATION_001` | `RequestInvalid` | 请求不合法：Provider 缺 `ChatModel` / `EmbeddingModel`、提示词缺参数、摄入的文档 ID 为空或有孤立的代理项（逐篇，`reason` 为 `the document id has a lone surrogate`）、删除的文档 ID 有孤立的代理项（整批，不访问存储，ADR-0321）、检索的问题为空、按租户派生的默认集合名超过 64 个字符、工具参数序列化不了（以 JSON 错误交给模型）；工具名不合法或重名、知识库提示词用了 `{context}`、`{question}` 以外的占位符（启动失败） |
 | `AI_VALIDATION_002` | `DimensionsMismatch` | 嵌入维度与 `Knowledge:Dimensions` 不一致 |
 | `AI_NOTFOUND_001` | `ProviderNotFound` | Provider 未配置，或它的种类没有登记工厂；没写 Provider 名而目录没有默认 |
 | `AI_NOTFOUND_002` | `PromptNotFound` | 提示词模板不存在 |

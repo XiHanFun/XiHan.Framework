@@ -116,7 +116,7 @@ public sealed class ArchiveJob : IJob
 | `JobSchedulerEngine`、`SchedulerOptions` | 引擎（同时是 `IJobScheduler`）与选项；`NodeId`、`IsLeader`、`IsRunning`、`RunningCount`、`PollOnceAsync`（测试与一致性套件用：执行一个轮询周期，并等本周期起的运行连同收尾结束） |
 | `IJobStore`、`JobRecord`、`TriggerRecord`、`TriggerState`、`SchedulerNodeRecord` | Provider 契约与存储形态；按查询或过滤项列出的六个读取都以 `List` 开头：`ListTriggersAsync`、`ListRunsAsync`、`ListRunningRunsAsync`、`ListLastRunsAsync`、`ListCancelRequestedRunsAsync`、`ListNodesAsync`（ADR-0270） |
 | `ILeaderElection`、`LeaderLease` | 租约式领导选举 |
-| `SchedulingTopics`、`SchedulingEventData` | `scheduling.job.*` / `scheduling.run.*` 事件 |
+| `SchedulingTopics`、`SchedulingEventData` | `scheduling.job.*` / `scheduling.run.*` 事件；`AddMessageDataSchema(SchedulingTopics.…, dataSchema)` 登记了数据模式的主题，发布的信封带上 `dataschema`（ADR-0323） |
 | `SchedulingErrors`、`SchedulingMessages`、`SchedulingCapabilities` | 错误码、消息键（目录 `scheduling`）、能力 ID |
 
 `SchedulingServiceCollectionExtensions` 提供 `AddJob<TJob>`（两个重载）、`AddJobType<TJob>`（两个重载）、`AddJobCalendar`、`GetJobRegistry`、`GetJobTypeRegistry`、`GetJobCalendars`，以及给 Provider 用的 `AddJobSchedulerEngine(options)`。
@@ -204,7 +204,7 @@ public sealed class ExportRunner(IJobScheduler scheduler)
 | `SCHEDULING_NOTFOUND_003` | 触发器不存在 |
 | `SCHEDULING_NOTFOUND_004` | 运行不存在或已结束 |
 | `SCHEDULING_NOTFOUND_005` | 作业没有代码定义，不能恢复 |
-| `SCHEDULING_VALIDATION_001` | 作业定义不合法（触发器名重复、日历未登记） |
+| `SCHEDULING_VALIDATION_001` | 作业定义不合法（触发器名重复、日历未登记、作业或触发器的说明与数据有孤立的代理项） |
 | `SCHEDULING_VALIDATION_002` | 运行历史查询的分页越界（`SchedulingErrors.RunQueryInvalid`，HTTP 400） |
 | `SCHEDULING_VALIDATION_003` | 作业状态列表的查询不合法：每页条数越界或续页令牌不是调度器给出的（HTTP 400） |
 | `SCHEDULING_CONFLICT_001` | 作业正在运行且不允许并发 |

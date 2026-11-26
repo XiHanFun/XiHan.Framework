@@ -57,7 +57,7 @@ builder.AddXiHan(xihan => xihan.UseStandardProfile().UseFeature<RedisCachingFeat
 | 键 | 类型 | 缺省 | 说明 |
 | --- | --- | --- | --- |
 | `XiHan:Caching:Redis:Configuration` | 字符串 | — | StackExchange.Redis 连接字符串；有绑定 `cache` 时被绑定的主值覆盖，两者都没有时装配失败；绑定的属性 `username` / `password` 覆盖其中的 `user` / `password`（连接时按客户端选项设置，不改写字符串，密码里有逗号也不会拆错） |
-| `XiHan:Caching:Redis:KeyPrefix` | 字符串 | `xihan:` | 键前缀；变更频道为 `<KeyPrefix>__changes` |
+| `XiHan:Caching:Redis:KeyPrefix` | 字符串 | `xihan:` | 键前缀；变更频道为 `<KeyPrefix>__changes`；有孤立的代理项时启动失败（ADR-0321） |
 | `XiHan:Caching:Redis:DefaultTimeToLiveSeconds` | 正数 | 300 | 条目没有指定过期时的存活时间 |
 | `XiHan:Caching:Redis:PublishChanges` | 布尔 | `true` | 写入与删除后是否向变更频道发布；关掉后本实例的同步通知不受影响 |
 | `XiHan:Caching:Redis:HealthProbeIntervalSeconds` | 正数 | 15 | 健康项的重探间隔，也是单次探测的超时 |

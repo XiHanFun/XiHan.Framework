@@ -64,7 +64,7 @@ dotnet add package XiHan.Framework.ObjectStorage.Abstractions --prerelease
 | `Blobs.IBlobStore` | `PutAsync(container, uploads)`、`GetAsync(container, key)`、`GetAsync(container, key, range)`、`HeadAsync`、`DeleteAsync(container, keys)`、`ListAsync(container, query)` |
 | `Blobs.BlobStoreExtensions` | `PutAsync(container, key, stream 或 bytes, options)`、`DeleteAsync(container, key)`、`ExistsAsync`、`ReadAllBytesAsync` |
 | `Blobs.BlobUpload` | 一项写入：键、内容流、选项 |
-| `Blobs.BlobPutOptions` | `ContentType`（缺省 `application/octet-stream`，媒体类型、最长 `MaxContentTypeLength` 255，之后可跟若干个参数：每个 `;` 两侧可以有空格（不收制表符），参数可以为空，`text/plain;` 合法；整串不以空格结尾，`text/plain; ` 不合法、`text/plain ;` 合法；`IsValidContentType` 判定；Provider 原样存取，存储客户端写不出原值的以 `OBJECTSTORAGE_VALIDATION_007` 拒绝写入）、`Metadata`（名 `^[a-z0-9][a-z0-9-]{0,63}$`，值不含控制字符，名与值合计不超过 `MaxMetadataBytes` 2048 个 UTF-8 字节）、`Overwrite`（缺省 `true`）；`Default` |
+| `Blobs.BlobPutOptions` | `ContentType`（缺省 `application/octet-stream`，媒体类型、最长 `MaxContentTypeLength` 255，之后可跟若干个参数：每个 `;` 两侧可以有空格（不收制表符），参数可以为空，`text/plain;` 合法；整串不以空格结尾，`text/plain; ` 不合法、`text/plain ;` 合法；`IsValidContentType` 判定；Provider 原样存取，存储客户端写不出原值的以 `OBJECTSTORAGE_VALIDATION_007` 拒绝写入）、`Metadata`（名 `^[a-z0-9][a-z0-9-]{0,63}$`，值不含控制字符与孤立的代理项（成对的照常合法），名与值合计不超过 `MaxMetadataBytes` 2048 个 UTF-8 字节）、`Overwrite`（缺省 `true`）；`Default` |
 | `Blobs.BlobMetadata` | 键、长度、内容类型、`ETag`、最后修改时间、自定义元数据 |
 | `Blobs.BlobContent` | 元数据、内容流与可选的实际范围 `Range`；`IAsyncDisposable`，释放时关闭流 |
 | `Blobs.BlobRange` / `BlobContentRange` | 范围请求（起点与可选长度）与实际范围（起点、长度、总长、`Last`） |

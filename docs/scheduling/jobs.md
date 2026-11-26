@@ -129,7 +129,7 @@ builder.Services.AddJob<NightlyReportJob>(new JobDefinition("reports.nightly", t
 | 属性 | 缺省 | 说明 |
 | --- | --- | --- |
 | `Triggers` | 空 | 空为只能手动触发；同一作业内触发器名重复是 `SCHEDULING_VALIDATION_001` |
-| `Data` | 空 | 传给作业的数据，被触发器与手动触发的数据逐层覆盖同名键 |
+| `Data` | 空 | 传给作业的数据，被触发器与手动触发的数据逐层覆盖同名键；作业与触发器的说明、数据（逐层的成员名与字符串值）有孤立的代理项是 `SCHEDULING_VALIDATION_001`（`reason` 为 `the definition has a lone surrogate in a description or the data`）：运行时登记直接返回它，代码登记的作业同步不过、每个周期记日志重试（ADR-0321） |
 | `AllowConcurrent` | `false` | `false` 时整个集群同一作业同一时刻最多一次运行 |
 | `RunOnEveryInstance` | `false` | `true` 时每个实例按自己的时钟各自运行，不经存储抢占 |
 | `RequestsRecovery` | `false` | 运行所在节点失联时由领导者重新入队一次（`JobTrigger.Recovery`） |

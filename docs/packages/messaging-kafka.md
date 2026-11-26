@@ -56,8 +56,8 @@ builder.AddXiHan(xihan => xihan
 | 键 | 类型 | 缺省 | 说明 |
 | --- | --- | --- | --- |
 | `XiHan:Messaging:Kafka:BootstrapServers` | 字符串 | — | 引导地址，逗号分隔的 `host:port`；有绑定 `stream` 时被绑定的主值覆盖，两者都没有时装配失败。绑定的属性 `security.protocol`、`sasl.mechanism`、`sasl.username`、`sasl.password` 各自覆盖 `Properties` 里的同名键，其余绑定属性不透传 |
-| `XiHan:Messaging:Kafka:ConsumerGroup` | 字符串 | `xihan` | 消费组，同一组的实例分摊分区 |
-| `XiHan:Messaging:Kafka:TopicPrefix` | 字符串 | `xihan.` | 主题前缀 |
+| `XiHan:Messaging:Kafka:ConsumerGroup` | 字符串 | `xihan` | 消费组，同一组的实例分摊分区；有孤立的代理项时启动失败（ADR-0321） |
+| `XiHan:Messaging:Kafka:TopicPrefix` | 字符串 | `xihan.` | 主题前缀；有孤立的代理项时启动失败（ADR-0321） |
 | `XiHan:Messaging:Kafka:HealthProbeIntervalSeconds` | 正数 | 15 | 健康项的重探间隔，也是单次探测的超时 |
 | `XiHan:Messaging:Kafka:RedeliveryDelaySeconds` | 正数 | 5 | 投递没有完成（死信发布失败等）时重新投递前的等待 |
 | `XiHan:Messaging:Kafka:Properties:<key>` | 字符串 | — | 原样透传给 librdkafka（生产者与消费者共用），如 `security.protocol`、`sasl.mechanism`、`sasl.username`、`ssl.ca.location` |

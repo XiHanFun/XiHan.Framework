@@ -138,7 +138,7 @@ greetings.create	Experimental	Mcp, CommandLine	-
 | --- | --- | --- |
 | `--tenant <id>` | Baggage `xihan.tenant` | |
 | `--correlation <id>` | Baggage `xihan.correlation` | |
-| `--locale <区域>` | Baggage `xihan.locale` | 规范化后写入，失败文案据此翻译；格式不合法时忽略 |
+| `--locale <区域>` | Baggage `xihan.locale` | 规范化后写入，失败文案据此翻译（没有发起调用的失败也一样）；格式不合法时忽略 |
 | `--timeout <秒>` | 截止时间 | 正数秒，可带小数，按宿主时钟换算成绝对时间；不是正数时为用法错误 |
 | `--authorization '<方案> <值>'` | 凭据 | 没有选项时取环境变量 `XIHAN_AUTHORIZATION`；原样放入，由 Authenticate 阶段解释；格式不是「方案 空格 值」时为用法错误 |
 
@@ -153,7 +153,7 @@ app orders create --name widget --amount 3 --tenant acme --locale zh-CN --timeou
 
 ## 输出与退出码
 
-成功时把响应 JSON 写一行到 stdout，退出码 0。失败时把一行 JSON 写到 stderr：`{"code":"<错误码>","detail":"<文案>","traceId":"<trace-id>"}`，`detail` 按 `--locale` 或默认区域翻译；还没有建出调用上下文的失败（用法错误、操作未暴露）没有 `traceId`。stderr 同时承载日志与弃用提示，读失败的脚本取 stderr 的最后一行再按 JSON 解析，不要把整个 stderr 当一行 JSON。
+成功时把响应 JSON 写一行到 stdout，退出码 0。失败时把一行 JSON 写到 stderr：`{"code":"<错误码>","detail":"<文案>","traceId":"<trace-id>"}`，`detail` 按 `--locale` 或默认区域翻译：合法的区域名规范化后与调用一样协商出启用的区域（`ja-jp` 协商成 `ja-JP`，`de-AT` 回退到 `de-DE`），没给或不合法时是默认区域。还没有建出调用上下文就返回的失败（用法错误、操作未暴露、未知命令、`mcp` 的会话选项不合法）同样按 `--locale` 翻译，以前总是默认区域（ADR-0325）；它们没有 `traceId`。帮助的文案仍按默认区域。stderr 同时承载日志与弃用提示，读失败的脚本取 stderr 的最后一行再按 JSON 解析，不要把整个 stderr 当一行 JSON。
 
 ```bash
 dotnet run -- invoke greetings.create --json '{"name":"Ada","times":99}'; echo $?

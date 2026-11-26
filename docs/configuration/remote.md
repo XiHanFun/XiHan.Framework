@@ -87,7 +87,7 @@ public sealed class OrderLimits
 3. 不论首次加载成败，之后都按 `PollInterval`（缺省 30 秒，`null` 关闭轮询）带已知版本轮询；首次失败时已知版本为空，第一次成功的轮询装入整份文档。拿到新版本就整体替换这个源的数据并触发重载令牌，`IOptionsMonitor<T>` 随之更新。
 4. 轮询失败只回调 `OnError`，保留最后一份成功的数据。
 
-`RemoteConfigurationOptions` 的全部属性（`Namespace`、`Prefix`、`PollInterval`、`Clock`、`LoadTimeout`、`Optional`、`OnError`）见 [Configuration.Abstractions](/packages/configuration-abstractions#配置)；`Namespace` 在 Nacos 里是 `dataId`。
+`RemoteConfigurationOptions` 的全部属性（`Namespace`、`Prefix`、`PollInterval`、`Clock`、`LoadTimeout`、`Optional`、`OnError`）见 [Configuration.Abstractions](/packages/configuration-abstractions#配置)；`Namespace` 在 Nacos 里是 `dataId`。命名空间只有空白或有孤立的代理项时 `RemoteConfigurationOptions` 构造即抛 `ArgumentException`，Nacos 的 `Group` 与 `Tenant` 有孤立的代理项时启动失败：它们拼进请求的查询串，经宽松编码后两套配置会读写同一份文档（ADR-0321）。
 
 客户端的归属看用哪个重载：`AddXiHanRemoteConfiguration(client, options)` 传入的客户端由调用方持有，配置根释放时不释放它；`AddXiHanRemoteConfiguration(clientFactory, options)` 每次构建 Provider 按工厂新建一个客户端，配置根释放时随之释放（实现 `IDisposable` 时）。配置构建期自建、没有别人持有的客户端用工厂重载。
 

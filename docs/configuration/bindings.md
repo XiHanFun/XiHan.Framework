@@ -70,7 +70,7 @@ Kubernetes 的两种挂法都读得出卷里当前的内容。把 projected volu
 
 插件清单的 `bindings[].required` 缺省为 `true`，与特性的清单是同一个字段：部署里可以没有的绑定在清单里写 `"required": false`，插件自己处理没有它的情形。
 
-属性随绑定一起受 `binding:<绑定名>` 约束，不单独授权；属性值与主值一样不进宿主的日志与错误。下发之前宿主按清单的顺序逐个绑定核对，一个绑定里依次是有没有、类型、属性的个数、属性名与大小，报第一处不合的；全部合格之后再核对整个请求：
+属性随绑定一起受 `binding:<绑定名>` 约束，不单独授权；属性值与主值一样不进宿主的日志与错误。下发之前宿主按清单的顺序逐个绑定核对，一个绑定里依次是有没有、类型、属性的个数、属性名、大小与孤立的代理项，报第一处不合的；全部合格之后再核对整个请求：
 
 | 核对 | 不合的情形 | `reason` |
 | --- | --- | --- |
@@ -79,11 +79,12 @@ Kubernetes 的两种挂法都读得出卷里当前的内容。把 projected volu
 | 属性个数 | 一个绑定多于 64 个 | `binding '<绑定名>' has more than 64 properties` |
 | 属性名 | 不是 1 到 253 个 ASCII 字母、数字、`.`、`_`、`-`，或以 `.` 开头 | `binding '<绑定名>' has a property name that is not valid` |
 | 大小 | 一个绑定的属性名与属性值按 UTF-8 编码后合计超过 262144 字节（256 KiB），主值不计入 | `the properties of binding '<绑定名>' exceed 262144 bytes` |
+| 孤立的代理项 | 主值或属性值有孤立的代理项（ADR-0321）：gRPC 载体的 protobuf 编码会把它换成 U+FFFD，插件拿到的是另一个凭据。目录来源按 UTF-8 读，读不出它，只会从配置来源（环境变量、命令行、内存里的配置）进来 | `binding '<绑定名>' has a lone surrogate and cannot be encoded as UTF-8` |
 | 整个请求 | `Configure` 请求（配置节、授予的权限、全部绑定与工作目录）按 protobuf 二进制编码超过 2097152 字节（2 MiB）；没有声明绑定的插件同样核对，进程外与 Wasm 都按这个大小算 | `the configure request exceeds 2097152 bytes` |
 
-不合时宿主不少发、不截断，也不发 `Configure`：这个插件配置失败（`PLUGINS_UNEXPECTED_001` + `plugins.process.failed`，`phase` 为 `configure`，`reason` 是表里的固定文本，只带绑定名、类型名与上限，不带主值、属性名与属性值），宿主记一条 Error（`The configure request of plugin <清单 ID> is not sent: <reason>; the plugin is not configured.`），插件进入 Failed 并按重启策略重试。补上或改正绑定、把不该给插件的文件挪出绑定目录，或把属性名改到上面的字符集里，插件下一次重试时自己起来。属性与请求的上限只管下发给插件的那一份，宿主进程里的特性照常读到全部属性。
+不合时宿主不少发、不截断，也不发 `Configure`：这个插件配置失败（`PLUGINS_UNEXPECTED_001` + `plugins.process.failed`，`phase` 为 `configure`，`reason` 是表里的固定文本，只带绑定名、类型名与上限，不带主值、属性名与属性值），宿主记一条 Error（`The configure request of plugin <清单 ID> is not sent: <reason>; the plugin is not configured.`），插件进入 Failed：进程外插件按重启策略在后台重试；Wasm 插件启动时的配置失败不在后台重试，下一次调用再试，崩溃之后重建时的配置失败才按退避重试（ADR-0260、ADR-0325）。补上或改正绑定、把不该给插件的文件挪出绑定目录，或把属性名改到上面的字符集里，插件在下一次重试（Wasm：下一次调用）时自己起来。属性与请求的上限只管下发给插件的那一份，宿主进程里的特性照常读到全部属性。
 
-清单声明的绑定在目录里读不出来（文件在、权限不对）或超过上一节的大小与文件数上限时，插件这一次配置失败，同样进入 Failed 并按重启策略重试：读不出时 `reason` 只写异常类型，单个文件超限为 `a file of binding '<绑定名>' exceeds 524288 bytes`，合计超限为 `the files of binding '<绑定名>' exceed 1048576 bytes`，文件多于 128 个为 `binding '<绑定名>' has more than 128 files`（都不带文件名）；根目录不存在不算失败。插件宿主只读清单声明的那几个绑定目录，根目录下有多少个绑定与它无关，不数。清单声明的绑定按清单的顺序读，报第一个读不出或超限的。见[进程外插件](/plugins/out-of-process)与 [Wasm 插件](/plugins/wasm)。
+清单声明的绑定在目录里读不出来（文件在、权限不对）或超过上一节的大小与文件数上限时，插件这一次配置失败，同样进入 Failed、按上面的方式再试：读不出时 `reason` 只写异常类型，单个文件超限为 `a file of binding '<绑定名>' exceeds 524288 bytes`，合计超限为 `the files of binding '<绑定名>' exceed 1048576 bytes`，文件多于 128 个为 `binding '<绑定名>' has more than 128 files`（都不带文件名）；根目录不存在不算失败。插件宿主只读清单声明的那几个绑定目录，根目录下有多少个绑定与它无关，不数。清单声明的绑定按清单的顺序读，报第一个读不出或超限的。见[进程外插件](/plugins/out-of-process)与 [Wasm 插件](/plugins/wasm)。
 
 进程内插件拿的是整个宿主配置，宿主不下发绑定，插件自己经 `BindingResolver.Resolve(context.Configuration, context.ServiceBindingRoot)` 读。根目录在构造宿主时给：`new InProcessPluginHost(configuration, loggerFactory, serviceBindingRoot)`，应用用 `UseServiceBindingRoot` 指定了根目录时传同一个值，插件经 `PluginContext.ServiceBindingRoot` 拿到它；不传时宿主与插件都取环境变量 `SERVICE_BINDING_ROOT`。宿主在加载插件代码之前按这个根目录与宿主配置解析，按上表的有没有与类型两条核对清单声明的绑定，不合即加载失败（`PLUGINS_UNEXPECTED_001` + `plugins.plugin.load_failed`，`reason` 相同），插件程序集不加载；目录超过上一节的大小或条目数上限时同样加载失败，`reason` 是内核的消息；属性与请求的上限不核对。见 [Plugins.InProcess](/packages/plugins-inprocess)。
 

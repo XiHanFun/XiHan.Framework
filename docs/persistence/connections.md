@@ -143,6 +143,7 @@ public sealed class CodeGenDataSources(DataSourceRegistry registry)
 | 容量 | `XiHan:Persistence:DataSources:MaxCount`（缺省 64），满了再登记新名字返回 `PERSISTENCE_UNAVAILABLE_007`，不淘汰已有的；替换同名的不占名额 |
 | 测试连接 | `TestAsync(definition)`：建临时实例、走一次数据库往返、释放；不登记、不占名额。单次上限是 `HealthProbeIntervalSeconds`（缺省 15 秒），冷启动慢的库要调大；调用方取消照常抛出 |
 | 健康 | 每个数据源一条 `persistence.datasource.<name>`，后台按间隔走一次数据库往返；尚未探过 Started，成功 Ready，连不上或超时 Degraded（`PERSISTENCE_UNAVAILABLE_006`），不影响 readiness |
+| 释放 | 注册表随容器释放：先取消进行中的后台探测并等它们结束，再释放各数据源，释放返回之后不再有它开的连接留在库上；Provider 的探测不响应取消时，释放等到那次探测自己的期限（ADR-0327） |
 | 机密 | 连接串不进日志、错误与健康详情：错误原因是驱动异常的消息链，整串连接串与口令类键（`password`、`pwd`、`secret`、`token`、`key`）的值换成 `***`；主机、端口、库名、用户名保留，排查要用 |
 | Provider | SqlSugar 支持：数据库类型是 SqlSugar `DbType` 的名字，客户端是每个数据源一个的 `SqlSugarScope`，不施加实体约定、不挂过滤器与 AOP、PostgreSQL 不自动转小写、Oracle 不自动转大写。EF Core 与内存实现不支持，取用与测试连接返回 `PERSISTENCE_UNAVAILABLE_008` |
 

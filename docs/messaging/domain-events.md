@@ -153,8 +153,17 @@ builder.AddXiHan(xihan => xihan
 | `Subject` | 选择器的结果，没有选择器时省略 |
 | `Time` | `IDomainEvent.OccurredAt` |
 | `Data` | 用登记的 `JsonTypeInfo` 序列化的事件 |
+| `DataSchema` | 应用为这个 `Type` 登记了数据模式时带上，没登记的省略 |
 | `xihantenant` | 工作单元有租户时带上 |
 | 其余扩展 | `traceparent`、`xihanprincipal`、`xihancorrelation`、`xihanlocale` 由发布者从当前调用补齐 |
+
+数据模式按 CloudEvents `type` 登记，领域事件、调度与工作流发布的信封共用这张表（`MessageDataSchemas`，Preview，ADR-0323）：
+
+```csharp
+context.Services.AddMessageDataSchema("orders.placed", "https://schemas.example.com/orders/placed.json");
+```
+
+`type` 与数据模式都不能为空、只有空白或有孤立的代理项，数据模式不核对 URI 语法；同一个 `type` 再登记同一个值只记一次，另一个值抛 `ArgumentException`，最多 10000 个 `type`，满了再登记新的抛 `InvalidOperationException`。表只作用于框架自己构造的信封，应用自己构造的信封照写 `DataSchema`；不登记与以前相同。
 
 同一主题的事件一次 `PublishManyAsync`，主题按首次出现的顺序；任一项失败即派发失败，工作单元回滚，聚合的缓冲保留；全部成功后清空每个聚合的缓冲再提交。
 

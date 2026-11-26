@@ -215,7 +215,7 @@ public sealed class SmsActivity(ISmsSender sms) : IActivity
 
 ## 事件
 
-装配了消息能力时，引擎发布 CloudEvents 信封：`Source` 为 `/workflow`，`Type` 是主题，`Data` 是 `WorkflowEventData` 的 JSON，扩展属性带 `tenant` 与 `correlation`。没有发布者时跳过，发布失败只记日志。
+装配了消息能力时，引擎发布 CloudEvents 信封：`Source` 为 `/workflow`，`Type` 是主题，`Data` 是 `WorkflowEventData` 的 JSON，扩展属性带 `tenant` 与 `correlation`。没有发布者时跳过，发布失败只记日志。应用用 `services.AddMessageDataSchema(WorkflowTopics.InstanceCompleted, "https://schemas.example.com/workflow/instance.json")` 给某个主题（即信封的 `Type`）登记了数据模式时，引擎与 `PublishEvent` 活动发布的信封带上这个 `dataschema`，没登记的不带（ADR-0323，见[领域事件](/messaging/domain-events)）。
 
 | 主题前缀 | 主题 |
 | --- | --- |

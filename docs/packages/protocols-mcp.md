@@ -22,7 +22,7 @@ MCP 协议版本 `2025-06-18`。`McpProtocolFeature` 登记选项、本包的消
 两种传输：
 
 - Streamable HTTP：`MapXiHanMcp()` 映射 `POST /mcp`，一条消息一个答复，通知回 202，不开 SSE、不建会话。`/mcp` 经过 `UseXiHan()`，请求凭据在外层认证，凭据无效时整个请求 401。
-- stdio：命令行宿主的 `mcp` 命令，stdin / stdout 每行一条 JSON-RPC 消息，日志只写 stderr；stdin 的字节按 UTF-8 解码，与控制台代码页无关（Windows 上重定向的标准输入不按 936、437 等代码页解码，中文参数不会成乱码）；答复里的非 ASCII 字符按 JSON 转义成 `\uXXXX`，只含 ASCII，按任何控制台输出代码页写出都是合法的 UTF-8；会话的凭据（`--authorization` 或 `XIHAN_AUTHORIZATION`）、租户、关联、区域与时限取自启动进程的命令行选项与环境变量，与 `invoke` 同一套映射，作用于每个 `tools/call`。凭据在每次调用的管道里认证，无效时需要认证的 tool 是 `isError`；选项不合法时退出码 64。
+- stdio：命令行宿主的 `mcp` 命令，stdin / stdout 每行一条 JSON-RPC 消息，日志只写 stderr；stdin 的字节逐行严格按 UTF-8 解码，与控制台代码页无关（Windows 上重定向的标准输入不按 936、437 等代码页解码，中文参数不会成乱码）；答复里的非 ASCII 字符按 JSON 转义成 `\uXXXX`，只含 ASCII，按任何控制台输出代码页写出都是合法的 UTF-8；会话的凭据（`--authorization` 或 `XIHAN_AUTHORIZATION`）、租户、关联、区域与时限取自启动进程的命令行选项与环境变量，与 `invoke` 同一套映射，作用于每个 `tools/call`。凭据在每次调用的管道里认证，无效时需要认证的 tool 是 `isError`；选项不合法时退出码 64。
 
 ## 何时使用
 
@@ -80,7 +80,7 @@ app.MapXiHanMcp();      // POST /mcp
 | `McpProtocolFeature` | 特性入口 |
 | `McpProtocolOptions` | `ServerName`、`ServerVersion`、`Instructions`、`Tools`、`AllowedOrigins`、`MaxRequestBodyBytes`；`ToolNameFor(contract)`、`IsAllowedOrigin(origin)` |
 | `Transports.McpEndpointRouteBuilderExtensions` | `MapXiHanMcp(pattern)`，缺省 `/mcp` |
-| `Transports.McpStdioTransport` | `RunAsync(server, services, input, output, cancellationToken)`：按行读写的 stdio 传输，读取器交来的每一行严格编码成 UTF-8，有孤立代理项的一行答复解析错误（-32700）、继续下一行；`OpenInput(stream)`：按 UTF-8 解码标准输入的读取器（跳过 UTF-8 BOM，不按 BOM 改用别的编码）。自己托管时用 `McpStdioTransport.OpenInput(Console.OpenStandardInput())` 构造 `input`，不要直接用 `Console.In` |
+| `Transports.McpStdioTransport` | `RunAsync(server, services, input, output, cancellationToken)`：按行读写的 stdio 传输，`input` 是 stdin 的字节流，由调用方释放；先按 LF、CR 或 CR LF 分行（开头的 UTF-8 BOM 不算内容），再把每一行严格解码成 UTF-8，有非法 UTF-8 的一行答复解析错误（-32700）、接着读下一行。自己托管时传 `Console.OpenStandardInput()`，不要用 `Console.In` |
 | `Server.McpServer` | JSON-RPC 服务端：`Tools`、`FindTool`，由特性构造、交给传输处理消息；常量 `ProtocolVersion` = `2025-06-18`、`ProtocolVersionHeader` = `MCP-Protocol-Version` |
 | `Tools.McpTool` | 一个 tool：名字、操作描述、输入 / 输出 Schema、提示 |
 | `Tools.McpToolAnnotations` | `For(contract)`：只读、破坏性、幂等提示 |
@@ -103,10 +103,10 @@ tool 描述的消息键、提示的推导表与 JSON-RPC 错误表见 [gRPC、MC
 
 - `tools/list` 不分页；`inputSchema` 在请求 Schema 的 `type` 不是 `object` 或没有 Schema 时为 `{"type":"object"}`，`outputSchema` 只在响应 Schema 是对象时给出。
 - `tools/call` 成功时 `content[0].text` 是响应 JSON，响应是对象时同时给 `structuredContent`。
-- `tools/call` 的调用来源记 `mcp` 与 tool 名，HTTP 传输时远端地址、User-Agent 与来源页沿用外层请求（ADR-0043）；stdio 的答复只含 ASCII，`mcp` 命令按 UTF-8 解码 stdin、不随控制台代码页，直接调用 `McpStdioTransport` 时自己按 UTF-8 构造读取器。
+- `tools/call` 的调用来源记 `mcp` 与 tool 名，HTTP 传输时远端地址、User-Agent 与来源页沿用外层请求（ADR-0043）；stdio 的答复只含 ASCII；stdin 按字节分行、逐行严格解码成 UTF-8，不随控制台代码页，非法的 UTF-8 不换成 U+FFFD 执行（ADR-0320）。
 - 不开 SSE 流、不建会话（不发 `Mcp-Session-Id`），`GET` / `DELETE` 为 405；`MCP-Protocol-Version` 不受支持时 400，缺失按当前版本处理。
 - HTTP 入口先校验源、内容类型与请求体大小（ADR-0199）：带 `Origin` 而不在 `AllowedOrigins` 里 403，`Content-Type` 不是 `application/json` 415，请求体超过 `MaxRequestBodyBytes` 413。
-- stdio 调用以匿名主体执行，要求权限或登录的操作总是得到 `isError` 结果。
+- stdio 没有外层认证：会话的凭据在每个 `tools/call` 的管道里认证，没给或无效时要求权限或登录的操作得到 `isError` 结果；会话选项不合法时的用法错误按 `--locale` 翻译（ADR-0325）。
 
 | 错误码 | 情形 | JSON-RPC `error.code` |
 | --- | --- | --- |

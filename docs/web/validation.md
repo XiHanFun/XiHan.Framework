@@ -14,7 +14,7 @@
 
 | 步骤 | 做什么 | 失败码 |
 | --- | --- | --- |
-| 1. 取载荷 | HTTP、gRPC、MCP、命令行进来的调用用协议适配器绑定好的 JSON 载荷（空载荷视为 `{}`）；类型化调用（`IOperationInvoker.InvokeAsync<TRequest, TResponse>`）按序列化元数据把请求对象编码一次 | 载荷不是 JSON：`KERNEL_VALIDATION_001` |
+| 1. 取载荷 | HTTP、gRPC、MCP、命令行进来的调用用协议适配器绑定好的 JSON 载荷（空载荷视为 `{}`）；类型化调用（`IOperationInvoker.InvokeAsync<TRequest, TResponse>`）只在描述带 Schema 时按序列化元数据把请求对象编码一次，编码严格，没有 Schema 时不经 JSON | 载荷不是 JSON，或类型化请求的字符串有孤立的代理项（`reason` 为 `$`，与原始调用里同样的请求相同）：`KERNEL_VALIDATION_001` |
 | 2. Schema 校验 | 操作带 Schema 时按请求 Schema 校验载荷 | `KERNEL_VALIDATION_003` |
 | 3. 解码与自校验 | 解码成请求对象并记录在上下文；请求实现了 `IValidatableObject` 时调用 `Validate`，每条 `ValidationResult` 按成员名列为违规 | `KERNEL_VALIDATION_004` |
 

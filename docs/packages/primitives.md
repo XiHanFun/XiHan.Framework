@@ -42,7 +42,8 @@ dotnet add package XiHan.Framework.Primitives --prerelease
 | `DeadlineText` | 截止时间文本的解析与写出（RFC-0003 规则 8）：`TryParse(text, out deadline)` 按文法整串匹配，必须有 `T`、秒与偏移，小数一到九位、比 100 纳秒细的部分截断，读不出返回 `false`；`Format(deadline)` 写成 UTC、七位小数加 `+00:00`。HTTP 的 `xihan-deadline` 与插件协议的 `deadline` 共用；`TryParse` 转给 `TimestampText` |
 | `TimestampText` | RFC 3339 时间戳文本的解析（RFC-0003 规则 8 的读法）：`TryParse(text, out timestamp)` 按整串匹配、不裁剪空白，必须有 `T`（或 `t`）、秒与偏移（`Z`、`z` 或 `±HH:MM`），小数一到九位、比 100 纳秒细的部分截断，读出的是 UTC 时刻；不交给 `DateTimeOffset.TryParse`，没有偏移的文本不按本机时区读。截止时间的文本与消息信封的 `time` 共用，只有解析，没有写出 |
 | `OperationId` | 操作 ID 的文法：`IsValid`、`Validate`、`ResourceOf`、`VerbOf`；`MaxLength` = 128 |
-| `BaggageKeys` | 已登记的 Baggage 键：`xihan.tenant`、`xihan.principal`、`xihan.correlation`、`xihan.idempotency-key`、`xihan.locale`；值的约束 `MaxValueLength`（256）与 `IsAcceptableValue(value)`（非空、不超长、不含控制字符，ADR-0204） |
+| `BaggageKeys` | 已登记的 Baggage 键：`xihan.tenant`、`xihan.principal`、`xihan.correlation`、`xihan.idempotency-key`、`xihan.locale`；值的约束 `MaxValueLength`（256）与 `IsAcceptableValue(value)`（非空、不超长、不含控制字符与孤立的代理项，ADR-0204、ADR-0321） |
+| `UnicodeText` | 文本的 Unicode 判定（Stable）：`HasLoneSurrogate(text)` 判文本里有没有孤立的代理项（不在一对之中的 U+D800–U+DFFF 码元：单独的高或低代理项、颠倒的一对、末尾的高代理项），成对的是平面以外的一个字符、不算（RFC-0001「孤立的代理项」，ADR-0321）。宽松的编码（`Encoding.UTF8`、`Uri.EscapeDataString`、JSON 写出器）把孤立的代理项换成 U+FFFD，只差在它上面的两段文本编出相同的字节；标识、Baggage 的值与运营方配置的前缀后缀都用它拒收，从外部输入拼这类文本之前先用它判断 |
 | `PipelineStage` / `PipelineStageExtensions` | 固定的十一个管道阶段及其清单名 |
 | `LifecycleState` / `LifecycleStateExtensions` | 九个生命周期状态与合法迁移（`CanTransitionTo`、`IsServing`） |
 | `Stability` / `ApiLevelAttribute` | 稳定性分级 |
@@ -117,7 +118,7 @@ var text = InventoryMessages.OutOfStock.L(("requested", 3), ("available", 1));
 | --- | --- |
 | 成功值非空 | `Result.Success<T>(value)` 拒绝 `null`；可能没有值时用 `Result<Maybe<T>>` |
 | 消息键文法 | `^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)+$`，首段是领域，最长 128 个字符（`MessageTemplate.MaxKeyLength`） |
-| Baggage 键 | 键名格式 `xihan.<name>`（`BaggageKeys.IsWellFormed`），登记表见 `BaggageKeys.Registered`；各载体入站只收已登记的键、出站只写已登记的键（`BaggageKeys.IsRegistered`），格式合法的其他键只在进程内可用；主体只传 ID，敏感信息不进 Baggage |
+| Baggage 键 | 键名格式 `xihan.<name>`（`BaggageKeys.IsWellFormed`），登记表见 `BaggageKeys.Registered`；各载体入站只收已登记的键、出站只写已登记的键（`BaggageKeys.IsRegistered`），格式合法的其他键只在进程内可用；已登记键的值不合 `IsAcceptableValue`（含有孤立的代理项）时入站丢弃这个成员、`WithBaggage` 抛 `ArgumentException`，幂等键照旧留着交给 Idempotency 阶段；主体只传 ID，敏感信息不进 Baggage |
 | 清单校验 | `Manifest.Validate()` 校验字段格式与跨字段约束，失败为 `PRIMITIVES_VALIDATION_001` |
 | 消息文案 | `ManifestMessages` 与 `ResultMessages` 是本包的消息键常量，文案在 `Localization/<区域>.json`，只是嵌入资源，由 `Localization.InMemory` 代为装载；`IMessageResolver.Negotiate` 协商出的区域由内核按调用的 Baggage 安装，本地化特性设进程默认 |
 | 遮蔽 | `Redaction` 供选项与携带凭据的记录在 `ToString()` 里打印口令、密钥、令牌与整串连接串（RFC-0014） |
@@ -127,7 +128,7 @@ var text = InventoryMessages.OutOfStock.L(("requested", 3), ("available", 1));
 | `PRIMITIVES_VALIDATION_001` | 原语参数非法：空错误码、空消息键、清单跨字段约束等 |
 | `PRIMITIVES_VALIDATION_002` | 使用了未初始化的 `Result`（`default` 值） |
 
-一致性向量在 XiHan Spec 的 `conformance/vectors/primitives/`：错误码格式、生命周期迁移、能力依赖文本、Baggage 键、操作 ID（含 128 个字符的上限两侧），单元测试直接回放；截止时间文本的文法回放 `plugin/deadlines.json` 的合法、不合法与写出三部分。Go SDK 的 `primitives` 包通过同一套向量。
+一致性向量在 XiHan Spec 的 `conformance/vectors/primitives/`：错误码格式、生命周期迁移、能力依赖文本、Baggage 键（值的约束另有以码元写出孤立与成对代理项的 `acceptableUtf16` / `unacceptableUtf16`）、操作 ID（含 128 个字符的上限两侧），单元测试直接回放；截止时间文本的文法回放 `plugin/deadlines.json` 的合法、不合法与写出三部分。Go SDK 的 `primitives` 包通过同一套向量。
 
 ## 相关
 

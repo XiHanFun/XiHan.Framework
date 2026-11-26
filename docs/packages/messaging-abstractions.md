@@ -51,7 +51,7 @@ builder.AddXiHan(xihan => xihan
 | 键 | 类型 | 缺省 | 说明 |
 | --- | --- | --- | --- |
 | `XiHan:Messaging:MaxAttempts` | 正整数 | 3 | 一条消息最多投递次数（含首次），超过进死信 |
-| `XiHan:Messaging:DeadLetterSuffix` | 字符串 | `.dlq` | 死信主题后缀 |
+| `XiHan:Messaging:DeadLetterSuffix` | 字符串 | `.dlq` | 死信主题后缀；不能只有空白或有孤立的代理项，否则启动失败（ADR-0321） |
 | `XiHan:Messaging:InstanceId` | 字符串 | 不写，每次启动生成 | 本实例在代理上的标识（广播订阅的队列名与消费组名用它）；1 到 64 个字母、数字、`.`、`_`、`-`，字母或数字开头，不合文法装配失败；必须每个同时在线的实例唯一 |
 | `XiHan:Messaging:Outbox:PollIntervalSeconds` | 正数 | 1 | 发件箱投递循环的轮询间隔 |
 | `XiHan:Messaging:Outbox:BatchSize` | 1 到 1000 的整数 | 100 | 发件箱每轮最多投递条数，也是每轮最多删除的已投递行数；按它分页查发件箱表，不能超过查询的取出上限 `EntityQuery.DefaultMaxTake` |
@@ -79,7 +79,7 @@ builder.AddXiHan(xihan => xihan
 | `MessageEnvelope` | CloudEvents 信封：`Id`、`Source`、`Type`（必填）、`Time`、`Subject`、`DataSchema`（CloudEvents 的 `dataschema`，`null` 是没有，空串或只有空白抛 `ArgumentException`，不核对 URI 语法，ADR-0305）、`DataContentType`（缺省 `application/json`）、`Data`、`Extensions`；`WithExtension`、`Extension`、`IsJsonData` |
 | `EnvelopeExtensions` | 扩展属性名常量 `Tenant`（`xihantenant`）、`Principal`（`xihanprincipal`）、`Correlation`（`xihancorrelation`）、`Locale`（`xihanlocale`）、`TraceParent`、`PartitionKey`（`xihankey`）；扩展与 Baggage 键的对应 `BaggageMappings`；保留名 `ReservedNames`（CloudEvents 的规范属性名与结构化 JSON 的成员名，按序数升序的只读列表）；`IsValidName`（小写字母与数字、1 到 20 个字符，且不是保留名）。`MessageEnvelope` 的 `Extensions` 与 `WithExtension` 遇到保留名抛 `ArgumentException` |
 | `TopicName` | 主题文法 `^[a-z0-9][a-z0-9._-]{0,127}$`；`IsValid`、`Validate`、`MaxLength`（128） |
-| `CloudEventsFormat` | 结构化 JSON 编解码：`Encode`、`Decode`（返回 `Result<MessageEnvelope>`）、`ContentType`。`Decode` 先过内核 `JsonText.FindProblem` 的共同检查，再按 RFC-0009「信封」读，规则见下文「行为与限制」；`Encode` 写完自己再过一遍检查，读不回来时抛出 `MESSAGING_VALIDATION_002`，字符串属性有孤立的代理项时写之前就抛出；CloudEvents 的 binary 模式不经 `Encode`，写头之前做同样的属性核对 |
+| `CloudEventsFormat` | 结构化 JSON 编解码：`Encode`、`Decode`（返回 `Result<MessageEnvelope>`）、`ContentType`。`Decode` 先过内核 `JsonText.FindProblem` 的共同检查，再按 RFC-0009「信封」读，规则见下文「行为与限制」；`Encode` 写完自己再过一遍检查，读不回来时抛出 `MESSAGING_VALIDATION_002`，字符串属性有孤立的代理项时写之前就抛出，JSON 数据的字符串里有不合法的 UTF-8 字节时同样抛出、不写成 U+FFFD（ADR-0323）；CloudEvents 的 binary 模式写头之前做同样的属性核对，声明为 JSON 且不空的数据也先经 `Encode` 核对 |
 | `IMessagePublisher`、`DirectPublisher` | 应用发布入口（作用域服务）：`PublishAsync`、`PublishManyAsync`，主题不合法逐项返回 `MESSAGING_VALIDATION_001`；在调用内发布时从当前调用补齐缺失的扩展 |
 | `IMessageBroker` | Provider 实现的传输：发布、`StartAsync(subscriptions, dispatch, ct)`（每个订阅一份消费）、`StopAsync` |
 | `IMessageReplayer` | 流能力：`ReplayAsync(topic, since, ct)` 按时刻重放 |
@@ -88,7 +88,8 @@ builder.AddXiHan(xihan => xihan
 | `MessageDispatcher` | 把投递变成一次内核调用，`FindDelivery(context)` 取当前投递 |
 | `MessageDeliveryAttempt` | 代理一侧的一次投递尝试：`RunAsync(dispatch, delivery, options, app, logger, ct)` 等应用进入服务状态、派发一次并给出结论；`Exhausted(delivery, error, logger)` 给出用完尝试次数的结论（竞争进死信、广播丢弃）并记日志；`Undecodable(subscription, error, logger)`（Preview）给出无法解码的消息的结论，去向相同，不派发、不重试，也不等应用进入服务状态 |
 | `MessageDeliveryOutcome`、`DeliveryDisposition` | 结论与了结方式：`Complete`（确认）、`Retry`（以下一次尝试号重投）、`DeadLetter`（竞争订阅用完次数）、`Discard`（广播订阅用完次数）、`Abandon`（被停止打断，不了结、不算失败，也是 `default`） |
-| `MessagingServiceCollectionExtensions` | `AddMessageHandler<THandler>(topic, mode = Competing)`、`AddDomainEvent<TEvent>(topic, type, info, subject)`、`GetMessageSubscriptions`、`GetDomainEventRegistry` |
+| `MessagingServiceCollectionExtensions` | `AddMessageHandler<THandler>(topic, mode = Competing)`、`AddDomainEvent<TEvent>(topic, type, info, subject)`、`AddMessageDataSchema(type, dataSchema)`（Preview，ADR-0323）、`GetMessageSubscriptions`、`GetDomainEventRegistry` |
+| `Envelopes.MessageDataSchemas` | 按 CloudEvents `type` 登记的数据模式（Preview）：`Find(type)` 没登记时无值、`Count`；由 `AddMessageDataSchema` 在装配期填充、以实例注册为单例，没有登记任何模式时容器里没有它。取值照 `MessageEnvelope.DataSchema`，另拒孤立的代理项；同一个 `type` 登记另一个值抛 `ArgumentException`，最多 10000 个 `type`（满了抛 `InvalidOperationException`）。领域事件、调度与工作流发布的信封按自己的 `type` 查它，应用自己构造的信封不按它补 |
 | `MessagingOptions`、`MessagingInstance`、`MessagingRegistration`、`MessagingRuntime` | 公共选项（`InstanceId` 只有配置值，没有配置为空）；本实例标识（`Id`，单例，每个宿主一个：配置了 `XiHan:Messaging:InstanceId` 取配置值，否则构造时生成，广播订阅的队列名与消费组名里带它，必须每个同时在线的实例唯一，见[订阅方式](/messaging/pubsub)）；Provider 共用的装配；启停消费 |
 | `OutboxFeature`、`OutboxPublisher`、`OutboxDispatcher`、`OutboxMessage`、`OutboxOptions` | 事务性发件箱：特性（常量 `HealthName` = `messaging.outbox.backlog`）、发布者、投递循环（`RunOnceAsync`、`RunAsync`）、实体（`NextAttemptAt`、`DispatchedAt`、`DeadLetteredAt`、`Attempts`、`LastError`）、选项（含尝试上限、退避、保留期与健康阈值，`RetryDelayAfter(attempts)`） |
 | `OutboxDeadLetters` | 死信重投（单例，由 `OutboxFeature` 登记）：`RedriveManyAsync(ids, ct)` 把死信行置回待投递，逐项结果与入参同序 |

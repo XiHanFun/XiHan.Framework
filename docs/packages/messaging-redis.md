@@ -65,7 +65,7 @@ builder.AddXiHan(xihan => xihan
 | 键 | 类型 | 缺省 | 说明 |
 | --- | --- | --- | --- |
 | `XiHan:Messaging:Redis:Configuration` | 字符串 | — | StackExchange.Redis 连接字符串；有绑定 `queue` 时被绑定的主值覆盖，两者都没有时装配失败；绑定的属性 `username` / `password` 覆盖连接字符串里的 `user` / `password`（连接时设置，不改写字符串） |
-| `XiHan:Messaging:Redis:KeyPrefix` | 字符串 | `xihan:messaging:` | 流键的前缀；发布方与订阅方要一致 |
+| `XiHan:Messaging:Redis:KeyPrefix` | 字符串 | `xihan:messaging:` | 流键的前缀；发布方与订阅方要一致；有孤立的代理项时启动失败（ADR-0321） |
 | `XiHan:Messaging:Redis:ConsumerGroup` | 字符串 | `xihan` | 竞争订阅的消费组名，文法同实例标识（字母或数字开头、最多 64 个字符、不含 `@`）；只有订阅方用到，要分摊同一主题的实例要一致 |
 | `XiHan:Messaging:Redis:BatchSize` | 1–1000 | 10 | 每次最多取的条目数 |
 | `XiHan:Messaging:Redis:PollIntervalSeconds` | 正数 | 0.2 | 没取到新条目时再取之前的等待 |

@@ -86,7 +86,7 @@ builder.AddXiHan(xihan => xihan
 }
 ```
 
-连接取宿主注入的 `cache` 绑定，没有绑定时取 `XiHan:Caching:Redis:Configuration`（两者都给时绑定优先，绑定的来源见[资源绑定](/configuration/bindings)）；两者都没有时装配直接失败；启动时连不上 Redis 同样让启动失败（`CACHING_UNAVAILABLE_001`），不降级为内存缓存。`KeyPrefix` 是 Redis 键的前缀，缺省 `xihan:`。
+连接取宿主注入的 `cache` 绑定，没有绑定时取 `XiHan:Caching:Redis:Configuration`（两者都给时绑定优先，绑定的来源见[资源绑定](/configuration/bindings)）；两者都没有时装配直接失败；启动时连不上 Redis 同样让启动失败（`CACHING_UNAVAILABLE_001`），不降级为内存缓存。`KeyPrefix` 是 Redis 键的前缀，缺省 `xihan:`；与缓存键同样不能有孤立的代理项，否则启动失败：它拼进每个键与变更频道，经客户端宽松编码，两个只差在它上面的前缀会落到同一个键空间（ADR-0321）。
 
 ## 最小示例
 

@@ -106,7 +106,7 @@ public sealed class CancelOrder : IOperation<CancelOrderRequest, CancelOrderResp
 - 记录条件：有显式动作的调用总是记录；没有时只看操作调用并按 `Selection` 判定，再去掉 `Exclude` 命中的操作，非操作调用不记录。`IncludeSuccesses` 为假时成功的调用不记录。
 - 结果：管道写入的 outcome 优先；没写入而抛出了异常时，取消记 `KERNEL_CANCELLED_001`，其他异常记 `KERNEL_UNEXPECTED_001`，异常照常向外抛；正常返回却没写结果视为成功。
 - 接收器的写入不带调用的取消令牌，被取消的调用同样记录；接收器抛出的异常以 Error 级记一条日志，不影响调用结果。
-- 细节的值是 JSON：`AddAuditDetail(key, JsonNode?)` 追加时固化，事件的 `Details` 是 `IReadOnlyDictionary<string, JsonElement>`，内存与数据库读回同一类型；同名覆盖。资源名以 `xrn:` 文本保存，可按 `AuditQuery.Resource` 精确查询。
+- 细节的键不能只有空白或有孤立的代理项，否则 `AddAuditDetail` 抛 `ArgumentException`（ADR-0321）；细节的值是 JSON：`AddAuditDetail(key, JsonNode?)` 追加时固化，事件的 `Details` 是 `IReadOnlyDictionary<string, JsonElement>`，内存与数据库读回同一类型；同名覆盖。资源名以 `xrn:` 文本保存，可按 `AuditQuery.Resource` 精确查询。
 - 事件不带调用来源 `InvocationOrigin`，需要时由应用写进细节，见[审计](/common/auditing#记录调用来源)。
 - 查询页大小 1 到 1000，缺省 100；续页令牌由实现自行校验。
 

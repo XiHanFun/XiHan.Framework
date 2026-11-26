@@ -45,7 +45,7 @@ builder.AddXiHan(xihan => xihan
 | `Type` | 必填，事件类型（如 `orders.placed`） |
 | `Time` | 可选，发生时间；从线上读出的一律是 UTC 时刻（`Offset` 为零），按时刻使用，要别的时区自己换算 |
 | `Subject` | 可选，事件所涉的对象（如 `order/42`） |
-| `DataSchema` | 可选，CloudEvents 的 `dataschema`：数据遵循的模式（如 `https://example.com/schemas/order.json`），`null` 是没有；给了就不能是空串或只有空白（否则抛 `ArgumentException`），与 `Source` 一样不核对 URI 语法，框架也不按它取模式、校验数据。四个代理、CloudEvents 协议绑定与插件协议都原样收发 |
+| `DataSchema` | 可选，CloudEvents 的 `dataschema`：数据遵循的模式（如 `https://example.com/schemas/order.json`），`null` 是没有；给了就不能是空串或只有空白（否则抛 `ArgumentException`），与 `Source` 一样不核对 URI 语法，框架也不按它取模式、校验数据。四个代理、CloudEvents 协议绑定与插件协议都原样收发，binary 模式的空 `ce-dataschema` 头与结构化 JSON 的空串一样不合法。领域事件、调度与工作流发布的信封按 `type` 带上应用用 `AddMessageDataSchema(type, dataSchema)` 登记的模式（ADR-0323，见[领域事件](/messaging/domain-events#事件到信封的映射)） |
 | `DataContentType` | 数据内容类型，缺省 `application/json` |
 | `Data` | 数据字节 |
 | `Extensions` | 扩展属性，名称只含小写字母与数字、1 到 20 个字符，且不是保留名（`EnvelopeExtensions.ReservedNames`：CloudEvents 的规范属性名与结构化 JSON 的成员名 `specversion`、`id`、`source`、`type`、`datacontenttype`、`dataschema`、`subject`、`time`、`data`、`data_base64`，按整串比较，`ids` 照常合法）；不合的在构造信封、`WithExtension` 时就抛 `ArgumentException`，四个代理一致。用 `WithExtension(name, value)` 派生、`Extension(name)` 读取，有无用 `Extension(name)` 判断 |
@@ -63,7 +63,7 @@ builder.AddXiHan(xihan => xihan
 
 幂等键 `xihan.idempotency-key` 不进入消息：派发不写幂等键，带上它会让同一请求发出的几条消息与同一条消息的重试被幂等中间件当成同一次调用。
 
-主题名满足 `^[a-z0-9][a-z0-9._-]{0,127}$`（`TopicName.IsValid` / `Validate`）；死信目标是主题名加 `DeadLetterSuffix`（缺省 `.dlq`）。线上编码是 CloudEvents 结构化 JSON（`CloudEventsFormat`，`application/cloudevents+json`）。
+主题名满足 `^[a-z0-9][a-z0-9._-]{0,127}$`（`TopicName.IsValid` / `Validate`）；死信目标是主题名加 `DeadLetterSuffix`（缺省 `.dlq`，不能有孤立的代理项，否则启动失败，ADR-0321）。线上编码是 CloudEvents 结构化 JSON（`CloudEventsFormat`，`application/cloudevents+json`）。
 
 `CloudEventsFormat.Decode` 读线上的文档先过 JSON 文本的共同检查（任何一层都不能有重复的成员，含 `data` 内部），再按 RFC-0009「信封」读：
 
@@ -73,7 +73,7 @@ builder.AddXiHan(xihan => xihan
 - `dataschema` 是规范属性，读成 `DataSchema`、不进扩展属性，写出时有则写成同名的字符串成员、没有则不写；它是空串或只有空白（`messaging.envelope.invalid`）、不是字符串（`messaging.envelope.invalid_json`，`reason` 为 `$.dataschema`）时信封不合法。
 - 规范属性之外的顶层成员是扩展属性，名字要合上表的规则。
 
-不合这些的信封是 `MESSAGING_VALIDATION_002`，按无法解码的消息处理：竞争订阅原样进死信，广播订阅丢弃。自己写结构化 JSON 或 `ce-time` 头的发送方用带偏移的写法：JavaScript 的 `Date.prototype.toISOString()`、Go 的 `time.RFC3339Nano`、Java 的 `Instant.toString()`、.NET 带偏移的 `ToString("O")` 都合文法。`Encode` 写完之后自己再过一遍读取的检查，写不出读得回来的文档（JSON 数据里有重复的成员或孤立的代理项转义、数据嵌套得让文档超过 64 层）时抛出携带 `MESSAGING_VALIDATION_002` 的 `FrameworkException`，发布的调用方当场得到。规范属性（`id`、`source`、`type`、`subject`、`dataschema`、`datacontenttype`）与扩展属性的字符串值里有孤立的代理项时，`Encode` 在写出之前同样抛出这个异常，消息带属性名，不再照 JSON 写出器的缺省写成 U+FFFD（RFC-0001「写出与转交」，ADR-0315）；CloudEvents Webhook 以 binary 模式（缺省）发布时不经 `Encode`，写头之前做同样的核对，见 [CloudEvents](/protocols/cloudevents)（ADR-0318）。内存代理不经线上编码，这类数据在它上面照样能发，换成别的代理或接上发件箱时在发布处抛出。
+不合这些的信封是 `MESSAGING_VALIDATION_002`，按无法解码的消息处理：竞争订阅原样进死信，广播订阅丢弃。自己写结构化 JSON 或 `ce-time` 头的发送方用带偏移的写法：JavaScript 的 `Date.prototype.toISOString()`、Go 的 `time.RFC3339Nano`、Java 的 `Instant.toString()`、.NET 带偏移的 `ToString("O")` 都合文法。`Encode` 写完之后自己再过一遍读取的检查，写不出读得回来的文档（JSON 数据里有重复的成员或孤立的代理项转义、数据嵌套得让文档超过 64 层，或 JSON 数据的字符串里有不合法的 UTF-8 字节）时抛出携带 `MESSAGING_VALIDATION_002` 的 `FrameworkException`，发布的调用方当场得到，不写成 U+FFFD（ADR-0323）。规范属性（`id`、`source`、`type`、`subject`、`dataschema`、`datacontenttype`）与扩展属性的字符串值里有孤立的代理项时，`Encode` 在写出之前同样抛出这个异常，消息带属性名，不再照 JSON 写出器的缺省写成 U+FFFD（RFC-0001「写出与转交」，ADR-0315）；CloudEvents Webhook 以 binary 模式（缺省）发布时写头之前做同样的属性核对，声明为 JSON 且不空的数据也先经 `Encode` 核对，写不出即抛出、不发请求，与 structured 相同，见 [CloudEvents](/protocols/cloudevents)（ADR-0318、ADR-0323）。内存代理不经线上编码，这类数据在它上面照样能发，换成别的代理或接上发件箱时在发布处抛出。
 
 ## 最小示例
 

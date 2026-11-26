@@ -46,7 +46,7 @@ features:
 
   - title: 零反射与 Native AOT
     details: 原语层与内核不使用运行时反射，注册与 Schema 在编译期生成。示例应用以 Native AOT 发布作为 CI 冒烟项，非 AOT 的 Provider 在包页注明。
-    link: /serialization/
+    link: /common/serialization
     linkText: 序列化与 Native AOT
 
   - title: 规范先于实现

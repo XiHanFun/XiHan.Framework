@@ -143,7 +143,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
 - 租约行与业务写入不在同一个事务里：SQLite 上要把租约表放到另一个库文件，见下文「SQLite 上的租约表」；PostgreSQL 等行锁数据库不需要。
 - 表结构由应用管理，`InitTables` 只用于开发与测试。`Document` 列用长文本类型（`text` / `nvarchar(max)` / `longtext`）。索引由实体上的 `[EntityIndex]` 声明，SqlSugar 的 `InitTables` 与 EF Core 的 `ApplyPersistenceConventions(Database)` 都按它建（ADR-0072）：`UX_WorkflowDefinitionRecord_Na_TeId_Ve`（`(Name, TenantId, Version)` 唯一，租户列不为空）、`UX_PlatformWorkflowDefinitionRecord_Na_Ve`（`(Name, Version)` 唯一）——每一行都受约束，服务按名字查找、取最大版本与最新发布版本；`IX_WorkflowInstanceRecord_PaInId`（`ParentInstanceId`，级联子实例）、`IX_WorkflowInstanceRecord_CoId`（`CorrelationId`，按关联 ID 启动时查重）、`IX_WorkflowInstanceRecord_TeId_EnAt`（`(TenantId, EndedAt)`，保留期清理）、`IX_WorkflowInstanceRecord_TeId_CrAt`（`(TenantId, CreatedAt)`，列表倒序分页）、`IX_WorkflowInstanceRecord_TeId_StId_CrAt`（`(TenantId, StarterId, CreatedAt)`，「我发起的」按发起人倒序分页，ADR-0096）、`IX_WorkflowNodeInstanceRecord_InId`（`InstanceId`）、`IX_WorkflowBookmarkRecord_InId`（`InstanceId`）、`IX_WorkflowBookmarkRecord_Ki_Ke`（`(Kind, Key)`，按信号、受理人、子流程节点查书签）、`IX_WorkflowBookmarkRecord_TeId_DuAt`（`(TenantId, DueAt)`，到期书签的轮询）；平台表有同样的索引，时间列不带租户前缀；租约表只按主键读写。有独立库的租户，四张租户表要建在它自己的库里（`InitTables` 只作用于默认连接）。实例列表的其他过滤组合由应用按查询习惯自己加。
 - 健康项 `workflow.database.poller`：启动时同步读一次 `workflow.poller` 的租约行，之后按 `HealthProbeIntervalSeconds` 在后台重探（独立作用域、只读工作单元、读后回滚、不经管道）；租约表不可达时条目为 Degraded（`KERNEL_UNAVAILABLE_005`），应用仍在服务。
-- 对 SQLite（`Persistence.SqlSugar`）通过 `Workflow.Conformance` 的存储与引擎全部用例；对 SQLite（`Persistence.EntityFrameworkCore`，租约表在命名连接的另一个库文件）通过引擎与任务全部用例；SQLite（`Persistence.SqlSugar`）加内存消息与发件箱的宿主也通过引擎与任务全部用例（ADR-0096 第六节）；PostgreSQL（`Persistence.SqlSugar`，门控 `XIHAN_TEST_POSTGRES`）通过存储、引擎与任务全部用例；SQL Server、MySQL 与 Oracle（`Persistence.SqlSugar`，门控 `XIHAN_TEST_SQLSERVER`、`XIHAN_TEST_MYSQL`、`XIHAN_TEST_ORACLE`）有存储全部用例的门控类，由 CI 的 database 与 oracle 分片运行，引擎与任务的用例在这三种库上还没有门控类。
+- 对 SQLite（`Persistence.SqlSugar`）通过 `Workflow.Conformance` 的存储与引擎全部用例；对 SQLite（`Persistence.EntityFrameworkCore`，租约表在命名连接的另一个库文件）通过引擎与任务全部用例；SQLite（`Persistence.SqlSugar`）加内存消息与发件箱的宿主也通过引擎与任务全部用例（ADR-0096 第六节）；PostgreSQL（`Persistence.SqlSugar`，门控 `XIHAN_TEST_POSTGRES`）通过存储、引擎与任务全部用例；SQL Server、MySQL 与 Oracle（`Persistence.SqlSugar`，门控 `XIHAN_TEST_SQLSERVER`、`XIHAN_TEST_MYSQL`、`XIHAN_TEST_ORACLE`）有存储、引擎与任务全部用例的门控类，由 CI 的 database 与 oracle 分片运行（ADR-0326）。
 
 ## SQLite 上的租约表
 
@@ -184,17 +184,17 @@ for (var i = 0; i < results.Count; i++)
     }
     else if (results[i].ValueOrThrow().Busy > 0)
     {
-        // 有实例的锁被占用而跳过，过一会儿再跑一次
+        // 有实例或定义的锁被占用而跳过，过一会儿再跑一次
     }
 }
 ```
 
-- 结果与入参等长同序，每个分区一项 `Result<DatabaseWorkflowBackfillReport>`：`Scanned`（按批扫描读到的定义、实例与书签行数）、`Rewritten`（改写的行数）、`Busy`（锁被占用而跳过的实例数）、`Batches`（扫描的批数）。一个分区失败（存储不可达是 `WORKFLOW_UNAVAILABLE_001`）只让它那一项失败，别的分区照常，失败的分区里已经提交的批留着；空集合不触存储；同一个分区写两次就回填两次，第二次改写零行。
+- 结果与入参等长同序，每个分区一项 `Result<DatabaseWorkflowBackfillReport>`：`Scanned`（按批扫描读到的定义、实例与书签行数）、`Rewritten`（改写的行数）、`Busy`（锁被占用而跳过的实例与定义数）、`Batches`（扫描的批数）。一个分区失败（存储不可达是 `WORKFLOW_UNAVAILABLE_001`）只让它那一项失败，别的分区照常，失败的分区里已经提交的批留着；空集合不触存储；同一个分区写两次就回填两次，第二次改写零行。
 - `batchSize` 是 1 到 `DatabaseWorkflowBackfill.MaxBatchSize`（1000）；越界、入参为 `null` 或租户 ID 是空白时，在动存储之前抛出参数异常。
 - 先定义、后实例，各按创建时间与 ID 的次序分批读，书签随所属实例的批走（定义级定时书签随定义）；每批在自己的只读事务里扫描，用存储写入行时同一份算法从文档重新算出查询列（书签另取所属实例的行），与行里现有的值相同就不改写（文本列的空串与 `NULL` 当作相同）。所以可以重复运行，没有过时行的库跑一遍只读不写。
-- 与引擎互斥：要改写的实例行与它的书签行在实例锁内重读再改写，一次只持有一个锁；等待超过 `XiHan:Workflow:LockTimeoutSeconds` 的这次跳过、计入 `Busy`，`Busy` 不为零时再跑一次。定义不加锁，在一个短事务里重读再写，宜在没有人编辑定义的时候运行。
+- 与引擎、定义目录互斥：要改写的实例行与它的书签行在实例锁内重读再改写，要改写的定义行与它的定时启动书签在定义 ID 的锁内重读再改写（目录改写已有定义时取的是同一把锁），一次只持有一个锁；等待超过 `XiHan:Workflow:LockTimeoutSeconds` 的这次跳过、计入 `Busy`，`Busy` 不为零时再跑一次。所以不必停服务，也可以在有人编辑定义时运行：编辑的调用提交之前回填跳过这份定义，提交之后它仍是编辑后的样子（ADR-0326）。
 - 取消在每批之前检查，抛出 `OperationCanceledException`，已经提交的批留着、进行中的那一批回滚。不经管道：租户分区在新作用域里绑定租户的分片，不看租户是否启用。
-- 在本机的 SQLite（SqlSugar 与 EF Core）上验证；PostgreSQL、SQL Server、MySQL 与 Oracle 各有回填的门控用例（`XIHAN_TEST_POSTGRES`、`XIHAN_TEST_SQLSERVER`、`XIHAN_TEST_MYSQL`、`XIHAN_TEST_ORACLE`），没设环境变量时跳过。
+- 在本机的 SQLite（SqlSugar 与 EF Core）上验证，含回填与同时进行的定义编辑；PostgreSQL、SQL Server、MySQL 与 Oracle 各有回填（含与定义编辑同时进行）的门控用例（`XIHAN_TEST_POSTGRES`、`XIHAN_TEST_SQLSERVER`、`XIHAN_TEST_MYSQL`、`XIHAN_TEST_ORACLE`），没设环境变量时跳过。
 
 ## 排序与查询列
 

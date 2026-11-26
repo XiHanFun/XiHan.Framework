@@ -24,7 +24,7 @@ AI 知识库的存储 Provider：把 `IKnowledgeStore` 映射到应用登记的 
 | --- | --- | --- |
 | `Key` | `Guid` | 键，由 `RecordId` 确定性推出（`KnowledgeVectorRecord.KeyOf`） |
 | `RecordId` | `string` | 记录 ID，`<documentId>#<chunkIndex>`，也就是 `KnowledgeRecord.Id` 与 `RetrievedChunk.Id` |
-| `DocumentId` | `string` | 带索引，按文档过滤与删除 |
+| `DocumentId` | `string` | 带索引，按文档过滤与删除；摄入与删除之前已核对过不含孤立的代理项（ADR-0321），只差在它上面的两篇文档不会写进同一组向量键 |
 | `ChunkIndex` | `int` | 带索引，块序号；重新摄入按它删掉多余的旧块 |
 | `Text` | `string` | 块文本 |
 | `Metadata` | `string` | 元数据序列化成的 JSON（源生成，不经反射） |

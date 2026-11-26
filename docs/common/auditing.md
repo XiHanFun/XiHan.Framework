@@ -84,7 +84,7 @@ public sealed class ExportOrders : IOperation<ExportOrdersRequest, ExportOrdersR
 | --- | --- |
 | `SetAuditAction(action)` | 动作不能为空白；声明后这次调用不受 `Selection` 与 `Exclude` 影响，非操作调用也记录；`IncludeSuccesses = false` 时成功的调用仍然不记 |
 | `SetAuditResource(resource)` | 参数是 `ResourceName`，事件里存它的 `xrn:<partition>:<service>:<tenant>:<type>/<id>` 文本；租户段可以为空 |
-| `AddAuditDetail(key, value)` | 键不能为空白，同名覆盖；值是 `JsonNode?`，字符串、数值、布尔、日期与 `Guid` 都能直接传（隐式转换），`null` 记为 JSON null；追加时即固化，事件里读回的是 `JsonElement` |
+| `AddAuditDetail(key, value)` | 键不能为空白，也不能有孤立的代理项（只差在它上面的两个键进记录与 JSON 之后分不开，数据库 Provider 的细节会有重复成员），否则抛 `ArgumentException`（ADR-0321）；同名覆盖；值是 `JsonNode?`，字符串、数值、布尔、日期与 `Guid` 都能直接传（隐式转换），`null` 记为 JSON null；追加时即固化，事件里读回的是 `JsonElement` |
 
 ## 哪些调用会被记录
 

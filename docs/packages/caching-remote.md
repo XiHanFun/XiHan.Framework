@@ -120,10 +120,12 @@ xihan-conformance plugin --dir bin --sample 'cache-entries.set={"key":"k","value
 
 | 消息键 | 错误码 | 触发条件 |
 | --- | --- | --- |
-| `caching.remote.key_invalid` | `CACHING_VALIDATION_001` | 插件判定键不合法：为空、含空白或控制字符，或按 UTF-8 编码后超过 512 字节 |
+| `caching.remote.key_invalid` | `CACHING_VALIDATION_001` | 插件判定键不合法：为空、含空白、控制字符或孤立的代理项，或按 UTF-8 编码后超过 512 字节 |
 | `caching.remote.options_invalid` | `CACHING_VALIDATION_002` | `ttlMs` / `slidingMs` 不是正整数或同时给出 |
 | `caching.remote.store_unavailable` | `CACHING_UNAVAILABLE_001` | 插件的后端不可用或失败 |
 | `caching.remote.capacity_reached` | `CACHING_UNAVAILABLE_001` | 插件的存储已满（`CacheGoPlugin` 满了先清过期条目，仍满才返回） |
+
+`caching.remote.key_invalid` 的 `en-US` 模板是 `The cache key '{key}' is invalid: it must be non-empty, contain no whitespace, control characters or lone surrogates, and be at most 512 bytes long in UTF-8.`，`zh-CN` 是 `缓存键“{key}”不合法：必须非空、不含空白、控制字符与孤立的代理项、按 UTF-8 编码后不超过 512 字节。`（ADR-0321）；自带这个键的插件目录照它逐字改，否则与宿主的目录冲突。
 
 ## 相关
 

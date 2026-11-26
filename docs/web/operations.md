@@ -240,7 +240,7 @@ public sealed class NightlyOrderSeeder(IServiceScopeFactory scopes)
 | 方法 | 语义 |
 | --- | --- |
 | `InvokeAsync(context, OperationRequest)` | 以 JSON 载荷调用，经完整管道；返回 `OperationResponse`（结果加响应载荷） |
-| `InvokeAsync<TRequest, TResponse>(context, id, request)` | 类型化调用，经完整管道；请求在 Validate 阶段按序列化元数据编码一次再校验 |
+| `InvokeAsync<TRequest, TResponse>(context, id, request)` | 类型化调用，经完整管道；描述带 Schema 时请求在 Validate 阶段按序列化元数据严格编码一次再校验，没有 Schema 时不经 JSON |
 | `ExecuteAsync(...)` 两种重载 | 调用方已在管道内（如宿主端点）时直接执行，不再经过管道、不校验 |
 
 这样构造的上下文没有凭据与租户：经过 Authenticate 阶段时是匿名调用，带 `Permission` 的操作会被拒绝。后台调用需要身份时，用 `context.SetCredential(new AuthenticationCredential(scheme, value))`（`Security.Abstractions`）放入凭据；需要租户时用带 `InvocationContextOptions` 的重载，在 `Baggage` 里给出 `xihan.tenant`（`BaggageKeys.Tenant`）：`App.CreateContext(services, new InvocationContextOptions { Baggage = new Dictionary<string, string> { [BaggageKeys.Tenant] = tenantId } }, cancellationToken)`，由 Tenant 阶段对照租户存储核对。不要绕过管道直接 `new` 操作类，那样会丢掉校验与事务。细节见[认证](/security/authentication)与[租户解析与隔离](/multi-tenancy/resolution)。

@@ -25,19 +25,19 @@ dotnet add package XiHan.Framework.Caching.Conformance --prerelease
 
 | 套件包 | 基类 | 用例数 |
 | --- | --- | --- |
-| [AI](#ai) | `KnowledgeStoreConformance`、`AIProviderConformance` | 4 + 5 |
-| [Auditing](#auditing) | `AuditTrailConformance` | 5 |
+| [AI](#ai) | `KnowledgeStoreConformance`、`AIProviderConformance` | 6 + 5 |
+| [Auditing](#auditing) | `AuditTrailConformance` | 6 |
 | [Caching](#caching) | `CacheStoreConformance` | 19 |
 | [Configuration](#configuration) | `RemoteConfigurationClientConformance`、`SecretStoreConformance` | 3 + 2 |
 | [Localization](#localization) | `MessageLocalizerConformance` | 8 |
 | [Messaging](#messaging) | `MessageBrokerConformance`、`MessageStreamConformance`、`OutboxConformance` | 17 + 2 + 5 |
 | [MultiTenancy](#multitenancy) | `TenantStoreConformance`、`TenantShardResolverConformance`、`TenantAdministrationConformance` | 5 + 3 + 5 |
-| [ObjectStorage](#objectstorage) | `BlobStoreConformance`、`BlobStoreProviderConformance` | 14 + 4 |
-| [Persistence](#persistence) | `RepositoryConformance`、`IdGeneratorConformance<TKey>` | 36 + 3 |
-| [Plugins](#plugins) | `PluginProtocolConformance`、`WasmPluginConformance` | 7 + 8 |
+| [ObjectStorage](#objectstorage) | `BlobStoreConformance`、`BlobStoreProviderConformance` | 15 + 4 |
+| [Persistence](#persistence) | `RepositoryConformance`、`IdGeneratorConformance<TKey>`、`DataSourceConformance`、`SchemaConformance` | 36 + 3 + 4 + 5 |
+| [Plugins](#plugins) | `PluginProtocolConformance`、`WasmPluginConformance` | 15 + 8 |
 | [Scheduling](#scheduling) | `JobSchedulerConformance`、`JobStoreConformance`、`LeaderElectionConformance` | 18 + 6 + 3 |
 | [Security](#security) | `PermissionGrantStoreConformance`、`PermissionGrantAdministrationConformance` | 6 + 6 |
-| [Workflow](#workflow) | `WorkflowStoreConformance`、`WorkflowEngineConformance`、`WorkflowTaskConformance` | 15 + 40 + 8 |
+| [Workflow](#workflow) | `WorkflowStoreConformance`、`WorkflowEngineConformance`、`WorkflowTaskConformance` | 15 + 43 + 9 |
 
 ## AI
 
@@ -140,10 +140,10 @@ dotnet add package XiHan.Framework.Caching.Conformance --prerelease
 
 | 基类 | 稳定性 | 实现 | 可覆写 |
 | --- | --- | --- | --- |
-| `PluginProtocolConformance` | Preview | `PluginDirectory`：含 `xihan.manifest.json` 与 `entry` 指向的可执行文件 | `Timeout`（每次协议调用，缺省 15 秒）、`ConfigurationJson`（缺省 `{}`）、`SampleRequests`（没有样例的操作以 `{}` 调用）、`ExcludedOperations`（故意崩溃或依赖宿主回调的操作）、`VerifiesSessionToken`（缺省为真，只在插件 SDK 还没有发布校验会话令牌的版本时临时关掉，令牌用例随之跳过） |
-| `WasmPluginConformance` | Experimental | `PluginDirectory`：含清单与模块文件 | `ConfigurationJson`、`SampleRequests`、`ExcludedOperations`、`TrapOperation`（故意陷阱的操作，给出时才跑陷阱后重建用例） |
+| `PluginProtocolConformance` | Preview | `PluginDirectory`：含 `xihan.manifest.json` 与 `entry` 指向的可执行文件 | `Timeout`（每次协议调用，缺省 15 秒）、`ConfigurationJson`（缺省 `{}`）、`SampleRequests`（没有样例的操作以 `{}` 调用；样例严格编码成 UTF-8，有孤立的代理项即用例以 `InvalidOperationException` 失败，不换成 U+FFFD 发出）、`ExcludedOperations`（故意崩溃或依赖宿主回调的操作）、`EnvelopeOperation`（回显交给处理器的信封的操作，缺省为空，见下文）、`VerifiesSessionToken`（缺省为真，只在插件 SDK 还没有发布校验会话令牌的版本时临时关掉，令牌用例随之跳过） |
+| `WasmPluginConformance` | Experimental | `PluginDirectory`：含清单与模块文件 | `ConfigurationJson`、`SampleRequests`（同上严格编码）、`ExcludedOperations`、`TrapOperation`（故意陷阱的操作，给出时才跑陷阱后重建用例） |
 
-进程外用例（以宿主身份启动进程）：握手行合法、协商出宿主支持的版本、原语层版本相同、清单与目录里的文件一致、操作与订阅在清单声明范围内；没有共同协议版本时以 `FailedPrecondition` 拒绝；`Configure` 与 `Start` 成功，之后 `Health` 与 `WatchHealth` 的第一次推送报 `Ready` 或 `Degraded` 且健康项都已声明，`Stop` 后进程在宽限内退出；未声明的操作以 gRPC `Unimplemented` 结束；每个声明的一元操作都返回带 `status` 的应答（成功时载荷是 JSON，失败时错误码合法）；向声明的订阅投递消息得到确认；stdin 关闭后进程自行退出；不带、带错或带了两个会话令牌值的调用以 `Unauthenticated` 拒绝。插件一侧的规则（ADR-0237）：握手的 `primitives` 取自清单、清单原文不以 BOM 开头、只声明一元操作、订阅的方式总是写出；调用次序不对以 `FailedPrecondition` 拒绝，`Start` 之前的 `Health` 报本地状态且没有健康项，`Start` 应答后是 `Ready` 或 `Degraded`；`Start` 之前的调用与投递报 `plugins.process.unavailable`（未声明的操作仍先报 `Unimplemented`）；投递找不到订阅报 `plugins.event.unsubscribed`，未知的方式与没有信封为 `InvalidArgument`；`InvokeStream` 第一帧不是 `start` 为 `InvalidArgument`、是 `start` 为 `Unimplemented`；配置节不是 JSON 对象时进入 `Failed`、`Stop` 后以退出码 0 退出；`Start` 之前的 `Stop` 应答后以退出码 0 退出。失败的错误都核对码、消息键、`text` 为空，`details` 按 JSON 值比较。每个用例都以两项的 `XIHAN_PLUGIN_HOST_ADDRESS`（首选端点加回环 TCP，都没人监听）启动插件。
+进程外用例（以宿主身份启动进程）：握手行合法、协商出宿主支持的版本、原语层版本相同、清单与目录里的文件一致、操作与订阅在清单声明范围内；没有共同协议版本时以 `FailedPrecondition` 拒绝；`Configure` 与 `Start` 成功，之后 `Health` 与 `WatchHealth` 的第一次推送报 `Ready` 或 `Degraded` 且健康项都已声明，`Stop` 后进程在宽限内退出；未声明的操作以 gRPC `Unimplemented` 结束；每个声明的一元操作都返回带 `status` 的应答（成功时载荷是 JSON，失败时错误码合法）；向声明的订阅投递消息得到确认；stdin 关闭后进程自行退出；不带、带错或带了两个会话令牌值的调用以 `Unauthenticated` 拒绝。插件一侧的规则（ADR-0237）：握手的 `primitives` 取自清单、清单原文不以 BOM 开头、只声明一元操作、订阅的方式总是写出；调用次序不对以 `FailedPrecondition` 拒绝，`Start` 之前的 `Health` 报本地状态且没有健康项，`Start` 应答后是 `Ready` 或 `Degraded`；`Start` 之前的调用与投递报 `plugins.process.unavailable`（未声明的操作仍先报 `Unimplemented`）；投递找不到订阅报 `plugins.event.unsubscribed`，未知的方式、没有信封与信封的 `time` 读不出（逐条取规范向量 `plugin/envelope-times.json` 的 `invalid` 与 `plugin/sdk-envelope-times.json` 的 `unreadable`，排在找订阅之前）为 `InvalidArgument`；给了 `EnvelopeOperation` 时，向第一个订阅投递三条 `data_schema` 不同的信封（会被 URI 库改写的写法、带非 ASCII 字符的 URN、空串）都得到确认，再以 `{}` 调用那个操作，它交回的 `{"envelopes":[{"id":…,"dataSchema":…}]}` 里三条的 `dataSchema` 与投递时逐字符相同、空串那条为 `null`（用例 `HandleEvent_HandsTheDataSchemaToTheHandler`，对应运行器的 `event-envelope`，ADR-0327），没有订阅或没给时跳过；`InvokeStream` 第一帧不是 `start` 为 `InvalidArgument`、是 `start` 为 `Unimplemented`；配置节不是 JSON 对象时进入 `Failed`、`Stop` 后以退出码 0 退出；`Start` 之前的 `Stop` 应答后以退出码 0 退出。失败的错误都核对码、消息键、`text` 为空，`details` 按 JSON 值比较。每个用例都以两项的 `XIHAN_PLUGIN_HOST_ADDRESS`（首选端点加回环 TCP，都没人监听）启动插件。
 进程外用例还要求清单不写 `contributes.pipeline`（进程外插件不能贡献中间件，宿主在发现时拒绝）。Wasm 套件会故意触发陷阱，Windows 上影子栈强制时整个进程会 fail-fast，所以套件先以 `PLUGINS_UNAVAILABLE_003` 拒绝；陷阱之后从同一个模块重建实例，重走握手的声明与首次相同（`wasm.md` §5）。
 
 

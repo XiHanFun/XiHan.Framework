@@ -254,6 +254,8 @@ var definition = parsed.ValueOrThrow();
 
 状态不允许时返回 `WORKFLOW_CONFLICT_002`。按标识的操作都是批量、逐项结果，单条写法是 `WorkflowDefinitionCatalogExtensions` 里的扩展方法（最小示例里的 `PublishAsync(draft.Id, …)` 就是）。
 
+改写已有定义的五个操作（`UpdateAsync`、`PublishAsync`、`DisableAsync`、`ArchiveAsync`、`DeleteAsync`）先读出调用方分区里看得到的定义，按 ID 的序数次序逐个取定义 ID 的锁（与实例锁同一套，同一 ID 只取一次），在锁内重读再核对、写回，锁持有到调用结束（事务提交或回滚之后）。别人持有时那一项等 `XiHan:Workflow:LockTimeoutSeconds` 后以 `WORKFLOW_TIMEOUT_001` 失败，同一批里别的项照常；看不到的 ID 照旧是 `WORKFLOW_NOTFOUND_001`。同时改同一份定义的两次调用由此串行，后提交的不再悄悄覆盖先提交的；同一调用里再改同一份定义复用这把锁（ADR-0326）。
+
 发布新版本不会改变旧版本的状态。按名字启动时取最新的已发布版本，已经在跑的实例留在原来的版本上，需要时用 `MigrateAsync` 迁到新版本（见[控制实例](/workflow/instances#控制实例)）。只想让新实例停用旧版本时，对旧版本调用 `DisableAsync`。
 
 ## 定义列表

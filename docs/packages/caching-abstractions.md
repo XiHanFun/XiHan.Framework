@@ -105,7 +105,7 @@ public sealed class OneShotGate(ICacheStore store)
 - 批量方法一次往返、结果与入参顺序一一对应、空集合不触后端；`SetManyAsync` 任一项选项不合法时整批不写；`RemoveManyAsync` 同一个键出现多次第二次为 `false`。
 - `GetOrCreateAsync` 合并同键并发（ADR-0271）：同一个缓存实例上，同一个键、同一种结果类型的并发未命中只回源一次，先到的调用在自己的上下文里用自己的令牌执行工厂，其余调用等它的结局，过期选项也以它为准。等待的调用取消只结束自己的等待；先到的调用取消时工厂随它取消，等待的调用里先到的一个接手、执行自己的工厂；令牌已取消且未命中的调用不回源。工厂抛出而先到的调用没有取消时，当时在等的调用收到同一个异常，不缓存。回源期间经本实例 `SetAsync`、`SetManyAsync`、`RemoveAsync`、`RemoveManyAsync` 改这个键即脱钩：结果不写回，之后的调用重新读缓存；别的实例的变更与绕过缓存经 `ICache.Store` 的写入看不见、不脱钩。结果类型不同、或在途的回源就在当前调用链上时不合并，各自回源。过期选项在未命中时、回源之前校验。合并不跨实例；在途表只存正在进行的回源，结束或被取代即移除。自写的 `ICache` 用 `InFlightLoadTable` 跟上这条契约。
 - `LockHandle` 是抽象类，只释放一次（基类原子置位，并发释放也只执行一次）；锁到期后被他人获取会换成新令牌，原句柄释放返回 `false`。包外实现 `IDistributedLock` 时派生它并实现 `ReleaseCoreAsync` 与 `ExtendCoreAsync`。锁不可重入；`TryExtendAsync` 原子续约，释放之后返回 `false`。
-- 幂等记录的作用域键是 `idem:<租户>:<长度>.<主体>:<键>`（匿名与没有租户为 `-`，主体带长度前缀，ADR-0205），不满足 `CacheKey` 文法时以 `CACHING_VALIDATION_001` 结束调用、不执行处理器（幂等键或主体 ID 含孤立的代理项时同样如此，ADR-0316）；处理中返回 `CACHING_CONFLICT_002`；成功与失败的结果都会回放，操作调用回放时还原首次的响应（XGI 载荷、类型化对象、HTTP 状态码与正文），记录属于另一个调用或响应无法还原时返回 `CACHING_CONFLICT_003`（ADR-0064）。响应编成的是空载荷（插件代理交回的应答没有响应体）时记下没有响应体，回放时按操作的描述解码空载荷：插件代理得到同样的空载荷，类型化的描述解码不了，返回 `CACHING_CONFLICT_003`；不认这一项的旧版本宿主读到这种记录时当作没有响应，同样返回 `CACHING_CONFLICT_003`（ADR-0318）。
+- 幂等记录的作用域键是 `idem:<租户>:<长度>.<主体>:<键>`（匿名与没有租户为 `-`，主体带长度前缀，ADR-0205），不满足 `CacheKey` 文法时以 `CACHING_VALIDATION_001` 结束调用、不执行处理器（幂等键或主体 ID 含孤立的代理项时同样如此，ADR-0316）；处理中返回 `CACHING_CONFLICT_002`；成功与失败的结果都会回放，操作调用回放时还原首次的响应（XGI 载荷、类型化对象、HTTP 状态码与正文），记录属于另一个调用或响应无法还原时返回 `CACHING_CONFLICT_003`（ADR-0064）。响应编成的是空载荷（插件代理交回的应答没有响应体）时记下没有响应体，回放时按操作的描述解码空载荷：插件代理得到同样的空载荷，类型化的描述解码不了，返回 `CACHING_CONFLICT_003`；不认这一项的旧版本宿主读到这种记录时当作没有响应，同样返回 `CACHING_CONFLICT_003`（ADR-0318）。成功的响应写不出（浮点是 NaN、字符串有孤立的代理项、超过 64 层、有重复成员）时，用写不出的错误 `KERNEL_UNEXPECTED_001`（`kernel.invocation.unhandled_exception`，与 XGI 入口写不出时相同）替换「处理中」标记、保留 `TimeToLive`，记录只有操作 ID、不记响应；首次调用（XGI 与类型化入口）拿到这个错误，重试回放同一个错误、不再执行（ADR-0324）。以前 60 秒内的重试得 `CACHING_CONFLICT_002`，之后会再执行一次。
 - `CacheStoreDistributedCache`：绝对过期两种写法取较早者，已过去的时刻抛 `ArgumentOutOfRangeException`；与滑动过期同时给时绝对优先；都不给时用 Provider 的默认存活时间（内存与 Redis 缺省 5 分钟）；同步成员阻塞等待异步存储。
 - `ICacheStoreInspector.RemoveByPrefixAsync` 与 `ICacheInspector.RemoveByPrefixAsync` 返回 `Result<long>`，空前缀或不合法的前缀返回 `CACHING_VALIDATION_004`、不访问后端；列键时不合法的前缀同样返回它；`CacheKeyQuery.PageSize` 为 1 到 `MaxPageSize`（1000），默认 100，越界不在构造时抛出，`ListKeysAsync`（返回 `Result<CacheKeyPage>`）以 `CACHING_VALIDATION_003` 返回、不访问后端（ADR-0084）。
 - `ICacheChangeFeed` 的处理器在写入的调用里同步执行，不应阻塞或抛出；本实例的订阅者同步收到通知，其他实例经后端转发、不回送给发出者；跨实例通知尽力而为，可能丢失。
@@ -117,10 +117,10 @@ public sealed class OneShotGate(ICacheStore store)
 
 | 错误码 | 含义 |
 | --- | --- |
-| `CACHING_VALIDATION_001` | 缓存键或幂等键不合法：幂等键拼出的存储键不满足 `CacheKey` 文法时 Idempotency 阶段以它结束调用；远程插件报告键不合法时适配器原样传出 |
+| `CACHING_VALIDATION_001` | 缓存键或幂等键不合法：幂等键拼出的存储键不满足 `CacheKey` 文法时 Idempotency 阶段以它结束调用（消息键 `caching.idempotency.invalid_key`，文案写明非空、不含空白、控制字符与孤立的代理项）；远程插件报告键不合法时适配器原样传出 |
 | `CACHING_VALIDATION_002` | 条目选项不合法（远程插件按操作集校验时返回，适配器原样传出；.NET 侧在调用插件之前抛 `ArgumentException`） |
 | `CACHING_VALIDATION_003` | 键列表的每页条数越界（`CacheKeyQuery.PageSize` 不在 1～1000，参数 `pageSize`、`max`；HTTP 400） |
-| `CACHING_VALIDATION_004` | 键前缀不合法：列键时不合键的文法，或按前缀删除时为空或不合文法（参数 `prefix`、`max`；HTTP 400） |
+| `CACHING_VALIDATION_004` | 键前缀不合法：列键时不合键的文法，或按前缀删除时为空或不合文法（消息键 `caching.inspector.prefix_invalid`，文案写明不含空白、控制字符与孤立的代理项、UTF-8 编码后的字节上限；参数 `prefix`、`max`；HTTP 400） |
 | `CACHING_UNAVAILABLE_001` | 存储不可达或操作失败，以 `FrameworkException` 抛出；锁与幂等中间件同样抛出，不当作「没拿到锁」或「没有记录」 |
 | `CACHING_UNAVAILABLE_002` | 内存缓存已达容量上限：只作为健康项 Degraded 的原因，不拒绝写入 |
 | `CACHING_CONFLICT_001` | 分布式锁被占用（`AcquireAsync` 返回；`TryAcquireAsync` 只返回无值） |

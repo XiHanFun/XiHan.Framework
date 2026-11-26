@@ -15,7 +15,7 @@
 
 ## 概述
 
-主体、租户、授权请求、策略接口与权限登记这些原语在内核的 `XiHan.Framework.Kernel.Security` 命名空间（`Principal`、`SecurityContext`、`TenantContext`、`AuthorizationRequest`、`AuthorizationDecision`、`IPolicy`、`PermissionRegistry`、`PermissionDefinition`、`ResourceName`），本包在其上定义认证与授权的组件。
+主体、租户、授权请求、策略接口与权限登记这些原语在内核的 `XiHan.Framework.Kernel.Security` 命名空间（`Principal`、`SecurityContext`、`TenantContext`、`AuthorizationRequest`、`AuthorizationDecision`、`IPolicy`、`PermissionRegistry`、`PermissionDefinition`、`ResourceName`），本包在其上定义认证与授权的组件。资源名的文法见[授权与权限](/security/authorization#资源名)：ID 段不含 `/`、空白与孤立的代理项，构造不合法时抛 `ArgumentException`（ADR-0321）。
 
 认证：宿主把协议凭据放进调用上下文，`AuthenticationMiddleware` 交给方案匹配的 `ICredentialHandler`，成功写入主体，失败以结果返回。授权：调用带 `AuthorizationRequirement` 时，`AuthorizationMiddleware` 按名在 `PolicyCatalog` 取策略判定；`permission:<code>` 在权限码已登记时映射为 `PermissionPolicy`，由 `PermissionChecker` 按用户与角色授予之并集判定，再经授予来源补充、经过滤器收窄。认证与授权失败都以 `Result` 返回，宿主翻译成 401 / 403；处理器内部的基础设施故障抛异常。
 

@@ -61,7 +61,7 @@ xihan pack [--manifest <path>] [--output <dir>] [--only dockerfile,kustomize,com
 | `--output` | 清单所在目录下的 `deploy/` | 输出目录，产物整份覆盖写入（UTF-8 无 BOM、LF 换行） |
 | `--only` | 全部 | 逗号分隔的产物种类，不区分大小写；不认识的种类为 `CLI_VALIDATION_001`，退出码 64 |
 
-产物与清单字段的映射见[部署与打包](/deployment/pack)。写出的文件包括 `Dockerfile` 与 `Dockerfile.dockerignore`、`kustomize/`（Deployment、Service、ConfigMap、HPA、PDB、Lease 的 RBAC、Secret 示例与 kustomization）、`compose.yaml`、`aspire/XiHanAppHost.g.cs`，逐行输出写出的文件；Kafka、Nacos 这类依赖服务在 Kustomize 里只出 Secret 示例，不在集群里起服务。
+产物与清单字段的映射见[部署与打包](/deployment/pack)。写出的文件包括 `Dockerfile` 与 `Dockerfile.dockerignore`、`kustomize/`（Deployment、Service、ConfigMap、HPA、PDB、Lease 的 RBAC、Secret 示例与 kustomization）、`compose.yaml`、`aspire/XiHanAppHost.g.cs`，逐行输出写出的文件；Kafka、Nacos 这类依赖服务在 Kustomize 里只出 Secret 示例，不在集群里起服务。要嵌进 ConfigMap 的文件按宽松的 UTF-8 读：非法的字节换成 U+FFFD，不报错，它们是应用自己的文本，不在 RFC-0001「写出与转交」之内（ADR-0320）。
 
 ### graph、pipeline、operations、invoke
 
@@ -80,7 +80,7 @@ xihan orders create --name widget --amount 3
 xihan migrate <来源版本> [--path <目录|.csproj|.slnx>] [--fixers <规则编号,…>] [--dry-run] [--report <文件>]
 ```
 
-工具当前没有登记任何规则集，所以任何来源版本都以 `CLI_VALIDATION_002` 失败，退出码 64。机制本身保留给之后的大版本升级（RFC-0020，`spec/migration/README.md`）：语法级 Roslyn 重写，不加载 MSBuild 工作区；先扫描收集跨文件事实，再按规则顺序改写回写，之后写生成文件、删除与改名；改不了的位置留 `// xihan-migrate(<规则编号>): <说明>` 标记；对已迁移的代码再跑一遍零改动；跳过 `bin/`、`obj/`、`.git/`、`.vs/`、`node_modules/`、`*.g.cs`、`*.Designer.cs`，不跟随符号链接与目录联接（链接可能指向 `--path` 之外，ADR-0221）。`--dry-run` 只出报告不写文件，`--report` 把 JSON 报告写到文件。
+工具当前没有登记任何规则集，所以任何来源版本都以 `CLI_VALIDATION_002` 失败，退出码 64。机制本身保留给之后的大版本升级（RFC-0020，`spec/migration/README.md`）：语法级 Roslyn 重写，不加载 MSBuild 工作区；先扫描收集跨文件事实，再按规则顺序改写回写，之后写生成文件、删除与改名；改不了的位置留 `// xihan-migrate(<规则编号>): <说明>` 标记；对已迁移的代码再跑一遍零改动；跳过 `bin/`、`obj/`、`.git/`、`.vs/`、`node_modules/`、`*.g.cs`、`*.Designer.cs`，不跟随符号链接与目录联接（链接可能指向 `--path` 之外，ADR-0221）。`--dry-run` 只出报告不写文件，`--report` 把 JSON 报告写到文件。源码按宽松的 UTF-8 读写，报告照写出器的缺省写出，同样不在「写出与转交」之内（ADR-0320）。
 
 ### mcp
 
@@ -89,7 +89,7 @@ xihan mcp [--path <项目目录>] [--locale <区域>]
 dnx XiHan.Framework.Cli@<版本> --yes -- mcp    # 不安装、按版本运行（编码助手配置里的写法）
 ```
 
-以 stdio 提供 MCP 服务（协议版本 `2025-06-18`），stdout 每行一条 JSON-RPC 消息，stdin 关闭即退出。工具内嵌一个最小的 XiHan 应用（内存本地化 + `Protocols.Mcp` + 三个只读、只暴露给 MCP 的操作），协议、`tools/list` 与 `tools/call` 都由 [Protocols.Mcp](./protocols-mcp) 处理；tool 的标题与描述按 `--locale`（或当前 UI 区域）取自工具的消息目录。服务名 `xihan-framework`。
+以 stdio 提供 MCP 服务（协议版本 `2025-06-18`），stdout 每行一条 JSON-RPC 消息，stdin 关闭即退出；stdin 按行严格解码成 UTF-8，一行里有非法的 UTF-8 时答复解析错误（-32700）、接着读下一行。工具内嵌一个最小的 XiHan 应用（内存本地化 + `Protocols.Mcp` + 三个只读、只暴露给 MCP 的操作），协议、`tools/list` 与 `tools/call` 都由 [Protocols.Mcp](./protocols-mcp) 处理；tool 的标题与描述按 `--locale`（或当前 UI 区域）取自工具的消息目录。服务名 `xihan-framework`。
 
 | tool | 输入 | 输出 |
 | --- | --- | --- |

@@ -50,7 +50,7 @@ builder.Services.AddMessageCatalog(ConfigurationMessages.Catalog);
 
 | 属性 | 类型 | 缺省 | 说明 |
 | --- | --- | --- | --- |
-| `Namespace` | `string` | 构造参数，不能为空白 | 远程命名空间 |
+| `Namespace` | `string` | 构造参数，不能为空白或有孤立的代理项（ADR-0321） | 远程命名空间 |
 | `Prefix` | `string?` | `null` | 把文档挂到的配置节，为空时挂在根 |
 | `PollInterval` | `TimeSpan?` | 30 秒 | 轮询周期，`null` 关闭，必须为正 |
 | `Clock` | `TimeProvider` | 系统时钟 | 轮询计时用的时钟，不能为空；测试换成可推进的时钟 |

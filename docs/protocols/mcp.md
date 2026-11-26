@@ -114,10 +114,19 @@ JSON-RPC 错误的 `error.data.code` 是框架错误码。解析与入口校验�
 
 ## stdio 传输
 
-桌面 MCP 客户端常以子进程方式启动服务端，经 stdin / stdout 通信。装配了 `McpProtocolFeature` 与 `AddXiHanCommandLine()` 的命令行宿主提供 `mcp` 命令：stdin 与 stdout 每行一条 JSON-RPC 消息，日志只写 stderr，stdin 关闭即结束会话。stdin 的字节按 UTF-8 解码，与控制台代码页无关（Windows 上重定向的标准输入不按 936、437 等代码页解码，中文参数不会成乱码）；答复里的非 ASCII 字符按 JSON 转义成 `\uXXXX`，只含 ASCII，按任何控制台输出代码页写出都是合法的 UTF-8。自己托管、直接调用 `McpStdioTransport.RunAsync` 时，读取器交来的每一行严格编码成 UTF-8：有孤立代理项的一行与不是 JSON 的一样答复解析错误（`id` 为 `null`、-32700、`data.code` 为 `PROTOCOLS_VALIDATION_001`），不执行，下一行照常处理；`mcp` 命令读出的行没有孤立的代理项，不受影响。
+桌面 MCP 客户端常以子进程方式启动服务端，经 stdin / stdout 通信。装配了 `McpProtocolFeature` 与 `AddXiHanCommandLine()` 的命令行宿主提供 `mcp` 命令：stdin 与 stdout 每行一条 JSON-RPC 消息，日志只写 stderr，stdin 关闭即结束会话。stdin 按字节读：先按 LF、CR 或 CR LF 分行（开头的 UTF-8 BOM 不算内容），再把每一行严格解码成 UTF-8，与控制台代码页无关（Windows 上重定向的标准输入不按 936、437 等代码页解码，中文参数不会成乱码）。一行里有非法的 UTF-8（截断的序列、单独的 `0xFF`、编码成 UTF-8 的代理项）时与不是 JSON 的一样答复解析错误（`id` 为 `null`、-32700、`data.code` 为 `PROTOCOLS_VALIDATION_001`），这一行不执行，接着读下一行，不换成 U+FFFD 再处理；只有空白的行跳过。答复里的非 ASCII 字符按 JSON 转义成 `\uXXXX`，只含 ASCII，按任何控制台输出代码页写出都是合法的 UTF-8。
 
 ```bash
 echo '{"jsonrpc":"2.0","id":1,"method":"tools/list"}' | dotnet run --project framework/samples/SimpleCli -- mcp
+```
+
+自己托管、不经命令行宿主时，把 stdin 的字节流交给 `McpStdioTransport.RunAsync`，不要用 `Console.In`（它在 Windows 上按控制台代码页解码）；流由调用方释放：
+
+```csharp
+// services 是装配了 McpProtocolFeature 的根服务
+var server = services.GetRequiredService<McpServer>();
+await using var stdin = Console.OpenStandardInput();
+await McpStdioTransport.RunAsync(server, services, stdin, Console.Out, cancellationToken);
 ```
 
 `mcp` 命令接受与 `invoke` 相同的上下文选项，作用于整个会话里的每个 `tools/call`：
@@ -133,7 +142,7 @@ echo '{"jsonrpc":"2.0","id":1,"method":"tools/list"}' | dotnet run --project fra
 XIHAN_AUTHORIZATION="ApiKey dev-alice-key" dotnet run --project framework/samples/SimpleCli -- mcp --tenant acme --locale zh-CN
 ```
 
-每个 `tools/call` 经完整管道，凭据在这次调用的 Authenticate 阶段认证；stdio 没有外层认证，凭据无效时需要认证的 tool 得到 `isError`（`SECURITY_DENIED_003`），会话继续。选项不合法（凭据不是 `<scheme> <value>`、时限不是正数）时不进入会话，stderr 写一行用法错误，退出码 64。调用来源只有协议 `mcp` 与 tool 名。宿主的搭建见[命令行宿主](/protocols/command-line)。
+每个 `tools/call` 经完整管道，凭据在这次调用的 Authenticate 阶段认证；stdio 没有外层认证，凭据无效时需要认证的 tool 得到 `isError`（`SECURITY_DENIED_003`），会话继续。选项不合法（凭据不是 `<scheme> <value>`、时限不是正数）时不进入会话，stderr 写一行用法错误（`detail` 按 `--locale` 翻译，没给或不合法时是默认区域），退出码 64。调用来源只有协议 `mcp` 与 tool 名。宿主的搭建见[命令行宿主](/protocols/command-line)。
 
 ## 选项
 

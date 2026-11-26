@@ -55,7 +55,7 @@ return await builder.Build().RunXiHanCommandLineAsync(args);
 | `Commands.HelpCommand` | 内置的 `help` 命令；`graph`、`pipeline`、`operations`、`invoke` 由 `AddXiHanCommandLine` 登记，实现不公开 |
 | `Parsing.CommandLineParser`、`Parsing.ParsedCommandLine` | 参数解析 |
 | `Runtime.CommandLineInvocation` | `Create(context, operationId)` 按选项建调用上下文；`ReservedOptions`；`AuthorizationVariable` = `XIHAN_AUTHORIZATION` |
-| `Runtime.CommandLineFailure` | `WriteAsync(...)` 把失败写到 stderr 并给出退出码 |
+| `Runtime.CommandLineFailure` | 把失败写成 stderr 的一行 JSON 并给出退出码：`WriteAsync(error, failure, services, context, exitCode)` 按调用上下文的区域翻译 `detail`、带 `traceId`（没有上下文时按默认区域）；`WriteAsync(command, failure, exitCode)`（Preview，ADR-0325）给命令里没有发起调用就返回的失败（用法错误、找不到暴露的操作），`detail` 按命令行的 `--locale` 协商出的区域翻译、没给或不合法时按默认区域，不带 `traceId`；自写命令的用法错误用它 |
 | `Runtime.CommandLineRunner` | 命令表与分发 |
 | `CommandLineExitCodes` | 退出码常量与 `For(error)` |
 | `CommandLineErrors` | `HOSTING_VALIDATION_001`、`HOSTING_NOTFOUND_001`、`HOSTING_NOTFOUND_002` |
@@ -76,7 +76,8 @@ XIHAN_AUTHORIZATION="ApiKey dev-alice-key" dotnet run --project framework/sample
 - 解析：第一个非选项记号是命令名；`--name value`、`--name=value`、无值的 `--flag` 记为 `true`；`--` 之后全是位置参数；载荷按 `--json`（须为对象，文本严格编码成 UTF-8，有孤立的代理项是用法错误、退出码 64）> `--data <file>`（可写 `@file`）> 字段选项的顺序取，字段选项重复时成数组。
 - 字段选项按操作的请求 Schema 写成对应类型（布尔、整数、浮点、数组），转换不了的值留字符串，由 Validate 阶段报 `KERNEL_VALIDATION_003`；选项的名字或值有孤立的代理项时写之前就报用法错误（`HOSTING_VALIDATION_001`，退出码 64，消息键 `hosting.commandline.invoke_field_invalid`，即 `CommandLineMessages.InvokeFieldInvalid`，参数 `reason`），不发起调用、不写成 U+FFFD（ADR-0315、ADR-0318）；`--json` 与 `--data` 的载荷原样进入。操作没有 Schema 时值都是字符串，请求类型要从字符串读数字，序列化上下文需要 `NumberHandling = JsonNumberHandling.AllowReadingFromString`。
 - 保留选项 `json`、`data`、`authorization`、`tenant`、`correlation`、`locale`、`timeout`、`help` 不进载荷。
-- `--authorization` 与 `XIHAN_AUTHORIZATION` 只作用于 `invoke`；`mcp` 命令的调用以匿名主体执行。
+- `--authorization` 与 `XIHAN_AUTHORIZATION` 作用于 `invoke`，也作用于 `mcp` 命令会话里的每个 `tools/call`（选项优先，见 [Protocols.Mcp](./protocols-mcp)）。
+- 没有发起调用就返回的失败（用法错误、未暴露的操作、未知命令）的 `detail` 也按 `--locale` 翻译，以前总是默认区域；帮助仍按默认区域（ADR-0325）。
 - 命令名重复时 `CommandLineRunner` 构造失败（`ArgumentException`）。
 - 弃用的操作（`Stability.Deprecated`）照常调用，stdout 与退出码不变；每次调用在 stderr 写一行按 `--locale` 翻译的提示（`CommandLineMessages.OperationDeprecated`，`hosting.commandline.operation_deprecated`），失败时在失败的那一行 JSON 之前，用法错误与未暴露的操作不写。`operations` 的稳定性一列是 `Deprecated`；带 `--help` 的命令行指向弃用的操作时，帮助之后空一行再写同一句提示（ADR-0280）。
 
