@@ -98,7 +98,7 @@ jobs:
           shard: core
 
   test-integration:
-    # Redis、RabbitMQ、Qdrant 的门控用例，以及要 Go 工具链的进程外插件用例
+    # Redis、RabbitMQ、Qdrant、S3（RustFS）的门控用例，以及要 Go 工具链的进程外插件用例
     name: 测试（integration）
     runs-on: ubuntu-latest
     timeout-minutes: 20
@@ -126,11 +126,30 @@ jobs:
         image: qdrant/qdrant:v1.18.2
         ports:
           - 6334:6334
+      rustfs:
+        # ObjectStorage.S3 的门控用例（两套一致性套件、条件写入探测、命名实例、健康项、预签名直连），用例自己建桶。
+        # 钉 1.0.6（摘要 sha256:ee717072290bec9b11abfc0365f8310b00df1cd9b3639943edae47bdef05044a）：本机 S3 实测所用的版本，28 条门控用例全过（ADR-0327）。
+        # 镜像缺省以 /data 起服务、自建目录，内建不要求认证的 /health，带 curl；凭据只给 CI 的一次性容器用
+        image: rustfs/rustfs:1.0.6
+        env:
+          RUSTFS_ACCESS_KEY: rustfsadmin
+          RUSTFS_SECRET_KEY: rustfsadmin
+        ports:
+          - 9000:9000
+        options: >-
+          --health-cmd "curl -fs http://localhost:9000/health"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
     env:
       # 门控用例只在设置了对应变量时运行；变量名与 framework/test/shards.json 这一片的 variables 一致
       XIHAN_TEST_REDIS: localhost:6379
       XIHAN_TEST_RABBITMQ: amqp://guest:guest@localhost:5672
       XIHAN_TEST_QDRANT: http://localhost:6334
+      # 不认条件写入的兼容服务（XIHAN_TEST_S3_UNCONDITIONAL，如 Zenko）CI 不起，用它的那条用例照旧跳过
+      XIHAN_TEST_S3: http://localhost:9000
+      XIHAN_TEST_S3_ACCESS_KEY: rustfsadmin
+      XIHAN_TEST_S3_SECRET_KEY: rustfsadmin
 
     steps:
       - name: 检出
@@ -204,11 +223,50 @@ jobs:
           shard: database
 
   test-oracle:
-    # Persistence.SqlSugar 与 Workflow.Database 的 Oracle 门控用例（库结构读取、一致性套件与查询列的回填，每个用例建删一个用户）。Oracle 镜像大、冷启动慢，
-    # 单独一片：拉镜像与启动的时间不压在别的作业上
-    name: 测试（oracle）
+    # Persistence.SqlSugar 与 Workflow.Database 的 Oracle 门控用例（库结构读取、一致性套件、查询列的回填与工作流的引擎、任务套件，每个用例建删一个用户）。Oracle 镜像大、冷启动慢，
+    # 单独成片：拉镜像与启动的时间不压在别的作业上。每个用例新建用户与全部表、一条约半分钟，同一进程里又不并行（OracleGroup），七十来条串行要四十分钟，
+    # 所以按类与方法名拆成三个并行的作业，各起一个 Oracle（ADR-0327）。三份过滤器互补、不重不漏：
+    # - rest：oracle 分片两个项目里除引擎与任务两个 Oracle 类之外的全部
+    # - workflow-a：oracle-workflow 分片（只有 Workflow.Database.Tests）里任务类的全部与引擎类里 A–H 开头的方法
+    # - workflow-b：引擎类其余的方法
+    # 引擎类的新用例按方法名的首字母落进 a 或 b；类改了名，a 与 b 的过滤器选不出用例即失败（MTP 退出码 8），rest 照样跑它。过滤器里的类名由架构测试 TestShardTests 核对
+    name: 测试（oracle，${{ matrix.part }}）
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    strategy:
+      # 三份各管一部分用例，一份失败不取消另外两份
+      fail-fast: false
+      matrix:
+        include:
+          - part: rest
+            shard: oracle
+            filter: >-
+              --filter-not-class XiHan.Framework.Workflow.Database.Tests.OracleWorkflowEngineConformanceTests
+              --filter-not-class XiHan.Framework.Workflow.Database.Tests.OracleWorkflowTaskConformanceTests
+          - part: workflow-a
+            shard: oracle-workflow
+            filter: >-
+              --filter-method XiHan.Framework.Workflow.Database.Tests.OracleWorkflowTaskConformanceTests.*
+              --filter-method XiHan.Framework.Workflow.Database.Tests.OracleWorkflowEngineConformanceTests.A*
+              --filter-method XiHan.Framework.Workflow.Database.Tests.OracleWorkflowEngineConformanceTests.B*
+              --filter-method XiHan.Framework.Workflow.Database.Tests.OracleWorkflowEngineConformanceTests.C*
+              --filter-method XiHan.Framework.Workflow.Database.Tests.OracleWorkflowEngineConformanceTests.D*
+              --filter-method XiHan.Framework.Workflow.Database.Tests.OracleWorkflowEngineConformanceTests.E*
+              --filter-method XiHan.Framework.Workflow.Database.Tests.OracleWorkflowEngineConformanceTests.F*
+              --filter-method XiHan.Framework.Workflow.Database.Tests.OracleWorkflowEngineConformanceTests.G*
+              --filter-method XiHan.Framework.Workflow.Database.Tests.OracleWorkflowEngineConformanceTests.H*
+          - part: workflow-b
+            shard: oracle-workflow
+            filter: >-
+              --filter-class XiHan.Framework.Workflow.Database.Tests.OracleWorkflowEngineConformanceTests
+              --filter-not-method XiHan.Framework.Workflow.Database.Tests.OracleWorkflowEngineConformanceTests.A*
+              --filter-not-method XiHan.Framework.Workflow.Database.Tests.OracleWorkflowEngineConformanceTests.B*
+              --filter-not-method XiHan.Framework.Workflow.Database.Tests.OracleWorkflowEngineConformanceTests.C*
+              --filter-not-method XiHan.Framework.Workflow.Database.Tests.OracleWorkflowEngineConformanceTests.D*
+              --filter-not-method XiHan.Framework.Workflow.Database.Tests.OracleWorkflowEngineConformanceTests.E*
+              --filter-not-method XiHan.Framework.Workflow.Database.Tests.OracleWorkflowEngineConformanceTests.F*
+              --filter-not-method XiHan.Framework.Workflow.Database.Tests.OracleWorkflowEngineConformanceTests.G*
+              --filter-not-method XiHan.Framework.Workflow.Database.Tests.OracleWorkflowEngineConformanceTests.H*
     services:
       oracle:
         # slim-faststart：裁掉了不用的组件、库在镜像里已经建好，启动只要打开实例，不用现建库；与本机验证所用相同
@@ -237,7 +295,9 @@ jobs:
       - name: 构建并测试
         uses: ./.github/actions/test-shard
         with:
-          shard: oracle
+          shard: ${{ matrix.shard }}
+          part: ${{ matrix.part }}
+          filter: ${{ matrix.filter }}
 
   aot:
     name: AOT 冒烟与依赖漏洞清单

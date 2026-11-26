@@ -9,6 +9,14 @@ inputs:
     description: 这一片要不要 Go 工具链（分片表的 tools 含 go 时为 true）
     required: false
     default: "false"
+  part:
+    description: 一片拆成几个作业时这一份的名字，用在测试结果的产物名里；不拆时为空
+    required: false
+    default: ""
+  filter:
+    description: 传给测试程序的 xUnit 过滤器（--filter-class、--filter-not-method 等，空格分隔，名字里不带空格）；拆开的几份之间互补，不拆时为空
+    required: false
+    default: ""
 
 runs:
   using: composite
@@ -47,16 +55,21 @@ runs:
 
     - name: 测试（MTP 模式，采集覆盖率）
       shell: bash
-      run: >
-        dotnet test --solution "${{ steps.shard.outputs.filter }}"
-        --configuration Release
-        --no-build
-        -p:TestingPlatformCommandLineArguments="--coverage --coverage-output-format cobertura"
+      env:
+        FILTER: ${{ inputs.filter }}
+      run: |
+        # 过滤器里的 * 是 xUnit 的通配符：关掉路径名展开，再按空格拆成参数
+        set -f
+        dotnet test --solution "${{ steps.shard.outputs.filter }}" \
+          --configuration Release \
+          --no-build \
+          $FILTER \
+          -p:TestingPlatformCommandLineArguments="--coverage --coverage-output-format cobertura"
 
     - name: 上传测试结果
       if: always()
       uses: actions/upload-artifact@v7
       with:
-        name: test-results-${{ inputs.shard }}
+        name: test-results-${{ inputs.shard }}${{ inputs.part != '' && format('-{0}', inputs.part) || '' }}
         path: framework/test/**/TestResults/
         if-no-files-found: ignore

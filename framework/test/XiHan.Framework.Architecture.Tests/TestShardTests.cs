@@ -52,7 +52,7 @@ public sealed partial class TestShardTests
                 .Where(provided.Contains)
                 .ToHashSet(StringComparer.Ordinal);
 
-            // 没有哪个分片提供的变量（如 Kafka、Nacos、S3）在 CI 上本来就不跑，不在这里管
+            // 没有哪个分片提供的变量（如 Kafka、Nacos、不认条件写入的 S3）在 CI 上本来就不跑，不在这里管
             var own = shards.Where(s => s.Projects.Contains(project.PackageId, StringComparer.Ordinal)).ToList();
             misplaced.AddRange(needs
                 .Where(need => !own.Any(s => s.Variables.Contains(need, StringComparer.Ordinal) || s.Tools.Contains(need, StringComparer.Ordinal)))
@@ -82,6 +82,29 @@ public sealed partial class TestShardTests
         Assert.True(absent.Count == 0, "'.github/workflows/ci.yml' does not match 'test/shards.json': " + string.Join("; ", absent));
     }
 
+    [Fact]
+    public void WorkflowFilters_NameTestClassesThatExist()
+    {
+        // ci.yml 把用例多的一片按 xUnit 的类与方法过滤器拆成几个作业（ADR-0327）：类改了名而过滤器没跟上，排除它的那份照样跑它，选它的那份才失败，这里提前报出来
+        var workflow = File.ReadAllText(Path.Combine(Workspace.Root, "..", ".github", "workflows", "ci.yml"));
+        var classes = Workspace.TestProjects
+            .SelectMany(static p => Workspace.SourceFiles(p.Directory))
+            .Select(File.ReadAllText)
+            .SelectMany(static text => FileNamespace().Match(text) is { Success: true } scope
+                ? DeclaredClass().Matches(text).Select(m => scope.Groups["name"].Value + "." + m.Groups["name"].Value)
+                : [])
+            .ToHashSet(StringComparer.Ordinal);
+
+        var named = XunitFilter().Matches(workflow)
+            .Select(static m => m.Groups["kind"].Value == "class" ? m.Groups["name"].Value : m.Groups["name"].Value[..m.Groups["name"].Value.LastIndexOf('.')])
+            .Distinct(StringComparer.Ordinal)
+            .ToList();
+        var unknown = named.Where(name => !classes.Contains(name)).ToList();
+
+        Assert.NotEmpty(named);
+        Assert.True(unknown.Count == 0, "'.github/workflows/ci.yml' filters test classes that no test project declares: " + string.Join(", ", unknown));
+    }
+
     /// <summary>
     /// 读分片表
     /// </summary>
@@ -109,6 +132,27 @@ public sealed partial class TestShardTests
     /// </summary>
     [GeneratedRegex("ProcessStartInfo\\(\"(?<tool>[a-z]+)\"")]
     private static partial Regex LaunchedTool();
+
+    /// <summary>
+    /// 工作流里传给测试程序的 xUnit 类与方法过滤器
+    /// </summary>
+    /// <remarks>
+    /// 方法过滤器的名字是类的全名加方法名（可以以 <c>*</c> 结尾），取最后一个点之前的部分即类名
+    /// </remarks>
+    [GeneratedRegex(@"--filter-(?:not-)?(?<kind>class|method) (?<name>[A-Za-z0-9_.]+)\*?")]
+    private static partial Regex XunitFilter();
+
+    /// <summary>
+    /// 源文件的文件范围命名空间
+    /// </summary>
+    [GeneratedRegex(@"^namespace (?<name>[A-Za-z0-9_.]+);", RegexOptions.Multiline)]
+    private static partial Regex FileNamespace();
+
+    /// <summary>
+    /// 源文件里声明的类名
+    /// </summary>
+    [GeneratedRegex(@"\bclass (?<name>[A-Za-z_][A-Za-z0-9_]*)")]
+    private static partial Regex DeclaredClass();
 
     /// <summary>
     /// 分片表的一行

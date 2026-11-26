@@ -102,7 +102,7 @@
 
 ## 没有解决的
 
-- CI 第一次跑 RustFS 时可能红的地方：1.0.6 的 `/health` 与凭据环境变量的名字没在 CI 上起过；ADR-0308、0317、0322 新加的不合规应答判定（缺 `Content-Length`、列举缺 `<Size>`、SDK 解析不了的头、整读内容对不上 `ETag`）在真实 RustFS 上第一次跑，RustFS 若对某种请求（如分块传输的读取）不带 `Content-Length`，整读会以 `OBJECTSTORAGE_UNAVAILABLE_001` 失败；健康探测、预签名直连在 GitHub 运行器的回环地址上第一次跑。
+- CI 第一次跑 RustFS 时可能红的地方：整合时在本机对 RustFS 1.0.6（`rustfs --version`）跑过含 ADR-0322 的 `ObjectStorage.S3.Tests`，307 个、0 失败，只跳过 `XIHAN_TEST_S3_UNCONDITIONAL` 那 1 条（28 条门控全过，缺省凭据、用例自己建桶），所以 ADR-0308、0317、0322 的不合规应答判定在 1.0.6 上不误报。仍没在 CI 上验证过的是服务容器本身：镜像以 `rustfs` 用户写匿名卷 `/data`、`/health` 作为 `--health-cmd`、`RUSTFS_ACCESS_KEY` / `RUSTFS_SECRET_KEY` 两个变量名，以及 GitHub 运行器上 9000 端口是否空着。
 - Oracle 每条用例的时长按现有用例的平均推算，引擎套件的用例若明显更慢，`workflow-b` 要再拆；拆法照决策 10 在 `ci.yml` 的矩阵里多加一份互补的过滤器。
 - `PluginOutputLimitTests` 的根因是推断；若加了重试仍偶发，要在失败时把占着句柄的进程记下来再查。
 - 六个 SDK 的 `examples/echo` 补回显操作之前，`dataschema` 交给作者在 SDK 一侧仍只有单元测试核对。
