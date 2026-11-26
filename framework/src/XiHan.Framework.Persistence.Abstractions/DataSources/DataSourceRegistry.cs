@@ -15,6 +15,7 @@ namespace XiHan.Framework.Persistence.Abstractions.DataSources;
 /// <para>按 <see cref="DataSourceDefinition"/> 经认得该数据库类型的 <see cref="IDataSourceProvider"/> 建数据源，按名缓存，登记数不超过 <see cref="DataSourceOptions.MaxCount"/>。同名同定义返回同一实例；定义变了建新实例替换旧的并释放旧的（替换时仍在旧实例上进行的调用可能失败）。运行时数据源与应用自己的连接互不相干：不进作用域客户端、不参与实体落点、不进工作单元</para>
 /// <para>失效：记录改了、停用或删了调 <see cref="RemoveAsync"/>；每次使用都以记录里当前的定义调 <see cref="GetOrAddAsync"/>，定义变了即替换。注册表是进程内的，别的实例在下一次以新定义取用时替换，只按名字 <see cref="GetAsync"/> 看不到别的实例上的修改</para>
 /// <para>健康：每个数据源一条 <c>persistence.datasource.&lt;name&gt;</c>，按 <see cref="DataSourceOptions.HealthProbeInterval"/> 在后台逐个探一次连通性，新登记的立即探一次；尚未探过 Started，成功 Ready，失败或超时 Degraded。连接串不进日志、错误与健康详情</para>
+/// <para>释放：先取消进行中的探测并等它们结束，再释放各数据源；探测在用连接，释放返回之后不再有本注册表开的连接留在库上（ADR-0327）。Provider 不响应取消时，等到它的探测返回为止</para>
 /// <para>没有登记任何 <see cref="IDataSourceProvider"/> 时（EF Core 与内存实现）取用与测试连接返回 <see cref="PersistenceErrors.NotSupported"/></para>
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
@@ -75,6 +76,14 @@ public sealed partial class DataSourceRegistry : IHealthContributor, IAsyncDispo
     /// 是否正在探测（定时器回调不重叠）
     /// </summary>
     private int _probing;
+
+    /// <summary>
+    /// 在后台进行的探测：登记时立即开始的与定时器的那一轮
+    /// </summary>
+    /// <remarks>
+    /// 在它自己的锁里读写；加入时清掉已完成的，至多是登记过的数据源数加一。释放时等它们结束
+    /// </remarks>
+    private readonly HashSet<Task> _probes = [];
 
     /// <summary>
     /// 创建
@@ -210,8 +219,8 @@ public sealed partial class DataSourceRegistry : IHealthContributor, IAsyncDispo
             LogRegistered(_logger, definition.Name, definition.DatabaseType);
         }
 
-        // 新实例立即探一次，不等下一个周期；探测结果只影响健康项
-        _ = ProbeEntryAsync(added, _stopping.Token);
+        // 新实例立即探一次，不等下一个周期；探测结果只影响健康项。它在后台开着连接，记下来，释放时等它结束
+        Track(ProbeEntryAsync(added, _stopping.Token));
         return Result.Success(added.Source);
     }
 
@@ -346,6 +355,16 @@ public sealed partial class DataSourceRegistry : IHealthContributor, IAsyncDispo
             await _timer.DisposeAsync().ConfigureAwait(false);
         }
 
+        // 进行中的探测开着连接（SQLite 即占着库文件）：取消之后等它们结束，再释放数据源，释放返回时不留连接。探测吞掉自己的异常，不会失败
+        Task[] probes;
+        lock (_probes)
+        {
+            probes = [.. _probes];
+            _probes.Clear();
+        }
+
+        await Task.WhenAll(probes).ConfigureAwait(false);
+
         Entry[] entries;
         lock (_entries)
         {
@@ -401,7 +420,7 @@ public sealed partial class DataSourceRegistry : IHealthContributor, IAsyncDispo
             return;
         }
 
-        _ = Task.Run(async () =>
+        Track(Task.Run(async () =>
         {
             try
             {
@@ -415,7 +434,20 @@ public sealed partial class DataSourceRegistry : IHealthContributor, IAsyncDispo
             {
                 Volatile.Write(ref _probing, 0);
             }
-        });
+        }));
+    }
+
+    /// <summary>
+    /// 记下一次后台探测，释放时等它
+    /// </summary>
+    private void Track(Task probe)
+    {
+        lock (_probes)
+        {
+            // 已完成的不必再等：每次加入时清掉，集合不随登记与替换的次数增长
+            _probes.RemoveWhere(static p => p.IsCompleted);
+            _probes.Add(probe);
+        }
     }
 
     /// <summary>

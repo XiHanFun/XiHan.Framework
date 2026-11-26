@@ -196,6 +196,29 @@ public sealed class DataSourceRegistryTests
     }
 
     [Fact]
+    public async Task Dispose_WaitsForTheProbeStartedOnRegistration_BeforeDisposingTheSource()
+    {
+        // 登记之后立即开始的那次探测在后台运行，真实的 Provider 在这期间开着连接（SQLite 即占着库文件）；
+        // 驱动不一定及时响应取消，这里的探测不看取消令牌，只等放行
+        var provider = new FakeProvider { ProbeGate = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously), ProbeIgnoresCancellation = true };
+        var registry = Create(provider);
+        var orders = (FakeSource)(await registry.GetOrAddAsync(Definition("orders"), TestContext.Current.CancellationToken)).ValueOrThrow();
+        await provider.ProbeStarted.Task.WaitAsync(TimeSpan.FromSeconds(10), TestContext.Current.CancellationToken);
+
+        var disposing = registry.DisposeAsync().AsTask();
+        await Task.Delay(200, TestContext.Current.CancellationToken);
+
+        Assert.False(disposing.IsCompleted, "DisposeAsync returned while the probe started on registration was still running.");
+        Assert.False(orders.Disposed, "The source was disposed while its probe was still running.");
+
+        provider.ProbeGate.SetResult();
+        await disposing.WaitAsync(TimeSpan.FromSeconds(10), TestContext.Current.CancellationToken);
+
+        Assert.True(orders.Disposed);
+        Assert.Equal(0, provider.ProbesRunning);
+    }
+
+    [Fact]
     public async Task ServiceRegistration_RegistersOneRegistry_WithOptionsFromConfiguration()
     {
         var configuration = new ConfigurationBuilder().AddInMemoryCollection([new($"{DataSourceOptions.ConfigurationSection}:MaxCount", "3")]).Build();
@@ -294,6 +317,29 @@ public sealed class DataSourceRegistryTests
         /// </summary>
         public TaskCompletionSource? ProbeGate { get; set; }
 
+        /// <summary>
+        /// 为真时等 <see cref="ProbeGate"/> 不看取消令牌
+        /// </summary>
+        /// <remarks>
+        /// 模拟不及时响应取消的驱动
+        /// </remarks>
+        public bool ProbeIgnoresCancellation { get; init; }
+
+        /// <summary>
+        /// 第一次探测开始时完成
+        /// </summary>
+        public TaskCompletionSource ProbeStarted { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        /// <summary>
+        /// 正在进行的探测数
+        /// </summary>
+        public int ProbesRunning => Volatile.Read(ref _probesRunning);
+
+        /// <summary>
+        /// <see cref="ProbesRunning"/> 的计数
+        /// </summary>
+        private int _probesRunning;
+
         /// <inheritdoc />
         public string Name => "fake-provider";
 
@@ -316,9 +362,18 @@ public sealed class DataSourceRegistryTests
         /// <inheritdoc />
         public async ValueTask<Result> ProbeAsync(IDataSource source, CancellationToken cancellationToken)
         {
-            if (ProbeGate is { } gate)
+            Interlocked.Increment(ref _probesRunning);
+            ProbeStarted.TrySetResult();
+            try
             {
-                await gate.Task.WaitAsync(cancellationToken);
+                if (ProbeGate is { } gate)
+                {
+                    await (ProbeIgnoresCancellation ? gate.Task : gate.Task.WaitAsync(cancellationToken));
+                }
+            }
+            finally
+            {
+                Interlocked.Decrement(ref _probesRunning);
             }
 
             var fake = (FakeSource)source;
