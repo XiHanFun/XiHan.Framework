@@ -49,6 +49,18 @@ public sealed class FileSystemBlobStoreTests : IDisposable
     private static byte[] Bytes(string text) => Encoding.UTF8.GetBytes(text);
 
     [Fact]
+    public async Task MetadataValues_WithSurrogatePairs_RoundTripThroughTheMetadataFile()
+    {
+        // 元数据文件是 UTF-8 的 JSON：成对的代理项编得成、读回不变；孤立的代理项在这里存成 U+FFFD，所以在选项上就拒收（ADR-0322）
+        var store = Store();
+        var value = new string(['x', (char)0xD83D, (char)0xDE00, 'y']);
+        var written = (await store.PutAsync(new ContainerName("docs"), new BlobKey("pair.txt"), Bytes("v"), new BlobPutOptions { Metadata = new Dictionary<string, string> { ["note"] = value } }, CancellationToken.None)).ValueOrThrow();
+
+        Assert.Equal(value, written.Metadata["note"]);
+        Assert.Equal(value, (await store.HeadAsync(new ContainerName("docs"), new BlobKey("pair.txt"), CancellationToken.None)).ValueOrThrow().Metadata["note"]);
+    }
+
+    [Fact]
     public async Task Layout_PutsContentAndMetadataUnderTheContainer_AndStampsTheClock()
     {
         var store = Store();

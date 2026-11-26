@@ -3,20 +3,22 @@
 
 using System.Globalization;
 using System.Text;
+using Amazon.Runtime;
 using Amazon.S3.Model;
 using Microsoft.Extensions.Logging;
 using XiHan.Framework.ObjectStorage.Abstractions;
 using XiHan.Framework.ObjectStorage.Abstractions.Blobs;
 using XiHan.Framework.ObjectStorage.Abstractions.Keys;
+using XiHan.Framework.Primitives;
 using XiHan.Framework.Testing;
 
 namespace XiHan.Framework.ObjectStorage.S3.Tests;
 
 /// <summary>
-/// 整读的应答里 ETag 不是十六进制时返回错误（ADR-0317）
+/// 整读的 ETag 不是十六进制或对不上内容时报错（ADR-0317、ADR-0322）
 /// </summary>
 /// <remarks>
-/// AWS SDK for .NET 4.0 整读（<c>GetObject</c> 不带范围）时把不带 <c>-</c> 的 ETag 当作内容的 MD5，先按十六进制解码（<c>AWSSDKUtils.HexStringToBytes</c>，由 <c>AmazonS3ResponseHandler.ProcessResponseHandlers</c> 调用）：为空或字符数为奇数时抛 <see cref="ArgumentOutOfRangeException"/>，含十六进制数字之外的字符时抛 <see cref="FormatException"/>，都在交出应答之前。以前这两个异常原样抛给调用方；现在按不合规的应答返回 <see cref="ObjectStorageErrors.StoreUnavailable"/>。范围读取、HEAD 与写入没有这一核对。走真实的 SDK 与套接字，对端是回环上的 <see cref="RecordingHttpListener"/>，不连 S3 服务
+/// AWS SDK for .NET 4.0 整读（<c>GetObject</c> 不带范围）时把不带 <c>-</c> 的 ETag 当作内容的 MD5，先按十六进制解码（<c>AWSSDKUtils.HexStringToBytes</c>，由 <c>AmazonS3ResponseHandler.ProcessResponseHandlers</c> 调用）：为空或字符数为奇数时抛 <see cref="ArgumentOutOfRangeException"/>，含十六进制数字之外的字符时抛 <see cref="FormatException"/>，都在交出应答之前。以前这两个异常原样抛给调用方；现在按不合规的应答返回 <see cref="ObjectStorageErrors.StoreUnavailable"/>，识别不靠调用栈（ADR-0322）。ETag 是十六进制而不是内容的 MD5 时，SDK 读到末尾才发现，读内容的流抛出携带该码的 <see cref="FrameworkException"/>。范围读取、HEAD 与写入没有这一核对。走真实的 SDK 与套接字，对端是回环上的 <see cref="RecordingHttpListener"/>，不连 S3 服务
 /// </remarks>
 public sealed class S3WholeReadETagTests
 {
@@ -39,14 +41,6 @@ public sealed class S3WholeReadETagTests
     /// 对端回的内容
     /// </summary>
     private const string Content = "abc";
-
-    /// <summary>
-    /// SDK 解码 ETag 的那一帧
-    /// </summary>
-    /// <remarks>
-    /// 识别依据：这一帧只在 SDK 后处理应答（解码整读的 ETag）时出现在异常的调用栈里
-    /// </remarks>
-    private const string ResponseHandlerFrame = "Amazon.S3.Internal.AmazonS3ResponseHandler.ProcessResponseHandlers";
 
     /// <summary>
     /// 当不了 MD5 的 ETag 头的值
@@ -124,33 +118,120 @@ public sealed class S3WholeReadETagTests
     }
 
     [Fact]
-    public async Task OnTheWire_AFormatErrorElsewhereInTheAnswer_IsNotTakenForTheETagCheck()
+    public async Task OnTheWire_AFormatErrorElsewhereInTheWholeRead_IsAnUnusableAnswerToo()
     {
-        // 只接住 SDK 解码 ETag 这一处：同一个应答里修改时间头解析失败的 FormatException 来自解组，不归为 ETag 不是十六进制（不在本次范围，ADR-0317）
+        // 修改时间头解析失败的 FormatException 来自解组，不经过 ETag 的解码；以前原样抛出（ADR-0317 的待定），现在同是不合规的应答（ADR-0322）。
+        // 不靠调用栈分不出它与含十六进制数字之外字符的 ETag，reason 同时点名两者
         await using var endpoint = RecordingHttpListener.AnsweringWithBody("200 OK", Content, "ETag: \"900150983cd24fb0d6963f7d28e17f72\"", "Last-Modified: not a date");
         using var client = S3ObjectStorageFeature.CreateClient(Options(endpoint.Port));
         var store = new S3BlobStore(client, Options(endpoint.Port), TimeProvider.System, new LogCapture());
 
-        var exception = await Assert.ThrowsAsync<FormatException>(async () => await store.GetAsync(new ContainerName(Bucket), new BlobKey(Key), CancellationToken.None));
+        var got = await store.GetAsync(new ContainerName(Bucket), new BlobKey(Key), CancellationToken.None);
 
-        Assert.False(S3BlobStore.IsUndecodableETag(exception));
+        Assert.Equal(ObjectStorageErrors.StoreUnavailable, got.Error?.Code);
+        var reason = (string?)got.Error!.Details!["reason"] ?? string.Empty;
+        Assert.Contains("hexadecimal", reason, StringComparison.Ordinal);
+        Assert.Contains("could not parse", reason, StringComparison.Ordinal);
+        Assert.DoesNotContain("not a date", reason, StringComparison.Ordinal);
+        Assert.Single(endpoint.Requests);
     }
 
     [Theory]
     [InlineData("\"abc\"", typeof(ArgumentOutOfRangeException))]
     [InlineData("\"\"", typeof(ArgumentOutOfRangeException))]
     [InlineData("\"zz\"", typeof(FormatException))]
-    public async Task Sdk_DecodesTheWholeReadETagInItsResponseHandler(string etag, Type thrown)
+    public async Task Sdk_DecodesTheWholeReadETag_ThrowingWhatTheStoreRecognisesWithoutTheStack(string etag, Type thrown)
     {
-        // 钉住 Provider 识别所依据的 SDK 行为：升级 SDK 后这里变了，识别要跟着重查
+        // 钉住 Provider 识别所依据的 SDK 行为：为空或字符数为奇数时是参数名为 hex 的 ArgumentOutOfRangeException，含别的字符时是 FormatException。
+        // 升级 SDK 后这里变了，识别要跟着重查
         await using var endpoint = RecordingHttpListener.AnsweringWithBody("200 OK", Content, "ETag: " + etag, LastModifiedHeader);
         using var client = S3ObjectStorageFeature.CreateClient(Options(endpoint.Port));
 
         var exception = await Assert.ThrowsAnyAsync<Exception>(async () => (await client.GetObjectAsync(new GetObjectRequest { BucketName = Bucket, Key = Key })).Dispose());
 
         Assert.IsType(thrown, exception);
-        Assert.Contains(ResponseHandlerFrame, exception.StackTrace, StringComparison.Ordinal);
-        Assert.True(S3BlobStore.IsUndecodableETag(exception));
+        Assert.Equal(thrown == typeof(ArgumentOutOfRangeException), S3BlobStore.IsUndecodableETag(exception));
+        Assert.Equal(thrown == typeof(FormatException), S3BlobStore.IsUnparsableAnswer(exception));
+    }
+
+    [Fact]
+    public void TheETagCheck_IsRecognisedWithoutAStackTrace()
+    {
+        // 不靠 Exception.StackTrace：裁剪掉栈追踪的运行时（Native AOT）里它是空的，识别照样成立（ADR-0322）。没抛出过的异常同样没有调用栈
+        var undecodable = new ArgumentOutOfRangeException("hex");
+        Assert.Null(undecodable.StackTrace);
+        Assert.True(S3BlobStore.IsUndecodableETag(undecodable));
+
+        // 别的参数名、别的异常类型都不算：不把编程错误当成服务的不合规应答
+        Assert.False(S3BlobStore.IsUndecodableETag(new ArgumentOutOfRangeException("count")));
+        Assert.False(S3BlobStore.IsUndecodableETag(new ArgumentException("x", "hex")));
+        Assert.False(S3BlobStore.IsUndecodableETag(new FormatException()));
+    }
+
+    [Theory]
+    [InlineData("async")]
+    [InlineData("copy")]
+    [InlineData("sync")]
+    public async Task OnTheWire_AWholeReadWhoseContentDoesNotMatchItsETag_ThrowsAnObjectStorageError_WhileReading(string reading)
+    {
+        // ETag 是十六进制却不是内容的 MD5（兼容服务给单次写入的对象这样的 ETag，又没有 SSE 的应答头）：SDK 读到末尾才发现，
+        // 元数据已经交出，流只能抛异常。以前抛 SDK 的 AmazonClientException，现在抛携带对象存储错误码的 FrameworkException（ADR-0322）
+        await using var endpoint = RecordingHttpListener.AnsweringWithBody("200 OK", Content, "ETag: \"00000000000000000000000000000000\"", LastModifiedHeader);
+        var logs = new LogCapture();
+        using var client = S3ObjectStorageFeature.CreateClient(Options(endpoint.Port));
+        var store = new S3BlobStore(client, Options(endpoint.Port), TimeProvider.System, logs);
+
+        var got = (await store.GetAsync(new ContainerName(Bucket), new BlobKey(Key), CancellationToken.None)).ValueOrThrow();
+        FrameworkException thrown;
+        await using (got)
+        {
+            thrown = reading switch
+            {
+                "async" => await Assert.ThrowsAsync<FrameworkException>(async () => await new StreamReader(got.Content).ReadToEndAsync()),
+                "copy" => await Assert.ThrowsAsync<FrameworkException>(async () => await got.Content.CopyToAsync(new MemoryStream())),
+                _ => Assert.Throws<FrameworkException>(() => new StreamReader(got.Content).ReadToEnd()),
+            };
+        }
+
+        Assert.Equal(ObjectStorageErrors.StoreUnavailable, thrown.Code);
+        Assert.IsType<AmazonClientException>(thrown.InnerException);
+        Assert.DoesNotContain(Bucket, thrown.Message, StringComparison.Ordinal);
+        Assert.Contains("ETag", thrown.Message, StringComparison.Ordinal);
+        var warning = Assert.Single(logs.Entries, static entry => entry.Level == LogLevel.Warning);
+        Assert.Contains(Bucket, warning.Message, StringComparison.Ordinal);
+        Assert.Contains("GetObject", warning.Message, StringComparison.Ordinal);
+        Assert.Single(endpoint.Requests);
+    }
+
+    [Fact]
+    public async Task OnTheWire_AWholeReadWhoseContentDoesNotMatchItsETag_ThrowsAnObjectStorageError_WhenReleasedAfterTheLastByte()
+    {
+        // 读够了声明的长度、没读到流的末尾就释放：SDK 在释放时才核对，同样换成对象存储的异常（ADR-0322）
+        await using var endpoint = RecordingHttpListener.AnsweringWithBody("200 OK", Content, "ETag: \"00000000000000000000000000000000\"", LastModifiedHeader);
+        using var client = S3ObjectStorageFeature.CreateClient(Options(endpoint.Port));
+        var store = new S3BlobStore(client, Options(endpoint.Port), TimeProvider.System, new LogCapture());
+
+        var got = (await store.GetAsync(new ContainerName(Bucket), new BlobKey(Key), CancellationToken.None)).ValueOrThrow();
+        var buffer = new byte[Content.Length];
+        await got.Content.ReadExactlyAsync(buffer);
+
+        Assert.Equal(Content, Encoding.UTF8.GetString(buffer));
+        Assert.Equal(ObjectStorageErrors.StoreUnavailable, Assert.Throws<FrameworkException>(got.Content.Dispose).Code);
+    }
+
+    [Fact]
+    public async Task OnTheWire_AWholeReadWhoseContentMatchesItsETag_ReadsThrough()
+    {
+        // 对照：ETag 正是内容的 MD5 时照常读完，流不改变读到的内容
+        await using var endpoint = RecordingHttpListener.AnsweringWithBody("200 OK", Content, "ETag: \"900150983cd24fb0d6963f7d28e17f72\"", LastModifiedHeader);
+        using var client = S3ObjectStorageFeature.CreateClient(Options(endpoint.Port));
+        var store = new S3BlobStore(client, Options(endpoint.Port), TimeProvider.System, new LogCapture());
+
+        var got = (await store.GetAsync(new ContainerName(Bucket), new BlobKey(Key), CancellationToken.None)).ValueOrThrow();
+        await using (got)
+        {
+            Assert.Equal(Content, await new StreamReader(got.Content).ReadToEndAsync());
+        }
     }
 
     /// <summary>

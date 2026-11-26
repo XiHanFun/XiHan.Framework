@@ -233,7 +233,7 @@ public abstract class BlobStoreConformance
     }
 
     /// <summary>
-    /// 用例 7：不合法的容器名、键、元数据名与查询前缀在构造时拒绝
+    /// 用例 7：不合法的容器名、键、元数据名、元数据值与查询前缀在构造时拒绝
     /// </summary>
     /// <remarks>
     /// 页大小越界不在构造时拒绝，而是在列举时返回校验错误，见用例 11
@@ -252,6 +252,8 @@ public abstract class BlobStoreConformance
         Assert.Throws<ArgumentException>(static () => new BlobKey("a\\b"));
         Assert.Throws<ArgumentException>(static () => new BlobKey("a b"));
         Assert.Throws<ArgumentException>(static () => new BlobPutOptions { Metadata = new Dictionary<string, string> { ["Bad Name"] = "x" } });
+        // 元数据的值不能有孤立的代理项：存储里存成 U+FFFD，读回的不是写入的值（ADR-0322）
+        Assert.Throws<ArgumentException>(static () => new BlobPutOptions { Metadata = new Dictionary<string, string> { ["note"] = new string(['a', (char)0xD800, 'b']) } });
         Assert.Throws<ArgumentException>(static () => new BlobPutOptions { ContentType = " " });
         Assert.Throws<ArgumentException>(static () => new BlobQuery { Prefix = "a b" });
         Assert.True(BlobKey.IsValid("a/b.c-d_e"));

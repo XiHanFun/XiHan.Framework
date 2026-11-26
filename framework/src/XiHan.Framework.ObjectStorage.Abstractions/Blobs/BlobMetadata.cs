@@ -38,6 +38,9 @@ public sealed record BlobMetadata
     /// <summary>
     /// 最后修改时间
     /// </summary>
+    /// <remarks>
+    /// 读取、<c>Head</c> 与列举交出存储记下的时刻。写入结果（<see cref="IBlobStore.PutAsync"/> 逐项返回的元数据）里的是 Provider 记下的写入时刻，不要求与之后读出的相同（RFC-0012）：文件系统存储存的就是它；S3 的写入应答不带修改时间，写入结果取本机收到应答时的时钟，要服务端记下的时刻就在写入之后再 <c>Head</c>（ADR-0313、ADR-0322）
+    /// </remarks>
     public required DateTimeOffset LastModified { get; init; }
 
     /// <summary>

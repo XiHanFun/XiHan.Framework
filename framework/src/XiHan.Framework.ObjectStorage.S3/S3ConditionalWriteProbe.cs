@@ -37,6 +37,14 @@ internal static class S3ConditionalWriteProbe
     internal const string UploadIdMissingReason = "CreateMultipartUpload of '" + ProbeKey + "' returned no usable UploadId";
 
     /// <summary>
+    /// 上传分片的应答没有可用的 ETag 时 <c>reason</c> 的文本
+    /// </summary>
+    /// <remarks>
+    /// 固定文本，写明是哪一步，不带应答里的值（ADR-0322）
+    /// </remarks>
+    internal const string PartETagMissingReason = "UploadPart of '" + ProbeKey + "' returned no usable ETag";
+
+    /// <summary>
     /// 核对条件写入开启时配置了探测用的桶
     /// </summary>
     /// <remarks>
@@ -54,7 +62,7 @@ internal static class S3ConditionalWriteProbe
     /// 探测一次
     /// </summary>
     /// <remarks>
-    /// 成功表示服务认条件写入。失败的原因各有错误码：不认 <see cref="ObjectStorageErrors.ConditionalWriteUnavailable"/>，被拒绝（凭据无效或无权写探测键、建桶、放弃上传）<see cref="ObjectStorageErrors.ProbeDenied"/>，桶不存在 <see cref="ObjectStorageErrors.BlobNotFound"/>，连不上、超时、其余服务端错误或服务的应答不合规（发起分片上传的应答没有可用的上传标识，ADR-0313）<see cref="ObjectStorageErrors.StoreUnavailable"/>。调用方的取消原样抛出。单次探测以 <see cref="S3ObjectStorageOptions.HealthProbeInterval"/> 为超时
+    /// 成功表示服务认条件写入。失败的原因各有错误码：不认 <see cref="ObjectStorageErrors.ConditionalWriteUnavailable"/>，被拒绝（凭据无效或无权写探测键、建桶、放弃上传）<see cref="ObjectStorageErrors.ProbeDenied"/>，桶不存在 <see cref="ObjectStorageErrors.BlobNotFound"/>，连不上、超时、其余服务端错误或服务的应答不合规（发起分片上传的应答没有可用的上传标识，ADR-0313；上传分片的应答没有可用的 ETag，ADR-0322）<see cref="ObjectStorageErrors.StoreUnavailable"/>。调用方的取消原样抛出。单次探测以 <see cref="S3ObjectStorageOptions.HealthProbeInterval"/> 为超时
     /// </remarks>
     /// <param name="client">客户端</param>
     /// <param name="options">选项；<see cref="S3ObjectStorageOptions.HealthBucket"/> 必须有值</param>
@@ -165,7 +173,7 @@ internal static class S3ConditionalWriteProbe
     /// 以探测键带条件完成一次分片上传
     /// </summary>
     /// <remarks>
-    /// 被条件拒绝（412）返回 <see langword="true"/> 并放弃这个上传（不留未完成的分片上传；服务已自行清掉时不算错）；完成了返回 <see langword="false"/>（服务忽略了条件，探测键被同样为空的内容覆盖，无害）。发起的应答没有可用的上传标识时返回 <see cref="ObjectStorageErrors.StoreUnavailable"/>，不再发后面的请求（ADR-0313）。中途出错时尽力放弃上传，再抛出原来的错误。<paramref name="step"/> 记录当前请求名，供报错；发起有了应答时把上传标识是否可用交给 <paramref name="initiated"/>（ADR-0317）
+    /// 被条件拒绝（412）返回 <see langword="true"/> 并放弃这个上传（不留未完成的分片上传；服务已自行清掉时不算错）；完成了返回 <see langword="false"/>（服务忽略了条件，探测键被同样为空的内容覆盖，无害）。发起的应答没有可用的上传标识时返回 <see cref="ObjectStorageErrors.StoreUnavailable"/>，不再发后面的请求（ADR-0313）；上传分片的应答没有可用的 ETag 时同样返回它，不发完成，尽力放弃这个上传（ADR-0322）。中途出错时尽力放弃上传，再抛出原来的错误。<paramref name="step"/> 记录当前请求名，供报错；发起有了应答时把上传标识是否可用交给 <paramref name="initiated"/>（ADR-0317）
     /// </remarks>
     private static async ValueTask<Result<bool>> CompleteRefusedAsync(IAmazonS3 client, string bucket, Action<string> step, Action<bool> initiated, CancellationToken cancellationToken)
     {
@@ -186,6 +194,14 @@ internal static class S3ConditionalWriteProbe
             step("UploadPart");
             using var content = new MemoryStream([0], writable: false);
             var part = await client.UploadPartAsync(new UploadPartRequest { BucketName = bucket, Key = ProbeKey, UploadId = uploadId, PartNumber = 1, InputStream = content, PartSize = content.Length }, cancellationToken).ConfigureAwait(false);
+            // 上传分片的应答没有可用的 ETag 是不合规的应答：拿空的 ETag 去完成，结论取决于服务先判条件还是先判分片（ADR-0313 待定）。
+            // 同发起缺上传标识，按服务端错误返回、尚未确认，不发完成；这次有上传标识，尽力放弃它，不留未完成的上传，所以不另退避（ADR-0322）
+            if (!S3BlobStore.IsUsableETag(S3BlobStore.Unquote(part.ETag)))
+            {
+                await AbortQuietlyAsync(client, bucket, uploadId).ConfigureAwait(false);
+                return Error.Unavailable(ObjectStorageErrors.StoreUnavailable, ObjectStorageMessages.StoreUnavailable, MessageArguments.Of(("reason", PartETagMissingReason)));
+            }
+
             step("CompleteMultipartUpload");
             try
             {
@@ -201,15 +217,7 @@ internal static class S3ConditionalWriteProbe
         catch
         {
             // 探测本身出错（501、断连、超时）：尽力放弃上传，放弃的失败不掩盖原来的错误
-            try
-            {
-                await client.AbortMultipartUploadAsync(new AbortMultipartUploadRequest { BucketName = bucket, Key = ProbeKey, UploadId = uploadId }, CancellationToken.None).ConfigureAwait(false);
-            }
-            catch (Exception exception) when (exception is AmazonServiceException or AmazonClientException or HttpRequestException or IOException or TimeoutException or OperationCanceledException)
-            {
-                // 尽力而为：未完成的上传留给桶的生命周期规则清理
-            }
-
+            await AbortQuietlyAsync(client, bucket, uploadId).ConfigureAwait(false);
             throw;
         }
 
@@ -225,6 +233,24 @@ internal static class S3ConditionalWriteProbe
         }
 
         return Result.Success(true);
+    }
+
+    /// <summary>
+    /// 尽力放弃探测的上传
+    /// </summary>
+    /// <remarks>
+    /// 不受探测的超时与调用方取消约束，放弃的失败吞掉：只用在探测已经要以别的结论结束时，未完成的上传留给桶的生命周期规则清理
+    /// </remarks>
+    private static async ValueTask AbortQuietlyAsync(IAmazonS3 client, string bucket, string uploadId)
+    {
+        try
+        {
+            await client.AbortMultipartUploadAsync(new AbortMultipartUploadRequest { BucketName = bucket, Key = ProbeKey, UploadId = uploadId }, CancellationToken.None).ConfigureAwait(false);
+        }
+        catch (Exception exception) when (exception is AmazonServiceException or AmazonClientException or HttpRequestException or IOException or TimeoutException or OperationCanceledException)
+        {
+            // 尽力而为：放弃的失败不掩盖探测的结论
+        }
     }
 
     /// <summary>

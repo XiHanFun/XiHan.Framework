@@ -16,10 +16,10 @@ using XiHan.Framework.Testing;
 namespace XiHan.Framework.ObjectStorage.S3.Tests;
 
 /// <summary>
-/// 读取、写入与 HEAD 的应答缺 ETag 或修改时间时返回错误（ADR-0313）
+/// 读取、写入与 HEAD 的应答缺 ETag、修改时间或长度时返回错误（ADR-0313、ADR-0322）
 /// </summary>
 /// <remarks>
-/// <c>GetObject</c>、<c>HeadObject</c> 的应答本该带 <c>ETag</c> 与 <c>Last-Modified</c>，<c>PutObject</c> 的应答本该带 <c>ETag</c>：缺了是不合规的应答，按服务端错误返回 <see cref="ObjectStorageErrors.StoreUnavailable"/>，不再以空串与 <see cref="DateTimeOffset.MinValue"/> 填进元数据。<c>PutObject</c> 的应答本来就没有修改时间，写入结果的修改时间取本机时钟。只判存在与否的 HEAD（批量删除、不覆盖写入之前）不需要这两项。线上的用例走真实的 SDK 与套接字，对端是回环上的 <see cref="RecordingHttpListener"/>；其余用内存替身 <see cref="FakeS3Client"/>。都不连 S3 服务
+/// <c>GetObject</c>、<c>HeadObject</c> 的应答本该带 <c>ETag</c>、<c>Last-Modified</c> 与 <c>Content-Length</c>，<c>PutObject</c> 的应答本该带 <c>ETag</c>：缺了是不合规的应答，按服务端错误返回 <see cref="ObjectStorageErrors.StoreUnavailable"/>，不再以空串、<see cref="DateTimeOffset.MinValue"/> 与 0 填进元数据。范围读取的总长取自 <c>Content-Range</c>，不看 <c>Content-Length</c>。<c>PutObject</c> 的应答本来就没有修改时间，写入结果的修改时间取本机时钟。只判存在与否的 HEAD（批量删除、不覆盖写入之前）不需要这两项。线上的用例走真实的 SDK 与套接字，对端是回环上的 <see cref="RecordingHttpListener"/>；其余用内存替身 <see cref="FakeS3Client"/>。都不连 S3 服务
 /// </remarks>
 public sealed class S3ObjectResponseTests
 {
@@ -124,6 +124,60 @@ public sealed class S3ObjectResponseTests
         var got = await store.GetAsync(new ContainerName(Bucket), new BlobKey(Key), new BlobRange(0, 2), CancellationToken.None);
 
         AssertUnusable(got.Error, "GetObject", field);
+    }
+
+    [Theory]
+    [InlineData(true, null)]
+    [InlineData(true, "Content-Length: -5")]
+    [InlineData(false, null)]
+    [InlineData(false, "Content-Length: -5")]
+    public async Task OnTheWire_AWholeReadOrHeadWithoutAUsableContentLength_ReturnsStoreUnavailable(bool read, string? contentLength)
+    {
+        // 以前缺 Content-Length 时长度取 HTTP 客户端给的值，没有就是 0：交出一个长度为 0 的非空对象（ADR-0322）。
+        // 负数 HTTP 客户端不认（照样当作没有），SDK 读出的原值是负数，同样当不了长度
+        string[] headers = contentLength is null ? [ETagHeader, LastModifiedHeader] : [ETagHeader, LastModifiedHeader, contentLength];
+        await using var endpoint = RecordingHttpListener.AnsweringVerbatim("200 OK", read ? Content : string.Empty, headers);
+        var logs = new LogCapture();
+        using var client = S3ObjectStorageFeature.CreateClient(Options(endpoint.Port));
+        var store = new S3BlobStore(client, Options(endpoint.Port), TimeProvider.System, logs);
+
+        var error = read
+            ? (await store.GetAsync(new ContainerName(Bucket), new BlobKey(Key), CancellationToken.None)).Error
+            : (await store.HeadAsync(new ContainerName(Bucket), new BlobKey(Key), CancellationToken.None)).Error;
+
+        var operation = read ? "GetObject" : "HeadObject";
+        AssertUnusable(error, operation, "Content-Length");
+        Assert.DoesNotContain("-5", error!.Details?["reason"]?.ToString(), StringComparison.Ordinal);
+        Assert.Single(endpoint.Requests);
+        Assert.Contains(operation, Assert.Single(logs.Entries, static entry => entry.Level == LogLevel.Warning).Message, StringComparison.Ordinal);
+    }
+
+    [Theory]
+    [InlineData("Content-Length: 3", true)]
+    [InlineData(null, false)]
+    public async Task OnTheWire_ARangeBeyondTheEnd_TakesTheTotalLengthFromAHeadThatMustCarryIt(string? contentLength, bool usable)
+    {
+        // 起点越界时再 HEAD 一次取总长写进错误参数：这次 HEAD 用到了长度，缺了不以 0 顶替（ADR-0322）
+        string[] head = contentLength is null ? [ETagHeader, LastModifiedHeader] : [ETagHeader, LastModifiedHeader, contentLength];
+        await using var endpoint = RecordingHttpListener.AnsweringInTurn(
+            new RecordingHttpListener.Reply("416 Requested Range Not Satisfiable", string.Empty, []),
+            new RecordingHttpListener.Reply("200 OK", string.Empty, head, Verbatim: true));
+        using var client = S3ObjectStorageFeature.CreateClient(Options(endpoint.Port));
+        var store = new S3BlobStore(client, Options(endpoint.Port), TimeProvider.System, new LogCapture());
+
+        var got = await store.GetAsync(new ContainerName(Bucket), new BlobKey(Key), new BlobRange(5), CancellationToken.None);
+
+        if (usable)
+        {
+            Assert.Equal(ObjectStorageErrors.RangeNotSatisfiable, got.Error?.Code);
+            Assert.Equal(3L, Convert.ToInt64(got.Error!.Details!["length"], CultureInfo.InvariantCulture));
+        }
+        else
+        {
+            AssertUnusable(got.Error, "HeadObject", "Content-Length");
+        }
+
+        Assert.Equal(["GET ", "HEAD "], endpoint.Requests.Select(static request => request[..(request.IndexOf(' ', StringComparison.Ordinal) + 1)]));
     }
 
     [Fact]

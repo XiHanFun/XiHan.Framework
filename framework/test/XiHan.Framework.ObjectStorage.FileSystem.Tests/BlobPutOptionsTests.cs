@@ -92,4 +92,21 @@ public sealed class BlobPutOptionsTests
         Assert.Throws<ArgumentException>(static () => new BlobPutOptions { Metadata = new Dictionary<string, string> { ["title"] = new string('中', 683) } });
         Assert.Equal("报告", new BlobPutOptions { Metadata = new Dictionary<string, string> { ["title"] = "报告" } }.Metadata["title"]);
     }
+
+    [Fact]
+    public void MetadataValues_HaveNoLoneSurrogates_ButSurrogatePairsAreFine()
+    {
+        // 孤立的代理项编不成 UTF-8：文件系统的元数据文件与 S3 的请求头里存成 U+FFFD，读回的不是写入的值（ADR-0322）
+        const char high = (char)0xD83D;
+        const char low = (char)0xDE00;
+        foreach (var value in new[] { new string(['a', high, 'b']), new string(['a', low, 'b']), new string(['a', low, high, 'b']), new string(['a', high]), new string([low]), new string(['a', high, high, low]) })
+        {
+            var thrown = Assert.Throws<ArgumentException>(() => new BlobPutOptions { Metadata = new Dictionary<string, string> { ["note"] = value } });
+            Assert.Contains("lone surrogates", thrown.Message, StringComparison.Ordinal);
+        }
+
+        // 成对的代理项是平面以外的一个字符，照常合法、原样保存
+        var pair = new string(['a', high, low, 'b']);
+        Assert.Equal(pair, new BlobPutOptions { Metadata = new Dictionary<string, string> { ["note"] = pair } }.Metadata["note"]);
+    }
 }

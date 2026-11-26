@@ -105,6 +105,33 @@ public sealed class S3ConditionalWriteRetryTests
     }
 
     [Fact]
+    public async Task Startup_WhenTheProbeGetsNoPartETag_StartsDegraded_AndRecoversAtTheUsualPace()
+    {
+        // 上传分片的应答没有可用的 ETag 同其余服务端错误：照常启动、尚未确认（ADR-0322）。探测放弃得了这个上传，
+        // 不留下东西，所以不像缺上传标识那样单独退避：第一次后台重试照旧排在 1 秒后
+        var fake = FakeS3Client.Create(Bucket);
+        fake.NextPartETag = static () => null;
+        var clock = new FakeTimeProvider();
+        await using var host = await StartAsync(fake, clock);
+
+        var status = Connection(host);
+        Assert.Equal(LifecycleState.Degraded, status.State);
+        Assert.Equal(ObjectStorageErrors.StoreUnavailable, status.Error?.Code);
+        Assert.Equal(S3ConditionalWriteProbe.PartETagMissingReason, (string?)status.Error!.Details!["reason"]);
+        Assert.Equal("unconfirmed", status.Data["conditionalWrites"]);
+        Assert.DoesNotContain("CompleteMultipartUpload", fake.Requests);
+        Assert.Equal(0, fake.OpenUploads);
+
+        var gate = host.Services.GetRequiredService<S3ConditionalWriteGate>();
+        await Within(gate.WhenRetryScheduledAsync(1));
+        Assert.Equal(TimeSpan.FromSeconds(1), gate.ScheduledDelays[0]);
+        fake.NextPartETag = static () => "\"part\"";
+        clock.Advance(TimeSpan.FromSeconds(1));
+        await Within(gate.Settled);
+        Assert.Equal("confirmed", Connection(host).Data["conditionalWrites"]);
+    }
+
+    [Fact]
     public async Task Background_BacksOffAnswersWithoutAnUploadId_FromTheHealthProbeInterval_AndStopsAfterTen()
     {
         // 服务若确实建了上传，每次重试都留下一个放弃不了的上传：从健康探测间隔起加倍，最长 1 小时，累计 10 次之后不再探测（ADR-0317）

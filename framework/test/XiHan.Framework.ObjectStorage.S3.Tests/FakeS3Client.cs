@@ -112,7 +112,7 @@ public class FakeS3Client : DispatchProxy
     /// 对象的元数据（HEAD）应答
     /// </summary>
     /// <remarks>
-    /// 缺省原样交出带 ETag 与修改时间的应答；换掉它模拟不合规的应答，如不带 ETag 或修改时间
+    /// 缺省原样交出带 ETag、修改时间与长度的应答；换掉它模拟不合规的应答，如不带 ETag、修改时间或长度
     /// </remarks>
     public Func<GetObjectMetadataResponse, GetObjectMetadataResponse> HeadAnswer { get; set; } = static answer => answer;
 
@@ -318,13 +318,13 @@ public class FakeS3Client : DispatchProxy
     /// 对象的元数据（HEAD）
     /// </summary>
     /// <remarks>
-    /// 应答带 ETag 与修改时间（同 Amazon S3），经 <see cref="HeadAnswer"/> 换成要模拟的应答
+    /// 应答带 ETag、修改时间与 <c>Content-Length</c>（同 Amazon S3；替身不存内容，长度记为 0），经 <see cref="HeadAnswer"/> 换成要模拟的应答
     /// </remarks>
     private GetObjectMetadataResponse HeadObject(GetObjectMetadataRequest request)
     {
         RequireBucket(request.BucketName);
         return _objects.Contains(request.BucketName + "/" + request.Key)
-            ? HeadAnswer(new GetObjectMetadataResponse { ETag = "\"etag\"", LastModified = new DateTime(2026, 11, 26, 0, 0, 0, DateTimeKind.Utc), HttpStatusCode = HttpStatusCode.OK })
+            ? HeadAnswer(new GetObjectMetadataResponse { ETag = "\"etag\"", LastModified = new DateTime(2026, 11, 26, 0, 0, 0, DateTimeKind.Utc), HttpStatusCode = HttpStatusCode.OK, Headers = { ContentLength = 0 } })
             : throw ServiceError(HttpStatusCode.NotFound, "NotFound");
     }
 

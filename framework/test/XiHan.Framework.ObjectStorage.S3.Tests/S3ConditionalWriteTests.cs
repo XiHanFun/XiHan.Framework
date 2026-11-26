@@ -190,6 +190,50 @@ public sealed class S3ConditionalWriteTests
         Assert.Equal([false], initiated);
     }
 
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("\"\"")]
+    [InlineData(" ")]
+    public async Task Probe_AnUploadPartAnswerWithoutAUsableETag_IsAnUnusableAnswer_AbortsTheUpload_AndSendsNoCompletion(string? etag)
+    {
+        // 上传分片的应答没有可用的 ETag（ADR-0322）：以前拿空的 ETag 照样发带条件的完成，结论取决于服务先判条件还是先判分片
+        var fake = FakeS3Client.Create(Bucket);
+        fake.NextPartETag = () => etag;
+        var reported = new List<string>();
+        var initiated = new List<bool>();
+
+        var result = await S3ConditionalWriteProbe.RunAsync(fake.AsClient(), Options(), multipart: true, TimeProvider.System, (operation, _) => reported.Add(operation), initiated.Add, CancellationToken.None);
+
+        // 与发起缺上传标识一样是尚未确认：reason 写明是上传分片那一步的应答缺了 ETag，不带应答里的值；没有异常可报
+        Assert.Equal(ObjectStorageErrors.StoreUnavailable, result.Error?.Code);
+        var reason = (string?)result.Error!.Details!["reason"] ?? string.Empty;
+        Assert.Equal(S3ConditionalWriteProbe.PartETagMissingReason, reason);
+        Assert.Contains("UploadPart", reason, StringComparison.Ordinal);
+        Assert.Contains("ETag", reason, StringComparison.Ordinal);
+        Assert.Empty(reported);
+
+        // 不发完成；有上传标识，放弃这个上传，不留未完成的上传。发起的应答带着上传标识，不计入缺上传标识的退避（ADR-0317）
+        Assert.Equal(["PutObject", "PutObject", "InitiateMultipartUpload", "UploadPart", "AbortMultipartUpload"], fake.Requests);
+        Assert.Equal(0, fake.OpenUploads);
+        Assert.Equal([true], initiated);
+    }
+
+    [Fact]
+    public async Task Probe_AFailedAbort_AfterAnUploadPartWithoutAnETag_DoesNotHideTheAnswer()
+    {
+        // 放弃只是尽力而为：放弃失败时结论仍是上传分片的应答缺 ETag，未完成的上传留给桶的生命周期规则
+        var fake = FakeS3Client.Create(Bucket);
+        fake.NextPartETag = static () => null;
+        fake.Fault = static request => request == "AbortMultipartUpload" ? new HttpRequestException("Connection reset.") : null;
+
+        var result = await S3ConditionalWriteProbe.RunAsync(fake.AsClient(), Options(), multipart: true, TimeProvider.System, static (_, _) => { }, static _ => { }, CancellationToken.None);
+
+        Assert.Equal(S3ConditionalWriteProbe.PartETagMissingReason, (string?)result.Error?.Details!["reason"]);
+        Assert.Equal("AbortMultipartUpload", fake.Requests[^1]);
+        Assert.DoesNotContain("CompleteMultipartUpload", fake.Requests);
+    }
+
     [Fact]
     public async Task Probe_CreatesTheMissingBucket_WhenEnsureBucketsIsOn_AndReportsADeniedCreation()
     {

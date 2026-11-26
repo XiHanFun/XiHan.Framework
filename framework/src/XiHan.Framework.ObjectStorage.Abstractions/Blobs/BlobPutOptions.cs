@@ -4,6 +4,7 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Text;
 using System.Text.RegularExpressions;
+using XiHan.Framework.ObjectStorage.Abstractions.Keys;
 using XiHan.Framework.Primitives;
 
 namespace XiHan.Framework.ObjectStorage.Abstractions.Blobs;
@@ -56,7 +57,7 @@ public sealed partial record BlobPutOptions
     /// 自定义元数据
     /// </summary>
     /// <remarks>
-    /// 名须满足 <see cref="IsValidMetadataName"/>；值不含控制字符；名与值合计不超过 <see cref="MaxMetadataBytes"/> 个 UTF-8 字节（ADR-0214）
+    /// 名须满足 <see cref="IsValidMetadataName"/>；值不含控制字符与孤立的代理项（成对的代理项照常合法，ADR-0322）；名与值合计不超过 <see cref="MaxMetadataBytes"/> 个 UTF-8 字节（ADR-0214）。不合法即抛出 <see cref="ArgumentException"/>
     /// </remarks>
     public IReadOnlyDictionary<string, string> Metadata
     {
@@ -77,6 +78,12 @@ public sealed partial record BlobPutOptions
                 if (text.AsSpan().ContainsAnyInRange('\u0000', '\u001F') || text.AsSpan().ContainsAnyInRange('\u007F', '\u009F'))
                 {
                     throw new ArgumentException($"Metadata '{name}' contains control characters.", nameof(value));
+                }
+
+                // 值要编成 UTF-8 才进得了 S3 的请求头与文件系统的元数据文件：孤立的代理项被宽松的编码换成 U+FFFD，读回的不是写入的值（ADR-0322）
+                if (BlobKey.HasLoneSurrogate(text))
+                {
+                    throw new ArgumentException($"Metadata '{name}' contains lone surrogates.", nameof(value));
                 }
 
                 // 名是 ASCII，字节数就是长度

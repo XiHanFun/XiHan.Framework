@@ -13,7 +13,7 @@ using XiHan.Framework.Testing;
 namespace XiHan.Framework.ObjectStorage.S3.Tests;
 
 /// <summary>
-/// 上传分片与列出分片的应答缺必需的内容时返回错误（ADR-0308）
+/// 上传与列出分片的应答缺内容或重复交出分片时返回错误（ADR-0308、ADR-0322）
 /// </summary>
 /// <remarks>
 /// 服务回了成功，上传分片的应答却没有可用的 ETag、列出的分片没有可用的编号或 ETag、长度为负，是不合规的应答：同发起缺上传标识（ADR-0302）一样按服务端错误返回 <see cref="ObjectStorageErrors.StoreUnavailable"/>，不把分片构造的 <see cref="ArgumentException"/> 抛给调用方。线上的两条走真实的 SDK 与套接字，对端是回环上的 <see cref="RecordingHttpListener"/>；其余用内存替身 <see cref="FakeS3Client"/>。都不连 S3 服务
@@ -244,9 +244,9 @@ public sealed class S3MultipartPartResponseTests
     }
 
     [Fact]
-    public async Task MorePartsThanAnUploadHolds_FailTheListing()
+    public async Task APartNumberRepeatedOnALaterPage_FailsTheListing()
     {
-        // 标记每页都前进、每页 1000 片而编号重复：一个上传最多 10000 片，列到第 11 页即失败，不把 12000 片交给调用方
+        // 标记每页都前进、每页 1000 片而编号重复：以前累计到 10000 片之前照收，第 11 页才失败；现在第二页的第一片即失败（ADR-0322）
         var fake = FakeS3Client.Create(Bucket);
         fake.PartPages = static (request, _) =>
         {
@@ -259,8 +259,65 @@ public sealed class S3MultipartPartResponseTests
         var listed = await store.ListPartsAsync(upload, CancellationToken.None);
 
         Assert.Equal(ObjectStorageErrors.StoreUnavailable, listed.Error?.Code);
-        Assert.Contains("10000", listed.Error!.Details?["reason"]?.ToString(), StringComparison.Ordinal);
-        Assert.Equal(11, fake.Requests.Count(static request => request == ListPartsRequest));
+        var reason = listed.Error!.Details?["reason"]?.ToString() ?? string.Empty;
+        Assert.Contains("PartNumber", reason, StringComparison.Ordinal);
+        Assert.Contains("twice", reason, StringComparison.Ordinal);
+        Assert.Equal(2, fake.Requests.Count(static request => request == ListPartsRequest));
+    }
+
+    [Fact]
+    public async Task APartNumberRepeatedWithinAPage_FailsTheListing()
+    {
+        // 10000 片之内同一编号出现两次：以前原样交出，调用方拿去完成，清单不是严格升序，报成调用方给错了清单（ADR-0322）
+        var fake = FakeS3Client.Create(Bucket);
+        fake.ListedParts = static _ => [Part(1), Part(2), Part(1)];
+        var store = Store(fake);
+        var upload = (await store.StartAsync(new ContainerName(Bucket), new BlobKey(Key), BlobPutOptions.Default, CancellationToken.None)).ValueOrThrow();
+
+        var listed = await store.ListPartsAsync(upload, CancellationToken.None);
+
+        Assert.Equal(ObjectStorageErrors.StoreUnavailable, listed.Error?.Code);
+        Assert.Contains("twice", listed.Error!.Details?["reason"]?.ToString(), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task OnTheWire_AListingThatRepeatsAPartNumber_ReturnsStoreUnavailable()
+    {
+        const string body = """
+            <?xml version="1.0" encoding="UTF-8"?>
+            <ListPartsResult xmlns="http://s3.amazonaws.com/doc/2006-03-01/"><Bucket>uploads</Bucket><Key>video.mp4</Key><UploadId>upload-1</UploadId><IsTruncated>false</IsTruncated><Part><PartNumber>1</PartNumber><ETag>"a"</ETag><Size>5</Size></Part><Part><PartNumber>1</PartNumber><ETag>"b"</ETag><Size>5</Size></Part></ListPartsResult>
+            """;
+        await using var endpoint = RecordingHttpListener.AnsweringWithBody("200 OK", body, "Content-Type: application/xml");
+        var logs = new LogCapture();
+        using var client = S3ObjectStorageFeature.CreateClient(Options(endpoint.Port));
+        var store = new S3BlobStore(client, Options(endpoint.Port), TimeProvider.System, logs);
+
+        var listed = await store.ListPartsAsync(Upload(), CancellationToken.None);
+
+        Assert.Equal(ObjectStorageErrors.StoreUnavailable, listed.Error?.Code);
+        Assert.Contains("twice", listed.Error!.Details?["reason"]?.ToString(), StringComparison.Ordinal);
+        Assert.Single(endpoint.Requests);
+        Assert.Contains(ListPartsRequest, Assert.Single(logs.Entries, static entry => entry.Level == LogLevel.Warning).Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task AnUploadWithEveryPartNumberOnce_IsListedInFull()
+    {
+        // 片数的上界由编号给出：1 到 10000 各一片、分 10 页列出，照常列全，不另数片数
+        var fake = FakeS3Client.Create(Bucket);
+        fake.PartPages = static (request, _) =>
+        {
+            var marker = request.PartNumberMarker is { } text ? int.Parse(text, CultureInfo.InvariantCulture) : 0;
+            var last = marker + 1000;
+            return new ListPartsResponse { Parts = [.. Enumerable.Range(marker + 1, 1000).Select(Part)], IsTruncated = last < BlobMultipart.MaxPartNumber, NextPartNumberMarker = last };
+        };
+        var store = Store(fake);
+        var upload = (await store.StartAsync(new ContainerName(Bucket), new BlobKey(Key), BlobPutOptions.Default, CancellationToken.None)).ValueOrThrow();
+
+        var parts = (await store.ListPartsAsync(upload, CancellationToken.None)).ValueOrThrow();
+
+        Assert.Equal(Enumerable.Range(1, BlobMultipart.MaxPartNumber), parts.Select(static part => part.PartNumber));
+        Assert.Equal(10, fake.Requests.Count(static request => request == ListPartsRequest));
     }
 
     [Fact]
