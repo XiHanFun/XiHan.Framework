@@ -66,6 +66,11 @@
 - `Delay.Until`、`UserTask.DueAt` 与 `WorkflowValues.TryConvert<DateTimeOffset>` / `<DateTime>` 只认表达式的时间文法，`12:30`、`01/02/2026`、`Jan 2, 2026` 不再被接受：写成 `2026-01-02T12:30` 这类完整的时刻；读出的时刻是 UTC，任务视图的 `DueAt` 不再保留属性里写的偏移
 - `Security.InMemory` 的 API Key 不能有孤立的代理项，有这种 key 的配置装载时报 `ArgumentException`：换成合法的 key
 - JWT 的 `Secret` 与 `XiHan:ObjectStorage:SignedUrls:Secret` 按严格的 UTF-8 计长与编码，有孤立代理项的密钥启动时报 `ArgumentException`：换成合法的密钥
+- `BlobKey`、`BlobQuery.Prefix`、`BlobUrlRequest.ForDownload` 的文件名、`BlobMultipartUpload` 的上传标识与 `CacheKey` 不再收孤立的代理项（构造抛 `ArgumentException`，`IsValid*` 为假）：从用户输入拼键的代码先用 `IsValid` 判断；以前经 S3、Redis 或远程缓存写下的这类键实际存成了 U+FFFD，改用 U+FFFD 的键读写
+- 幂等键或主体 ID 含孤立的代理项时，幂等调用返回 `CACHING_VALIDATION_001`、不执行处理器：客户端改发合法的幂等键
+- S3 条件写入探测的发起拿到缺上传标识的应答时，重试从 `HealthProbeIntervalSeconds` 起加倍、最长 1 小时，其间写入不就地探测；累计 10 次后不再探测、缺省实例健康项 Failed，修好服务后要重启：给 `HealthBucket` 配放弃未完成分片上传的生命周期规则
+- CloudEvents Webhook 以 binary（缺省）发布时，信封的字符串属性有孤立的代理项即抛出 `MESSAGING_VALIDATION_002`、不发请求，`CloudEventsHttpBinding.EncodeHeaderValue` 遇孤立的代理项抛 `ArgumentException`：发布之前改正属性
+- 操作的响应里有孤立的代理项时，经 HTTP、gRPC、MCP、命令行、AI 工具与插件回调的调用以 `KERNEL_UNEXPECTED_001` 失败、没有载荷（HTTP 500），不再写成 U+FFFD 照常成功：修处理器，别让响应里出现孤立的代理项；类型化入口不变
 :::
 
 ### 版本与兼容
@@ -91,6 +96,7 @@
 - **新增** `UnreadableDeadlineLog`（Preview）：调用方给的截止时间读不出时的限频告警，内核登记为单例，自写载体读不出截止时间时经它报告（ADR-0279）
 - **调整** `BindingValue.ToString()` 的 `Properties` 只列属性名，属性值不打印（ADR-0285）
 - **调整** 绑定根目录下以 `.` 开头的子目录不是绑定，解析全部与点名都不读、不计入 128 个；Kubernetes 把 projected volume 直接挂到根目录时的 `..data` 与带时间戳的目录不再出现在解析结果里（ADR-0311）
+- **调整** XGI 入口把响应写成载荷时，字符串（成员名、值、字典的键）有孤立的代理项即写不出，以 `KERNEL_UNEXPECTED_001` 结束、没有载荷，不再写成 U+FFFD；类型化入口不经 JSON，不受影响（ADR-0318）
 
 ### 宿主、协议与插件
 
@@ -127,6 +133,8 @@
 - **调整** 进程外与 Wasm 插件交回的操作应答载荷不为空时先过 JSON 文本的共同检查，没过时这次调用是 `PLUGINS_UNEXPECTED_001`（`reason` 带路径），不再原样交给调用方；不按崩溃处理（ADR-0315）
 - **调整** `invoke` 的字段选项名字或值有孤立代理项时是用法错误（退出码 64），不再写成 U+FFFD 照常调用（ADR-0315）
 - **调整** 插件配置节的键或值有孤立代理项时插件配置失败、按退避重试，不再写成 U+FFFD 下发（ADR-0315）
+- **调整** CloudEvents Webhook 的 binary 模式写任何头之前核对字符串属性，有孤立的代理项即抛出 `MESSAGING_VALIDATION_002`（消息带属性名），与 structured 相同；`EncodeHeaderValue` 遇孤立的代理项抛 `ArgumentException`，不再编成 `%EF%BF%BD`（ADR-0318）
+- **调整** `invoke` 的字段选项有孤立代理项时，用法错误的文案换成说字段选项的一句，新增消息键 `hosting.commandline.invoke_field_invalid`（`CommandLineMessages.InvokeFieldInvalid`），错误码与退出码不变（ADR-0318）
 
 ### 配置
 
@@ -182,6 +190,10 @@
 - **调整** 两级缓存自己合并同键并发，对 L2 改为分开读写，不再调用 L2 的 `GetOrCreateAsync`；L1 同时未命中只读一次 L2（ADR-0271）
 - **调整** `GetOrCreateAsync` 的过期选项改在回源之前校验，令牌已取消且未命中时不再执行工厂（ADR-0271）
 - **调整** 远程缓存的 `caching.remote.key_invalid` 文案改为「按 UTF-8 编码后不超过 512 字节」（10 个区域），与 Go SDK `examples/cache` 的目录逐字一致（ADR-0274）
+- **调整** 缓存键与键前缀拒收孤立的代理项，成对的照常合法（ADR-0316）
+- **调整** 远程缓存的适配器写出请求之前严格编码键，绕过文法的键按编程错误抛 `ArgumentException`、不发请求（ADR-0316）
+- **修复** `GenerationCache<T>` 散列含孤立代理项的范围与条目时按 WTF-8 取字节，只差在孤立代理项上的范围不再撞成一个键；合法文本的键不变（ADR-0316）
+- **修复** 开了幂等的插件操作交回空载荷时照常记录并回放空载荷，不再以 `KERNEL_UNEXPECTED_001` 失败、留下「处理中」标记（ADR-0318）
 
 ### 调度
 
@@ -244,6 +256,10 @@
 - **修复** S3 条件写入探测拿到没有上传标识的发起应答时按尚未确认处理、`reason` 写明这一步，不再发出不带标识的上传分片（ADR-0313）
 - **调整** 宿主代收的上传先去掉 `Content-Type` 首尾的空格与制表符再与签名比较、核对与写入，测试服务器与 Kestrel 结果一致；只有不换行空格等别的空白的值回 400（ADR-0314）
 - **修复** 预签名地址的 `XiHan:ObjectStorage:SignedUrls:Secret` 按严格的 UTF-8 读取，几个孤立代理项不再换成 U+FFFD 凑够 32 字节
+- **调整** 对象键、查询前缀、保存的文件名与上传标识拒收孤立的代理项，成对的照常合法（ADR-0316）
+- **调整** 宿主代签的预签名把规范串严格编码成 UTF-8，绕过文法的值按编程错误抛 `ArgumentException`，不再换成 U+FFFD 签出打开另一个对象的地址（ADR-0316）
+- **修复** S3 整读的应答里 `ETag` 不是十六进制时返回 `OBJECTSTORAGE_UNAVAILABLE_001`，不再抛出 SDK 的 `ArgumentOutOfRangeException` / `FormatException`（ADR-0317）
+- **调整** S3 条件写入探测的发起拿到缺上传标识的应答时单独退避（从 `HealthProbeIntervalSeconds` 起加倍、最长 1 小时，其间写入不就地探测），累计 10 次后不再探测、缺省实例健康项 Failed（ADR-0317）
 
 ### 可观测
 
