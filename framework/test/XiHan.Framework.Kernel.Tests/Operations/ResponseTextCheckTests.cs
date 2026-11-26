@@ -56,10 +56,10 @@ public sealed class ResponseTextCheckTests
     /// 写出时是否失败
     /// </summary>
     /// <remarks>
-    /// 超过写出深度的由 System.Text.Json 抛出 <see cref="JsonException"/>，其余没过检查的抛出 <see cref="ArgumentException"/>：XGI 入口对两者的处理相同
+    /// 写不出只抛 <see cref="ArgumentException"/>：超过写出深度时 System.Text.Json 的 <see cref="JsonException"/> 也包在里面（ADR-0320）
     /// </remarks>
     private static bool Fails(OperationDescriptor descriptor, CheckedResponse response)
-        => Record.Exception(() => descriptor.EncodeResponse(response)) is ArgumentException or JsonException;
+        => Record.Exception(() => descriptor.EncodeResponse(response)) is { } exception && exception.GetType() == typeof(ArgumentException);
 
     [Theory]
     [MemberData(nameof(Unwritable))]
@@ -119,6 +119,19 @@ public sealed class ResponseTextCheckTests
         Assert.True(Fails(descriptor, CheckedOperation.Render("depth-65")));
         Assert.True(Fails(descriptor, new CheckedResponse { Nest = DepthNode.Make(100) }));
         Assert.True(Fails(descriptor, CheckedOperation.Render("raw-depth")));
+    }
+
+    [Fact]
+    public void EncodeResponse_TooDeep_ThrowsOnlyArgumentException_WithTheSerializerExceptionInside()
+    {
+        // 修之前超过写出深度时抛的是 System.Text.Json 的 JsonException，其余写不出是 ArgumentException：直接调这个 Stable 方法的代码要接两种（ADR-0320）
+        var descriptor = DescriptorOf(new JsonSerializerOptions());
+
+        var deeper = Assert.Throws<ArgumentException>(() => descriptor.EncodeResponse(CheckedOperation.Render("depth-65")));
+        var deepest = Assert.Throws<ArgumentException>(() => descriptor.EncodeResponse(new CheckedResponse { Nest = DepthNode.Make(100) }));
+
+        Assert.True(deeper.InnerException is null or JsonException, deeper.InnerException?.GetType().Name);
+        Assert.IsType<JsonException>(deepest.InnerException);
     }
 
     [Fact]

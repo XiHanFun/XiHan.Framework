@@ -165,3 +165,11 @@ binary 模式：
 9. **测试**：
    - `ResponseEncodingTests`：写不出的形状加 `JsonNode` 的值与成员名、以 UTF-8 交来的非法字节三种；合法的文本在字典的键、`JsonNode` 的值与成员名、UTF-8 字节里也放了 U+FFFD；新增一条按四种内置编码器核对。10a 的实现与现在的都通过，去掉核对时 20 条失败。
    - `ResponseTextCheckTests`（新增，ADR-0319）：65 层、原样嵌进去的 64 层（共 65 层）、六种重复成员与原样嵌进去的孤立代理项转义，XGI 入口都是 `KERNEL_UNEXPECTED_001`、不带 `inner`、没有载荷；64 层、最里层有值的响应照常写出并解码回 64 层；合法的响应字节等于 `SerializeToUtf8Bytes`；上下文的上限放宽到 128 与收紧到 8 两种。改之前 13 条里 11 条失败。
+
+## 修订（2026-11-27）
+
+ADR-0320 改了上面「修订（2026-11-26）」第 5 条的一处，其余不变：
+
+1. `EncodeResponse` 超过写出深度时不再原样抛出 System.Text.Json 的 `JsonException`，包成 `ArgumentException`、原异常放进 `InnerException`，写不出只抛这一种；XGI 入口的结果不变（`KERNEL_UNEXPECTED_001`，不带 `inner`）。
+2. 第 5 条的三处边角照所有者的决定维持，写进 `EncodeResponse` 的 XML 文档：不经编码器原样写出的转义 U+FFFD 被当成写不出；序列化上下文的 `MaxDepth` 比 64 小时写出照它；只认原选项的自定义解析器第一次写出即失败。
+3. 第 2 条的核对挪进内核 internal 的 `StrictJson`，`ResultJson`、`PluginJson.SerializeDetails` 与 Validate 阶段为 Schema 校验编出的请求共用（ADR-0320）；备选 12 列出的「类型化的请求」「Result 与 Error 的线上编码」并进了 RFC-0001「写出与转交」。

@@ -111,6 +111,11 @@ public abstract class OperationDescriptor
     /// <summary>
     /// 把响应对象编码为 UTF-8 JSON
     /// </summary>
+    /// <remarks>
+    /// 写不成合法的 JSON 文本只抛 <see cref="ArgumentException"/>（RFC-0011 规则 10「编码」）：类型化的实现在超过写出深度时也把 System.Text.Json 的 <see cref="JsonException"/> 包在 <see cref="Exception.InnerException"/> 里（ADR-0320）；
+    /// 序列化器或转换器抛出的其他异常（框架异常、不支持的类型）照原样抛出，XGI 入口一并按未处理的异常结束
+    /// </remarks>
+    /// <exception cref="ArgumentException">响应写不成合法的 JSON 文本</exception>
     public abstract ReadOnlyMemory<byte> EncodeResponse(object response);
 
     /// <summary>
@@ -123,7 +128,7 @@ public abstract class OperationDescriptor
     {
         if (ResponseInfo is not { } info)
         {
-            return InvalidResponse("the operation has no typed response metadata");
+            return InvalidPayload("the operation has no typed response metadata");
         }
 
         try
@@ -131,11 +136,11 @@ public abstract class OperationDescriptor
             // JSON 字面量 null 不是响应对象：操作的成功值不能为 null
             return JsonSerializer.Deserialize(payload.Span, info) is { } response
                 ? Result.Success(response)
-                : InvalidResponse("the response is null");
+                : InvalidPayload("the response is null");
         }
         catch (JsonException exception)
         {
-            return InvalidResponse(exception.Message);
+            return InvalidPayload(exception.Message);
         }
     }
 
@@ -162,8 +167,12 @@ public abstract class OperationDescriptor
         => _responseWriteOptions.GetValue(options, static o => new JsonSerializerOptions(o) { MaxDepth = Math.Min(o.MaxDepth == 0 ? JsonText.MaxDepth : o.MaxDepth, JsonText.MaxDepth) + 1 });
 
     /// <summary>
-    /// 构造响应载荷不合法的失败结果
+    /// 这个操作的载荷不合法的错误
     /// </summary>
-    private Result<object> InvalidResponse(string reason)
+    /// <remarks>
+    /// 解码请求与响应、Validate 阶段为 Schema 校验编码请求共用
+    /// </remarks>
+    /// <param name="reason">出错的路径或原因</param>
+    internal Error InvalidPayload(string reason)
         => Error.Validation(KernelErrors.InvalidOperationPayload, KernelMessages.InvalidOperationPayload, MessageArguments.Of(("id", Id), ("reason", reason)));
 }

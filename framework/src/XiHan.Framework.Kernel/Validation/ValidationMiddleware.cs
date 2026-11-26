@@ -109,7 +109,7 @@ public sealed class ValidationMiddleware : IPipelineMiddleware
         var json = payload.IsEmpty ? _emptyObject : payload;
         if (JsonText.FindProblem(json.Span).TryGetValue(out var problem))
         {
-            return Error.Validation(KernelErrors.InvalidOperationPayload, KernelMessages.InvalidOperationPayload, MessageArguments.Of(("id", descriptor.Id), ("reason", problem.Path)));
+            return descriptor.InvalidPayload(problem.Path);
         }
 
         var instance = JsonDocument.Parse(json);
