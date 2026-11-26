@@ -6,6 +6,7 @@
   "hosting.commandline.invoke_authorization_invalid": "The value of --authorization must be '<scheme> <value>'.",
   "hosting.commandline.invoke_data_missing": "The data file '{path}' does not exist.",
   "hosting.commandline.invoke_description": "Invoke an operation exposed to the command line: invoke <operation-id> [--json <object> | --data <file>] [--<field> <value> ...] [--authorization '<scheme> <value>'] [--tenant <id>] [--locale <locale>] [--correlation <id>] [--timeout <seconds>].",
+  "hosting.commandline.invoke_field_invalid": "The field options cannot be written as a JSON payload: {reason}",
   "hosting.commandline.invoke_json_invalid": "The value of --json must be a JSON object: {reason}",
   "hosting.commandline.invoke_operation_missing": "An operation ID is required: invoke <operation-id>.",
   "hosting.commandline.invoke_timeout_invalid": "The value of --timeout must be a positive number of seconds.",

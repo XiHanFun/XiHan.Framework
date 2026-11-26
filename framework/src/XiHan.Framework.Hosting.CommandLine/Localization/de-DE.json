@@ -6,6 +6,7 @@
   "hosting.commandline.invoke_authorization_invalid": "Der Wert von --authorization muss '<Schema> <Wert>' sein.",
   "hosting.commandline.invoke_data_missing": "Die Datendatei '{path}' existiert nicht.",
   "hosting.commandline.invoke_description": "Ruft eine für die Befehlszeile freigegebene Operation auf: invoke <Operations-ID> [--json <Objekt> | --data <Datei>] [--<Feld> <Wert> ...] [--authorization '<Schema> <Wert>'] [--tenant <ID>] [--locale <Gebietsschema>] [--correlation <ID>] [--timeout <Sekunden>].",
+  "hosting.commandline.invoke_field_invalid": "Die Feldoptionen können nicht als JSON-Nutzlast geschrieben werden: {reason}",
   "hosting.commandline.invoke_json_invalid": "Der Wert von --json muss ein JSON-Objekt sein: {reason}",
   "hosting.commandline.invoke_operation_missing": "Eine Operations-ID ist erforderlich: invoke <Operations-ID>.",
   "hosting.commandline.invoke_timeout_invalid": "Der Wert von --timeout muss eine positive Anzahl von Sekunden sein.",

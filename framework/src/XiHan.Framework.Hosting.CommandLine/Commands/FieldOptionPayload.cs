@@ -51,7 +51,7 @@ internal static class FieldOptionPayload
     /// 写载荷
     /// </summary>
     /// <remarks>
-    /// 保留选项不进载荷；没有任何字段时是空对象。字段的名字或值里有孤立的代理项时不写，与 <c>--json</c> 编码不成同一个用法错误（<see cref="CommandLineErrors.UsageInvalid"/> + <see cref="CommandLineMessages.InvokeJsonInvalid"/>；RFC-0001「写出与转交」，ADR-0315）：写出器缺省把它换成 U+FFFD，操作收到的是另一份载荷
+    /// 保留选项不进载荷；没有任何字段时是空对象。字段的名字或值里有孤立的代理项时不写，与 <c>--json</c> 编码不成同一个用法错误（<see cref="CommandLineErrors.UsageInvalid"/>；RFC-0001「写出与转交」，ADR-0315）：写出器缺省把它换成 U+FFFD，操作收到的是另一份载荷。文案用 <see cref="CommandLineMessages.InvokeFieldInvalid"/>，不用 <c>--json</c> 的那一句（ADR-0318）
     /// </remarks>
     /// <param name="commandLine">解析后的命令行</param>
     /// <param name="schema">操作的 Schema；没有时值都写字符串</param>
@@ -125,7 +125,7 @@ internal static class FieldOptionPayload
     /// </summary>
     /// <param name="reason">英文的原因</param>
     private static Error LoneSurrogate(string reason)
-        => Error.Validation(CommandLineErrors.UsageInvalid, CommandLineMessages.InvokeJsonInvalid, MessageArguments.Of(("reason", reason)));
+        => Error.Validation(CommandLineErrors.UsageInvalid, CommandLineMessages.InvokeFieldInvalid, MessageArguments.Of(("reason", reason)));
 
     /// <summary>
     /// 写一个字段

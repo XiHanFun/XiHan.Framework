@@ -6,6 +6,7 @@
   "hosting.commandline.invoke_authorization_invalid": "--authorization 값은 '<스킴> <값>'이어야 합니다.",
   "hosting.commandline.invoke_data_missing": "데이터 파일 '{path}'이(가) 없습니다.",
   "hosting.commandline.invoke_description": "명령줄에 노출된 작업을 호출합니다: invoke <작업 ID> [--json <객체> | --data <파일>] [--<필드> <값> ...] [--authorization '<스킴> <값>'] [--tenant <ID>] [--locale <로케일>] [--correlation <ID>] [--timeout <초>]",
+  "hosting.commandline.invoke_field_invalid": "필드 옵션을 JSON 페이로드로 쓸 수 없습니다: {reason}",
   "hosting.commandline.invoke_json_invalid": "--json 값은 JSON 객체여야 합니다: {reason}",
   "hosting.commandline.invoke_operation_missing": "작업 ID가 필요합니다: invoke <작업 ID>",
   "hosting.commandline.invoke_timeout_invalid": "--timeout 값은 양수 초여야 합니다.",

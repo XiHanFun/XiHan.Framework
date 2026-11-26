@@ -6,6 +6,7 @@
   "hosting.commandline.invoke_authorization_invalid": "--authorization の値は '<スキーム> <値>' でなければなりません。",
   "hosting.commandline.invoke_data_missing": "データファイル '{path}' が存在しません。",
   "hosting.commandline.invoke_description": "コマンドラインに公開された操作を呼び出します: invoke <操作 ID> [--json <オブジェクト> | --data <ファイル>] [--<フィールド> <値> ...] [--authorization '<スキーム> <値>'] [--tenant <ID>] [--locale <ロケール>] [--correlation <ID>] [--timeout <秒>]",
+  "hosting.commandline.invoke_field_invalid": "フィールド オプションを JSON ペイロードに書き出せません: {reason}",
   "hosting.commandline.invoke_json_invalid": "--json の値は JSON オブジェクトでなければなりません: {reason}",
   "hosting.commandline.invoke_operation_missing": "操作 ID が必要です: invoke <操作 ID>",
   "hosting.commandline.invoke_timeout_invalid": "--timeout の値は正の秒数でなければなりません。",

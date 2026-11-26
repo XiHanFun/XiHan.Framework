@@ -85,6 +85,14 @@ public static class CommandLineMessages
     public const string InvokeJsonInvalid = "hosting.commandline.invoke_json_invalid";
 
     /// <summary>
+    /// 字段选项写不成 JSON 载荷
+    /// </summary>
+    /// <remarks>
+    /// 参数：<c>reason</c>（英文的固定文本：名字或值有孤立的代理项，ADR-0318）；与 <see cref="InvokeJsonInvalid"/> 同一个错误码与退出码
+    /// </remarks>
+    public const string InvokeFieldInvalid = "hosting.commandline.invoke_field_invalid";
+
+    /// <summary>
     /// <c>--data</c> 指向的文件不存在
     /// </summary>
     /// <remarks>

@@ -267,7 +267,7 @@ public sealed class CommandLineRunnerTests : IAsyncLifetime
     [InlineData("--na<high>me", "widget", "an option name has a lone surrogate and cannot be encoded as UTF-8")]
     public async Task Invoke_WithAFieldOptionHoldingALoneSurrogate_IsTheSameUsageErrorAsJson(string option, string value, string reason)
     {
-        // 字段选项写进载荷之前核对（RFC-0001「写出与转交」，ADR-0315）：与 --json 编码不成同一个用法错误、同一个消息键，不发起调用；
+        // 字段选项写进载荷之前核对（RFC-0001「写出与转交」，ADR-0315）：与 --json 编码不成同一个用法错误，不发起调用；文案另用字段选项的消息键（ADR-0318），不读成「--json 的值必须是 JSON 对象」；
         // 修之前写出器把孤立的代理项写成转义的 U+FFFD 照常调用，操作收到的名字里是 U+FFFD。用例数据里只写占位：孤立的代理项不进测试用例的名字
         var (code, output, error) = await RunAsync("invoke", "orders.get", WithLoneSurrogates(option), WithLoneSurrogates(value), "--page", "2");
 
@@ -275,7 +275,7 @@ public sealed class CommandLineRunnerTests : IAsyncLifetime
         Assert.Empty(output);
         var failure = Json(error);
         Assert.Equal(CommandLineErrors.UsageInvalid, failure.GetProperty("code").GetString());
-        Assert.Equal("The value of --json must be a JSON object: " + reason, failure.GetProperty("detail").GetString());
+        Assert.Equal("The field options cannot be written as a JSON payload: " + reason, failure.GetProperty("detail").GetString());
         Assert.Empty(_host.Services.GetRequiredService<OriginLog>().Origins);
     }
 
@@ -285,7 +285,7 @@ public sealed class CommandLineRunnerTests : IAsyncLifetime
         // 重复的选项写成数组，每个元素都核对
         var (code, _, error) = await RunAsync("invoke", "orders.get", "--name", "widget", "--name", "gad\uDC00get");
         Assert.Equal(CommandLineExitCodes.Usage, code);
-        Assert.Equal("The value of --json must be a JSON object: the value of option '--name' has a lone surrogate and cannot be encoded as UTF-8", Json(error).GetProperty("detail").GetString());
+        Assert.Equal("The field options cannot be written as a JSON payload: the value of option '--name' has a lone surrogate and cannot be encoded as UTF-8", Json(error).GetProperty("detail").GetString());
 
         // 代理对是合法的 UTF-16，照常写出、照常调用
         var (paired, pairedOutput, _) = await RunAsync("invoke", "orders.get", "--name", "wid😀get");

@@ -66,6 +66,7 @@ const XiHan.Framework.Hosting.CommandLine.CommandLineMessages.HelpDescription = 
 const XiHan.Framework.Hosting.CommandLine.CommandLineMessages.InvokeAuthorizationInvalid = "hosting.commandline.invoke_authorization_invalid" -> string!
 const XiHan.Framework.Hosting.CommandLine.CommandLineMessages.InvokeDataMissing = "hosting.commandline.invoke_data_missing" -> string!
 const XiHan.Framework.Hosting.CommandLine.CommandLineMessages.InvokeDescription = "hosting.commandline.invoke_description" -> string!
+const XiHan.Framework.Hosting.CommandLine.CommandLineMessages.InvokeFieldInvalid = "hosting.commandline.invoke_field_invalid" -> string!
 const XiHan.Framework.Hosting.CommandLine.CommandLineMessages.InvokeJsonInvalid = "hosting.commandline.invoke_json_invalid" -> string!
 const XiHan.Framework.Hosting.CommandLine.CommandLineMessages.InvokeOperationMissing = "hosting.commandline.invoke_operation_missing" -> string!
 const XiHan.Framework.Hosting.CommandLine.CommandLineMessages.InvokeTimeoutInvalid = "hosting.commandline.invoke_timeout_invalid" -> string!
