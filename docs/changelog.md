@@ -35,7 +35,7 @@
 - 读出的 `MessageEnvelope.Time` 一律是 UTC（`Offset` 为零），值为 `null` 的扩展属性读成没有这个扩展：取 `Offset` 的处理器改为按时刻使用，扩展的有无用 `Extension(name)` 判断
 - `CloudEventsFormat.Encode` 对带重复成员或孤立代理项的 JSON 数据、字符串属性（含扩展属性）有孤立代理项的信封抛出 `MESSAGING_VALIDATION_002`：发布之前改正数据与属性
 - 名为 `id`、`source`、`type`、`time`、`subject`、`data`、`data_base64`、`specversion`、`datacontenttype`、`dataschema` 的扩展属性，构造信封或 `WithExtension` 时就抛 `ArgumentException`：改名（如加 `xihan` 前缀）
-- 下发给插件的绑定有属性名不在 `[A-Za-z0-9._-]` 之内（1–253 个字符、不以 `.` 开头）、属性多于 64 个或名与值合计超过 256 KiB 时，这个插件配置失败并按重启策略重试：把多余的文件挪出绑定目录或改属性名
+- 下发给插件的绑定有属性名不在 `[A-Za-z0-9._-]` 之内（1–253 个字符、不以 `.` 开头）、属性多于 64 个或名与值合计超过 256 KiB 时，这个插件配置失败：把多余的文件挪出绑定目录或改属性名
 - 绑定目录里单个文件超过 512 KiB、或一个绑定目录的文件合计超过 1 MiB 时应用启动失败（`KERNEL_HOSTING_005`）：把不属于绑定的文件移出绑定目录
 - 插件清单声明的绑定没写 `required`（缺省必需）、部署里又没给或只给了类型时，进程外与 Wasm 插件配置失败，进程内插件加载失败：补上绑定，或在清单写 `"required": false`
 - 来源声明的绑定类型与插件清单不同时插件配置或加载失败（以前下发来源的类型）：改正或去掉来源的 `type`
@@ -47,7 +47,7 @@
 - Wasm 插件写来的消息有非法的 UTF-8 字节序列时，响应按崩溃处理（`PLUGINS_UNEXPECTED_001`）、导入函数的请求以 `PLUGINS_VALIDATION_005` 应答，不再换成 U+FFFD 读入：自己拼消息的插件改写合法的 UTF-8，按 SDK 写的不受影响
 - 不经 SDK 手写的进程外与 Wasm 插件，交回的操作应答必须是合法的 JSON 文本（无重复成员、合法 UTF-8、不超过 64 层），否则这次调用是 `PLUGINS_UNEXPECTED_001`：修插件的输出
 - 把整个 stderr 当一行 JSON 解析的命令行脚本，调用弃用的操作且失败时会多读到一行提示，取最后一行；按行匹配 `.proto` 里以分号结束的 `rpc` 的脚本要认带花括号的形式（只影响已声明弃用的操作）
-- 照抄 `Caching.Remote` 消息目录的远程缓存插件，把 `caching.remote.key_invalid` 改成同样的「按 UTF-8 编码后不超过 512 字节」（10 个区域），否则与宿主的目录冲突（`LOCALIZATION_CONFLICT_001`）
+- 照抄 `Caching.Remote` 消息目录的远程缓存插件，把 `caching.remote.key_invalid` 改成宿主的新模板（不含空白、控制字符与孤立的代理项、按 UTF-8 编码后不超过 512 字节，10 个区域），否则与宿主的目录冲突（`LOCALIZATION_CONFLICT_001`）（ADR-0274、ADR-0321）
 - Nacos 文档里展平后同一个键出现两次（含只差大小写的）整份文档不合法（`CONFIGURATION_VALIDATION_001`）：升级前在 Nacos 里把重复的键删到只剩一个
 - cron 表达式只按空格与制表符分段，结尾的换行、夹在中间的不换行空格等不再照收：从配置或文件读表达式的地方先 `Trim()`
 - cron 步长不能超过这一段的最大值（秒、分 59，时 23，日 31，月 12，周 7，年 2099）：`*/60` 这类表达式改写成起点本身（`*/n` 改成段的最小值，`a/n`、`a-b/n` 改成 `a`）；`Scheduling.Database` 里已持久化的，先在旧版本上改写
@@ -73,6 +73,23 @@
 - 操作的响应里有孤立的代理项时，经 HTTP、gRPC、MCP、命令行、AI 工具与插件回调的调用以 `KERNEL_UNEXPECTED_001` 失败、没有载荷（HTTP 500），不再写成 U+FFFD 照常成功：修处理器，别让响应里出现孤立的代理项；类型化入口不变
 - 扩展数据与属性同名、字典键按命名策略撞名、转换器或原样嵌入的文本里有重复成员、放宽 `MaxDepth` 写出超过 64 层的响应，以前照常成功，现在以 `KERNEL_UNEXPECTED_001`（HTTP 500）失败：改正响应类型或嵌入的文本（ADR-0319）
 - 转换器以 `WriteRawValue` 原样写出、或预先编码成 `JsonEncodedText` 的 `�` 转义，经 XGI 入口写出时同样算写不出：原样写的文本里不要带这个转义（ADR-0318）
+- `McpStdioTransport.RunAsync` 的输入由 `TextReader` 改为 stdin 的字节流 `Stream`：传 `Console.In` 的改传 `Console.OpenStandardInput()`，传 `StringReader` 的改传 `new MemoryStream(Encoding.UTF8.GetBytes(text))`，流由调用方释放（ADR-0320）
+- 直接调 `OperationDescriptor.EncodeResponse` 的代码改接 `ArgumentException`：超过写出深度时原来的 `JsonException` 在 `InnerException` 里（ADR-0320）
+- `ResultJson.Write` / `WriteMaybe` / `WriteError` 遇到孤立的代理项、超过 64 层（从结果的根算起）、重复成员或超过序列化上下文的深度上限时抛 `ArgumentException`，以前写成 U+FFFD 或照写对方读不进的文本：写出之前改正结果（ADR-0320）
+- 已登记 Baggage 键的值有孤立的代理项时进上下文被丢弃、`WithBaggage` 抛出，`HttpInvocation.FormatBaggage` 遇到这样的值抛 `ArgumentException`：从外部输入拼值之前先用 `UnicodeText.HasLoneSurrogate` 判断（ADR-0321）
+- `ResourceName` 的 ID 段、`AddAuditDetail` 的键有孤立的代理项时抛 `ArgumentException`（ADR-0321）
+- 工作流的关联 ID（启动、信号、实例查询）有孤立的代理项时返回 `WORKFLOW_VALIDATION_002`（ADR-0321）
+- 知识库的文档 ID 有孤立的代理项时，摄入与删除返回 `AI_VALIDATION_001`，`RetrievalFilter` 构造时抛出（ADR-0321）
+- 作业与触发器的说明或数据有孤立的代理项时返回 `SCHEDULING_VALIDATION_001`，代码登记的这类作业同步不进存储、每个周期记日志重试：改正定义（ADR-0321）
+- 下发给插件的绑定的主值或属性值有孤立的代理项时，插件配置失败：改正绑定（ADR-0321）
+- 以下配置有孤立的代理项时启动失败，去掉即可：Redis 缓存与 Redis 消息的 `KeyPrefix`、`XiHan:Messaging:DeadLetterSuffix`、Kafka 的 `TopicPrefix` 与 `ConsumerGroup`、RabbitMQ 的 `QueuePrefix` 与 `Exchange`、远程配置的命名空间、Nacos 的 `Group` 与 `Tenant`（ADR-0321）
+- 自定义元数据的值有孤立的代理项时构造 `BlobPutOptions` 抛 `ArgumentException`（以前文件系统存储收下、读回 U+FFFD）：写入之前先清理这类值（ADR-0322）
+- CloudEvents 入站 binary 的 `ce-*` 头值按百分号解码严格读，不合法的 UTF-8 序列（`%ED%A0%80`、结尾的 `%C3`）、`%` 后不是两位十六进制数字、空的 `ce-dataschema` 头都回 400 `MESSAGING_VALIDATION_002`：发送方改正头值（`%` 写成 `%25`），不带空头（ADR-0323）
+- CloudEvents 入站 binary 声明为 JSON 的数据（含没有 `Content-Type` 的）有重复成员、超过 63 层、不是 JSON 或字符串不是合法的 Unicode 时回 400 `MESSAGING_VALIDATION_002`：发送方发合法的 JSON，或给出不是 JSON 的 `Content-Type`（ADR-0323）
+- `CloudEventsHttpBinding.DecodeHeaderValue` 返回 `Maybe<string>`：改用 `.TryGetValue(out var value)`，没有值即这个头读不出（ADR-0323）
+- 定义目录的 `UpdateAsync`、`PublishAsync`、`DisableAsync`、`ArchiveAsync`、`DeleteAsync` 改写已有定义时取定义 ID 的锁、持有到调用结束：同时改同一份定义的调用，后到的那一项等 `XiHan:Workflow:LockTimeoutSeconds` 后以 `WORKFLOW_TIMEOUT_001` 失败，按等锁超时处理或重试（ADR-0326）
+- `Plugins.Conformance` 的 `SampleRequests` 有孤立的代理项时用例以 `InvalidOperationException` 失败，以前照发 U+FFFD：改正样例（ADR-0327）
+- `DataSourceRegistry.DisposeAsync` 等进行中的后台探测结束才释放数据源并返回：Provider 的探测不响应取消时，释放随之变慢（ADR-0327）
 :::
 
 ### 版本与兼容
@@ -102,13 +119,19 @@
 - **调整** XGI 入口写出的响应文本过 JSON 文本的共同检查，嵌套超过 64 层（从响应的根算起）或任何一层有重复成员即以 `KERNEL_UNEXPECTED_001` 结束；序列化上下文放宽 `MaxDepth` 也只写到 64 层（ADR-0319）
 - **修复** 64 层、最里层有值的响应经 XGI 入口照常写出，以前写不出、请求却读得进同样层数的文本（ADR-0319）
 - **优化** `JsonText.FindProblem` 少分配（约 1 MB 的文本由 5.1 MB 降到 1.1 MB），结果不变
+- **调整** `OperationDescriptor.EncodeResponse` 写不出只抛 `ArgumentException`，超过写出深度时 System.Text.Json 的 `JsonException` 放进 `InnerException`；经 XGI 入口的结果不变（ADR-0320）
+- **调整** `ResultJson.Write` / `WriteMaybe` / `WriteError` 写出严格：字符串有孤立的代理项、整段文本没过 JSON 文本的共同检查（64 层从结果的根算起、重复成员）时抛 `ArgumentException`，不再写成 U+FFFD（ADR-0320）
+- **修复** 带 Schema 的操作经类型化入口调用、请求里有孤立的代理项时以 `KERNEL_VALIDATION_001`（`reason` 为 `$`）结束，不再校验换成 U+FFFD 的请求；没有 Schema 的类型化调用不再把请求编成 JSON（ADR-0320）
+- **新增** 原语 `UnicodeText.HasLoneSurrogate`（Stable）：孤立代理项的判定，标识、Baggage 的值与运营方配置的前缀后缀都用它（ADR-0321）
+- **调整** `BaggageKeys.IsAcceptableValue` 拒收孤立的代理项，已登记键的这类值进上下文时丢弃（幂等键照留），`WithBaggage` 抛出；`HttpInvocation.FormatBaggage` 遇到这样的值抛 `ArgumentException`，不再写成 `%EF%BF%BD`（ADR-0321）
+- **修复** 只差在孤立代理项上的 Baggage 值、资源名、审计细节的键、关联 ID、文档 ID、插件绑定值、作业定义与配置的前缀后缀，不再在下游撞成同一个（ADR-0321）
 
 ### 宿主、协议与插件
 
 - **调整** `MapXiHanHealth()` 与 `MapXiHanBlobs()` 返回约定构建器，可以给探针与对象端点加 `RequireHost`、限流豁免等端点约定（ADR-0256）
 - **新增** `HttpInvocation.ReadBodyAsync` 限长读取请求体，HTTP、MCP 与 CloudEvents 入口共用（ADR-0254）
 - **修复** MCP 与 CloudEvents 入口的请求体超过服务器自己的上限时答复各自的错误，以前是不带错误体的 413（ADR-0254）
-- **新增** `McpStdioTransport.OpenInput`：按 UTF-8 读标准输入；命令行工具的 `mcp` 命令不再按 BOM 改用别的编码（ADR-0254）
+- **调整** `McpStdioTransport.RunAsync` 改收 stdin 的字节流 `Stream`，按 LF、CR 或 CR LF 分行、逐行严格解码成 UTF-8，与控制台代码页无关；命令行工具的 `mcp` 命令不再按 BOM 改用别的编码（ADR-0254、ADR-0320）
 - **修复** `XiHan:Protocols:Http:MaxRequestBodyBytes` 写成 `0` 时的报错带上配置键（ADR-0254）
 - **修复** Wasm 宿主拒收不是 Wasm 插件的清单时文案不再说「不是进程外插件」，消息键改为 `plugins.module.not_wasm`（ADR-0254）
 - **修复** 运行期加载或卸载插件时，正在进行的事件投递与健康检查不再抛出「集合已修改」；投递途中被卸载的插件跳过，不再投给正在停止的插件（ADR-0260）
@@ -130,22 +153,30 @@
 - **新增** `InProcessPluginHost` 构造的可选参数 `serviceBindingRoot`：加载前按它解析绑定，插件经 `PluginContext.ServiceBindingRoot` 拿到同一个值，不给时取环境变量（ADR-0301）
 - **调整** 插件的绑定目录多于 128 个文件时配置失败，`reason` 为 `binding '<绑定名>' has more than 128 files`（ADR-0301）
 - **修复** 插件写来的错误细节里有孤立代理项时当作没有细节，不再换成 U+FFFD（ADR-0301）
+- **修复** 宿主写给插件的错误细节有孤立的代理项或没过 JSON 文本检查时不带细节，其余照写，不再写成 U+FFFD（ADR-0320）
 - **新增** 规范的 `plugin` 档新增向量 `plugin/sdk-envelope-times.json`（SDK 按四种时间类型精度读写信封 `time` 的期望值），`plugin/envelope-times.json` 也进 `plugin` 档；框架不认领 `plugin` 档，行为不变（ADR-0310）
 - **调整** Wasm 宿主按严格的 UTF-8 解码客体写来的消息：有非法字节序列的响应按崩溃处理，导入函数的请求以 `PLUGINS_VALIDATION_005` 应答，不再换成 U+FFFD（ADR-0312）
 - **调整** `invoke --json` 的文本有孤立代理项时是用法错误（退出码 64），不再换成 U+FFFD 照常调用（ADR-0312）
-- **调整** `McpStdioTransport.RunAsync` 的读取器交来带孤立代理项的一行时答复解析错误（-32700），继续下一行（ADR-0312）
+- **修复** `mcp` 命令 stdin 的一行里有非法的 UTF-8（含编码成 UTF-8 的代理项）时答复解析错误（-32700）、接着读下一行，不再换成 U+FFFD 执行（ADR-0312、ADR-0320）
 - **修复** `xihan setup` 要合并的配置不是合法的 UTF-8 时报 `CLI_VALIDATION_006`、一个文件都不写，不再换成 U+FFFD 后改写用户文件（ADR-0312）
 - **调整** 进程外与 Wasm 插件交回的操作应答载荷不为空时先过 JSON 文本的共同检查，没过时这次调用是 `PLUGINS_UNEXPECTED_001`（`reason` 带路径），不再原样交给调用方；不按崩溃处理（ADR-0315）
 - **调整** `invoke` 的字段选项名字或值有孤立代理项时是用法错误（退出码 64），不再写成 U+FFFD 照常调用（ADR-0315）
-- **调整** 插件配置节的键或值有孤立代理项时插件配置失败、按退避重试，不再写成 U+FFFD 下发（ADR-0315）
+- **调整** 插件配置节的键或值有孤立代理项时插件配置失败，不再写成 U+FFFD 下发（ADR-0315）
 - **调整** CloudEvents Webhook 的 binary 模式写任何头之前核对字符串属性，有孤立的代理项即抛出 `MESSAGING_VALIDATION_002`（消息带属性名），与 structured 相同；`EncodeHeaderValue` 遇孤立的代理项抛 `ArgumentException`，不再编成 `%EF%BF%BD`（ADR-0318）
 - **调整** `invoke` 的字段选项有孤立代理项时，用法错误的文案换成说字段选项的一句，新增消息键 `hosting.commandline.invoke_field_invalid`（`CommandLineMessages.InvokeFieldInvalid`），错误码与退出码不变（ADR-0318）
+- **调整** 下发给插件的绑定的主值或属性值有孤立的代理项时插件配置失败，`reason` 为 `binding '<绑定名>' has a lone surrogate and cannot be encoded as UTF-8`，不再写成 U+FFFD 下发（ADR-0321）
+- **调整** CloudEvents 入站 binary 的头值按百分号解码严格读，读不出是 400 `MESSAGING_VALIDATION_002`（新消息键 `protocols.cloudevents.header_invalid`）；空的 `ce-dataschema` 头不合法；声明为 JSON 的数据照 structured 读同一个事件核对（ADR-0323）
+- **调整** `CloudEventsHttpBinding.DecodeHeaderValue` 返回 `Maybe<string>`，读不出时无值（ADR-0323）
+- **调整** CloudEvents Webhook 以 binary（缺省）发布时，structured 写不出的 JSON 数据在发出之前抛 `MESSAGING_VALIDATION_002`，与 structured 相同（ADR-0323）
+- **修复** 命令行没有发起调用就返回的失败（用法错误、未暴露的操作、未知命令、`mcp` 的会话选项）的 stderr `detail` 也按 `--locale` 翻译，以前总是默认区域；新增 `CommandLineFailure.WriteAsync(CommandContext, Error, int?)`（ADR-0325）
+- **调整** 进程外插件回调的会话令牌按 SHA-256 查找，再常数时间比较（ADR-0325）
 
 ### 配置
 
 - **调整** `ISecretStore.GetAsync(names)` 返回同序、等长的 `Result<SecretValue>` 列表，删除 `SecretLookup`（ADR-0257）
 - **调整** Nacos 文档展平后重复的键（含只差大小写的）与空的键是文档不合法（`CONFIGURATION_VALIDATION_001`），不再悄悄取最后一个（ADR-0286）
 - **修复** Nacos 文档里落单的代理项转义与空的键返回 `CONFIGURATION_VALIDATION_001`，不再以异常漏出、被记成远端不可达；properties 键为空的原因不再带出配置的值（ADR-0286）
+- **调整** 远程配置的命名空间有孤立的代理项时 `RemoteConfigurationOptions` 构造抛出，Nacos 的 `Group` 与 `Tenant` 有孤立的代理项时启动失败（ADR-0321）
 
 ### 安全
 
@@ -156,6 +187,7 @@
 - **修复** `Security.WebAuthn` 的 `WebAuthnAttestationResponse.Transports` 与 `WebAuthnAssertionResponse.UserHandle` 的构造参数缺省为 `null`，严格绑定也接受省略它们的 JSON（ADR-0289）
 - **修复** `Security.InMemory` 按严格的 UTF-8 字节比较 API Key，两个只差在孤立代理项上的 key 不再被当成同一个
 - **修复** JWT 的 `Secret` 按严格的 UTF-8 计长与编码，几个孤立代理项不再换成 U+FFFD 凑够 32 字节
+- **调整** `ResourceName` 的 ID 段拒收孤立的代理项（构造抛出、`TryParse` 为假），规范新增向量 `security/resource-names.json`（ADR-0321）
 
 ### 持久化与消息
 
@@ -186,6 +218,10 @@
 - **新增** `MessageEnvelope.DataSchema` 承载 CloudEvents 的 `dataschema`：structured 的成员、binary 的 `ce-dataschema` 头、插件协议的 `Envelope.data_schema` 原样收发，空串或只有空白抛 `ArgumentException`（ADR-0305）
 - **调整** 结构化 JSON 里 `dataschema` 为空串、只有空白或不是字符串时信封不合法（`MESSAGING_VALIDATION_002`）（ADR-0305）
 - **调整** `CloudEventsFormat.Encode` 在规范属性或扩展属性的字符串值有孤立代理项时抛出 `MESSAGING_VALIDATION_002`（消息带属性名），RabbitMQ、Kafka、Redis、发件箱与 CloudEvents 的 structured / batch 写出在发布时即拒绝（ADR-0315）
+- **修复** `CloudEventsFormat.Encode` 遇 JSON 数据字符串里不合法的 UTF-8 字节抛 `MESSAGING_VALIDATION_002`，不再写成 U+FFFD（ADR-0323）
+- **新增** `services.AddMessageDataSchema(type, dataSchema)` 与 `MessageDataSchemas`（Preview）：领域事件、调度与工作流发布的信封按 `type` 带上 `dataschema`，不登记与以前相同（ADR-0323）
+- **调整** Redis 消息的 `KeyPrefix`、死信后缀、Kafka 的 `TopicPrefix` 与 `ConsumerGroup`、RabbitMQ 的 `QueuePrefix` 与 `Exchange` 有孤立的代理项时启动失败（ADR-0321）
+- **调整** `DataSourceRegistry.DisposeAsync` 先取消并等进行中的后台探测结束，再释放数据源，返回之后不再有它开的连接留在库上（ADR-0327）
 
 ### 缓存
 
@@ -194,11 +230,13 @@
 - **新增** `ICache.GetOrCreateAsync` 合并同键并发：同一个缓存实例上同一个键、同一种结果类型的并发未命中只回源一次，热点键过期时不再一起回源；新增 `InFlightLoadTable` 与 `InFlightLoad` 供自写的 `ICache` 使用（ADR-0271）
 - **调整** 两级缓存自己合并同键并发，对 L2 改为分开读写，不再调用 L2 的 `GetOrCreateAsync`；L1 同时未命中只读一次 L2（ADR-0271）
 - **调整** `GetOrCreateAsync` 的过期选项改在回源之前校验，令牌已取消且未命中时不再执行工厂（ADR-0271）
-- **调整** 远程缓存的 `caching.remote.key_invalid` 文案改为「按 UTF-8 编码后不超过 512 字节」（10 个区域），与 Go SDK `examples/cache` 的目录逐字一致（ADR-0274）
+- **调整** 远程缓存的 `caching.remote.key_invalid` 文案改为「不含空白、控制字符与孤立的代理项、按 UTF-8 编码后不超过 512 字节」（10 个区域），与 Go SDK `examples/cache` 的目录逐字一致（ADR-0274、ADR-0321）
 - **调整** 缓存键与键前缀拒收孤立的代理项，成对的照常合法（ADR-0316）
 - **调整** 远程缓存的适配器写出请求之前严格编码键，绕过文法的键按编程错误抛 `ArgumentException`、不发请求（ADR-0316）
 - **修复** `GenerationCache<T>` 散列含孤立代理项的范围与条目时按 WTF-8 取字节，只差在孤立代理项上的范围不再撞成一个键；合法文本的键不变（ADR-0316）
 - **修复** 开了幂等的插件操作交回空载荷时照常记录并回放空载荷，不再以 `KERNEL_UNEXPECTED_001` 失败、留下「处理中」标记（ADR-0318）
+- **调整** `caching.idempotency.invalid_key`、`caching.inspector.prefix_invalid` 的模板补上孤立的代理项（10 个区域）；Redis 缓存的 `KeyPrefix` 有孤立的代理项时启动失败（ADR-0321）
+- **修复** 开了幂等的操作调用响应写不出（NaN、孤立的代理项、超过 64 层、重复成员）时，记下 `KERNEL_UNEXPECTED_001` 并在 `TimeToLive` 内回放、不再执行；以前 60 秒内的重试得 `CACHING_CONFLICT_002`，之后会再执行一次（ADR-0324）
 
 ### 调度
 
@@ -209,6 +247,7 @@
 - **调整** 计划文本的读法与写法相同：只认单个空格，间隔是 `[d.]hh:mm:ss[.fffffff]`，次数不带前导 0，选项按 `tz=`、`start=`、`end=`、`calendar=` 的次序且不重复，时刻按 RFC 3339 读（ADR-0297）
 - **修复** `JobSchedule.FromCron` 只收 IANA 时区名，不再写出读不回来的 `tz=China Standard Time`（ADR-0297）
 - **修复** 跟在 cron 以外的计划后面的 `tz=` 读成不合法，不再悄悄丢掉（ADR-0297）
+- **调整** 作业与触发器的说明与数据有孤立的代理项是 `SCHEDULING_VALIDATION_001`，运行时与代码登记同一条（ADR-0321）
 
 ### 工作流
 
@@ -226,10 +265,15 @@
 - **调整** 表达式算出的数字写进变量时不再带结尾的零（`1.5 + 1.5` 存成 `3`），数值不变（ADR-0303）
 - **新增** `DatabaseWorkflowBackfill`、`DatabaseWorkflowBackfillReport`（Preview）：按分区分批回填已有行的查询列，可以重复运行、与引擎互斥（ADR-0304）
 - **优化** 表达式里读字符串的运算（`len`、`upper` 等文本函数、拼接、比较、相等、算术、下标与渲染）只取一次文本，从 JSON 读来的长字符串求值更快，结果与工作量不变
+- **优化** 表达式里数组与对象作文本实参、`contains` 在数组里找时每个字符串只取一次文本，从 JSON 读来的长字符串少解码一到两遍（ADR-0326）
+- **调整** 启动与信号的关联 ID 有孤立的代理项时返回 `WORKFLOW_VALIDATION_002`（新消息键 `workflow.instance.correlation_invalid`），实例查询的关联 ID 同样拒收，`workflow.instance.query_correlations_invalid` 的模板补上这一条（10 个区域，ADR-0321）
+- **调整** 定义目录改写已有定义的五个操作取定义 ID 的锁、持有到调用结束，同时改同一份定义的调用由此串行，后提交的不再悄悄覆盖先提交的（ADR-0326）
+- **修复** `Workflow.Database` 的查询列回填改写定义行也在定义 ID 的锁内，与同时进行的定义编辑不再有窗口，可以在有人编辑定义时运行，`Busy` 计入锁被占用的定义（ADR-0326）
 
 ### AI
 
 - **调整** `FixedWindowChunkingStrategy` 的窗口与重叠按 Unicode 码位计，不再切出半个字符；含平面以外字符的文本块边界与块数会变（ADR-0286）
+- **调整** 知识库的文档 ID 有孤立的代理项时摄入逐篇、删除整批返回 `AI_VALIDATION_001`，`RetrievalFilter` 构造抛出（ADR-0321）
 
 ### 对象存储
 
@@ -254,10 +298,10 @@
 - **新增** 命令行工具的配置索引收进 S3 的两个运营方开关，MCP tool `xihan_framework_config` 查得到，由 Provider 读取的键带 `readBy`（ADR-0302）
 - **调整** 内容类型不能以空格结尾（`text/plain; `、`text/plain; charset=utf-8 ` 不合法，`text/plain ;` 照收），对所有存储生效；`BlobPutOptions.ContentType` 与 `BlobUrlRequest.ForUpload` 的异常消息写明这一条（ADR-0308）
 - **修复** S3 上传分片的应答没有可用的 `ETag`、列出分片的应答里分片没有可用的编号或 `ETag`、长度为负时返回 `OBJECTSTORAGE_UNAVAILABLE_001`，不再抛异常（ADR-0308）
-- **修复** S3 列出分片的应答截断却不给能前进的续页标记、或累计超过 10000 片时返回 `OBJECTSTORAGE_UNAVAILABLE_001`，不再循环不止（ADR-0313）
-- **修复** S3 列举的应答截断却没有新的续页标记、或对象缺 `ETag`、修改时间时返回 `OBJECTSTORAGE_UNAVAILABLE_001`，不再交出看似列完的一页（ADR-0313）
+- **修复** S3 列出分片的应答截断却不给能前进的续页标记、或同一编号出现两次时返回 `OBJECTSTORAGE_UNAVAILABLE_001`，不再循环不止或交出重复的分片（ADR-0313、ADR-0322）
+- **修复** S3 列举的应答截断却没有新的续页标记、或对象缺 `ETag`、修改时间或长度时返回 `OBJECTSTORAGE_UNAVAILABLE_001`，不再交出看似列完的一页或长度 0（ADR-0313、ADR-0322）
 - **修复** S3 批量删除的应答有认不出键的错误项时，这一批要删的项各报 `OBJECTSTORAGE_UNAVAILABLE_001`，不再抛 `ArgumentNullException`（ADR-0313）
-- **修复** S3 读取与 `Head` 的应答缺 `ETag` 或修改时间、写入的应答缺 `ETag` 时返回 `OBJECTSTORAGE_UNAVAILABLE_001`，不再填空串与最小时刻（ADR-0313）
+- **修复** S3 读取与 `Head` 的应答缺 `ETag`、修改时间或 `Content-Length`，写入的应答缺 `ETag` 时返回 `OBJECTSTORAGE_UNAVAILABLE_001`，不再填空串、最小时刻与 0（ADR-0313、ADR-0322）
 - **修复** S3 条件写入探测拿到没有上传标识的发起应答时按尚未确认处理、`reason` 写明这一步，不再发出不带标识的上传分片（ADR-0313）
 - **调整** 宿主代收的上传先去掉 `Content-Type` 首尾的空格与制表符再与签名比较、核对与写入，测试服务器与 Kestrel 结果一致；只有不换行空格等别的空白的值回 400（ADR-0314）
 - **修复** 预签名地址的 `XiHan:ObjectStorage:SignedUrls:Secret` 按严格的 UTF-8 读取，几个孤立代理项不再换成 U+FFFD 凑够 32 字节
@@ -265,6 +309,10 @@
 - **调整** 宿主代签的预签名把规范串严格编码成 UTF-8，绕过文法的值按编程错误抛 `ArgumentException`，不再换成 U+FFFD 签出打开另一个对象的地址（ADR-0316）
 - **修复** S3 整读的应答里 `ETag` 不是十六进制时返回 `OBJECTSTORAGE_UNAVAILABLE_001`，不再抛出 SDK 的 `ArgumentOutOfRangeException` / `FormatException`（ADR-0317）
 - **调整** S3 条件写入探测的发起拿到缺上传标识的应答时单独退避（从 `HealthProbeIntervalSeconds` 起加倍、最长 1 小时，其间写入不就地探测），累计 10 次后不再探测、缺省实例健康项 Failed（ADR-0317）
+- **调整** 自定义元数据的值拒收孤立的代理项，成对的照常合法，对所有存储生效（ADR-0322）
+- **修复** S3 应答里的值 SDK 解析不了（`Last-Modified`、`Content-Length`、`x-amz-mp-parts-count` 等写错）时各步返回 `OBJECTSTORAGE_UNAVAILABLE_001`，不再抛 `FormatException` / `OverflowException`（ADR-0322）
+- **修复** S3 整读的内容对不上 `ETag` 时，读内容的流抛携带 `OBJECTSTORAGE_UNAVAILABLE_001` 的 `FrameworkException`，不再抛 SDK 的 `AmazonClientException`；`ETag` 不是十六进制的识别不再依赖调用栈（ADR-0322）
+- **修复** S3 条件写入探测里上传分片缺 `ETag` 时按尚未确认处理并放弃上传，不再发出带条件的完成（ADR-0322）
 
 ### 可观测
 
@@ -282,6 +330,8 @@
 - **新增** `MessageLocalizerConformance` 的用例：取文案先按区域、再按目录，先按目录查的自写本地化器过不了（ADR-0286）
 - **新增** `BlobStoreConformance` 的用例「内容类型原样存取」：写不出原值的存储要在写入之前以 `OBJECTSTORAGE_VALIDATION_007` 拒绝；空格之后还有字符的 `text/plain ;`、`text/plain; charset=utf-8 ;` 同样核对（ADR-0295、ADR-0308）
 - **新增** 一致性套件的用例：`BlobStoreConformance` 的批量放弃、`OutboxConformance` 的死信重投、`CacheStoreConformance` 的恰好 512 字节的多字节键（给键加前缀的夹具覆写 `KeyPrefixBytes`）（ADR-0266、ADR-0272、ADR-0274）
+- **新增** `Workflow.Conformance` 引擎套件用例 43：目录改写定义时持有定义 ID 的锁到调用结束、回滚后释放（ADR-0326）
+- **新增** `Plugins.Conformance` 的 `EnvelopeOperation` 与用例 `HandleEvent_HandsTheDataSchemaToTheHandler`；`unsubscribed` 另核对读不出的信封 `time` 以 `InvalidArgument` 拒绝；`SampleRequests` 严格编码成 UTF-8（ADR-0327）
 
 ## v5.0.0-rc.7（2026-11-23）
 
