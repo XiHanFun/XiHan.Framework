@@ -83,7 +83,7 @@ if (opened.TryGetValue(out var part))
 
 大文件分片上传、断点续传用 `IBlobMultipartStore`（能力 `objectstorage.multipart@1`），限制与 S3 一致：
 
-1. `StartAsync(container, key, options)` 发起上传，得到 `BlobMultipartUpload`（容器、键、上传标识、是否覆盖）。它可以持久化，跨请求、跨进程续传时用同样的值重建。
+1. `StartAsync(container, key, options)` 发起上传，得到 `BlobMultipartUpload`（容器、键、上传标识、是否覆盖）。它可以持久化，跨请求、跨进程续传时用同样的值重建。上传标识对调用方不透明，是 1 到 1024 个不含空白、控制字符与孤立代理项的字符，重建时不合即抛 `ArgumentException`：它进签名的规范串与地址的查询串，孤立的代理项宽松编码后会签成另一个标识。
 2. `UploadPartAsync(upload, partNumber, stream)` 上传编号 1 到 10000 的一片，可乱序、可重传（后一次覆盖），返回该片的 `BlobPart`（编号与 ETag）。
 3. `ListPartsAsync(upload)` 按编号升序列出已上传的分片，续传时据此跳过已完成的片。
 4. `CompleteAsync(upload, parts)` 用编号严格升序、ETag 与已上传一致的清单拼成对象；除最后一片外每片至少 5 MiB（`BlobMultipart.MinPartBytes`）。完成前对象不可见，完成是原子的。
@@ -101,7 +101,7 @@ if (opened.TryGetValue(out var part))
 | 列出分片的应答说截断了，续页标记却缺失、不比这一页的起点大或不小于 10000，或累计列出超过 10000 片（S3） | 整个列出返回 `OBJECTSTORAGE_UNAVAILABLE_001`，不交出已列出的部分；标记每页严格增大，一次列出至多请求 10000 页，不会循环不止 |
 | 完成之后取元数据的应答缺 `ETag` 或修改时间（S3） | 完成返回 `OBJECTSTORAGE_UNAVAILABLE_001`，这时对象已经拼成，不重发；可以 `HeadAsync` 再看 |
 
-文件系统把分片暂存在容器下的 `uploads/<上传标识>/`，暂存的分片计入总配额，超过 `MultipartExpiryHours`（缺省 168 小时）仍未完成的上传即过期，拒绝再传分片与完成并被清掉，细则见 [ObjectStorage.FileSystem](/packages/objectstorage-filesystem)；S3 直接映射原生 multipart，未完成的上传按桶的生命周期规则清理。
+文件系统把分片暂存在容器下的 `uploads/<上传标识>/`，暂存的分片计入总配额，超过 `MultipartExpiryHours`（缺省 168 小时）仍未完成的上传即过期，拒绝再传分片与完成并被清掉，细则见 [ObjectStorage.FileSystem](/packages/objectstorage-filesystem)；S3 直接映射原生 multipart，未完成的上传按桶的生命周期规则清理：给桶配放弃未完成分片上传的规则（Amazon S3 的 `AbortIncompleteMultipartUpload`，如 1 天；兼容服务用等价的规则），发起时缺上传标识而放弃不了的上传才会被清掉。条件写入探测用的 `HealthBucket` 同样要配，规则示例见 [ObjectStorage.S3](/packages/objectstorage-s3#条件写入探测)。
 
 ## 预签名地址
 
@@ -109,13 +109,13 @@ if (opened.TryGetValue(out var part))
 
 | 请求 | 方法 | 用途 |
 | --- | --- | --- |
-| `BlobUrlRequest.ForDownload(expiresIn, downloadFileName)` | `GET` | 下载，支持 `Range`；可带保存的文件名（`Content-Disposition`，不为空、不全是空白、不含控制字符，按 UTF-8 编码后不超过 255 字节：全是汉字的文件名最多 85 个字） |
+| `BlobUrlRequest.ForDownload(expiresIn, downloadFileName)` | `GET` | 下载，支持 `Range`；可带保存的文件名（`Content-Disposition`，不为空、不全是空白、不含控制字符与孤立的代理项，按 UTF-8 编码后不超过 255 字节：全是汉字的文件名最多 85 个字） |
 | `BlobUrlRequest.ForUpload(expiresIn, contentType)` | `PUT` | 上传整个对象，可限定内容类型（须合 `BlobPutOptions.IsValidContentType`） |
 | `BlobUrlRequest.ForPart(upload, partNumber, expiresIn)` | `PUT` | 上传分片上传的某一片，响应头 `ETag` 就是这一片的 ETag |
 
-有效期缺省 30 分钟（`BlobUrlRequest.DefaultExpiresIn`），范围 1 秒到 7 天，超出时构造请求抛出 `ArgumentOutOfRangeException`。限定的内容类型不合文法（如带制表符、以空格结尾）、文件名为空白、含控制字符或按 UTF-8 编码后超过 255 字节（`BlobUrlRequest.MaxDownloadFileNameBytes`）时抛出 `ArgumentException`：签名的规范串以换行分隔各限定项，值里不能带换行（ADR-0219）。签出的 `BlobSignedUrl` 带地址、方法、失效时刻与 `Headers`：客户端必须原样发送这些请求头（例如限定的 `Content-Type`），否则验签不过。签名在本地计算，不检查对象是否存在。有效期按业务取最短可用值（下载几分钟、上传按文件大小估）；地址泄露时，宿主代收发轮换 `Secret` 即让全部已签地址失效，S3 的地址随凭据轮换失效。
+有效期缺省 30 分钟（`BlobUrlRequest.DefaultExpiresIn`），范围 1 秒到 7 天，超出时构造请求抛出 `ArgumentOutOfRangeException`。限定的内容类型不合文法（如带制表符、以空格结尾）、文件名为空白、含控制字符或孤立的代理项、按 UTF-8 编码后超过 255 字节（`BlobUrlRequest.MaxDownloadFileNameBytes`）时抛出 `ArgumentException`：签名的规范串以换行分隔各限定项，值里不能带换行（ADR-0219）；孤立的代理项编不成 UTF-8，宽松编码后会签成另一个文件名（ADR-0316）。签出的 `BlobSignedUrl` 带地址、方法、失效时刻与 `Headers`：客户端必须原样发送这些请求头（例如限定的 `Content-Type`），否则验签不过。签名在本地计算，不检查对象是否存在。有效期按业务取最短可用值（下载几分钟、上传按文件大小估）；地址泄露时，宿主代收发轮换 `Secret` 即让全部已签地址失效，S3 的地址随凭据轮换失效。
 
-S3 由存储自己签名（签名 V4），客户端直连存储。文件系统没有原生签名，由宿主代收发：装配 `HostedBlobUrlFeature` 并映射端点（见最小示例），签名是对方法、容器、键、过期时刻与各限定项的 HMAC-SHA256，无状态，持有同一密钥的多个实例互认。
+S3 由存储自己签名（签名 V4），客户端直连存储。文件系统没有原生签名，由宿主代收发：装配 `HostedBlobUrlFeature` 并映射端点（见最小示例），签名是对方法、容器、键、过期时刻与各限定项的 HMAC-SHA256，无状态，持有同一密钥的多个实例互认。签名的规范串严格编码成 UTF-8：签进去的键、文件名与上传标识都过了文法核对，编不成（只有绕过核对的值才会带孤立的代理项）按编程错误抛 `ArgumentException`，不换成 U+FFFD 再签，以免给一个键签出的地址打开另一个对象（ADR-0316）。
 
 | 键 | 缺省 | 说明 |
 | --- | --- | --- |

@@ -60,7 +60,7 @@ dotnet add package XiHan.Framework.ObjectStorage.Abstractions --prerelease
 | 类型 | 说明 |
 | --- | --- |
 | `Keys.ContainerName` | 容器名，`^[a-z0-9][a-z0-9-]{1,61}[a-z0-9]$`；`IsValid`、`Validate`，从 `string` 显式转换 |
-| `Keys.BlobKey` | 键：`/` 分段，按 UTF-8 编码后 1 到 `MaxBytes`（1024）字节，每段非空且不是 `.` / `..`，不含空白、控制字符与 `\`，首段不是保留段 `ReservedSegment`（`.xihan`，框架自己的对象），区分大小写；`IsValid`、`IsReserved`、`IsValidPrefix`（列举前缀：字符与字节上限同键，可以为空、可以以 `/` 结尾，对各段不作要求）、`Validate`，从 `string` 显式转换。自己预检长度时比较 `Encoding.UTF8.GetByteCount(text)`，不是 `text.Length` |
+| `Keys.BlobKey` | 键：`/` 分段，按 UTF-8 编码后 1 到 `MaxBytes`（1024）字节，每段非空且不是 `.` / `..`，不含空白、控制字符、`\` 与孤立的代理项（成对的代理项即平面以外的字符照常合法），首段不是保留段 `ReservedSegment`（`.xihan`，框架自己的对象），区分大小写；`IsValid`、`IsReserved`、`IsValidPrefix`（列举前缀：字符与字节上限同键，同样不含孤立的代理项，可以为空、可以以 `/` 结尾，对各段不作要求）、`Validate`，从 `string` 显式转换。自己预检长度时比较 `Encoding.UTF8.GetByteCount(text)`，不是 `text.Length` |
 | `Blobs.IBlobStore` | `PutAsync(container, uploads)`、`GetAsync(container, key)`、`GetAsync(container, key, range)`、`HeadAsync`、`DeleteAsync(container, keys)`、`ListAsync(container, query)` |
 | `Blobs.BlobStoreExtensions` | `PutAsync(container, key, stream 或 bytes, options)`、`DeleteAsync(container, key)`、`ExistsAsync`、`ReadAllBytesAsync` |
 | `Blobs.BlobUpload` | 一项写入：键、内容流、选项 |
@@ -71,10 +71,10 @@ dotnet add package XiHan.Framework.ObjectStorage.Abstractions --prerelease
 | `Listing.BlobQuery` / `BlobPage` | 列举条件（`Prefix` 按 `BlobKey.IsValidPrefix` 核对、不合时抛 `ArgumentException`，`PageSize` 1–1000 缺省 1000、`ContinuationToken`）与一页结果；`Validate()` 核对页大小，Provider 在列举开头调用，越界返回 `OBJECTSTORAGE_VALIDATION_005` |
 | `Multipart.IBlobMultipartStore` | `StartAsync`、`UploadPartAsync`、`ListPartsAsync`、`CompleteAsync`、`AbortAsync(uploads)`（批量放弃，逐项 `Result` 与入参同序） |
 | `Multipart.BlobMultipartStoreExtensions` | `AbortAsync(upload)`：放弃单个上传的写法，转调批量方法、取第一项 |
-| `Multipart.BlobMultipartUpload` | 一次分片上传：容器、键、上传标识、是否覆盖；可持久化后续传 |
+| `Multipart.BlobMultipartUpload` | 一次分片上传：容器、键、上传标识、是否覆盖；可持久化后续传。上传标识是 1 到 1024 个不含空白、控制字符与孤立代理项的字符，不合时构造抛 `ArgumentException` |
 | `Multipart.BlobPart` / `BlobMultipart` | 分片（编号、ETag、长度）；常量 `MaxPartNumber` = 10000、`MinPartBytes` = 5 MiB；`ValidatePartNumber`、`ValidateParts`（完成清单非空、编号严格升序）与 `ValidateUploads`（批量放弃的集合里没有 `null`）供 Provider 在访问存储前校验 |
 | `Signing.IBlobUrlSigner` | `SignAsync(container, key, request)` → `BlobSignedUrl` |
-| `Signing.BlobUrlRequest` | `ForDownload`、`ForUpload`、`ForPart`；`DefaultExpiresIn` = 30 分钟，`MaxExpiresIn` = 7 天；限定的内容类型须合文法（不以空格结尾），保存的文件名不为空、不全是空白、不含控制字符，按 UTF-8 编码后不超过 `MaxDownloadFileNameBytes`（255）字节 |
+| `Signing.BlobUrlRequest` | `ForDownload`、`ForUpload`、`ForPart`；`DefaultExpiresIn` = 30 分钟，`MaxExpiresIn` = 7 天；限定的内容类型须合文法（不以空格结尾），保存的文件名不为空、不全是空白、不含控制字符与孤立的代理项，按 UTF-8 编码后不超过 `MaxDownloadFileNameBytes`（255）字节 |
 | `Signing.BlobSignedUrl` | 地址 `Url`、方法 `Method`、失效时刻 `ExpiresAt` 与客户端必须发送的请求头 `Headers`；四项都是 `required` 的初始化成员，用对象初始化器构造，没有位置构造与解构 |
 | `Signing.BlobContentDisposition` | `Attachment(fileName)`：下载文件名的统一写法，非 ASCII 文件名带 `filename*` |
 | `Stores.BlobStores` | 命名实例注册表：`GetAsync(name)`、`GetOrAddAsync(definition)`、`RemoveAsync(names)`（批量，逐项返回是否存在过）、`Names`、`Providers`、`MaxCount`（登记数上限，常量 `MaxCountLimit` = 1024）；同时是健康项贡献者 |
@@ -172,10 +172,10 @@ public sealed class AzureBlobStoreConformanceTests : BlobStoreConformance
 | `OBJECTSTORAGE_DENIED_001` | `SignatureInvalid` | 预签名地址无效或已过期 |
 | `OBJECTSTORAGE_DENIED_002` | `ProbeDenied` | 条件写入探测被存储拒绝（403；S3：凭据无效、只读或无权写探测键）：启动或建实例时即失败；启动时连不上、之后才被拒的，健康项 Failed、后台照常重试 |
 | `OBJECTSTORAGE_CONFLICT_001` | `BlobExists` | 对象已存在且不允许覆盖 |
-| `OBJECTSTORAGE_UNAVAILABLE_001` | `StoreUnavailable` | 对象存储不可达或 IO 失败，`reason` 只写异常类型的全名，完整异常进日志（ADR-0115）；服务的应答不合规同此（S3：应答成功却缺了必需的内容，或分页说截断了却不前进，见 [ObjectStorage.S3](/packages/objectstorage-s3#行为与限制)） |
+| `OBJECTSTORAGE_UNAVAILABLE_001` | `StoreUnavailable` | 对象存储不可达或 IO 失败，`reason` 只写异常类型的全名，完整异常进日志（ADR-0115）；服务的应答不合规同此（S3：应答成功却缺了必需的内容，或分页说截断了却不前进，整读的 `ETag` 不是十六进制，见 [ObjectStorage.S3](/packages/objectstorage-s3#行为与限制)） |
 | `OBJECTSTORAGE_UNAVAILABLE_002` | `QuotaExceeded` | 配额或单对象大小超限 |
 | `OBJECTSTORAGE_UNAVAILABLE_003` | `ConditionalWriteUnavailable` | 不覆盖写入在本存储上无法保证：S3 兼容服务不认条件写入（启动时探明即启动失败或不建命名实例，之后探明的不覆盖写入一律返回它），或存储关闭了条件写入（`ConditionalWrites = false`） |
-| `OBJECTSTORAGE_UNAVAILABLE_004` | `ConditionalWriteUnconfirmed` | 不覆盖写入暂不可用：存储是否认条件写入尚未确认（启动时连不上，或之后的探测被拒绝、缺桶；HTTP 503，探测通过后自动恢复） |
+| `OBJECTSTORAGE_UNAVAILABLE_004` | `ConditionalWriteUnconfirmed` | 不覆盖写入暂不可用：存储是否认条件写入尚未确认（启动时连不上，或之后的探测被拒绝、缺桶；HTTP 503，探测通过后自动恢复；S3 探测的发起累计 10 次缺上传标识之后不再探测，修好服务之后重启才恢复） |
 | `OBJECTSTORAGE_UNAVAILABLE_005` | `StoreCapacityExceeded` | 命名存储实例登记已满（`XiHan:ObjectStorage:StoreMaxCount`，缺省 64）：再登记新名字以它失败，不建实例、不淘汰已有的，替换同名的不占名额（参数 `store`、`capacity`） |
 
 HTTP 宿主按错误码的类别段映射状态码，见[结果与错误处理](/web/errors)。标识不合法属于编程错误，构造时抛出 `ArgumentException`，不占错误码。
