@@ -94,7 +94,7 @@ async fn run() -> Result<(), Box<dyn std::error::Error>> {
 3. 契约的 `expose` 为空表示不对外发布：不调 `with_expose` 的操作在任何协议上都不发布，全部协议写 `with_expose(operation::EXPOSE_ALL)`；五个协议名之外的值与写了两次的名字在登记时被拒绝。
 4. 编程错误（不合文法的错误码、消息键或 Baggage 键）panic，各函数的文档写明 panic 条件；panic 的内容是 `FrameworkError` 本身（`std::panic::panic_any`），接住后用 `downcast_ref::<FrameworkError>()` 取出。来自不可信输入的值先用 `is_error_code`、`is_baggage_key_well_formed` 判断，或用 `Error::try_new`。清单校验、管道排序、操作登记等配置期失败返回 `FrameworkError`，它可以用 `?` 转成 `Error`。
 5. 取消与截止时间只经令牌通知：`Context::done()` 在调用方取消或到达截止时间时完成，`Context::cancellation_error()` 给出 `KERNEL_TIMEOUT_001` 或 `KERNEL_CANCELLED_001`；调用器不中止处理器、不丢弃它的 future，处理器把取消写成结果（`Err(ctx.cancellation_error()…)`）时才按令牌归因。截止时间由进程里一个后台线程（`xihan-deadline-timer`）按时触发。`with_cancellation`、`with_deadline`、`with_timeout` 派生还跟随另一个令牌、或截止时间更紧的上下文，追踪、Baggage 与对象袋共享。
-6. 调用器把排在 `ObserveMiddleware` 之后的中间件与处理器的 panic 翻译成 `KERNEL_UNEXPECTED_001`（要 `panic = "unwind"`），排在它之前的 panic 原样交给调用方。中间件经 `operation::with_response` 看编码之前的响应；响应写不出（浮点是 NaN 或无穷、序列化不支持的值）时调用以未处理失败结束，不抛给调用方。
+6. 调用器把排在 `ObserveMiddleware` 之后的中间件与处理器的 panic 翻译成 `KERNEL_UNEXPECTED_001`（要 `panic = "unwind"`），排在它之前的 panic 原样交给调用方。中间件经 `operation::with_response` 看编码之前的响应；响应写不出（浮点是 NaN 或无穷、序列化不支持的值，或写出的文本没过 JSON 文本的共同检查）时调用以未处理失败结束，不抛给调用方。
 
 ## 写一个插件
 
@@ -201,7 +201,7 @@ assert_eq!(failed, r#"{"ok":false,"error":{"code":"ORDERS_CONFLICT_001","message
 - 线上文本用 `primitives::json::from_slice` 读：它先过共同的 JSON 读取检查，数字按值模型。直接用 `serde_json::from_str` 读不到这些检查。写出用 `json::to_vec`（类型化，非有限的浮点写不出）或 `json::Model` / `json::to_value`（无类型，非有限的浮点写成字符串）。
 - `Error::literal` 与 `Error::with_text` 的文案为空或只有空白时 panic，`try_literal` 与 `try_with_text` 返回 `PRIMITIVES_VALIDATION_001`。空白按 RFC-0001 写死的 25 个码位判断（`primitives::is_whitespace`、`is_blank`），不用 `char::is_whitespace`。
 - 应答与发布的数据：`Envelope.data`、`Host::invoke` 的载荷与操作的应答都是字节（`Vec<u8>`），收字符串的入口（`Host::invoke`、`Envelope::with_data`）经 `Into<Vec<u8>>`，`&str` 总是合法的 UTF-8，`plugin/invocation.md` §1、§5 的严格编码（ADR-0312、ADR-0315）对 Rust 不用改。
-- 类型化的响应总能写成合法的 JSON 文本：`String` 是合法的 UTF-8，`primitives::json::Json` 的原文过共同检查，RFC-0011 规则 10 的「编码」（ADR-0318）对 Rust 不用改。例外是自己构造的 `serde_json::value::RawValue`：`RawValue::from_string` 只核对语法，`"\ud800"` 这样的转义照收、原样写出，交给宿主后以 `PLUGINS_UNEXPECTED_001` 被拒 → 任意 JSON 的成员用 `json::Json`。
+- 类型化的响应写出之后过 JSON 文本的共同检查（`primitives::json::check`，RFC-0011 规则 10 的「编码」，ADR-0319）：嵌套超过 64 层（从响应的根算起，嵌进去的 `RawValue` 与 `json::Json` 也算）、任何一层有重复的成员名（自定义的 `Serialize` 两次写同一个名字、`#[serde(flatten)]` 的映射键与字段同名、`RawValue` 原样交出的）、`RawValue` 里 `"\ud800"` 这样的孤立代理项转义，都在本地以 `KERNEL_UNEXPECTED_001` + `kernel.invocation.unhandled_exception` 失败，没有参数、不带 `inner`、没有载荷。serde_json 写出时不数层数、不核对成员名，`RawValue::from_string` 只核对语法，所以写完再读一遍整段文本，代价与写出同阶。`String` 总是合法的 UTF-8，ADR-0318 的字符串规则对 Rust 不用另查；任意 JSON 的成员用 `json::Json`。
 
 ### 消息模板
 
@@ -287,3 +287,4 @@ RFC-0010「模板」。模板参数与错误细节是 `serde_json::Value`：
 - `plugin::Binding` 多了字段 `properties`，它的 `Debug` 不再带 `value`；重新生成的 `plugin::v1::Binding` 多了字段 `properties`（`HashMap<String, String>`），不再实现 `Eq` 与 `Hash`（ADR-0285）→ 写插件的代码不用改；用结构体字面量构造 `v1::Binding` 的补上 `properties` 或写 `..Default::default()`，依赖 `Eq` / `Hash` 的改用 `PartialEq`。
 - `plugin::Envelope.time` 由 `Option<String>` 改为 `Option<SystemTime>`，新增 `with_time`（ADR-0306）；宿主写来的 `time` 读不出（Windows 上还有 1601 年之前）的投递以 `InvalidArgument` 拒绝 → 发布处把 `time = Some(t.to_rfc3339())` 改成 `.with_time(t.into())`（chrono 的 `DateTime` 可以 `into()` 成 `SystemTime`）；读 `envelope.time` 的按 `SystemTime` 读。
 - `plugin::Envelope` 新增字段 `data_schema` 与 `with_data_schema`（ADR-0305），重新生成的 `plugin::v1::Envelope` 多了字段 `data_schema` → 写插件的代码不用改；用结构体字面量构造 `v1::Envelope` 的补上 `data_schema` 或写 `..Default::default()`。
+- 类型化响应写出的文本嵌套超过 64 层、有重复的成员名或 `RawValue` 里有孤立代理项的转义时，调用器与插件 `Invoke` 都以 `KERNEL_UNEXPECTED_001` + `kernel.invocation.unhandled_exception` 结束、没有载荷，原先照常写出，插件交回之后由宿主以 `PLUGINS_UNEXPECTED_001` 拒绝、进程内调用照常成功（ADR-0319）→ 自定义的 `Serialize` 与 `flatten` 不写重复的名字，响应嵌套不超过 64 层，`RawValue` 只放合法的 JSON 文本（任意 JSON 用 `json::Json`）。

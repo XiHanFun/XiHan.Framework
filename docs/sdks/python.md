@@ -202,7 +202,7 @@ Python 的写法与差异：
 
 - **`Result` 的读取**分三种：`Result.from_json_value`（有值，`value` 必填且不能是 `null`）、`Result.unit_from_json_value`（无值，带了 `value` 即拒绝）、`Result.maybe_from_json_value`（值是 `Maybe`，`null` 即无值）。无值成功是 `success()`，只写 `{"ok":true}`。`Result` 可散列。
 - **JSON 读取**：不用 `json.loads`（它接受 `NaN`、孤立的代理项、重复成员与很深的嵌套），由 SDK 自己按 RFC 8259 读；`str` 里的代理项码点按不合法的 Unicode 处理。
-- **调用器**：进入 Resilience 阶段的 `DeadlineMiddleware` 就是 `Context.run`；`ctx.run(call)` 把一个派生的上下文交给 `call`，它的信号在调用方取消或到达截止时间时触发。响应里有 NaN 或无穷，或者字符串（值、成员名与映射的键）里有代理项码点时，调用以未处理失败结束（`KERNEL_UNEXPECTED_001` + `kernel.invocation.unhandled_exception`，不带 `inner`），不写成 `null`、字符串或 `\ud800` 这样的转义；`str` 里成对的两个代理项码点也不是一个字符，同样写不出（ADR-0318）。
+- **调用器**：进入 Resilience 阶段的 `DeadlineMiddleware` 就是 `Context.run`；`ctx.run(call)` 把一个派生的上下文交给 `call`，它的信号在调用方取消或到达截止时间时触发。响应里有 NaN 或无穷，或者字符串（值、成员名与映射的键）里有代理项码点时，调用以未处理失败结束（`KERNEL_UNEXPECTED_001` + `kernel.invocation.unhandled_exception`，不带 `inner`），不写成 `null`、字符串或 `\ud800` 这样的转义；`str` 里成对的两个代理项码点也不是一个字符，同样写不出（ADR-0318）。写出的整段文本还要过 JSON 文本的共同检查（写完之后用读取一侧的检查核对）：嵌套超过 64 层（从响应的根算起）或任何一层有重复的成员名（如 `to_json_value` 交出 `items()` 带同名成员的映射）同样写不出，不带 `inner`；`int` 的子类按自己的 `__str__` 写成数字以外的文本也一样（ADR-0319）。
 - **插件运行时**：调用与事件处理器在 `grpc.aio` 的同一个事件循环里执行。grpcio 按截止时间中止的回调报的就是 `DeadlineExceeded`，映射之外不另按时钟改写。
 - **回调的载荷**：`Host.invoke` 的载荷与发布的信封 `data` 都只收 `bytes`，处理器也没有以 `str` 交回应答的接口，`plugin/invocation.md` §1、§5 的严格编码（ADR-0312、ADR-0315）对它们不适用：字节原样发出，由宿主核对。
 
@@ -253,3 +253,4 @@ Python 的写法与差异：
 - 新增 `Envelope.data_schema`（关键字参数，缺省 `None`，ADR-0305）→ 不用改。
 - `JsonLogHandler` 写 `extra` 里的 `Binding.properties` 时只写属性名，原先写出值（ADR-0306）→ 确实要值的自己取 `dict(binding.properties)`。
 - 类型化响应的字符串（值、成员名、映射的键、数组元素）带代理项码点时，调用器与插件 `Invoke` 都以 `KERNEL_UNEXPECTED_001` + `kernel.invocation.unhandled_exception` 结束，没有参数、不带 `inner`、没有载荷；原先写成 `\ud800` 这样的转义照常成功，插件交回之后由宿主以 `PLUGINS_UNEXPECTED_001` 拒绝（ADR-0318）→ 响应里不要放代理项码点；从 UTF-16 解码来的文本用严格解码，不带 `surrogatepass`。
+- 类型化响应写出的文本嵌套超过 64 层或有重复的成员名时，调用器与插件 `Invoke` 都以 `KERNEL_UNEXPECTED_001` + `kernel.invocation.unhandled_exception` 结束，没有参数、不带 `inner`、没有载荷；原先照常写出，插件交回之后由宿主以 `PLUGINS_UNEXPECTED_001` 拒绝（ADR-0319）→ 响应不要超过 64 层，`to_json_value` 不要交出同名成员。
