@@ -125,6 +125,13 @@ internal sealed partial class WorkflowEngine : IWorkflowEngine
     /// </summary>
     private async ValueTask<Result<WorkflowInstance>> StartCoreAsync(WorkflowStartRequest request, CancellationToken cancellationToken)
     {
+        // 关联 ID 先于一切核对：查重的锁键按 UTF-8 散列它、事件的 correlation 扩展属性写出它，
+        // 只差在孤立代理项上的两个关联 ID 宽松编码之后相同，进了存储就分不开（ADR-0321）
+        if (CorrelationInvalid(request.CorrelationId) is { } correlationInvalid)
+        {
+            return correlationInvalid;
+        }
+
         if (request.Depth > _options.MaxSubWorkflowDepth)
         {
             return Error.Validation(WorkflowErrors.InputInvalid, WorkflowMessages.InstanceDepth, MessageArguments.Of(("depth", request.Depth), ("max", _options.MaxSubWorkflowDepth)));
@@ -288,6 +295,13 @@ internal sealed partial class WorkflowEngine : IWorkflowEngine
     public ValueTask<Result<int>> SignalAsync(string signalName, JsonObject? payload, string? correlationId, CancellationToken cancellationToken)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(signalName);
+
+        // 与启动同一条：不消费书签也不启动实例，在事务之外返回
+        if (CorrelationInvalid(correlationId) is { } correlationInvalid)
+        {
+            return ValueTask.FromResult<Result<int>>(correlationInvalid);
+        }
+
         return _scope.RunAsync<IWorkflowEngine, int>(true, "workflow.signal", () => SignalCoreAsync(signalName, payload, correlationId, cancellationToken), engine => engine.SignalAsync(signalName, payload, correlationId, cancellationToken), cancellationToken);
     }
 
@@ -1837,13 +1851,24 @@ internal sealed partial class WorkflowEngine : IWorkflowEngine
     }
 
     /// <summary>
+    /// 启动或信号的关联 ID 有孤立的代理项时的校验错误
+    /// </summary>
+    /// <remarks>
+    /// <c>WORKFLOW_VALIDATION_002</c> + <see cref="WorkflowMessages.InstanceCorrelationInvalid"/>（RFC-0021「实例与执行」，ADR-0321）；没给关联 ID 或关联 ID 合法为 <see langword="null"/>。空白的关联 ID 照旧当作没有（不查重）
+    /// </remarks>
+    private static Error? CorrelationInvalid(string? correlationId)
+        => correlationId is not null && UnicodeText.HasLoneSurrogate(correlationId)
+            ? Error.Validation(WorkflowErrors.InputInvalid, WorkflowMessages.InstanceCorrelationInvalid)
+            : null;
+
+    /// <summary>
     /// 关联 ID 集合越界时的校验错误
     /// </summary>
     /// <remarks>
-    /// 超过 <see cref="WorkflowInstanceQuery.MaxCorrelationIds"/> 个或有空白的 ID 是调用方可以改正的输入，以校验错误返回（不进存储）；没给集合或集合合法为 <see langword="null"/>
+    /// 超过 <see cref="WorkflowInstanceQuery.MaxCorrelationIds"/> 个、有空白或有孤立代理项的 ID（ADR-0321）是调用方可以改正的输入，以校验错误返回（不进存储）；没给集合或集合合法为 <see langword="null"/>
     /// </remarks>
     private static Error? CorrelationsInvalid(WorkflowInstanceQuery query)
-        => query.CorrelationIds is { } ids && (ids.Count > WorkflowInstanceQuery.MaxCorrelationIds || ids.Any(string.IsNullOrWhiteSpace))
+        => query.CorrelationIds is { } ids && (ids.Count > WorkflowInstanceQuery.MaxCorrelationIds || ids.Any(static id => string.IsNullOrWhiteSpace(id) || UnicodeText.HasLoneSurrogate(id)))
             ? Error.Validation(WorkflowErrors.InputInvalid, WorkflowMessages.InstanceQueryCorrelationsInvalid, MessageArguments.Of(("count", ids.Count), ("max", WorkflowInstanceQuery.MaxCorrelationIds)))
             : null;
 

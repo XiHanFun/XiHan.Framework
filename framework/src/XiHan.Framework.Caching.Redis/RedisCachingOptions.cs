@@ -51,9 +51,13 @@ public sealed record RedisCachingOptions
     /// 键前缀
     /// </summary>
     /// <remarks>
-    /// 默认 <c>xihan:</c>
+    /// 默认 <c>xihan:</c>；加在每个键与变更频道名之前，可以为空，不能有孤立的代理项，否则抛出 <see cref="ArgumentException"/>：Redis 的键按宽松的 UTF-8 编码，只差在孤立代理项上的两个前缀共用一个键空间（ADR-0321）
     /// </remarks>
-    public string KeyPrefix { get; init; } = "xihan:";
+    public string KeyPrefix
+    {
+        get => field;
+        init => field = !UnicodeText.HasLoneSurrogate(value) ? value : throw new ArgumentException("The Redis key prefix must not contain lone surrogates.", nameof(value));
+    } = "xihan:";
 
     /// <summary>
     /// 写入与删除后是否向变更频道发布通知

@@ -1,11 +1,11 @@
 {
   "caching.idempotency.in_progress": "Una llamada con la misma clave de idempotencia sigue en curso.",
-  "caching.idempotency.invalid_key": "La clave de idempotencia no es válida: no debe estar vacía ni contener espacios en blanco o caracteres de control.",
+  "caching.idempotency.invalid_key": "La clave de idempotencia no es válida: no debe estar vacía ni contener espacios en blanco, caracteres de control o suplentes sin pareja.",
   "caching.idempotency.key_reused": "La clave de idempotencia ya se usó en otra llamada ('{recorded}'); su resultado no se puede reproducir para '{operation}'.",
   "caching.idempotency.recently_completed": "Una llamada con la misma clave de idempotencia acaba de completarse o sigue en curso; reintente más tarde.",
   "caching.idempotency.response_unavailable": "La respuesta registrada de la operación '{operation}' no se puede reproducir: {reason}",
   "caching.inspector.page_size_invalid": "El límite por página {pageSize} de la lista de claves debe estar entre 1 y {max}.",
-  "caching.inspector.prefix_invalid": "El prefijo de clave '{prefix}' no es válido: no debe contener espacios ni caracteres de control y debe ocupar como máximo {max} bytes en UTF-8.",
+  "caching.inspector.prefix_invalid": "El prefijo de clave '{prefix}' no es válido: no debe contener espacios, caracteres de control ni suplentes sin pareja y debe ocupar como máximo {max} bytes en UTF-8.",
   "caching.inspector.prefix_required": "Eliminar claves por prefijo requiere un prefijo no vacío; un prefijo vacío eliminaría todas las claves.",
   "caching.lock.held": "El bloqueo del recurso '{resource}' lo tiene otro propietario.",
   "caching.store.capacity_reached": "La caché en memoria alcanzó su capacidad de {capacity} entradas."

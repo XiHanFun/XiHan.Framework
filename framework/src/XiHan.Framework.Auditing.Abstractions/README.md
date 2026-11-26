@@ -40,7 +40,7 @@ public ValueTask<Result<ExportResponse>> HandleAsync(ExportRequest request, Invo
 此库提供的主要类型：
 
 * `AuditMiddleware`、`AuditingOptions`：审计中间件与选项
-* `SetAuditAction`、`SetAuditResource`、`AddAuditDetail`：调用期间补充信息
+* `SetAuditAction`、`SetAuditResource`、`AddAuditDetail`：调用期间补充信息；细节的键只有空白或有孤立的代理项时抛出 `ArgumentException`（ADR-0321）
 * `IAuditTrail`、`AuditQuery`、`AuditPage`：查询契约
 
 ## 更多文档

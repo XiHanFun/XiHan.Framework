@@ -39,7 +39,7 @@ builder.Configuration
 
 * `IRemoteConfigurationClient`：远程配置客户端契约
 * `ISecretStore`、`SecretValue`：密钥库契约，文本表示固定遮蔽
-* `RemoteConfigurationOptions`、`SecretsConfigurationOptions`：配置源选项
+* `RemoteConfigurationOptions`、`SecretsConfigurationOptions`：配置源选项；命名空间只有空白或有孤立的代理项时构造抛出（ADR-0321）
 
 ## 更多文档
 

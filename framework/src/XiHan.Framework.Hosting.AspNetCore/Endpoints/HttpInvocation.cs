@@ -402,13 +402,25 @@ public static partial class HttpInvocation
     /// 把 Baggage 编码为 W3C <c>baggage</c> 头的值
     /// </summary>
     /// <remarks>
-    /// 只写已登记的键，进程内用的其他 <c>xihan.</c> 键不出进程（RFC-0003 规则 3）
+    /// 只写已登记的键，进程内用的其他 <c>xihan.</c> 键不出进程（RFC-0003 规则 3）。值按 UTF-8 百分号编码；有孤立的代理项时抛出 <see cref="ArgumentException"/>，不写成 <c>%EF%BF%BD</c>（<c>conventions/baggage-keys.md</c>，ADR-0321）：两个只差在孤立代理项上的幂等键到了下游就是同一个，下游的 Idempotency 阶段把后一次调用当成前一次的重试。调用上下文里只有幂等键可能带着这样的值，其余已登记的键进上下文时已经核对过
     /// </remarks>
+    /// <exception cref="ArgumentException">已登记的键的值有孤立的代理项</exception>
     public static string FormatBaggage(IReadOnlyDictionary<string, string> baggage)
     {
         ArgumentNullException.ThrowIfNull(baggage);
-        return string.Join(",", baggage.Where(static pair => BaggageKeys.IsRegistered(pair.Key)).Select(static pair => $"{pair.Key}={Uri.EscapeDataString(pair.Value)}"));
+        return string.Join(",", baggage.Where(static pair => BaggageKeys.IsRegistered(pair.Key)).Select(static pair => $"{pair.Key}={EscapeValue(pair.Key, pair.Value)}"));
     }
+
+    /// <summary>
+    /// 把一个 Baggage 值按 UTF-8 百分号编码
+    /// </summary>
+    /// <remarks>
+    /// <see cref="Uri.EscapeDataString(string)"/> 把孤立的代理项换成 <c>%EF%BF%BD</c>：先判定，编不成即抛出，不让两个不同的值写出同一段文本
+    /// </remarks>
+    private static string EscapeValue(string key, string value)
+        => UnicodeText.HasLoneSurrogate(value)
+            ? throw new ArgumentException($"The value of Baggage key '{key}' has a lone surrogate and cannot be percent-encoded as UTF-8.", nameof(value))
+            : Uri.EscapeDataString(value);
 
     /// <summary>
     /// gRPC <c>grpc-timeout</c> 头的匹配：最多 8 位数值加单位

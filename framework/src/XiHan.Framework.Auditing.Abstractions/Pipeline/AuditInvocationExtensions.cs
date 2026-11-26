@@ -78,12 +78,18 @@ public static class AuditInvocationExtensions
     /// 追加一条细节
     /// </summary>
     /// <remarks>
-    /// 值是 JSON：字符串、数值、布尔、日期与 <see cref="Guid"/> 都能隐式转成 <see cref="JsonNode"/>，<see langword="null"/> 记为 JSON null。追加时即固化成 <see cref="JsonElement"/>，之后改原节点不影响已记下的细节；同名覆盖（ADR-0159）
+    /// 值是 JSON：字符串、数值、布尔、日期与 <see cref="Guid"/> 都能隐式转成 <see cref="JsonNode"/>，<see langword="null"/> 记为 JSON null。追加时即固化成 <see cref="JsonElement"/>，之后改原节点不影响已记下的细节；同名覆盖（ADR-0159）。键只有空白或有孤立的代理项时抛出 <see cref="ArgumentException"/>（ADR-0321）
     /// </remarks>
     public static void AddAuditDetail(this InvocationContext context, string key, JsonNode? value)
     {
         ArgumentNullException.ThrowIfNull(context);
         ArgumentException.ThrowIfNullOrWhiteSpace(key);
+
+        // 细节写进审计记录与 JSON 时键编成 UTF-8：宽松编码之后只差在孤立代理项上的两个键是同一个名字，读回时分不开
+        if (UnicodeText.HasLoneSurrogate(key))
+        {
+            throw new ArgumentException("The audit detail key has a lone surrogate.", nameof(key));
+        }
         if (!context.Find(_detailsKey).TryGetValue(out var details))
         {
             details = new Dictionary<string, JsonElement>(StringComparer.Ordinal);

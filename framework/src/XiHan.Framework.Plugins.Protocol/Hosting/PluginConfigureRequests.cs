@@ -36,7 +36,7 @@ internal static partial class PluginConfigureRequests
     /// <remarks>
     /// <para>清单没有声明配置节时配置为 <c>{}</c>；配置节的键或值里有孤立的代理项时不发、返回 <c>PLUGINS_UNEXPECTED_001</c>，排在绑定之前（RFC-0001「写出与转交」，ADR-0315）。已授予权限等于清单的 <c>permissions</c>（缺一项就过不了预检）。</para>
     /// <para>绑定在每次组装时经内核的 <see cref="BindingResolver"/> 解析一遍：先读 Service Binding 目录、再读配置节 <c>XiHan:Bindings</c>，同名时配置整体覆盖目录。只读、只下发清单声明的绑定（能不能声明由预检的 <c>binding:&lt;名&gt;</c> 授予把关，ADR-0177）；类型是清单声明的（来源声明了别的类型即失败）；属性取内核解析结果的 <see cref="BindingValue.Properties"/>，原样写进 <c>Binding.properties</c>，只有属性、没有主值的绑定照常下发、主值为空；可选的绑定主值与属性都没有时不下发并记警告（ADR-0285）。</para>
-    /// <para>按清单的顺序逐个核对：<see cref="BindingRules.FindViolation"/>（必需的绑定没有能下发的内容、来源声明的类型与清单不同），再 <see cref="PluginBindingProperties.FindViolation"/>（属性名不合文法、属性多于 <see cref="PluginBindingProperties.MaxCount"/> 个或合计超过 <see cref="PluginBindingProperties.MaxBytes"/> 字节）；全部合格之后整个请求按二进制编码超过 <see cref="MaxBytes"/> 字节也不发。不合时返回 <c>PLUGINS_UNEXPECTED_001</c>，不少发、不截断；错误与日志只带绑定名、类型名与上限的数字，不带属性名与任何值（ADR-0292）。</para>
+    /// <para>按清单的顺序逐个核对：<see cref="BindingRules.FindViolation"/>（必需的绑定没有能下发的内容、来源声明的类型与清单不同），再 <see cref="PluginBindingProperties.FindViolation"/>（属性名不合文法、属性多于 <see cref="PluginBindingProperties.MaxCount"/> 个或合计超过 <see cref="PluginBindingProperties.MaxBytes"/> 字节），最后是主值与属性值里的孤立代理项（ADR-0321）；全部合格之后整个请求按二进制编码超过 <see cref="MaxBytes"/> 字节也不发。不合时返回 <c>PLUGINS_UNEXPECTED_001</c>，不少发、不截断；错误与日志只带绑定名、类型名与上限的数字，不带属性名与任何值（ADR-0292）。</para>
     /// <para>清单声明的绑定读失败返回 <c>PLUGINS_UNEXPECTED_001</c>（原因只写异常类型，完整异常进日志），绑定目录超过内核的大小或文件数上限同样返回它（原因是带绑定名与上限的固定文本，ADR-0292、ADR-0301），不当成「没有绑定」少给：由调用方按配置这一步失败处理。根目录不存在不是失败。</para>
     /// </remarks>
     /// <param name="manifest">清单</param>
@@ -148,6 +148,13 @@ internal static partial class PluginConfigureRequests
             if (PluginBindingProperties.FindViolation(binding.Name, value.Properties).TryGetValue(out var reason))
             {
                 return Rejected(manifest.Id, reason, logger);
+            }
+
+            // 主值与属性值有孤立的代理项：gRPC 载体的 protobuf 编码把它换成 U+FFFD，插件拿到的是另一个凭据；排在字节数之后（ADR-0321）。
+            // 属性名的文法只有 ASCII，不用另判
+            if ((value.Value is { } main && UnicodeText.HasLoneSurrogate(main)) || value.Properties.Values.Any(static property => UnicodeText.HasLoneSurrogate(property)))
+            {
+                return Rejected(manifest.Id, $"binding '{binding.Name}' has a lone surrogate and cannot be encoded as UTF-8", logger);
             }
 
             // 类型已核对过：来源声明的与清单相同，或来源没声明，下发的都是清单的类型；只有属性、没有主值的绑定主值写空

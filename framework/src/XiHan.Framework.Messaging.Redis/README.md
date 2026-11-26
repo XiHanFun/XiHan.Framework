@@ -36,7 +36,7 @@ builder.AddXiHan(xihan => xihan
 { "XiHan": { "Messaging": { "Redis": { "Configuration": "localhost:6379", "KeyPrefix": "xihan:messaging:", "ConsumerGroup": "xihan" } } } }
 ```
 
-连接也可以来自资源绑定 `queue`（类型 `cache:distributed`）。需要 Redis 6.2 或更高，`maxmemory-policy` 要是 `noeviction` 或 `volatile-*`：会淘汰任意键的策略可能把流连同未投递的消息一起删掉。发布方与订阅方的 `KeyPrefix`、`ConsumerGroup` 要一致；订阅方第一次启动之前发布的消息不投递。
+连接也可以来自资源绑定 `queue`（类型 `cache:distributed`）。`KeyPrefix` 有孤立的代理项时启动失败（ADR-0321）。需要 Redis 6.2 或更高，`maxmemory-policy` 要是 `noeviction` 或 `volatile-*`：会淘汰任意键的策略可能把流连同未投递的消息一起删掉。发布方与订阅方的 `KeyPrefix`、`ConsumerGroup` 要一致；订阅方第一次启动之前发布的消息不投递。
 
 ## 主要类型
 

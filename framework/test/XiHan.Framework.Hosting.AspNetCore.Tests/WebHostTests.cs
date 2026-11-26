@@ -389,6 +389,26 @@ public sealed class WebHostTests
     }
 
     [Fact]
+    public async Task Baggage_IdempotencyKeysThatDifferOnlyInALoneSurrogate_AreNotWrittenAsTheSameHeader()
+    {
+        var (app, client, captured) = await StartAsync();
+        await using var _ = app;
+        Assert.Equal(HttpStatusCode.OK, (await client.GetAsync("/ok")).StatusCode);
+
+        // 幂等键不按值约束拒绝（留给 Idempotency 阶段），派生得出；宽松的百分号编码把两个都写成 k%EF%BF%BD，下游读到的是同一个键（ADR-0321）
+        var first = captured.Context!.WithBaggage(BaggageKeys.IdempotencyKey, "k\uD800");
+        var second = captured.Context.WithBaggage(BaggageKeys.IdempotencyKey, "k\uDBFF");
+        Assert.Equal(Uri.EscapeDataString("k\uD800"), Uri.EscapeDataString("k\uDBFF"));
+        Assert.Throws<ArgumentException>(() => HttpInvocation.FormatBaggage(first.Baggage));
+        Assert.Throws<ArgumentException>(() => HttpInvocation.FormatBaggage(second.Baggage));
+        Assert.Throws<ArgumentException>(() => HttpInvocation.FormatBaggage(new Dictionary<string, string>(StringComparer.Ordinal) { [BaggageKeys.Correlation] = "\uDE00\uD83D" }));
+
+        // 成对的代理项照常编码，读回来是同一个值；进程内用的未登记键不写出，也就不核对
+        var pair = HttpInvocation.FormatBaggage(new Dictionary<string, string>(StringComparer.Ordinal) { [BaggageKeys.IdempotencyKey] = "k😀", ["xihan.local-note"] = "x\uD800" });
+        Assert.Equal("k😀", HttpInvocation.ParseBaggage(pair)[BaggageKeys.IdempotencyKey]);
+    }
+
+    [Fact]
     public async Task Baggage_KeepsOnlyRegisteredKeys_InboundAndOutbound()
     {
         var (app, client, captured) = await StartAsync();

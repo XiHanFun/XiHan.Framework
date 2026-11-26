@@ -67,6 +67,13 @@ public sealed class RedisCachingTests
         Assert.False(RedisCachingOptions.FromConfiguration(Build(("XiHan:Caching:Redis:PublishChanges", "false")), binding).PublishChanges);
         Assert.Throws<ArgumentException>(() => RedisCachingOptions.FromConfiguration(Build(("XiHan:Caching:Redis:PublishChanges", "maybe")), binding));
 
+        // 键前缀加在每个键与变更频道之前，经宽松的 UTF-8 编码：只差在孤立代理项上的两个前缀共用一个键空间，启动即失败（ADR-0321）
+        Assert.Equal(Encoding.UTF8.GetBytes("app\uD800:"), Encoding.UTF8.GetBytes("app\uDBFF:"));
+        Assert.Throws<ArgumentException>(() => RedisCachingOptions.FromConfiguration(Build(("XiHan:Caching:Redis:KeyPrefix", "app\uD800:")), binding));
+        Assert.Throws<ArgumentException>(static () => new RedisCachingOptions { Configuration = "cfg:6379", KeyPrefix = "\uDC00" });
+        Assert.Equal("app😀:", RedisCachingOptions.FromConfiguration(Build(("XiHan:Caching:Redis:KeyPrefix", "app😀:")), binding).KeyPrefix);
+        Assert.Equal(string.Empty, RedisCachingOptions.FromConfiguration(Build(("XiHan:Caching:Redis:KeyPrefix", "")), binding).KeyPrefix);
+
         Assert.Throws<ArgumentException>(() => RedisCachingOptions.FromConfiguration(Build(), default));
         Assert.Throws<ArgumentException>(() => RedisCachingOptions.FromConfiguration(Build(("XiHan:Caching:Redis:DefaultTimeToLiveSeconds", "-1")), binding));
         Assert.Throws<ArgumentException>(static () => new RedisCachingOptions { Configuration = " " });

@@ -25,7 +25,7 @@ public interface IJobScheduler
     /// 新增或整体替换作业与触发器（来源 Runtime）
     /// </summary>
     /// <remarks>
-    /// 立即生效。作业类型未登记 → <see cref="SchedulingErrors.JobTypeNotRegistered"/>，定义不合法 → <see cref="SchedulingErrors.DefinitionInvalid"/>
+    /// 立即生效。作业类型未登记 → <see cref="SchedulingErrors.JobTypeNotRegistered"/>，定义不合法 → <see cref="SchedulingErrors.DefinitionInvalid"/>；作业或触发器的说明与数据（成员名与字符串值）有孤立的代理项也是定义不合法（ADR-0321）
     /// </remarks>
     ValueTask<IReadOnlyList<Result>> ScheduleAsync(IReadOnlyList<JobDefinition> definitions, CancellationToken cancellationToken);
 

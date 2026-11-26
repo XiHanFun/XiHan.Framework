@@ -639,6 +639,32 @@ public sealed class PluginConfigureRequestsTests : IDisposable
         Assert.Equal("订单 😀", configuration.RootElement.GetProperty("Greeting").GetString());
     }
 
+    [Theory]
+    [InlineData("XiHan:Bindings:db:value", "Password=s3<high>cret")]
+    [InlineData("XiHan:Bindings:db:password", "s3<low>cret")]
+    [InlineData("XiHan:Bindings:db:password", "<low><high>")]
+    public void BindingValuesWithALoneSurrogate_AreNotSent(string key, string value)
+    {
+        // 改之前照常下发：gRPC 载体的 protobuf 编码把两个不同的孤立代理项都写成 EF BF BD，插件拿到的是另一个凭据（ADR-0321）
+        Assert.Equal(new XiHan.Framework.Plugins.Protocol.V1.Binding { Value = "s3\uD800cret" }.ToByteArray(), new XiHan.Framework.Plugins.Protocol.V1.Binding { Value = "s3\uDBFFcret" }.ToByteArray());
+        var reason = Rejected(Manifest(new Binding("db", "connection:relational")), Configuration(("XiHan:Bindings:db:host", "db"), (key, WithLoneSurrogates(value))));
+
+        Assert.Equal("binding 'db' has a lone surrogate and cannot be encoded as UTF-8", reason);
+        Assert.DoesNotContain("s3", _logs.Entries[^1].Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void LoneSurrogates_AreCheckedAfterTheBytes_AndPairsAreDeliveredAsGiven()
+    {
+        // 一个绑定里字节数在前：超过上限又有孤立代理项的，报字节数
+        var tooLarge = Rejected(Manifest(new Binding("db", "connection:relational")), Configuration(("XiHan:Bindings:db:blob", new string('v', PluginBindingProperties.MaxBytes)), ("XiHan:Bindings:db:password", WithLoneSurrogates("<high>"))));
+        Assert.Equal($"the properties of binding 'db' exceed {PluginBindingProperties.MaxBytes} bytes", tooLarge);
+
+        // 成对的代理项是平面以外的一个字符，照常下发
+        var request = Build(Manifest(new Binding("db", "connection:relational")), Configuration(("XiHan:Bindings:db:value", "Host=db😀"), ("XiHan:Bindings:db:password", "s3😀")));
+        Assert.Equal(("Host=db😀", "s3😀"), (request.Bindings[0].Value, request.Bindings[0].Properties["password"]));
+    }
+
     [Fact]
     public async Task EndToEnd_AConfigurationWithALoneSurrogate_LeavesThePluginFailed_AndTheHostRunning()
     {

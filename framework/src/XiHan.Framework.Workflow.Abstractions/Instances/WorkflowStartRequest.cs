@@ -49,6 +49,9 @@ public sealed record WorkflowStartRequest
     /// <summary>
     /// 关联 ID（业务键）
     /// </summary>
+    /// <remarks>
+    /// 不能有孤立的代理项，否则启动返回 <c>WORKFLOW_VALIDATION_002</c>：查重的锁键与事件的 <c>correlation</c> 扩展属性都要把它编成 UTF-8（ADR-0321）
+    /// </remarks>
     public string? CorrelationId { get; init; }
 
     /// <summary>

@@ -72,6 +72,16 @@ public sealed class RedisMessagingOptionsTests
         => Assert.Throws<ArgumentException>(() => RedisMessagingOptions.FromConfiguration(Build((ConfigurationKey, "cfg:6379"), (key, value)), default));
 
     [Fact]
+    public void KeyPrefixesThatDifferOnlyInALoneSurrogate_FailAtStartup_InsteadOfSharingStreams()
+    {
+        // Redis 的键按宽松的 UTF-8 编码：两个前缀编出同一段字节，两套部署读写同一条流（ADR-0321）
+        Assert.Equal(System.Text.Encoding.UTF8.GetBytes("app\uD800:"), System.Text.Encoding.UTF8.GetBytes("app\uDBFF:"));
+        Assert.Throws<ArgumentException>(() => RedisMessagingOptions.FromConfiguration(Build((ConfigurationKey, "cfg:6379"), ("XiHan:Messaging:Redis:KeyPrefix", "app\uD800:")), default));
+        Assert.Throws<ArgumentException>(static () => new RedisMessagingOptions { Configuration = "cfg:6379", KeyPrefix = "\uDC00" });
+        Assert.Equal("app😀:", new RedisMessagingOptions { Configuration = "cfg:6379", KeyPrefix = "app😀:" }.KeyPrefix);
+    }
+
+    [Fact]
     public void FromConfiguration_WithoutAnyConnection_Fails()
         => Assert.Throws<ArgumentException>(static () => RedisMessagingOptions.FromConfiguration(Build(), default));
 

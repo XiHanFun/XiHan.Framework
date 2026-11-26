@@ -88,6 +88,13 @@ internal sealed class KnowledgeIngestor : IKnowledgeIngestor
     public ValueTask<Result> RemoveAsync(string? collection, IReadOnlyList<string> documentIds, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(documentIds);
+
+        // 删除按文档 ID 拼成存储的条件：宽松编码之后有孤立代理项的 ID 指向另一篇文档，整批拒绝、不访问存储（ADR-0321）
+        if (documentIds.Any(static id => id is not null && UnicodeText.HasLoneSurrogate(id)))
+        {
+            return ValueTask.FromResult(Result.Failure(Error.Validation(AIErrors.RequestInvalid, AIMessages.RequestInvalid, MessageArguments.Of(("reason", "a document id has a lone surrogate")))));
+        }
+
         if (_store is null)
         {
             return ValueTask.FromResult(Result.Failure(KnowledgeErrors.NoStore()));
@@ -108,6 +115,12 @@ internal sealed class KnowledgeIngestor : IKnowledgeIngestor
         if (string.IsNullOrWhiteSpace(request.DocumentId))
         {
             return Error.Validation(AIErrors.RequestInvalid, AIMessages.RequestInvalid, MessageArguments.Of(("reason", "the document id is empty")));
+        }
+
+        // 记录 ID 与向量键由文档 ID 推出，向量键是记录 ID 的 UTF-8 的 SHA-256：宽松编码之后只差在孤立代理项上的两篇文档写进同一组键（ADR-0321）
+        if (UnicodeText.HasLoneSurrogate(request.DocumentId))
+        {
+            return Error.Validation(AIErrors.RequestInvalid, AIMessages.RequestInvalid, MessageArguments.Of(("reason", "the document id has a lone surrogate")));
         }
 
         if (_store is null)

@@ -1535,6 +1535,7 @@ const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.FaultCausedBy = "wo
 const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.HttpAddressDenied = "workflow.http.address_denied" -> string!
 const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.HttpFailed = "workflow.http.failed" -> string!
 const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.HttpTimedOut = "workflow.http.timed_out" -> string!
+const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.InstanceCorrelationInvalid = "workflow.instance.correlation_invalid" -> string!
 const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.InstanceDepth = "workflow.instance.depth" -> string!
 const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.InstanceIsCanceled = "workflow.instance.is_canceled" -> string!
 const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.InstanceIsCompleted = "workflow.instance.is_completed" -> string!

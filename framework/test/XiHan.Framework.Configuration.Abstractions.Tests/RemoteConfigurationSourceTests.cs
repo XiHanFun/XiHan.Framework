@@ -16,6 +16,17 @@ namespace XiHan.Framework.Configuration.Abstractions.Tests;
 public sealed class RemoteConfigurationSourceTests
 {
     [Fact]
+    public void Namespaces_WithALoneSurrogate_AreRejected_AtConstruction()
+    {
+        // Provider 把命名空间编进请求（Nacos 的 dataId 经百分号编码）：只差在孤立代理项上的两个命名空间取的是同一份文档（ADR-0321）
+        Assert.Equal(Uri.EscapeDataString("orders\uD800"), Uri.EscapeDataString("orders\uDBFF"));
+        Assert.Throws<ArgumentException>(static () => new RemoteConfigurationOptions("orders\uD800"));
+        Assert.Throws<ArgumentException>(static () => new RemoteConfigurationOptions("\uDE00\uD83D"));
+        Assert.Throws<ArgumentException>(static () => new RemoteConfigurationOptions(" "));
+        Assert.Equal("orders😀", new RemoteConfigurationOptions("orders😀").Namespace);
+    }
+
+    [Fact]
     public async Task Load_MountsTheDocument_AndReloadsWhenTheVersionChanges()
     {
         var remote = new InMemoryRemoteConfiguration();

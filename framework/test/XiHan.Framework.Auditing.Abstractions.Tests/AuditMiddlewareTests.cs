@@ -1,6 +1,7 @@
 // Copyright (c) XiHanFun Contributors. Licensed under the MIT License.
 // See the LICENSE file in the project root for full license text.
 
+using System.Text;
 using System.Text.Json;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -288,5 +289,22 @@ public sealed class AuditMiddlewareTests
         Assert.IsNotType<Dictionary<string, JsonElement>>(snapshot);
         context.AddAuditDetail("none", null);
         Assert.Equal(JsonValueKind.Null, context.FindAuditDetails().ValueOrThrow()["none"].ValueKind);
+    }
+
+    [Fact]
+    public void DetailKeysThatDifferOnlyInALoneSurrogate_AreRejected_BeforeTheyShareOneName()
+    {
+        var context = App.CreateContext(new ServiceCollection().BuildServiceProvider(), CancellationToken.None);
+
+        // 改之前两个键都记下：写进审计记录与细节 JSON 时都编成 k�，读回时分不开（ADR-0321）
+        Assert.Equal(Encoding.UTF8.GetBytes("k\uD800"), Encoding.UTF8.GetBytes("k\uDBFF"));
+        Assert.Throws<ArgumentException>(() => context.AddAuditDetail("k\uD800", 1));
+        Assert.Throws<ArgumentException>(() => context.AddAuditDetail("k\uDBFF", 2));
+        Assert.Throws<ArgumentException>(() => context.AddAuditDetail("\uDE00\uD83D", 3));
+        Assert.False(context.FindAuditDetails().HasValue);
+
+        // 成对的代理项是平面以外的一个字符，照常记下
+        context.AddAuditDetail("k😀", 4);
+        Assert.Equal(4, context.FindAuditDetails().ValueOrThrow()["k😀"].GetInt32());
     }
 }

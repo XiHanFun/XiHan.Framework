@@ -53,22 +53,26 @@ public sealed record RabbitMQMessagingOptions
     /// 队列名与路由键的前缀
     /// </summary>
     /// <remarks>
-    /// 默认 <c>xihan.</c>。竞争订阅的队列与主题的路由键都是前缀加主题，前缀不同的应用共用一个交换机也互不串扰
+    /// 默认 <c>xihan.</c>。竞争订阅的队列与主题的路由键都是前缀加主题，前缀不同的应用共用一个交换机也互不串扰。不能有孤立的代理项：队列名经客户端按宽松的 UTF-8 编码，只差在它上面的两个前缀落到同一个队列（ADR-0321）
     /// </remarks>
-    public string QueuePrefix { get; init; } = "xihan.";
+    public string QueuePrefix
+    {
+        get => field;
+        init => field = !UnicodeText.HasLoneSurrogate(value) ? value : throw new ArgumentException("The queue prefix must not contain lone surrogates.", nameof(value));
+    } = "xihan.";
 
     /// <summary>
     /// 发布用的交换机名
     /// </summary>
     /// <remarks>
-    /// 默认 <c>xihan</c>：持久的 direct 交换机，发布方与订阅方都声明它，订阅方的队列以路由键绑定到它（ADR-0079）。不能为空，不能以保留前缀 <c>amq.</c> 开头
+    /// 默认 <c>xihan</c>：持久的 direct 交换机，发布方与订阅方都声明它，订阅方的队列以路由键绑定到它（ADR-0079）。不能为空，不能以保留前缀 <c>amq.</c> 开头，不能有孤立的代理项（ADR-0321）
     /// </remarks>
     public string Exchange
     {
         get => field;
-        init => field = !string.IsNullOrWhiteSpace(value) && !value.StartsWith("amq.", StringComparison.Ordinal)
-            ? value
-            : throw new ArgumentException("The exchange name must not be empty or start with the reserved prefix 'amq.'.", nameof(value));
+        init => field = string.IsNullOrWhiteSpace(value) || value.StartsWith("amq.", StringComparison.Ordinal)
+            ? throw new ArgumentException("The exchange name must not be empty or start with the reserved prefix 'amq.'.", nameof(value))
+            : !UnicodeText.HasLoneSurrogate(value) ? value : throw new ArgumentException("The exchange name must not contain lone surrogates.", nameof(value));
     } = "xihan";
 
     /// <summary>

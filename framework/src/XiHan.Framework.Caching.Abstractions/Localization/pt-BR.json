@@ -1,11 +1,11 @@
 {
   "caching.idempotency.in_progress": "Uma chamada com a mesma chave de idempotência ainda está em andamento.",
-  "caching.idempotency.invalid_key": "A chave de idempotência não é válida: não pode estar vazia nem conter espaços em branco ou caracteres de controle.",
+  "caching.idempotency.invalid_key": "A chave de idempotência não é válida: não pode estar vazia nem conter espaços em branco, caracteres de controle ou substitutos isolados.",
   "caching.idempotency.key_reused": "A chave de idempotência já foi usada por outra chamada ('{recorded}'); o resultado não pode ser reproduzido para '{operation}'.",
   "caching.idempotency.recently_completed": "Uma chamada com a mesma chave de idempotência acabou de ser concluída ou ainda está em andamento; tente novamente mais tarde.",
   "caching.idempotency.response_unavailable": "A resposta registrada da operação '{operation}' não pode ser reproduzida: {reason}",
   "caching.inspector.page_size_invalid": "O limite por página {pageSize} da listagem de chaves deve estar entre 1 e {max}.",
-  "caching.inspector.prefix_invalid": "O prefixo de chave '{prefix}' é inválido: não pode conter espaços nem caracteres de controle e deve ocupar no máximo {max} bytes em UTF-8.",
+  "caching.inspector.prefix_invalid": "O prefixo de chave '{prefix}' é inválido: não pode conter espaços, caracteres de controle nem substitutos isolados e deve ocupar no máximo {max} bytes em UTF-8.",
   "caching.inspector.prefix_required": "Remover chaves por prefixo exige um prefixo não vazio; um prefixo vazio removeria todas as chaves.",
   "caching.lock.held": "O bloqueio do recurso '{resource}' está com outro proprietário.",
   "caching.store.capacity_reached": "O cache em memória atingiu sua capacidade de {capacity} entradas."

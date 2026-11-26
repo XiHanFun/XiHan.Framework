@@ -23,14 +23,18 @@ public sealed record RetrievalFilter
     /// 只在这些文档里找
     /// </summary>
     /// <remarks>
-    /// 空表示不限；最多 <see cref="MaxDocumentIds"/> 个，超过抛出 <see cref="ArgumentOutOfRangeException"/>。保存的是副本，之后改传入的列表不影响过滤
+    /// 空表示不限；最多 <see cref="MaxDocumentIds"/> 个，超过抛出 <see cref="ArgumentOutOfRangeException"/>；有孤立代理项的 ID 抛出 <see cref="ArgumentException"/>：存储把文档 ID 编进过滤条件，宽松编码之后它指向另一篇文档（ADR-0321）。保存的是副本，之后改传入的列表不影响过滤
     /// </remarks>
     public IReadOnlyList<string>? DocumentIds
     {
         get => field;
-        init => field = value is null
-            ? null
-            : value.Count <= MaxDocumentIds ? [.. value] : throw new ArgumentOutOfRangeException(nameof(value), value.Count, $"A filter may name at most {MaxDocumentIds} documents.");
+        init => field = value switch
+        {
+            null => null,
+            { Count: > MaxDocumentIds } => throw new ArgumentOutOfRangeException(nameof(value), value.Count, $"A filter may name at most {MaxDocumentIds} documents."),
+            _ when value.Any(static id => id is not null && UnicodeText.HasLoneSurrogate(id)) => throw new ArgumentException("A document ID in the filter has a lone surrogate.", nameof(value)),
+            _ => [.. value],
+        };
     }
 
     /// <summary>

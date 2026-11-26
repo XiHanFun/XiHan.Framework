@@ -14,10 +14,13 @@ public sealed record RemoteConfigurationOptions
     /// <summary>
     /// 创建
     /// </summary>
+    /// <remarks>
+    /// 命名空间只有空白或有孤立的代理项时抛出 <see cref="ArgumentException"/>：Provider 把它编进请求（Nacos 的 <c>dataId</c> 经百分号编码），只差在孤立代理项上的两个命名空间取的是同一份文档（ADR-0321）
+    /// </remarks>
     public RemoteConfigurationOptions(string @namespace)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(@namespace);
-        Namespace = @namespace;
+        Namespace = !UnicodeText.HasLoneSurrogate(@namespace) ? @namespace : throw new ArgumentException("The remote configuration namespace must not contain lone surrogates.", nameof(@namespace));
     }
 
     /// <summary>

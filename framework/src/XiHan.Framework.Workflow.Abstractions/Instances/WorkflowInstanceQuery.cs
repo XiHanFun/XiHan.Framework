@@ -84,7 +84,7 @@ public sealed record WorkflowInstanceQuery
     /// 关联 ID 集合：实例的关联 ID 是其中之一即匹配
     /// </summary>
     /// <remarks>
-    /// <see langword="null"/> 不过滤；空集合不匹配任何实例（要找的业务键一个都没有，列表为空、计数为 0，不进存储）——与 <see cref="Statuses"/> 的「空集合视同未限定」不同，免得一页没有单据时查出全部实例。重复的 ID 只算一个。最多 <see cref="MaxCorrelationIds"/> 个、每个都不能为空白，否则 <c>WORKFLOW_VALIDATION_002</c>（消息键 <c>workflow.instance.query_correlations_invalid</c>）。子流程继承父实例的关联 ID：按单据查进度时配合 <see cref="TopLevelOnly"/>
+    /// <see langword="null"/> 不过滤；空集合不匹配任何实例（要找的业务键一个都没有，列表为空、计数为 0，不进存储）——与 <see cref="Statuses"/> 的「空集合视同未限定」不同，免得一页没有单据时查出全部实例。重复的 ID 只算一个。最多 <see cref="MaxCorrelationIds"/> 个、每个都不能为空白或有孤立的代理项（ADR-0321），否则 <c>WORKFLOW_VALIDATION_002</c>（消息键 <c>workflow.instance.query_correlations_invalid</c>）。子流程继承父实例的关联 ID：按单据查进度时配合 <see cref="TopLevelOnly"/>
     /// </remarks>
     public IReadOnlyList<string>? CorrelationIds { get; init; }
 

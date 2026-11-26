@@ -56,11 +56,11 @@ public static partial class BaggageKeys
     /// 值是否可以进入调用上下文
     /// </summary>
     /// <remarks>
-    /// 非空、不超过 <see cref="MaxValueLength"/>、不含控制字符：这些值会写进日志作用域、审计与消息信封，换行能伪造日志行（ADR-0204）
+    /// 非空、不超过 <see cref="MaxValueLength"/>、不含控制字符：这些值会写进日志作用域、审计与消息信封，换行能伪造日志行（ADR-0204）。也不含孤立的代理项（<see cref="UnicodeText.HasLoneSurrogate"/>）：值出进程时编成 UTF-8，宽松的编码把它换成 U+FFFD，下游读到的两个不同的值是同一个（ADR-0321）
     /// </remarks>
     public static bool IsAcceptableValue(string? value)
     {
-        if (string.IsNullOrEmpty(value) || value.Length > MaxValueLength)
+        if (string.IsNullOrEmpty(value) || value.Length > MaxValueLength || UnicodeText.HasLoneSurrogate(value))
         {
             return false;
         }

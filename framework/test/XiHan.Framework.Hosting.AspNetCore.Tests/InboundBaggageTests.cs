@@ -85,6 +85,26 @@ public sealed class InboundBaggageTests
     }
 
     [Fact]
+    public async Task BaggageValuesWithLoneSurrogates_AreDropped_ButTheIdempotencyKeyIsLeftToTheIdempotencyStage()
+    {
+        // 建上下文的选项是外部输入：只差在孤立代理项上的两个关联 ID 出进程时编成同样的字节，丢掉这个成员（ADR-0321）
+        await using var app = await StartAsync();
+        await using var scope = app.Services.CreateAsyncScope();
+        var baggage = new Dictionary<string, string>(StringComparer.Ordinal)
+        {
+            [BaggageKeys.Correlation] = "c\uD800",
+            [BaggageKeys.Locale] = "zh-CN",
+            [BaggageKeys.IdempotencyKey] = "k\uDBFF",
+        };
+
+        var context = App.CreateContext(scope.ServiceProvider, new InvocationContextOptions { Baggage = baggage }, CancellationToken.None);
+
+        Assert.False(context.Baggage.ContainsKey(BaggageKeys.Correlation));
+        Assert.Equal("zh-CN", context.Baggage[BaggageKeys.Locale]);
+        Assert.Equal("k\uDBFF", context.Baggage[BaggageKeys.IdempotencyKey]);
+    }
+
+    [Fact]
     public async Task InProcessContext_KeepsItsTenant()
     {
         // 消息、作业、工作流、命令行都在进程内建上下文，租户是框架自己放进去的：Tenant 阶段照常解析

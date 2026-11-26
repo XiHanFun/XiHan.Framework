@@ -60,12 +60,14 @@ public sealed partial record RedisMessagingOptions
     /// 流键的前缀
     /// </summary>
     /// <remarks>
-    /// 默认 <c>xihan:messaging:</c>。主题的流是前缀加主题，死信流再加 <c>DeadLetterSuffix</c>；发布方与订阅方要一致
+    /// 默认 <c>xihan:messaging:</c>。主题的流是前缀加主题，死信流再加 <c>DeadLetterSuffix</c>；发布方与订阅方要一致。不能有孤立的代理项：流的键按宽松的 UTF-8 编码，只差在它上面的两个前缀读写同一条流（ADR-0321）
     /// </remarks>
     public string KeyPrefix
     {
         get => field;
-        init => field = value ?? throw new ArgumentNullException(nameof(value));
+        init => field = value is null
+            ? throw new ArgumentNullException(nameof(value))
+            : !UnicodeText.HasLoneSurrogate(value) ? value : throw new ArgumentException("The stream key prefix must not contain lone surrogates.", nameof(value));
     } = "xihan:messaging:";
 
     /// <summary>

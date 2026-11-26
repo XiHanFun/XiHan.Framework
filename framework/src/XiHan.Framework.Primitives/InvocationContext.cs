@@ -165,7 +165,7 @@ public sealed partial class InvocationContext
         // 值约束只管已登记的键，未登记的键不出进程；幂等键不合法时由 Idempotency 阶段以校验错误拒绝，丢掉它会让重复调用执行两次（ADR-0204）
         if (BaggageKeys.IsRegistered(key) && key != BaggageKeys.IdempotencyKey && !BaggageKeys.IsAcceptableValue(value))
         {
-            throw new ArgumentException($"The value of Baggage key '{key}' is empty, longer than {BaggageKeys.MaxValueLength} UTF-16 code units or contains control characters.", nameof(value));
+            throw new ArgumentException($"The value of Baggage key '{key}' is empty, longer than {BaggageKeys.MaxValueLength} UTF-16 code units or contains control characters or lone surrogates.", nameof(value));
         }
 
         // Baggage 不可变：复制一份再写入，源上下文看不到新键

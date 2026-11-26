@@ -55,21 +55,27 @@ public sealed record NacosOptions
     /// 配置分组
     /// </summary>
     /// <remarks>
-    /// 默认 <c>DEFAULT_GROUP</c>
+    /// 默认 <c>DEFAULT_GROUP</c>。不能有孤立的代理项：它进取配置的查询串与监听请求的正文，按宽松的 UTF-8 编码之后两个分组取到同一份文档（ADR-0321）
     /// </remarks>
     public string Group
     {
         get => field;
-        init => field = !string.IsNullOrWhiteSpace(value) ? value : throw new ArgumentException("The group must not be empty.", nameof(value));
+        init => field = string.IsNullOrWhiteSpace(value)
+            ? throw new ArgumentException("The group must not be empty.", nameof(value))
+            : !UnicodeText.HasLoneSurrogate(value) ? value : throw new ArgumentException("The group must not contain lone surrogates.", nameof(value));
     } = "DEFAULT_GROUP";
 
     /// <summary>
     /// Nacos 命名空间 ID（租户）
     /// </summary>
     /// <remarks>
-    /// 空表示公共命名空间
+    /// 空表示公共命名空间。不能有孤立的代理项，理由同 <see cref="Group"/>（ADR-0321）
     /// </remarks>
-    public string Tenant { get; init; } = string.Empty;
+    public string Tenant
+    {
+        get => field;
+        init => field = !UnicodeText.HasLoneSurrogate(value) ? value : throw new ArgumentException("The Nacos namespace ID must not contain lone surrogates.", nameof(value));
+    } = string.Empty;
 
     /// <summary>
     /// 登录用户名

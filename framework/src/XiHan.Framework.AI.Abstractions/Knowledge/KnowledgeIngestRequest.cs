@@ -17,6 +17,9 @@ public sealed record KnowledgeIngestRequest
     /// <summary>
     /// 文档 ID
     /// </summary>
+    /// <remarks>
+    /// 不能只有空白，也不能有孤立的代理项（ADR-0321）：记录 ID 与向量键由它推出
+    /// </remarks>
     public required string DocumentId { get; init; }
 
     /// <summary>

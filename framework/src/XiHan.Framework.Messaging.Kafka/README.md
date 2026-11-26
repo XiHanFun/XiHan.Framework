@@ -34,7 +34,7 @@ builder.AddXiHan(xihan => xihan
 { "XiHan": { "Messaging": { "Kafka": { "BootstrapServers": "localhost:9092", "ConsumerGroup": "orders", "TopicPrefix": "xihan.", "Properties": { "security.protocol": "SASL_SSL", "sasl.mechanism": "PLAIN", "sasl.username": "<user>", "sasl.password": "<password>" } } } } }
 ```
 
-`Properties` 原样透传给 librdkafka。引导地址也可以来自资源绑定 `stream`。关闭了自动建主题的集群要预建主题，清单见概念文档。
+`Properties` 原样透传给 librdkafka。引导地址也可以来自资源绑定 `stream`。`ConsumerGroup` 与 `TopicPrefix` 有孤立的代理项时启动失败（ADR-0321）。关闭了自动建主题的集群要预建主题，清单见概念文档。
 
 ## 主要类型
 

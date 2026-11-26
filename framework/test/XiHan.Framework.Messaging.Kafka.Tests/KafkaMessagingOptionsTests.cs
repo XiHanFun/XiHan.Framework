@@ -19,6 +19,17 @@ public sealed class KafkaMessagingOptionsTests
         => new ConfigurationBuilder().AddInMemoryCollection(values.Select(static v => new KeyValuePair<string, string?>(v.Key, v.Value))).Build();
 
     [Fact]
+    public void TopicPrefixesAndGroupsWithALoneSurrogate_FailAtStartup()
+    {
+        // 主题名与消费组经客户端按宽松的 UTF-8 编码：只差在孤立代理项上的两套配置落到同一个主题与组（ADR-0321）
+        var binding = Maybe.Some(new BindingValue { Name = "stream", Type = "stream", Value = "bound:9092", Properties = new Dictionary<string, string>() });
+        Assert.Throws<ArgumentException>(() => KafkaMessagingOptions.FromConfiguration(Build(("XiHan:Messaging:Kafka:TopicPrefix", "app\uD800.")), binding));
+        Assert.Throws<ArgumentException>(() => KafkaMessagingOptions.FromConfiguration(Build(("XiHan:Messaging:Kafka:ConsumerGroup", "orders\uDBFF")), binding));
+        Assert.Throws<ArgumentException>(static () => new KafkaMessagingOptions { BootstrapServers = "x:1", TopicPrefix = "\uDE00\uD83D" });
+        Assert.Equal(("app😀.", "orders😀"), (new KafkaMessagingOptions { BootstrapServers = "x:1", TopicPrefix = "app😀.", ConsumerGroup = "orders😀" } is var ok ? (ok.TopicPrefix, ok.ConsumerGroup) : default));
+    }
+
+    [Fact]
     public void FromConfigurationAndBinding_PrefersBinding_AndValidates()
     {
         var binding = Maybe.Some(new BindingValue { Name = "stream", Type = "stream", Value = "bound:9092", Properties = new Dictionary<string, string>() });

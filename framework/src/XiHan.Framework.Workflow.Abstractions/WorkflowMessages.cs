@@ -55,6 +55,14 @@ public static class WorkflowMessages
     public const string InstanceDepth = "workflow.instance.depth";
 
     /// <summary>
+    /// 启动或信号的关联 ID 有孤立的代理项
+    /// </summary>
+    /// <remarks>
+    /// 没有参数：关联 ID 本身就写不成合法的文本（RFC-0021「实例与执行」，ADR-0321）
+    /// </remarks>
+    public const string InstanceCorrelationInvalid = "workflow.instance.correlation_invalid";
+
+    /// <summary>
     /// 一个波次执行的节点数超过上限
     /// </summary>
     /// <remarks>
@@ -317,7 +325,7 @@ public static class WorkflowMessages
     /// 实例查询的关联 ID 集合越界
     /// </summary>
     /// <remarks>
-    /// 超过上限或有空白的 ID。参数：<c>count</c>（给出的个数）、<c>max</c>
+    /// 超过上限、有空白或有孤立代理项的 ID（孤立的代理项 ADR-0321）。参数：<c>count</c>（给出的个数）、<c>max</c>
     /// </remarks>
     public const string InstanceQueryCorrelationsInvalid = "workflow.instance.query_correlations_invalid";
 

@@ -38,6 +38,8 @@ builder.AddXiHan(x => x.UseFeature<NacosConfigurationFeature>());
 { "XiHan": { "Configuration": { "Nacos": { "ServerAddresses": "http://nacos-a:8848,http://nacos-b:8848", "Group": "DEFAULT_GROUP", "Format": "Json" } } } }
 ```
 
+`Group` 与 `Tenant` 有孤立的代理项时启动失败；命名空间（即 `dataId`）的同一条在 `RemoteConfigurationOptions` 的构造里核对（ADR-0321）。
+
 ## 主要类型
 
 此库提供的主要类型：

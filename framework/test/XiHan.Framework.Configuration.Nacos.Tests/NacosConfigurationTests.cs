@@ -26,6 +26,18 @@ public sealed class NacosConfigurationTests
         => new ConfigurationBuilder().AddInMemoryCollection(values.Select(static v => new KeyValuePair<string, string?>(v.Key, v.Value))).Build();
 
     [Fact]
+    public void GroupsAndTenantsWithALoneSurrogate_FailAtStartup()
+    {
+        // 分组与命名空间 ID 进取配置的查询串与监听请求的正文，按宽松的 UTF-8 编码：两套配置取到同一份文档（ADR-0321）
+        var binding = Maybe.Some(new BindingValue { Name = "nacos", Type = "configuration:remote", Value = "http://bound:8848", Properties = new Dictionary<string, string>() });
+        Assert.Throws<ArgumentException>(() => NacosOptions.FromConfiguration(Build(("XiHan:Configuration:Nacos:Group", "orders\uD800")), binding));
+        Assert.Throws<ArgumentException>(() => NacosOptions.FromConfiguration(Build(("XiHan:Configuration:Nacos:Tenant", "dev\uDC00")), binding));
+        Assert.Throws<ArgumentException>(static () => new NacosOptions { ServerAddresses = ["http://a:8848"], Tenant = "\uDE00\uD83D" });
+        var ok = NacosOptions.FromConfiguration(Build(("XiHan:Configuration:Nacos:Group", "orders😀"), ("XiHan:Configuration:Nacos:Tenant", "dev😀")), binding);
+        Assert.Equal(("orders😀", "dev😀"), (ok.Group, ok.Tenant));
+    }
+
+    [Fact]
     public void Options_FromConfiguration_ParsesAndRejectsInvalid()
     {
         var binding = Maybe.Some(new BindingValue { Name = "nacos", Type = "configuration:remote", Value = "http://bound:8848", Properties = new Dictionary<string, string>() });

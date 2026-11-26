@@ -42,21 +42,27 @@ public sealed record KafkaMessagingOptions
     /// 消费组
     /// </summary>
     /// <remarks>
-    /// 默认 <c>xihan</c>。同一消费组的实例分摊分区
+    /// 默认 <c>xihan</c>。同一消费组的实例分摊分区。不能有孤立的代理项：组名经客户端按宽松的 UTF-8 编码（ADR-0321）
     /// </remarks>
     public string ConsumerGroup
     {
         get => field;
-        init => field = !string.IsNullOrWhiteSpace(value) ? value : throw new ArgumentException("The group ID must not be empty.", nameof(value));
+        init => field = string.IsNullOrWhiteSpace(value)
+            ? throw new ArgumentException("The group ID must not be empty.", nameof(value))
+            : !UnicodeText.HasLoneSurrogate(value) ? value : throw new ArgumentException("The group ID must not contain lone surrogates.", nameof(value));
     } = "xihan";
 
     /// <summary>
     /// 主题前缀
     /// </summary>
     /// <remarks>
-    /// 默认 <c>xihan.</c>
+    /// 默认 <c>xihan.</c>。不能有孤立的代理项：主题名经客户端按宽松的 UTF-8 编码，只差在它上面的两个前缀落到同一个主题（ADR-0321）
     /// </remarks>
-    public string TopicPrefix { get; init; } = "xihan.";
+    public string TopicPrefix
+    {
+        get => field;
+        init => field = !UnicodeText.HasLoneSurrogate(value) ? value : throw new ArgumentException("The topic prefix must not contain lone surrogates.", nameof(value));
+    } = "xihan.";
 
     /// <summary>
     /// 透传给 librdkafka 的配置（生产者与消费者共用）

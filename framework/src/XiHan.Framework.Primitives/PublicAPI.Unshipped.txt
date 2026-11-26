@@ -253,6 +253,7 @@ XiHan.Framework.Primitives.TypedId<TTag, TValue>.TypedId() -> void
 XiHan.Framework.Primitives.TypedId<TTag, TValue>.TypedId(TValue Value) -> void
 XiHan.Framework.Primitives.TypedId<TTag, TValue>.Value.get -> TValue
 XiHan.Framework.Primitives.TypedId<TTag, TValue>.Value.init -> void
+XiHan.Framework.Primitives.UnicodeText
 const XiHan.Framework.Primitives.BaggageKeys.Correlation = "xihan.correlation" -> string!
 const XiHan.Framework.Primitives.BaggageKeys.IdempotencyKey = "xihan.idempotency-key" -> string!
 const XiHan.Framework.Primitives.BaggageKeys.Locale = "xihan.locale" -> string!
@@ -416,6 +417,7 @@ static XiHan.Framework.Primitives.TraceParent.operator !=(XiHan.Framework.Primit
 static XiHan.Framework.Primitives.TraceParent.operator ==(XiHan.Framework.Primitives.TraceParent left, XiHan.Framework.Primitives.TraceParent right) -> bool
 static XiHan.Framework.Primitives.TypedId<TTag, TValue>.operator !=(XiHan.Framework.Primitives.TypedId<TTag, TValue> left, XiHan.Framework.Primitives.TypedId<TTag, TValue> right) -> bool
 static XiHan.Framework.Primitives.TypedId<TTag, TValue>.operator ==(XiHan.Framework.Primitives.TypedId<TTag, TValue> left, XiHan.Framework.Primitives.TypedId<TTag, TValue> right) -> bool
+static XiHan.Framework.Primitives.UnicodeText.HasLoneSurrogate(System.ReadOnlySpan<char> text) -> bool
 ~override XiHan.Framework.Primitives.Maybe<T>.Equals(object obj) -> bool
 ~override XiHan.Framework.Primitives.Result.Equals(object obj) -> bool
 ~override XiHan.Framework.Primitives.Result<T>.Equals(object obj) -> bool

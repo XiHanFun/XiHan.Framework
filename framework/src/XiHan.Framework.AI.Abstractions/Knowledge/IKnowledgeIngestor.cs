@@ -18,7 +18,7 @@ public interface IKnowledgeIngestor
     /// 摄入多篇文档
     /// </summary>
     /// <remarks>
-    /// 逐项结果是该文档的块数（空文本为 0，且清掉旧块）
+    /// 逐项结果是该文档的块数（空文本为 0，且清掉旧块）。文档 ID 只有空白或有孤立的代理项时这一项是 <see cref="AIErrors.RequestInvalid"/>（ADR-0321）
     /// </remarks>
     ValueTask<IReadOnlyList<Result<int>>> IngestAsync(IReadOnlyList<KnowledgeIngestRequest> requests, CancellationToken cancellationToken);
 
@@ -26,7 +26,7 @@ public interface IKnowledgeIngestor
     /// 删除文档
     /// </summary>
     /// <remarks>
-    /// <paramref name="collection"/> 为空取默认集合
+    /// <paramref name="collection"/> 为空取默认集合。有一个文档 ID 有孤立的代理项即整批返回 <see cref="AIErrors.RequestInvalid"/>，不访问存储（ADR-0321）
     /// </remarks>
     ValueTask<Result> RemoveAsync(string? collection, IReadOnlyList<string> documentIds, CancellationToken cancellationToken);
 }

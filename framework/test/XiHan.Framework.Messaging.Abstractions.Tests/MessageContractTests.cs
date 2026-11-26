@@ -601,6 +601,11 @@ public sealed class MessageContractTests
         Assert.Equal(3, MessagingOptions.FromConfiguration(Build()).MaxAttempts);
         Assert.Throws<ArgumentException>(() => MessagingOptions.FromConfiguration(Build(("XiHan:Messaging:MaxAttempts", "0"))));
 
+        // 死信后缀拼进各家的队列、主题与流的名字，经宽松的 UTF-8 编码：有孤立代理项的后缀启动即失败（ADR-0321）
+        Assert.Throws<ArgumentException>(() => MessagingOptions.FromConfiguration(Build(("XiHan:Messaging:DeadLetterSuffix", ".dead\uD800"))));
+        Assert.Throws<ArgumentException>(static () => new MessagingOptions { DeadLetterSuffix = "\uDE00\uD83D" });
+        Assert.Equal(".dead😀", new MessagingOptions { DeadLetterSuffix = ".dead😀" }.DeadLetterSuffix);
+
         var outbox = OutboxOptions.FromConfiguration(Build(("XiHan:Messaging:Outbox:PollIntervalSeconds", "0.25"), ("XiHan:Messaging:Outbox:BatchSize", "7")));
         Assert.Equal(TimeSpan.FromMilliseconds(250), outbox.PollInterval);
         Assert.Equal(7, outbox.BatchSize);

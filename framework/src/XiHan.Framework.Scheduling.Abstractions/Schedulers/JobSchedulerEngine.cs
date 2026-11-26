@@ -1715,6 +1715,13 @@ public sealed partial class JobSchedulerEngine : IJobScheduler, IDisposable
             return Error.NotFound(SchedulingErrors.JobTypeNotRegistered, SchedulingMessages.JobTypeNotRegistered, MessageArguments.Of(("type", definition.JobType.FullName ?? definition.JobType.Name)));
         }
 
+        // 说明与数据进代码作业的指纹（宽松的 UTF-8，数据先经 JSON 写出器）与存储：孤立的代理项都换成 U+FFFD，
+        // 只差在它上面的两份定义指纹相同，运行时的修改在代码改了之后照样保留；名字的文法只有 ASCII，不用另判（ADR-0321）
+        if (HasLoneSurrogate(definition))
+        {
+            return DefinitionInvalid(definition.Name, "the definition has a lone surrogate in a description or the data");
+        }
+
         var names = new HashSet<string>(StringComparer.Ordinal);
         foreach (var trigger in definition.Triggers)
         {
@@ -2327,6 +2334,27 @@ public sealed partial class JobSchedulerEngine : IJobScheduler, IDisposable
     /// 定义不合法
     /// </summary>
     private static Error DefinitionInvalid(JobName name, string reason) => Error.Validation(SchedulingErrors.DefinitionInvalid, SchedulingMessages.DefinitionInvalid, MessageArguments.Of(("name", name.Value), ("reason", reason)));
+
+    /// <summary>
+    /// 作业或触发器的说明与数据里有没有孤立的代理项
+    /// </summary>
+    /// <remarks>
+    /// 数据查每个成员名与字符串值，逐层往下（RFC-0013「调度器 <c>IJobScheduler</c>」，ADR-0321）
+    /// </remarks>
+    private static bool HasLoneSurrogate(JobDefinition definition)
+        => UnicodeText.HasLoneSurrogate(definition.Description) || HasLoneSurrogate(definition.Data)
+            || definition.Triggers.Any(static trigger => UnicodeText.HasLoneSurrogate(trigger.Description) || HasLoneSurrogate(trigger.Data));
+
+    /// <summary>
+    /// JSON 节点的成员名与字符串值里有没有孤立的代理项
+    /// </summary>
+    private static bool HasLoneSurrogate(JsonNode? node) => node switch
+    {
+        JsonObject members => members.Any(static member => UnicodeText.HasLoneSurrogate(member.Key) || HasLoneSurrogate(member.Value)),
+        JsonArray items => items.Any(HasLoneSurrogate),
+        JsonValue value => value.TryGetValue<string>(out var text) && UnicodeText.HasLoneSurrogate(text),
+        _ => false,
+    };
 
     /// <summary>
     /// 代码定义变了，运行时的修改被覆盖

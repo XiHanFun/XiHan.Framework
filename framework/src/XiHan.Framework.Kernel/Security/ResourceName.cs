@@ -17,7 +17,7 @@ namespace XiHan.Framework.Kernel.Security;
 /// <param name="Service">服务（<c>[a-z0-9-]+</c>）</param>
 /// <param name="Tenant">租户 ID，文法与 RFC-0007 的租户 ID 相同（只用小写，可含 <c>.</c>、<c>_</c>）；全局资源为 <see langword="null"/></param>
 /// <param name="Type">资源类型（<c>[a-z0-9-]+</c>）</param>
-/// <param name="Id">资源 ID，不含斜杠与空白</param>
+/// <param name="Id">资源 ID，不含斜杠、空白与孤立的代理项</param>
 [ApiLevel(Stability.Stable, "5.0")]
 public readonly partial record struct ResourceName(string Partition, string Service, string? Tenant, string Type, string Id)
 {
@@ -69,8 +69,9 @@ public readonly partial record struct ResourceName(string Partition, string Serv
             return false;
         }
 
+        // 正则只管字符类，孤立的代理项另判：ID 段有它时构造会抛出，这里要返回假（ADR-0321）
         var match = Pattern().Match(text);
-        if (!match.Success)
+        if (!match.Success || UnicodeText.HasLoneSurrogate(text))
         {
             return false;
         }
@@ -87,10 +88,13 @@ public readonly partial record struct ResourceName(string Partition, string Serv
     /// <summary>
     /// 校验一段并原样返回
     /// </summary>
+    /// <remarks>
+    /// 只有 ID 段的字符类放得进代理项，其余各段只有 ASCII；孤立的代理项各段一并判定：资源名进审计记录与 JSON 时编成 UTF-8，宽松的编码把它换成 U+FFFD，两个资源就分不开（ADR-0321）
+    /// </remarks>
     private static string Segment(string value, Regex pattern, string name)
     {
         ArgumentNullException.ThrowIfNull(value, name);
-        return pattern.IsMatch(value) ? value : throw new ArgumentException($"'{value}' is not a valid resource name {name.ToLowerInvariant()} segment.", name);
+        return pattern.IsMatch(value) && !UnicodeText.HasLoneSurrogate(value) ? value : throw new ArgumentException($"'{value}' is not a valid resource name {name.ToLowerInvariant()} segment.", name);
     }
 
     /// <summary>
@@ -116,6 +120,9 @@ public readonly partial record struct ResourceName(string Partition, string Serv
     /// <summary>
     /// ID 段的正则：不含斜杠与空白
     /// </summary>
+    /// <remarks>
+    /// 孤立的代理项不在这里排除，由 <see cref="Segment"/> 另判
+    /// </remarks>
     [GeneratedRegex("^[^/\\s]+\\z")]
     private static partial Regex IdPattern();
 

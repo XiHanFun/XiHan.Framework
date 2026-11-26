@@ -32,7 +32,7 @@ builder.AddXiHan(xihan => xihan
 { "XiHan": { "Messaging": { "RabbitMQ": { "Configuration": "amqp://<user>:<password>@localhost:5672", "Exchange": "xihan", "QueuePrefix": "xihan.", "PrefetchCount": 16 } } } }
 ```
 
-连接也可以来自资源绑定 `queue`。发布方与订阅方的 `Exchange`、`QueuePrefix` 要一致；滚动升级时先升级订阅方。
+连接也可以来自资源绑定 `queue`。发布方与订阅方的 `Exchange`、`QueuePrefix` 要一致；滚动升级时先升级订阅方。两者与 `XiHan:Messaging:DeadLetterSuffix` 都不能有孤立的代理项，否则启动失败（ADR-0321）。
 
 ## 主要类型
 

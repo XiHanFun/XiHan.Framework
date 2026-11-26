@@ -82,4 +82,15 @@ public sealed class RabbitMQMessagingOptionsTests
         Assert.Throws<ArgumentException>(() => RabbitMQMessagingOptions.FromConfiguration(Build(("XiHan:Messaging:RabbitMQ:Exchange", " ")), binding));
         Assert.Throws<ArgumentException>(() => RabbitMQMessagingOptions.FromConfiguration(Build(("XiHan:Messaging:RabbitMQ:Exchange", "amq.direct")), binding));
     }
+
+    [Fact]
+    public void QueuePrefixesAndExchangesWithALoneSurrogate_FailAtStartup()
+    {
+        // 队列名与交换机名经客户端按宽松的 UTF-8 编码：只差在孤立代理项上的两套配置落到同一个队列（ADR-0321）
+        var binding = Maybe.Some(new BindingValue { Name = "queue", Type = "queue", Value = "amqp://guest:guest@bound:5672", Properties = new Dictionary<string, string>() });
+        Assert.Throws<ArgumentException>(() => RabbitMQMessagingOptions.FromConfiguration(Build(("XiHan:Messaging:RabbitMQ:QueuePrefix", "app\uD800.")), binding));
+        Assert.Throws<ArgumentException>(() => RabbitMQMessagingOptions.FromConfiguration(Build(("XiHan:Messaging:RabbitMQ:Exchange", "orders\uDC00")), binding));
+        var ok = RabbitMQMessagingOptions.FromConfiguration(Build(("XiHan:Messaging:RabbitMQ:QueuePrefix", "app😀."), ("XiHan:Messaging:RabbitMQ:Exchange", "orders😀")), binding);
+        Assert.Equal(("app😀.", "orders😀"), (ok.QueuePrefix, ok.Exchange));
+    }
 }

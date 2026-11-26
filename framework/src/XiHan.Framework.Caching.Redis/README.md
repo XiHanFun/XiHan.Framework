@@ -40,7 +40,7 @@ builder.AddXiHan(x => x
 此库提供的主要类型：
 
 * `RedisCachingFeature`：启用入口
-* `RedisCachingOptions`：连接、`KeyPrefix`、缺省存活时间等选项
+* `RedisCachingOptions`：连接、`KeyPrefix`、缺省存活时间等选项；`KeyPrefix` 有孤立的代理项时启动失败（ADR-0321）
 * `RedisCacheStore`：`ICacheStore` 的 Redis 实现
 
 ## 更多文档

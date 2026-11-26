@@ -38,12 +38,14 @@ public sealed partial record MessagingOptions
     /// 死信主题后缀
     /// </summary>
     /// <remarks>
-    /// 默认 <c>.dlq</c>
+    /// 默认 <c>.dlq</c>；不能只有空白，也不能有孤立的代理项：它拼进各家的队列、主题与流的名字，经宽松的 UTF-8 编码（ADR-0321）
     /// </remarks>
     public string DeadLetterSuffix
     {
         get => field;
-        init => field = !string.IsNullOrWhiteSpace(value) ? value : throw new ArgumentException("The dead-letter suffix must not be empty.", nameof(value));
+        init => field = string.IsNullOrWhiteSpace(value)
+            ? throw new ArgumentException("The dead-letter suffix must not be empty.", nameof(value))
+            : !UnicodeText.HasLoneSurrogate(value) ? value : throw new ArgumentException("The dead-letter suffix must not contain lone surrogates.", nameof(value));
     } = ".dlq";
 
     /// <summary>
