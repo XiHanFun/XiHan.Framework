@@ -32,7 +32,7 @@ namespace XiHan.Framework.Workflow.Conformance.Engine;
 /// 引擎的一致性套件（RFC-0021）
 /// </summary>
 /// <remarks>
-/// 顺序流、决策、并行与汇合、用户任务的三种完成策略、转办与加签、延时与超时、信号、子流程与 ForEach、重试与继续、取消 / 终止 / 挂起 / 恢复、定义生命周期、事件主题、事件网关、HTTP、补偿、输出映射、实例级超时、延迟启动与重用策略、信号与定时启动、改变量 / 跳转 / 迁移、清理与延时变体。Provider 继承并实现 <see cref="StartAsync"/>：装配被测特性，并把套件的记录器、活动与处理器登记进容器
+/// 顺序流、决策、并行与汇合、用户任务的三种完成策略、转办与加签、延时与超时、信号、子流程与 ForEach、重试与继续、取消 / 终止 / 挂起 / 恢复、定义生命周期、事件主题、事件网关、HTTP、补偿、输出映射、实例级超时、延迟启动与重用策略、信号与定时启动、改变量 / 跳转 / 迁移、清理与延时变体、实例锁与目录改写定义的锁持有到调用结束。Provider 继承并实现 <see cref="StartAsync"/>：装配被测特性，并把套件的记录器、活动与处理器登记进容器
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public abstract class WorkflowEngineConformance
@@ -2049,6 +2049,36 @@ public abstract class WorkflowEngineConformance
         Assert.Equal(WorkflowErrors.ActivityFailed, instance.Fault?.Code);
         Assert.Equal(WorkflowMessages.HttpAddressDenied, instance.Fault?.MessageKey);
         Assert.Equal("127.0.0.1", instance.Fault?.Arguments?["host"]);
+    }
+
+    /// <summary>
+    /// 用例 43：目录改写已有的定义时持有定义 ID 的锁到调用结束，回滚后立即释放
+    /// </summary>
+    /// <remarks>
+    /// 调用里改一份草稿后，别的调用在它结束之前改这份定义拿不到锁（<c>WORKFLOW_TIMEOUT_001</c>），同一调用里再改复用本作用域持有的锁。定义级定时书签的恢复与数据库实现的查询列回填在同一把锁内重读再改写，不会读到提交之前的旧定义再把它写回去（ADR-0326）。调用回滚后锁立即释放，别的调用照常改写；加入事务的 Provider 上调用里的改写随回滚撤销
+    /// </remarks>
+    [Fact]
+    public async Task Transaction_CatalogEdits_HoldTheDefinitionLockUntilTheInvocationEnds_AndReleaseOnRollback()
+    {
+        var log = new ConformanceLog();
+        await using var host = await StartAsync(services => Register(services, log)).ConfigureAwait(false);
+        var draft = await host.InScopeAsync(async sp => (await sp.GetRequiredService<IWorkflowDefinitionCatalog>().CreateAsync(Waiting("conf-tx-definition-lock"), CancellationToken.None).ConfigureAwait(false)).ValueOrThrow()).ConfigureAwait(false);
+
+        await host.AsTenantAsync(null, async sp =>
+        {
+            var catalog = sp.GetRequiredService<IWorkflowDefinitionCatalog>();
+            Assert.Equal("edited", (await catalog.UpdateAsync(draft with { DisplayName = "edited" }, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().DisplayName);
+            // 同一调用里再改：本作用域持有的锁空闲，复用它
+            Assert.Equal("edited again", (await catalog.UpdateAsync(draft with { DisplayName = "edited again" }, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().DisplayName);
+            // 别的调用（自己的作用域）等不到锁，发布不了这份定义
+            var intruder = await host.InScopeAsync(other => other.GetRequiredService<IWorkflowDefinitionCatalog>().PublishAsync([draft.Id], CancellationToken.None)).ConfigureAwait(false);
+            Assert.Equal(WorkflowErrors.LockTimeout, Assert.Single(intruder).Error?.Code);
+            return true;
+        }, rollback: true).ConfigureAwait(false);
+
+        var published = await host.InScopeAsync(sp => sp.GetRequiredService<IWorkflowDefinitionCatalog>().PublishAsync([draft.Id], CancellationToken.None)).ConfigureAwait(false);
+        var definition = Assert.Single(published).ValueOrThrow();
+        Assert.Equal((WorkflowDefinitionStatus.Published, JoinsCallerTransaction ? draft.DisplayName : "edited again"), (definition.Status, definition.DisplayName));
     }
 
     /// <summary>

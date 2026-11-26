@@ -15,7 +15,7 @@ namespace XiHan.Framework.Workflow.Abstractions.Definitions;
 /// 定义目录的默认实现
 /// </summary>
 /// <remarks>
-/// 生命周期规则在这里，存储只管读写。作用域服务：每个操作在调用方的事务里执行（没有可加入的事务时自己开一次调用），只读写调用方租户的分区——平台调用只看得到、改得动平台的定义，租户只看得到、改得动本租户的
+/// 生命周期规则在这里，存储只管读写。作用域服务：每个操作在调用方的事务里执行（没有可加入的事务时自己开一次调用），只读写调用方租户的分区——平台调用只看得到、改得动平台的定义，租户只看得到、改得动本租户的。改写已有定义的操作先取定义 ID 的锁再读出、核对与写回，锁由执行范围持有到作用域结束（RFC-0021「目录」，ADR-0326）：调用方事务提交之前，别的调用、定义级定时书签的恢复与数据库实现的查询列回填都改不了这份定义
 /// </remarks>
 internal sealed class WorkflowDefinitionCatalog : IWorkflowDefinitionCatalog
 {
@@ -108,13 +108,19 @@ internal sealed class WorkflowDefinitionCatalog : IWorkflowDefinitionCatalog
         ArgumentNullException.ThrowIfNull(definition);
         return _scope.RunAsync<IWorkflowDefinitionCatalog, WorkflowDefinition>(true, "workflow.definition.update", async () =>
         {
-            var found = await _store.FindAsync(Tenant, definition.Id, cancellationToken).ConfigureAwait(false);
-            if (!found.TryGetValue(out var maybe))
+            var locking = await LockAsync([definition.Id], cancellationToken).ConfigureAwait(false);
+            if (!locking.TryGetValue(out var locked))
             {
-                return found.Error!;
+                return locking.Error!;
             }
 
-            if (!maybe.TryGetValue(out var stored))
+            await using var held = locked.ConfigureAwait(false);
+            if (locked.Failures.TryGetValue(definition.Id, out var failure))
+            {
+                return failure;
+            }
+
+            if (!locked.Definitions.TryGetValue(definition.Id, out var stored))
             {
                 return NotFound(definition.Id);
             }
@@ -144,7 +150,14 @@ internal sealed class WorkflowDefinitionCatalog : IWorkflowDefinitionCatalog
         ArgumentNullException.ThrowIfNull(ids);
         return _scope.RunBatchAsync<IWorkflowDefinitionCatalog, WorkflowDefinition>(ids.Count, "workflow.definition.publish", async () =>
         {
-            var results = await TransitionAsync(ids, definition =>
+            var locking = await LockAsync(ids, cancellationToken).ConfigureAwait(false);
+            if (!locking.TryGetValue(out var locked))
+            {
+                return ids.Select(_ => Result.Failure<WorkflowDefinition>(locking.Error!)).ToList();
+            }
+
+            await using var held = locked.ConfigureAwait(false);
+            var results = await TransitionAsync(ids, locked, definition =>
             {
                 if (definition.Status != WorkflowDefinitionStatus.Draft)
                 {
@@ -222,7 +235,14 @@ internal sealed class WorkflowDefinitionCatalog : IWorkflowDefinitionCatalog
         ArgumentNullException.ThrowIfNull(ids);
         return _scope.RunBatchAsync<IWorkflowDefinitionCatalog, WorkflowDefinition>(ids.Count, "workflow.definition.disable", async () =>
         {
-            var results = await TransitionAsync(ids, static definition => definition.Status == WorkflowDefinitionStatus.Published
+            var locking = await LockAsync(ids, cancellationToken).ConfigureAwait(false);
+            if (!locking.TryGetValue(out var locked))
+            {
+                return ids.Select(_ => Result.Failure<WorkflowDefinition>(locking.Error!)).ToList();
+            }
+
+            await using var held = locked.ConfigureAwait(false);
+            var results = await TransitionAsync(ids, locked, static definition => definition.Status == WorkflowDefinitionStatus.Published
                 ? definition with { Status = WorkflowDefinitionStatus.Disabled }
                 : StatusConflict(definition), cancellationToken).ConfigureAwait(false);
             return await RemoveTimersAsync(results, cancellationToken).ConfigureAwait(false);
@@ -235,7 +255,14 @@ internal sealed class WorkflowDefinitionCatalog : IWorkflowDefinitionCatalog
         ArgumentNullException.ThrowIfNull(ids);
         return _scope.RunBatchAsync<IWorkflowDefinitionCatalog, WorkflowDefinition>(ids.Count, "workflow.definition.archive", async () =>
         {
-            var results = await TransitionAsync(ids, static definition => definition with { Status = WorkflowDefinitionStatus.Archived }, cancellationToken).ConfigureAwait(false);
+            var locking = await LockAsync(ids, cancellationToken).ConfigureAwait(false);
+            if (!locking.TryGetValue(out var locked))
+            {
+                return ids.Select(_ => Result.Failure<WorkflowDefinition>(locking.Error!)).ToList();
+            }
+
+            await using var held = locked.ConfigureAwait(false);
+            var results = await TransitionAsync(ids, locked, static definition => definition with { Status = WorkflowDefinitionStatus.Archived }, cancellationToken).ConfigureAwait(false);
             return await RemoveTimersAsync(results, cancellationToken).ConfigureAwait(false);
         }, catalog => catalog.ArchiveAsync(ids, cancellationToken), cancellationToken);
     }
@@ -249,18 +276,22 @@ internal sealed class WorkflowDefinitionCatalog : IWorkflowDefinitionCatalog
         ArgumentNullException.ThrowIfNull(ids);
         return _scope.RunBatchAsync<IWorkflowDefinitionCatalog>(ids.Count, "workflow.definition.delete", async () =>
         {
-            var found = await _store.FindManyAsync(Tenant, ids, cancellationToken).ConfigureAwait(false);
-            if (!found.TryGetValue(out var definitions))
+            var locking = await LockAsync(ids, cancellationToken).ConfigureAwait(false);
+            if (!locking.TryGetValue(out var locked))
             {
-                return ids.Select(_ => Result.Failure(found.Error!)).ToList();
+                return ids.Select(_ => Result.Failure(locking.Error!)).ToList();
             }
 
-            var byId = definitions.ToDictionary(static definition => definition.Id, StringComparer.Ordinal);
+            await using var held = locked.ConfigureAwait(false);
             var results = new Result[ids.Count];
             var deletable = new List<string>();
             for (var index = 0; index < ids.Count; index++)
             {
-                if (!byId.TryGetValue(ids[index], out var definition))
+                if (locked.Failures.TryGetValue(ids[index], out var failure))
+                {
+                    results[index] = failure;
+                }
+                else if (!locked.Definitions.TryGetValue(ids[index], out var definition))
                 {
                     results[index] = NotFound(ids[index]);
                 }
@@ -360,23 +391,24 @@ internal sealed class WorkflowDefinitionCatalog : IWorkflowDefinitionCatalog
     }
 
     /// <summary>
-    /// 批量状态迁移：逐项读当前状态，<paramref name="transition"/> 给出新状态或错误，成功的一次写回
+    /// 批量状态迁移：按锁内重读的状态逐项迁移，成功的一次写回
     /// </summary>
-    private async ValueTask<IReadOnlyList<Result<WorkflowDefinition>>> TransitionAsync(IReadOnlyList<string> ids, Func<WorkflowDefinition, Result<WorkflowDefinition>> transition, CancellationToken cancellationToken)
+    /// <remarks>
+    /// <paramref name="transition"/> 给出新状态或错误。拿不到锁的项以取锁的错误失败，看不到的项（不存在或在别的分区）按不存在处理
+    /// </remarks>
+    private async ValueTask<IReadOnlyList<Result<WorkflowDefinition>>> TransitionAsync(IReadOnlyList<string> ids, LockedDefinitions locked, Func<WorkflowDefinition, Result<WorkflowDefinition>> transition, CancellationToken cancellationToken)
     {
-        // 存储只返回调用方分区的定义：别的分区的按不存在处理
-        var found = await _store.FindManyAsync(Tenant, ids, cancellationToken).ConfigureAwait(false);
-        if (!found.TryGetValue(out var definitions))
-        {
-            return ids.Select(_ => Result.Failure<WorkflowDefinition>(found.Error!)).ToList();
-        }
-
-        var byId = definitions.ToDictionary(static definition => definition.Id, StringComparer.Ordinal);
         var results = new Result<WorkflowDefinition>[ids.Count];
         var changed = new List<WorkflowDefinition>();
         for (var index = 0; index < ids.Count; index++)
         {
-            if (!byId.TryGetValue(ids[index], out var definition))
+            if (locked.Failures.TryGetValue(ids[index], out var failure))
+            {
+                results[index] = failure;
+                continue;
+            }
+
+            if (!locked.Definitions.TryGetValue(ids[index], out var definition))
             {
                 results[index] = NotFound(ids[index]);
                 continue;
@@ -408,6 +440,67 @@ internal sealed class WorkflowDefinitionCatalog : IWorkflowDefinitionCatalog
     }
 
     /// <summary>
+    /// 取这些定义的锁，并在锁内重读它们
+    /// </summary>
+    /// <remarks>
+    /// 改写已有的定义之前调用（RFC-0021「目录」，ADR-0326）。先读一次，只为调用方分区里看得到的定义取锁：看不到的 ID 照旧按不存在处理，不为它们等锁或留下租约行。按 ID 的序数次序逐个取、同一 ID 只取一次，两个批量操作不会交叉等对方；拿不到的记进 <see cref="LockedDefinitions.Failures"/>，别的照常。锁由执行范围持有到作用域结束，返回值释放时只把它们标为空闲。读失败时已取得的锁照样标为空闲，返回读的错误
+    /// </remarks>
+    /// <param name="ids">要改写的定义 ID</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    private async ValueTask<Result<LockedDefinitions>> LockAsync(IReadOnlyList<string> ids, CancellationToken cancellationToken)
+    {
+        // 存储只返回调用方分区的定义：别的分区的按不存在处理
+        var found = await _store.FindManyAsync(Tenant, ids, cancellationToken).ConfigureAwait(false);
+        if (!found.TryGetValue(out var visible))
+        {
+            return found.Error!;
+        }
+
+        var locked = new LockedDefinitions();
+        try
+        {
+            var keys = visible.Select(static definition => definition.Id).Distinct(StringComparer.Ordinal).Order(StringComparer.Ordinal).ToList();
+            foreach (var key in keys)
+            {
+                var lease = await _scope.LockAsync(key, cancellationToken).ConfigureAwait(false);
+                if (lease.TryGetValue(out var handle))
+                {
+                    locked.Leases.Add(handle);
+                }
+                else
+                {
+                    locked.Failures[key] = lease.Error!;
+                }
+            }
+
+            // 锁内重读：第一次读到拿到锁之间别的调用可能已经改过或删掉了它，核对与写回都按锁内读到的
+            var held = keys.Where(key => !locked.Failures.ContainsKey(key)).ToList();
+            if (held.Count > 0)
+            {
+                var reread = await _store.FindManyAsync(Tenant, held, cancellationToken).ConfigureAwait(false);
+                if (!reread.TryGetValue(out var current))
+                {
+                    await locked.DisposeAsync().ConfigureAwait(false);
+                    return reread.Error!;
+                }
+
+                foreach (var definition in current)
+                {
+                    locked.Definitions[definition.Id] = definition;
+                }
+            }
+
+            return locked;
+        }
+        catch
+        {
+            // 取锁或重读抛出（取消、作用域已结束）：已取得的锁标为空闲，异常原样抛出
+            await locked.DisposeAsync().ConfigureAwait(false);
+            throw;
+        }
+    }
+
+    /// <summary>
     /// 定义不存在（或不在调用方的分区里）
     /// </summary>
     private static Error NotFound(string id) => Error.NotFound(WorkflowErrors.DefinitionNotFound, WorkflowMessages.DefinitionNotFound, MessageArguments.Of(("name", id)));
@@ -417,4 +510,39 @@ internal sealed class WorkflowDefinitionCatalog : IWorkflowDefinitionCatalog
     /// </summary>
     private static Error StatusConflict(WorkflowDefinition definition)
         => WorkflowStatusConflicts.Of(definition);
+
+    /// <summary>
+    /// 一次改写取得的定义锁与锁内重读到的定义
+    /// </summary>
+    /// <remarks>
+    /// 释放时把这次占用的锁标为空闲：锁本身由执行范围持有到作用域结束（调用方事务提交或回滚之后），同一作用域里之后的操作可以复用
+    /// </remarks>
+    private sealed class LockedDefinitions : IAsyncDisposable
+    {
+        /// <summary>
+        /// 锁内重读到的定义：ID → 定义
+        /// </summary>
+        public Dictionary<string, WorkflowDefinition> Definitions { get; } = new(StringComparer.Ordinal);
+
+        /// <summary>
+        /// 拿不到锁的定义：ID → 取锁的错误
+        /// </summary>
+        public Dictionary<string, Error> Failures { get; } = new(StringComparer.Ordinal);
+
+        /// <summary>
+        /// 这次占用的锁
+        /// </summary>
+        public List<IAsyncDisposable> Leases { get; } = [];
+
+        /// <inheritdoc />
+        public async ValueTask DisposeAsync()
+        {
+            foreach (var lease in Leases)
+            {
+                await lease.DisposeAsync().ConfigureAwait(false);
+            }
+
+            Leases.Clear();
+        }
+    }
 }

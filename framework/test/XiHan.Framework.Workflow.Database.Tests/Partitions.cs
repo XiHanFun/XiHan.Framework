@@ -2,6 +2,7 @@
 // See the LICENSE file in the project root for full license text.
 
 using XiHan.Framework.Testing;
+using XiHan.Framework.Workflow.Conformance.Engine;
 using XiHan.Framework.Workflow.Conformance.Storage;
 
 namespace XiHan.Framework.Workflow.Database.Tests;
@@ -25,6 +26,15 @@ internal static class Partitions
     /// </summary>
     public static Task InAsync(TestHost host, string? tenantId, Func<WorkflowStores, Task> action)
         => new WorkflowStoreHost(host.Services, NoRelease.Instance).InPartitionAsync(tenantId, action);
+
+    /// <summary>
+    /// 以 <paramref name="tenantId"/>（空为平台）开一次经管道的调用，在调用的服务里执行 <paramref name="action"/>，返回后提交
+    /// </summary>
+    /// <remarks>
+    /// 目录与引擎加入这次调用的事务，取得的锁持有到调用结束；复用引擎套件的夹具
+    /// </remarks>
+    public static ValueTask<T> InvokeAsync<T>(TestHost host, string? tenantId, Func<IServiceProvider, ValueTask<T>> action)
+        => new WorkflowEngineHost(host.Services, static _ => ValueTask.FromResult(0), NoRelease.Instance).AsTenantAsync(tenantId, action);
 
     /// <summary>
     /// 什么也不释放：宿主由测试自己释放

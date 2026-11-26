@@ -9,7 +9,7 @@ namespace XiHan.Framework.Workflow.Database.Tests;
 /// 查询列的回填在真实的数据库服务器上（ADR-0304）
 /// </summary>
 /// <remarks>
-/// PostgreSQL、SQL Server、MySQL、Oracle 各派生一个类，给出按环境变量门控的夹具（<see cref="IGatedDatabase"/>），未设置即跳过，由 CI 的 database 与 oracle 分片运行；本机跑的同样用例在 <see cref="DatabaseWorkflowBackfillTests"/>。游标的时间比较、折叠后的 <c>LIKE</c> 与空串、<c>NULL</c> 的等同都在这里落到各库真实的 SQL 上
+/// PostgreSQL、SQL Server、MySQL、Oracle 各派生一个类，给出按环境变量门控的夹具（<see cref="IGatedDatabase"/>），未设置即跳过，由 CI 的 database 与 oracle 分片运行；本机跑的同样用例在 <see cref="DatabaseWorkflowBackfillTests"/>。游标的时间比较、折叠后的 <c>LIKE</c> 与空串、<c>NULL</c> 的等同，以及编辑定义的调用持有行锁时回填不去等它，都在这里落到各库真实的 SQL 上
 /// </remarks>
 public abstract class ServerWorkflowBackfillTests
 {
@@ -40,6 +40,14 @@ public abstract class ServerWorkflowBackfillTests
 
         Assert.Equal([platform, tenant, 0], results.Select(static result => result.ValueOrThrow().Rewritten));
         Assert.Equal(BackfillScenario.Expected, await BackfillScenario.CountMatchesAsync(host, "t1"));
+    }
+
+    [Fact]
+    public async Task Backfill_WhileADefinitionIsBeingEdited_SkipsItUntilTheEditCommits()
+    {
+        // 编辑的调用持有这一行的行锁与定义 ID 的锁：回填读到的是提交之前的旧行，拿不到定义的锁即跳过，不去等行锁（ADR-0326）
+        await using var database = CreateDatabase();
+        await BackfillScenario.EditWhileBackfillingAsync(await database.StartHostAsync());
     }
 
     /// <summary>

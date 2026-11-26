@@ -16,7 +16,7 @@ using XiHan.Framework.Workflow.Abstractions.Tasks;
 namespace XiHan.Framework.Workflow.InMemory.Tests;
 
 /// <summary>
-/// 内存实现自己的行为：容量上限、选项读取、特性清单与轮询器的启停
+/// 内存实现自己的行为：容量、选项、特性清单、轮询器与目录取的锁
 /// </summary>
 public sealed class InMemoryWorkflowTests
 {
@@ -159,6 +159,40 @@ public sealed class InMemoryWorkflowTests
         await host.App.StopAsync(CancellationToken.None);
         Assert.False(poller.IsRunning);
     }
+
+    [Fact]
+    public async Task Catalog_EditingADefinitionWhoseLockIsHeld_FailsOnlyThatItem()
+    {
+        // 目录改写已有的定义之前取定义 ID 的锁（ADR-0326）：别人持有时这一项以等锁超时失败，同一批里别的项照常；看不到的 ID 不取锁，照旧是不存在
+        await using var host = await TestHost.StartAsync(static b => b.UseFeature<InMemoryWorkflowFeature>(), [new($"{WorkflowOptions.ConfigurationSection}:LockTimeoutSeconds", "0.2"), new($"{InMemoryWorkflowOptions.ConfigurationSection}:PollIntervalSeconds", "3600")]);
+        await using var scope = host.Services.CreateAsyncScope();
+        var catalog = scope.ServiceProvider.GetRequiredService<IWorkflowDefinitionCatalog>();
+        var held = (await catalog.CreateAsync(Runnable("lock-held"), CancellationToken.None)).ValueOrThrow();
+        var free = (await catalog.CreateAsync(Runnable("lock-free"), CancellationToken.None)).ValueOrThrow();
+
+        var handle = (await host.Services.GetRequiredService<IWorkflowInstanceLock>().AcquireAsync(held.Id, CancellationToken.None)).ValueOrThrow();
+        await using (handle)
+        {
+            Assert.Equal(WorkflowErrors.LockTimeout, (await catalog.UpdateAsync(held with { DisplayName = "edited" }, CancellationToken.None)).Error?.Code);
+            var published = await catalog.PublishAsync([held.Id, free.Id, held.Id, "missing", " "], CancellationToken.None);
+            Assert.Equal([WorkflowErrors.LockTimeout, null, WorkflowErrors.LockTimeout, WorkflowErrors.DefinitionNotFound, WorkflowErrors.DefinitionNotFound], published.Select(static result => result.Error?.Code));
+            Assert.Equal(WorkflowErrors.LockTimeout, Assert.Single(await catalog.DeleteAsync([held.Id], CancellationToken.None)).Error?.Code);
+            Assert.Equal(WorkflowErrors.LockTimeout, Assert.Single(await catalog.ArchiveAsync([held.Id], CancellationToken.None)).Error?.Code);
+        }
+
+        // 锁释放之后照常改写；建新草稿写的是新 ID，不取锁
+        Assert.Equal(WorkflowDefinitionStatus.Published, (await catalog.PublishAsync(held.Id, CancellationToken.None)).ValueOrThrow().Status);
+        Assert.Equal(WorkflowDefinitionStatus.Disabled, Assert.Single(await catalog.DisableAsync([held.Id], CancellationToken.None)).ValueOrThrow().Status);
+        Assert.Equal(2, (await catalog.NewVersionAsync(new WorkflowName("lock-held"), CancellationToken.None)).ValueOrThrow().Version);
+    }
+
+    /// <summary>
+    /// 能发布的定义：开始 → 结束
+    /// </summary>
+    private static WorkflowDefinition Runnable(string name) => WorkflowDefinitionBuilder.Create(new WorkflowName(name))
+        .AddStart().AddEnd()
+        .AddTransition("start", "end")
+        .Build();
 
     /// <summary>
     /// 一个定义

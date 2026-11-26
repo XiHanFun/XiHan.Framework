@@ -10,7 +10,7 @@ namespace XiHan.Framework.Workflow.Database.Tests;
 /// 查询列的回填在本机的库上（RFC-0021「默认实现与 Provider」，ADR-0304）
 /// </summary>
 /// <remarks>
-/// SQLite（SqlSugar 与 EF Core 两种持久化），不靠外部的数据库服务：分批、可以重复跑（已是新值的行不再改写）、锁被占用时跳过、可取消、批大小有上限、按分区的逐项结果。真实数据库上同样的用例在 <see cref="ServerWorkflowBackfillTests"/> 的四个派生类里（PostgreSQL、SQL Server、MySQL、Oracle）
+/// SQLite（SqlSugar 与 EF Core 两种持久化），不靠外部的数据库服务：分批、可以重复跑（已是新值的行不再改写）、实例或定义的锁被占用时跳过、与同时进行的定义编辑互斥（ADR-0326）、可取消、批大小有上限、按分区的逐项结果。真实数据库上同样的用例在 <see cref="ServerWorkflowBackfillTests"/> 的四个派生类里（PostgreSQL、SQL Server、MySQL、Oracle）
 /// </remarks>
 public sealed class DatabaseWorkflowBackfillTests
 {
@@ -76,6 +76,41 @@ public sealed class DatabaseWorkflowBackfillTests
         var rerun = (await BackfillScenario.RunAsync(host, null, 2)).ValueOrThrow();
         Assert.Equal((0, 2), (rerun.Busy, rerun.Rewritten));
         Assert.Equal(BackfillScenario.Expected, await BackfillScenario.CountMatchesAsync(host, null));
+    }
+
+    [Fact]
+    public async Task Backfill_SkipsADefinitionWhoseLockIsHeld_UntilARerun()
+    {
+        // 定义行同样在定义 ID 的锁内改写（ADR-0326）：拿不到锁的定义这次跳过，它的行原样留着
+        await using var database = new SqliteDatabase();
+        var host = await database.StartHostAsync();
+        var stale = await BackfillScenario.SeedAsync(host, null);
+        var leave = await BackfillScenario.FindDefinitionAsync(host, "bf-leave");
+        var locks = host.Services.GetRequiredService<DatabaseWorkflowInstanceLock>();
+
+        var held = (await locks.AcquireAsync(leave.Id, CancellationToken.None)).ValueOrThrow();
+        DatabaseWorkflowBackfillReport busy;
+        await using (held)
+        {
+            busy = (await BackfillScenario.RunAsync(host, null, 2)).ValueOrThrow();
+        }
+
+        // 跳过的只是这一行定义：按关键字查不到它，实例与待办都已补上
+        Assert.Equal((1, stale - 1), (busy.Busy, busy.Rewritten));
+        var (definitions, instances, tasks, _) = await BackfillScenario.CountMatchesAsync(host, null);
+        Assert.Equal((0, BackfillScenario.Expected.Instances, BackfillScenario.Expected.Tasks), (definitions, instances, tasks));
+
+        // 锁释放之后再跑一次补上
+        var rerun = (await BackfillScenario.RunAsync(host, null, 2)).ValueOrThrow();
+        Assert.Equal((0, 1), (rerun.Busy, rerun.Rewritten));
+        Assert.Equal(BackfillScenario.Expected, await BackfillScenario.CountMatchesAsync(host, null));
+    }
+
+    [Fact]
+    public async Task Backfill_WhileADefinitionIsBeingEdited_SkipsItUntilTheEditCommits()
+    {
+        await using var database = new SqliteDatabase();
+        await BackfillScenario.EditWhileBackfillingAsync(await database.StartHostAsync());
     }
 
     [Fact]

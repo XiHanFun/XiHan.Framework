@@ -60,6 +60,7 @@ XiHan.Framework.Workflow.Conformance.Engine.WorkflowEngineConformance.SortByStat
 XiHan.Framework.Workflow.Conformance.Engine.WorkflowEngineConformance.SubWorkflow_AndForEach_RunChildren() -> System.Threading.Tasks.Task!
 XiHan.Framework.Workflow.Conformance.Engine.WorkflowEngineConformance.Tenant_IsolatesTasksAndSignals() -> System.Threading.Tasks.Task!
 XiHan.Framework.Workflow.Conformance.Engine.WorkflowEngineConformance.Transaction_BusinessRollback_DiscardsTheWorkflowWrites() -> System.Threading.Tasks.Task!
+XiHan.Framework.Workflow.Conformance.Engine.WorkflowEngineConformance.Transaction_CatalogEdits_HoldTheDefinitionLockUntilTheInvocationEnds_AndReleaseOnRollback() -> System.Threading.Tasks.Task!
 XiHan.Framework.Workflow.Conformance.Engine.WorkflowEngineConformance.Transaction_InstanceLock_IsHeldUntilTheInvocationEnds_AndReleasedOnRollback() -> System.Threading.Tasks.Task!
 XiHan.Framework.Workflow.Conformance.Engine.WorkflowEngineConformance.Transaction_ReadOnlyInvocation_RejectsEngineWritesBeforeRunningActivities() -> System.Threading.Tasks.Task!
 XiHan.Framework.Workflow.Conformance.Engine.WorkflowEngineConformance.Transaction_TaskCompletion_CommitsOrRollsBackWithTheBusiness() -> System.Threading.Tasks.Task!

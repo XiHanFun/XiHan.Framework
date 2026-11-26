@@ -50,7 +50,7 @@ IReadOnlyList<string?> partitions = [null, .. tenantIds];
 var results = await backfill.RunAsync(partitions, batchSize: 500, cancellationToken);
 ```
 
-每个分区一项结果；`Busy` 不为零时有实例的锁被占用而跳过，再跑一次即可。
+每个分区一项结果；`Busy` 不为零时有实例或定义的锁被占用而跳过，再跑一次即可。回填与引擎、定义目录的写入取同一把锁，不必停服务，也不必挑没有人编辑定义的时候运行。
 
 ## 主要类型
 

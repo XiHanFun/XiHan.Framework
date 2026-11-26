@@ -20,7 +20,7 @@ namespace XiHan.Framework.Workflow.Database.Storage;
 /// 一个分区（平台或租户）的查询列回填
 /// </summary>
 /// <remarks>
-/// <see cref="DatabaseWorkflowBackfill"/> 的一次分区回填（ADR-0304）：先定义、后实例，各按创建时间升序、同刻按 ID 每批读至多 <c>batchSize</c> 行，再按页读这些行的书签（书签以所属实例的 ID 或定义级定时书签的定义 ID 归属，按它找有索引）。游标只用创建时间的 <c>&gt;=</c> 与同刻行的偏移：持久化的规约不保证字符串的大小比较能翻译，创建时间写入后不变，新写入的行由存储按新规则算好，扫到也只是不必改写
+/// <see cref="DatabaseWorkflowBackfill"/> 的一次分区回填（ADR-0304、ADR-0326）：先定义、后实例，各按创建时间升序、同刻按 ID 每批读至多 <c>batchSize</c> 行，再按页读这些行的书签（书签以所属实例的 ID 或定义级定时书签的定义 ID 归属，按它找有索引）。游标只用创建时间的 <c>&gt;=</c> 与同刻行的偏移：持久化的规约不保证字符串的大小比较能翻译，创建时间写入后不变，新写入的行由存储按新规则算好，扫到也只是不必改写
 /// </remarks>
 /// <typeparam name="TDefinition">定义行类型</typeparam>
 /// <typeparam name="TInstance">实例行类型</typeparam>
@@ -161,11 +161,11 @@ internal sealed class PartitionBackfill<TDefinition, TInstance, TNode, TBookmark
                     }
                 }
 
-                // 定义级定时书签以定义 ID 归属，没有所属实例的行
+                // 定义级定时书签以定义 ID 归属，没有所属实例的行；自己要改写的定义连同书签一起在锁内处理，扫描时不必再看它们的书签
                 var ids = rows.Select(static row => row.Id).ToList();
                 var owners = await RecordQueries.FindManyAsync(scope.GetRequiredService<IRepository<TInstance, string>>(), ids, token).ConfigureAwait(false);
-                var bookmarks = await ScanBookmarksAsync(scope, ids, owners, [], token).ConfigureAwait(false);
-                return new Scan(rows.Count + bookmarks.Scanned, rows.Select(static row => row.CreatedAt).ToList(), stale, bookmarks.StaleOwners);
+                var bookmarks = await ScanBookmarksAsync(scope, ids, owners, [.. stale], token).ConfigureAwait(false);
+                return new Scan(rows.Count + bookmarks.Scanned, rows.Select(static row => row.CreatedAt).ToList(), [.. stale.Union(bookmarks.StaleOwners, StringComparer.Ordinal)]);
             }, cancellationToken).ConfigureAwait(false);
             if (!scan.TryGetValue(out var batch))
             {
@@ -179,16 +179,10 @@ internal sealed class PartitionBackfill<TDefinition, TInstance, TNode, TBookmark
 
             _batches++;
             _scanned += batch.Scanned;
-            var definitions = await RewriteDefinitionsAsync(batch.StaleRows, cancellationToken).ConfigureAwait(false);
-            if (definitions.IsFailure)
+            var rewritten = await RewriteOwnersAsync(batch.StaleOwners, OwnerKind.Definition, cancellationToken).ConfigureAwait(false);
+            if (rewritten.IsFailure || batch.CreatedAt.Count < _batchSize)
             {
-                return definitions;
-            }
-
-            var timers = await RewriteOwnersAsync(batch.StaleOwners, rewriteInstance: false, cancellationToken).ConfigureAwait(false);
-            if (timers.IsFailure || batch.CreatedAt.Count < _batchSize)
-            {
-                return timers;
+                return rewritten;
             }
 
             (from, skip) = Advance(from, skip, batch.CreatedAt);
@@ -225,7 +219,7 @@ internal sealed class PartitionBackfill<TDefinition, TInstance, TNode, TBookmark
 
                 // 自己要改写的实例连同书签一起在锁内处理，扫描时不必再看它们的书签
                 var bookmarks = await ScanBookmarksAsync(scope, [.. rows.Select(static row => row.Id)], [.. rows], [.. stale], token).ConfigureAwait(false);
-                return new Scan(rows.Count + bookmarks.Scanned, rows.Select(static row => row.CreatedAt).ToList(), [], [.. stale.Union(bookmarks.StaleOwners, StringComparer.Ordinal)]);
+                return new Scan(rows.Count + bookmarks.Scanned, rows.Select(static row => row.CreatedAt).ToList(), [.. stale.Union(bookmarks.StaleOwners, StringComparer.Ordinal)]);
             }, cancellationToken).ConfigureAwait(false);
             if (!scan.TryGetValue(out var batch))
             {
@@ -239,7 +233,7 @@ internal sealed class PartitionBackfill<TDefinition, TInstance, TNode, TBookmark
 
             _batches++;
             _scanned += batch.Scanned;
-            var rewritten = await RewriteOwnersAsync(batch.StaleOwners, rewriteInstance: true, cancellationToken).ConfigureAwait(false);
+            var rewritten = await RewriteOwnersAsync(batch.StaleOwners, OwnerKind.Instance, cancellationToken).ConfigureAwait(false);
             if (rewritten.IsFailure || batch.CreatedAt.Count < _batchSize)
             {
                 return rewritten;
@@ -298,55 +292,12 @@ internal sealed class PartitionBackfill<TDefinition, TInstance, TNode, TBookmark
     }
 
     /// <summary>
-    /// 在一个短事务里重读并改写这些定义行
+    /// 逐个键在锁内重读并改写它的定义行或实例行与归属它的书签行
     /// </summary>
     /// <remarks>
-    /// 定义的写入本来不加锁（目录在调用方的事务里整行写入）：重读与写入在同一个事务里，与同时进行的定义编辑之间只剩这一个窗口
+    /// 键是实例 ID，或定义的 ID（定义行与定义级定时书签）——与引擎、目录写这些行时取的锁相同（实例锁串行化写入，RFC-0021「存储契约」；目录改写已有的定义时取定义 ID 的锁、持有到调用结束，ADR-0326）。一次只持有一个锁：引擎的一次调用可能先后持有几个实例的锁，回填同时持有多个就可能与它互相等到超时。锁在等待上限内拿不到的跳过、计入 <see cref="DatabaseWorkflowBackfillReport.Busy"/>，别的失败让这个分区失败
     /// </remarks>
-    private async ValueTask<Result> RewriteDefinitionsAsync(IReadOnlyList<string> ids, CancellationToken cancellationToken)
-    {
-        if (ids.Count == 0)
-        {
-            return Result.Success();
-        }
-
-        var rewritten = await InUnitOfWorkAsync<int>(readOnly: false, async (scope, token) =>
-        {
-            var repository = scope.GetRequiredService<IRepository<TDefinition, string>>();
-            var changed = new List<TDefinition>();
-            foreach (var row in await RecordQueries.FindManyAsync(repository, ids, token).ConfigureAwait(false))
-            {
-                var definition = WorkflowJson.DeserializeDefinition(row.Document);
-                if (!definition.TryGetValue(out var value))
-                {
-                    return definition.Error!;
-                }
-
-                if (DefinitionRows<TDefinition>.RefreshQueryColumns(row, value, apply: true))
-                {
-                    changed.Add(row);
-                }
-            }
-
-            var updated = await RecordQueries.UpdateManyAsync(repository, changed, token).ConfigureAwait(false);
-            return updated.IsSuccess ? changed.Count : StorePartition.Unavailable(updated.Error!);
-        }, cancellationToken).ConfigureAwait(false);
-        if (!rewritten.TryGetValue(out var count))
-        {
-            return rewritten.Error!;
-        }
-
-        _rewritten += count;
-        return Result.Success();
-    }
-
-    /// <summary>
-    /// 逐个键在锁内重读并改写实例行（<paramref name="rewriteInstance"/> 为真时）与归属它的书签行
-    /// </summary>
-    /// <remarks>
-    /// 键是实例 ID，或定义级定时书签的定义 ID——与引擎写这些行时取的锁相同（实例锁串行化写入，RFC-0021「存储契约」）。一次只持有一个锁：引擎的一次调用可能先后持有几个实例的锁，回填同时持有多个就可能与它互相等到超时。锁在等待上限内拿不到的跳过、计入 <see cref="DatabaseWorkflowBackfillReport.Busy"/>，别的失败让这个分区失败
-    /// </remarks>
-    private async ValueTask<Result> RewriteOwnersAsync(IReadOnlyList<string> keys, bool rewriteInstance, CancellationToken cancellationToken)
+    private async ValueTask<Result> RewriteOwnersAsync(IReadOnlyList<string> keys, OwnerKind kind, CancellationToken cancellationToken)
     {
         foreach (var key in keys.Order(StringComparer.Ordinal))
         {
@@ -366,7 +317,7 @@ internal sealed class PartitionBackfill<TDefinition, TInstance, TNode, TBookmark
             Result<int> rewritten;
             await using (handle.ConfigureAwait(false))
             {
-                rewritten = await InUnitOfWorkAsync(readOnly: false, (scope, token) => RewriteOwnerAsync(scope, key, rewriteInstance, token), cancellationToken).ConfigureAwait(false);
+                rewritten = await InUnitOfWorkAsync(readOnly: false, (scope, token) => RewriteOwnerAsync(scope, key, kind, token), cancellationToken).ConfigureAwait(false);
             }
 
             if (!rewritten.TryGetValue(out var count))
@@ -384,23 +335,50 @@ internal sealed class PartitionBackfill<TDefinition, TInstance, TNode, TBookmark
     /// 在持有锁的可写事务里改写一个键的行
     /// </summary>
     /// <remarks>
-    /// 锁内重读：扫描之后引擎可能已经写过这些行，按重读的行与文档算，已是新值的不改写。书签的实例一侧的列取自改写之后的实例行
+    /// 锁内重读：扫描之后引擎或目录可能已经写过这些行，按重读的行与文档算，已是新值的不改写。书签的实例一侧的列取自改写之后的实例行；定义级定时书签没有所属实例，这一侧的列为空
     /// </remarks>
-    private static async ValueTask<Result<int>> RewriteOwnerAsync(IServiceProvider scope, string key, bool rewriteInstance, CancellationToken cancellationToken)
+    private static async ValueTask<Result<int>> RewriteOwnerAsync(IServiceProvider scope, string key, OwnerKind kind, CancellationToken cancellationToken)
     {
-        var instances = scope.GetRequiredService<IRepository<TInstance, string>>();
         var bookmarks = scope.GetRequiredService<IRepository<TBookmark, string>>();
-        var owner = (await instances.FindAsync(key, cancellationToken).ConfigureAwait(false)).TryGetValue(out var found) ? found : null;
+        TInstance? owner = null;
         var rewritten = 0;
-        if (rewriteInstance && owner is not null && InstanceRows<TInstance, TNode>.RefreshQueryColumns(owner, WorkflowJson.DeserializeInstance(owner.Document), apply: true))
+        if (kind == OwnerKind.Definition)
         {
-            var updated = await RecordQueries.UpdateManyAsync(instances, [owner], cancellationToken).ConfigureAwait(false);
-            if (updated.IsFailure)
+            var definitions = scope.GetRequiredService<IRepository<TDefinition, string>>();
+            if ((await definitions.FindAsync(key, cancellationToken).ConfigureAwait(false)).TryGetValue(out var row))
             {
-                return StorePartition.Unavailable(updated.Error!);
-            }
+                var definition = WorkflowJson.DeserializeDefinition(row.Document);
+                if (!definition.TryGetValue(out var value))
+                {
+                    return definition.Error!;
+                }
 
-            rewritten++;
+                if (DefinitionRows<TDefinition>.RefreshQueryColumns(row, value, apply: true))
+                {
+                    var updated = await RecordQueries.UpdateManyAsync(definitions, [row], cancellationToken).ConfigureAwait(false);
+                    if (updated.IsFailure)
+                    {
+                        return StorePartition.Unavailable(updated.Error!);
+                    }
+
+                    rewritten++;
+                }
+            }
+        }
+        else
+        {
+            var instances = scope.GetRequiredService<IRepository<TInstance, string>>();
+            owner = (await instances.FindAsync(key, cancellationToken).ConfigureAwait(false)).TryGetValue(out var found) ? found : null;
+            if (owner is not null && InstanceRows<TInstance, TNode>.RefreshQueryColumns(owner, WorkflowJson.DeserializeInstance(owner.Document), apply: true))
+            {
+                var updated = await RecordQueries.UpdateManyAsync(instances, [owner], cancellationToken).ConfigureAwait(false);
+                if (updated.IsFailure)
+                {
+                    return StorePartition.Unavailable(updated.Error!);
+                }
+
+                rewritten++;
+            }
         }
 
         var query = EntityQuery.All<TBookmark>()
@@ -458,7 +436,22 @@ internal sealed class PartitionBackfill<TDefinition, TInstance, TNode, TBookmark
     /// </summary>
     /// <param name="Scanned">读过的行数</param>
     /// <param name="CreatedAt">这一批行的创建时间，按读出的次序</param>
-    /// <param name="StaleRows">查询列要改写的定义的 ID（定义的一批才有）</param>
-    /// <param name="StaleOwners">要在锁内改写的键</param>
-    private sealed record Scan(int Scanned, IReadOnlyList<DateTimeOffset> CreatedAt, IReadOnlyList<string> StaleRows, IReadOnlyList<string> StaleOwners);
+    /// <param name="StaleOwners">要在锁内改写的键：定义或实例的 ID</param>
+    private sealed record Scan(int Scanned, IReadOnlyList<DateTimeOffset> CreatedAt, IReadOnlyList<string> StaleOwners);
+
+    /// <summary>
+    /// 锁内改写的键归属的行
+    /// </summary>
+    private enum OwnerKind
+    {
+        /// <summary>
+        /// 定义：定义行与定义级定时书签
+        /// </summary>
+        Definition = 1,
+
+        /// <summary>
+        /// 实例：实例行与它的书签
+        /// </summary>
+        Instance = 2,
+    }
 }

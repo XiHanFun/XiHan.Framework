@@ -133,6 +133,43 @@ internal static class BackfillScenario
         => Assert.Single(await host.Services.GetRequiredService<DatabaseWorkflowBackfill>().RunAsync([tenantId], batchSize, CancellationToken.None));
 
     /// <summary>
+    /// 平台分区里一份种下的定义
+    /// </summary>
+    public static Task<WorkflowDefinition> FindDefinitionAsync(TestHost host, string name)
+        => Partitions.InAsync(host, null, async stores => (await stores.Definitions.FindLatestPublishedAsync(null, new WorkflowName(name), CancellationToken.None)).ValueOrThrow().ValueOrThrow());
+
+    /// <summary>
+    /// 回填与同时进行的定义编辑：编辑提交之前回填跳过这份定义
+    /// </summary>
+    /// <remarks>
+    /// 编辑的调用结束之前回填拿不到这份定义的锁，跳过它；编辑提交之后定义是编辑后的样子。先回填一遍让全部行都是新值，再只把定义 <c>bf-leave</c> 的关键字列换回旧的折叠；在一次调用里经目录停用它，调用提交之前跑回填。目录改写已有的定义时取定义 ID 的锁、持有到调用结束，回填改写定义行取同一把锁（ADR-0326）：拿不到即跳过、计入 <c>Busy</c>，不会读到提交之前的旧文档再把它写回去。别的行都已是新值，回填只读不写，SQLite 的单写者不会挡住它
+    /// </remarks>
+    public static async Task EditWhileBackfillingAsync(TestHost host)
+    {
+        var stale = await SeedAsync(host, null);
+        Assert.Equal(stale, (await RunAsync(host, null, 2)).ValueOrThrow().Rewritten);
+        var leave = await FindDefinitionAsync(host, "bf-leave");
+        await RefoldTheOldWayAsync(host, leave.Id);
+        Assert.Equal(0, (await CountMatchesAsync(host, null)).Definitions);
+
+        var during = await Partitions.InvokeAsync(host, null, async services =>
+        {
+            // 调用里经目录停用：定义 ID 的锁由这次调用持有到它结束
+            var disabled = await services.GetRequiredService<IWorkflowDefinitionCatalog>().DisableAsync([leave.Id], CancellationToken.None);
+            Assert.Equal(WorkflowDefinitionStatus.Disabled, Assert.Single(disabled).ValueOrThrow().Status);
+            // 提交之前回填：要改写的只有这份定义，拿不到锁即跳过
+            return (await RunAsync(host, null, 2)).ValueOrThrow();
+        });
+        Assert.Equal((1, 0), (during.Busy, during.Rewritten));
+
+        // 编辑提交了，存储写入时已按新规则算好查询列：再回填一行也不改写，定义仍是停用的
+        var after = (await RunAsync(host, null, 2)).ValueOrThrow();
+        Assert.Equal((0, 0), (after.Busy, after.Rewritten));
+        Assert.Equal(WorkflowDefinitionStatus.Disabled, (await Partitions.InAsync(host, null, async stores => (await stores.Definitions.FindAsync(null, leave.Id, CancellationToken.None)).ValueOrThrow().ValueOrThrow())).Status);
+        Assert.Equal(1, (await CountMatchesAsync(host, null)).Definitions);
+    }
+
+    /// <summary>
     /// 一个批大小下应有的批数：定义与实例各按批读
     /// </summary>
     public static int BatchesOf(int batchSize) => ((Definitions + batchSize - 1) / batchSize) + ((Instances + batchSize - 1) / batchSize);
@@ -170,6 +207,23 @@ internal static class BackfillScenario
         Nodes = [new WorkflowNode { Id = "start", ActivityType = new ActivityType(ActivityTypes.Start) }],
         CreatedAt = createdAt,
     };
+
+    /// <summary>
+    /// 把平台分区里一份定义的关键字列换回升级前的折叠
+    /// </summary>
+    private static async Task RefoldTheOldWayAsync(TestHost host, string definitionId)
+    {
+        var refolded = await UnitOfWorkScope.RunAsync<bool>(host.Services, new UnitOfWorkOptions(), async (scope, token) =>
+        {
+            var definitions = scope.GetRequiredService<IRepository<PlatformWorkflowDefinitionRecord, string>>();
+            var row = (await definitions.FindAsync(definitionId, token)).ValueOrThrow();
+            var definition = WorkflowJson.DeserializeDefinition(row.Document).ValueOrThrow();
+            row.SearchText = OldJoin(definition.Name.Value, definition.DisplayName, definition.Description);
+            var updated = await definitions.UpdateAsync(row, token);
+            return updated.IsSuccess ? true : updated.Error!;
+        }, NullLogger.Instance, CancellationToken.None);
+        Assert.True(refolded.ValueOrThrow());
+    }
 
     /// <summary>
     /// 把一个分区的行换成升级前的样子

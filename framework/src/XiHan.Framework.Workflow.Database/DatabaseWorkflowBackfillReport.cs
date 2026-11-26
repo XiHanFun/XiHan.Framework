@@ -9,7 +9,7 @@ namespace XiHan.Framework.Workflow.Database;
 /// 一个分区回填查询列的结果
 /// </summary>
 /// <remarks>
-/// 见 <see cref="DatabaseWorkflowBackfill"/>（ADR-0304）。<see cref="Busy"/> 不为零时这次没有处理完：那些实例（或定义级定时书签的定义）的锁在等待上限内没有拿到，它们的行原样留着，再跑一次即可
+/// 见 <see cref="DatabaseWorkflowBackfill"/>（ADR-0304）。<see cref="Busy"/> 不为零时这次没有处理完：那些实例或定义的锁在等待上限内没有拿到，它们的行原样留着，再跑一次即可
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed record DatabaseWorkflowBackfillReport
@@ -31,10 +31,10 @@ public sealed record DatabaseWorkflowBackfillReport
     public long Rewritten { get; init; }
 
     /// <summary>
-    /// 因为锁被占用而跳过的实例数
+    /// 因为锁被占用而跳过的实例与定义数
     /// </summary>
     /// <remarks>
-    /// 实例行与它的书签行在实例锁内改写，与引擎的写入互斥；等待超过 <c>WorkflowOptions.LockTimeout</c> 的这次跳过，留给下一次回填
+    /// 实例行与它的书签行在实例锁内改写，与引擎的写入互斥；定义行与它的定义级定时书签在定义 ID 的锁内改写，与目录改写定义互斥（ADR-0326）。等待超过 <c>WorkflowOptions.LockTimeout</c> 的这次跳过，留给下一次回填
     /// </remarks>
     public long Busy { get; init; }
 
