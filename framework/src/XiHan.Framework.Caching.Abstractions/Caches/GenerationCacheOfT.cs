@@ -323,7 +323,7 @@ public sealed class GenerationCache<T>
     /// 把任意文本编成键的一段
     /// </summary>
     /// <remarks>
-    /// 能直接写进键的写成 <c>&lt;长度&gt;.&lt;文本&gt;</c>，长度前缀（<see cref="string.Length"/>）让 <c>a:b</c> 与 <c>a</c>、<c>b</c> 拼出的键不同；含空白、控制字符或 UTF-8 编码后超过 <see cref="MaxLiteralBytes"/> 字节的写成 <c>#&lt;SHA-256 十六进制&gt;</c>，以 <c>#</c> 开头与前者不会相同
+    /// 能直接写进键的写成 <c>&lt;长度&gt;.&lt;文本&gt;</c>，长度前缀（<see cref="string.Length"/>）让 <c>a:b</c> 与 <c>a</c>、<c>b</c> 拼出的键不同；含空白、控制字符、孤立的代理项或 UTF-8 编码后超过 <see cref="MaxLiteralBytes"/> 字节的写成 <c>#&lt;SHA-256 十六进制&gt;</c>，以 <c>#</c> 开头与前者不会相同；散列的输入是文本的 WTF-8（<see cref="Wtf8"/>）
     /// </remarks>
     private static string Encode(string text)
     {
@@ -333,7 +333,41 @@ public sealed class GenerationCache<T>
             return text.Length.ToString(CultureInfo.InvariantCulture) + "." + text;
         }
 
-        return "#" + Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(text)));
+        return "#" + Convert.ToHexStringLower(SHA256.HashData(Wtf8(text)));
+    }
+
+    /// <summary>
+    /// 文本按 WTF-8 编成的字节
+    /// </summary>
+    /// <remarks>
+    /// 合法的文本就是它的 UTF-8；孤立的代理项照 UTF-8 三字节的写法编成 <c>ED A0 80</c>–<c>ED BF BF</c>，不换成 U+FFFD。这几个字节序列不出现在合法的 UTF-8 里，所以不同的文本编出的字节总不相同（RFC-0006「代数缓存区」，ADR-0316）
+    /// </remarks>
+    private static byte[] Wtf8(string text)
+    {
+        // 一个码元至多编成 3 个字节，一对代理项是 2 个码元、4 个字节
+        var bytes = new byte[text.Length * 3];
+        var written = 0;
+        for (var index = 0; index < text.Length; index++)
+        {
+            var unit = text[index];
+            if (char.IsHighSurrogate(unit) && index + 1 < text.Length && char.IsLowSurrogate(text[index + 1]))
+            {
+                written += new Rune(unit, text[++index]).EncodeToUtf8(bytes.AsSpan(written));
+            }
+            else if (char.IsSurrogate(unit))
+            {
+                // 宽松的编码把孤立的代理项都换成 U+FFFD：只差在孤立代理项上的两个主体 ID 散列成同一个范围，一个主体就读到另一个主体的授予
+                bytes[written++] = (byte)(0xE0 | (unit >> 12));
+                bytes[written++] = (byte)(0x80 | ((unit >> 6) & 0x3F));
+                bytes[written++] = (byte)(0x80 | (unit & 0x3F));
+            }
+            else
+            {
+                written += new Rune(unit).EncodeToUtf8(bytes.AsSpan(written));
+            }
+        }
+
+        return bytes[..written];
     }
 
     /// <summary>

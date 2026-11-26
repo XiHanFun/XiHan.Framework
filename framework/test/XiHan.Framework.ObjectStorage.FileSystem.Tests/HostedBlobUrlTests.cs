@@ -3,6 +3,7 @@
 
 using System.Net;
 using System.Net.Http.Headers;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.Json;
 using Microsoft.AspNetCore.Builder;
@@ -317,6 +318,59 @@ public sealed class HostedBlobUrlTests : IDisposable
     }
 
     [Fact]
+    public async Task AKeyWithALoneSurrogate_IsRejected_SoNoSignedUrlOpensTheObjectNamedByItsReplacement()
+    {
+        await using var app = await StartAsync();
+        using var client = app.GetTestClient();
+        var store = app.Services.GetRequiredService<IBlobStore>();
+        Assert.True((await store.PutAsync(new ContainerName(Container), new BlobKey("a�"), Encoding.UTF8.GetBytes("other"), BlobPutOptions.Default, CancellationToken.None)).IsSuccess);
+
+        // 以前键 a\uD800 照收：签出的地址经百分号编码成 a%EF%BF%BD，规范串经宽松编码后与给 a� 签的字节相同，打开的是上面那个对象（ADR-0316）
+        (HttpStatusCode Status, string Body)? opened = null;
+        var error = await Record.ExceptionAsync(async () => opened = await OpenSignedDownloadAsync(app, client, "a\uD800"));
+        Assert.True(error is ArgumentException, $"A key with a lone surrogate must be rejected before it is signed; its signed URL opened {opened}.");
+        Assert.False(BlobKey.IsValid("a\uD800"));
+
+        // 那个对象用它自己的键照常签、照常打开；成对的代理项是平面以外的字符，照常合法
+        Assert.Equal((HttpStatusCode.OK, "other"), await OpenSignedDownloadAsync(app, client, "a�"));
+        Assert.True((await store.PutAsync(new ContainerName(Container), new BlobKey("a\U0001F600"), Encoding.UTF8.GetBytes("pair"), BlobPutOptions.Default, CancellationToken.None)).IsSuccess);
+        Assert.Equal((HttpStatusCode.OK, "pair"), await OpenSignedDownloadAsync(app, client, "a\U0001F600"));
+    }
+
+    [Fact]
+    public async Task TheSignature_IsComputedOverStrictUtf8_SoAKeyThatBypassedTheGrammarIsNotSigned()
+    {
+        await using var app = await StartAsync();
+        var signer = app.Services.GetRequiredService<IBlobUrlSigner>();
+
+        // 第二道防线：绕过文法核对的键编不成 UTF-8，按编程错误抛出，不换成 U+FFFD 之后照签
+        var error = await Record.ExceptionAsync(async () => await signer.SignAsync(new ContainerName(Container), Unchecked("a\uD800"), BlobUrlRequest.ForDownload(), CancellationToken.None));
+        Assert.True(error is ArgumentException { InnerException: EncoderFallbackException }, $"Signing a key with a lone surrogate must fail as a programming error, got {error?.GetType().Name ?? "a signed URL"}.");
+        Assert.Contains("lone surrogate", error?.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task SignedQueryValues_ThatAreNotUtf8_AreASignatureMismatch_NotAServerError()
+    {
+        await using var app = await StartAsync();
+        using var client = app.GetTestClient();
+        var store = app.Services.GetRequiredService<IBlobStore>();
+        var signer = app.Services.GetRequiredService<IBlobUrlSigner>();
+        Assert.True((await store.PutAsync(new ContainerName(Container), new BlobKey("docs/a.txt"), Encoding.UTF8.GetBytes("a"), BlobPutOptions.Default, CancellationToken.None)).IsSuccess);
+        var url = (await signer.SignAsync(new ContainerName(Container), new BlobKey("docs/a.txt"), BlobUrlRequest.ForDownload(null, "�.txt"), CancellationToken.None)).ValueOrThrow().Url.OriginalString;
+        Assert.Contains("x-filename=%EF%BF%BD.txt", url, StringComparison.Ordinal);
+
+        // 查询串里编成 UTF-8 的代理项与截断的序列：宿主从字节解码，出不了孤立的代理项，严格编码的规范串在验签时不会失败，只是签名不符
+        foreach (var tampered in new[] { "%ED%A0%80.txt", "%ED%A0.txt", "%F0%9F.txt" })
+        {
+            using var response = await client.GetAsync(url.Replace("%EF%BF%BD.txt", tampered, StringComparison.Ordinal));
+            Assert.True(response.StatusCode == HttpStatusCode.Forbidden, $"'{tampered}' gave {(int)response.StatusCode}.");
+        }
+
+        Assert.Equal(HttpStatusCode.OK, (await client.GetAsync(url)).StatusCode);
+    }
+
+    [Fact]
     public void Options_RequireAStrongSecret_AndAValidBase()
     {
         static IConfiguration Build(params (string Key, string Value)[] values) => new ConfigurationBuilder().AddInMemoryCollection(values.Select(static v => new KeyValuePair<string, string?>(v.Key, v.Value))).Build();
@@ -472,6 +526,28 @@ public sealed class HostedBlobUrlTests : IDisposable
         Assert.True((await store.PutAsync(new ContainerName(Container), new BlobKey(key), Encoding.UTF8.GetBytes("<script>1</script>"), new BlobPutOptions { ContentType = contentType }, CancellationToken.None)).IsSuccess);
         return (await signer.SignAsync(new ContainerName(Container), new BlobKey(key), BlobUrlRequest.ForDownload(), CancellationToken.None)).ValueOrThrow().Url;
     }
+
+    /// <summary>
+    /// 给一个键签出下载地址并打开，返回状态码与正文
+    /// </summary>
+    /// <remarks>
+    /// 键的文本当场构造成 <see cref="BlobKey"/>：键不合法时在这里抛出 <see cref="ArgumentException"/>
+    /// </remarks>
+    private static async Task<(HttpStatusCode Status, string Body)> OpenSignedDownloadAsync(WebApplication app, HttpClient client, string key)
+    {
+        var signer = app.Services.GetRequiredService<IBlobUrlSigner>();
+        var url = (await signer.SignAsync(new ContainerName(Container), new BlobKey(key), BlobUrlRequest.ForDownload(), CancellationToken.None)).ValueOrThrow();
+        using var response = await client.GetAsync(url.Url);
+        return (response.StatusCode, await response.Content.ReadAsStringAsync());
+    }
+
+    /// <summary>
+    /// 不经文法核对的键
+    /// </summary>
+    /// <remarks>
+    /// <see cref="BlobKey"/> 只有一个字符串字段，把字符串引用按位重新解释就得到一个没过 <see cref="BlobKey.Validate"/> 的键：模拟绕过核对的代码，只为测签名器的第二道防线
+    /// </remarks>
+    private static BlobKey Unchecked(string text) => Unsafe.As<string, BlobKey>(ref text);
 
     /// <summary>
     /// 带 <c>Range</c> 头下载，返回正文与 <c>Content-Range</c>，并断言状态码

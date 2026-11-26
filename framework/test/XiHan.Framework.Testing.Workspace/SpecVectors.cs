@@ -2,6 +2,7 @@
 // See the LICENSE file in the project root for full license text.
 
 using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Text.Json;
 using System.Text.Json.Nodes;
@@ -101,6 +102,53 @@ public static class SpecVectors
         var path = PathOf(area, fileName);
         return ReadFile(path, TypeInfoOf<T>(CreateOptions(resolver)));
     }
+
+    /// <summary>
+    /// 由向量里以四位十六进制写出的 UTF-16 码元组成字符串
+    /// </summary>
+    /// <remarks>
+    /// JSON 字符串写不出孤立的代理项（System.Text.Json 读到转义出的孤立代理项即抛出），含它的标识在向量里改以 <c>utf16</c> 列出码元（RFC-0012「一致性」，ADR-0316）。码元原样组成，成对的代理项因此就是平面以外的那个字符
+    /// </remarks>
+    /// <param name="codeUnits">码元，每项四位十六进制，不区分大小写</param>
+    /// <returns>组成的字符串，可能含孤立的代理项</returns>
+    /// <exception cref="FormatException">有一项不是四位十六进制</exception>
+    public static string FromCodeUnits(IReadOnlyList<string> codeUnits)
+    {
+        ArgumentNullException.ThrowIfNull(codeUnits);
+        var text = new char[codeUnits.Count];
+        for (var index = 0; index < codeUnits.Count; index++)
+        {
+            var unit = codeUnits[index];
+            // 只认四位十六进制：向量写错了要在这里失败，不能读成另一个文本
+            if (unit is not { Length: 4 } || !ushort.TryParse(unit, NumberStyles.AllowHexSpecifier, CultureInfo.InvariantCulture, out var value))
+            {
+                throw new FormatException($"The code unit '{unit}' at index {index} must be four hexadecimal digits.");
+            }
+
+            text[index] = (char)value;
+        }
+
+        return new string(text);
+    }
+
+    /// <summary>
+    /// 一条用例的文本：原文，或由以码元写出的 <c>utf16</c> 组成
+    /// </summary>
+    /// <remarks>
+    /// 写得进 JSON 字符串的文本写原文，写不进的（含孤立的代理项）写码元，一条用例恰好给出其中一样（ADR-0316）
+    /// </remarks>
+    /// <param name="name">用例的名字，写进错误消息</param>
+    /// <param name="text">原文；没写为 <see langword="null"/></param>
+    /// <param name="codeUnits">码元；没写为 <see langword="null"/></param>
+    /// <returns>用例的文本</returns>
+    /// <exception cref="InvalidOperationException">原文与码元都写了或都没写</exception>
+    /// <exception cref="FormatException">码元有一项不是四位十六进制（见 <see cref="FromCodeUnits"/>）</exception>
+    public static string TextOf(string name, string? text, IReadOnlyList<string>? codeUnits) => (text, codeUnits) switch
+    {
+        ({ } original, null) => original,
+        (null, { } units) => FromCodeUnits(units),
+        _ => throw new InvalidOperationException($"The case '{name}' must give either its text or its 'utf16' code units, not both or neither."),
+    };
 
     /// <summary>
     /// 严格读取给定路径的 JSON 文件

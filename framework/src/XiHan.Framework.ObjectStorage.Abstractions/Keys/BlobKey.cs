@@ -11,7 +11,7 @@ namespace XiHan.Framework.ObjectStorage.Abstractions.Keys;
 /// 对象键
 /// </summary>
 /// <remarks>
-/// <c>/</c> 分段的路径，UTF-8 编码后 1 到 <see cref="MaxBytes"/> 字节；每段非空、不是 <c>.</c> 或 <c>..</c>；不含空白、控制字符与 <c>\</c>；首段不是保留段 <see cref="ReservedSegment"/>（框架自己的对象，ADR-0090）。区分大小写
+/// <c>/</c> 分段的路径，UTF-8 编码后 1 到 <see cref="MaxBytes"/> 字节；每段非空、不是 <c>.</c> 或 <c>..</c>；不含空白、控制字符、<c>\</c> 与孤立的代理项（成对的代理项即平面以外的字符照常合法，ADR-0316）；首段不是保留段 <see cref="ReservedSegment"/>（框架自己的对象，ADR-0090）。区分大小写
 /// </remarks>
 [ApiLevel(Stability.Stable, "5.0")]
 public readonly record struct BlobKey
@@ -121,12 +121,13 @@ public readonly record struct BlobKey
     /// 前缀是否合法：与键同样的字符约束与字节上限，但允许空串与以 <c>/</c> 结尾
     /// </summary>
     /// <remarks>
-    /// 前缀只是筛选：对各段不作要求，也不受保留前缀限制（以保留段开头的前缀列举总是空的）。上限同样按 UTF-8 字节计（ADR-0282）
+    /// 前缀只是筛选：对各段不作要求，也不受保留前缀限制（以保留段开头的前缀列举总是空的）。上限同样按 UTF-8 字节计（ADR-0282），同样不能含孤立的代理项（ADR-0316）
     /// </remarks>
     public static bool IsValidPrefix([NotNullWhen(true)] string? value)
     {
-        // 每个码元至少编成一个字节：码元数已经超过上限的不必再数字节
-        if (value is null || value.Length > MaxBytes)
+        // 每个码元至少编成一个字节：码元数已经超过上限的不必再数字节。
+        // 孤立的代理项编不成 UTF-8：宽松编码把它换成 U+FFFD，不同的键撞成同一个对象，签出的地址也对上另一个对象（ADR-0316）
+        if (value is null || value.Length > MaxBytes || HasLoneSurrogate(value))
         {
             return false;
         }
@@ -159,7 +160,35 @@ public readonly record struct BlobKey
 
         return IsValid(value)
             ? value
-            : throw new ArgumentException($"Blob key '{value}' is invalid: it must be 1 to {MaxBytes} bytes long in UTF-8, made of non-empty '/'-separated segments other than '.' and '..', without whitespace, control characters or backslashes.", nameof(value));
+            : throw new ArgumentException($"Blob key '{value}' is invalid: it must be 1 to {MaxBytes} bytes long in UTF-8, made of non-empty '/'-separated segments other than '.' and '..', without whitespace, control characters, backslashes or lone surrogates.", nameof(value));
+    }
+
+    /// <summary>
+    /// 文本里是否有孤立的代理项
+    /// </summary>
+    /// <remarks>
+    /// 孤立的代理项是不在一对之中的 U+D800–U+DFFF 码元：单独的高代理项、单独的低代理项、颠倒的一对、末尾的高代理项。高代理项紧跟低代理项是平面以外的一个字符，不算（RFC-0012「标识」）。对象键、查询前缀、保存的文件名与上传标识共用这一条
+    /// </remarks>
+    internal static bool HasLoneSurrogate(ReadOnlySpan<char> text)
+    {
+        for (var index = 0; index < text.Length; index++)
+        {
+            if (!char.IsSurrogate(text[index]))
+            {
+                continue;
+            }
+
+            // 成对的跳过这一对；其余的代理项，不论高低、在哪里，都是孤立的
+            if (char.IsHighSurrogate(text[index]) && index + 1 < text.Length && char.IsLowSurrogate(text[index + 1]))
+            {
+                index++;
+                continue;
+            }
+
+            return true;
+        }
+
+        return false;
     }
 
     /// <inheritdoc />

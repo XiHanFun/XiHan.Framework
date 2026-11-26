@@ -17,7 +17,7 @@ namespace XiHan.Framework.Hosting.AspNetCore.Blobs;
 /// 宿主代收发的预签名地址
 /// </summary>
 /// <remarks>
-/// 给没有原生签名的存储（文件系统）签出指向 <c>MapXiHanBlobs()</c> 端点的地址，端点验签后经 <c>IBlobStore</c> / <c>IBlobMultipartStore</c> 收发内容。地址为 <c>&lt;BaseUrl&gt;/&lt;container&gt;/&lt;key&gt;?x-method=…&amp;x-expires=…[&amp;x-store=…][&amp;x-content-type=…][&amp;x-filename=…][&amp;x-upload=…&amp;x-part=…]&amp;x-signature=…</c>，签名是对方法、命名实例、容器、键、过期时刻（Unix 秒）与各限定项的 HMAC-SHA256（Base64Url）；无状态，同一密钥的多个实例互认，密钥轮换即令旧地址失效。容器里的这个签名器对缺省的 <c>IBlobStore</c> 签名；<see cref="ForStore"/> 取得对命名实例（<see cref="BlobStores"/>）签名的签名器，端点按地址里的 <c>x-store</c> 取实例
+/// 给没有原生签名的存储（文件系统）签出指向 <c>MapXiHanBlobs()</c> 端点的地址，端点验签后经 <c>IBlobStore</c> / <c>IBlobMultipartStore</c> 收发内容。地址为 <c>&lt;BaseUrl&gt;/&lt;container&gt;/&lt;key&gt;?x-method=…&amp;x-expires=…[&amp;x-store=…][&amp;x-content-type=…][&amp;x-filename=…][&amp;x-upload=…&amp;x-part=…]&amp;x-signature=…</c>，签名是对方法、命名实例、容器、键、过期时刻（Unix 秒）与各限定项的 HMAC-SHA256（Base64Url）；无状态，同一密钥的多个实例互认，密钥轮换即令旧地址失效。规范串严格编码成 UTF-8，编不成（有孤立的代理项，只有绕过文法核对的值才会这样）按编程错误抛出 <see cref="ArgumentException"/>，不换成 U+FFFD 再签（ADR-0316）。容器里的这个签名器对缺省的 <c>IBlobStore</c> 签名；<see cref="ForStore"/> 取得对命名实例（<see cref="BlobStores"/>）签名的签名器，端点按地址里的 <c>x-store</c> 取实例
 /// </remarks>
 /// <param name="options">选项</param>
 /// <param name="clock">时钟；过期时刻按它计算与判定</param>
@@ -63,6 +63,11 @@ public sealed class HostedBlobUrlSigner(HostedBlobUrlOptions options, TimeProvid
     /// 命名实例参数
     /// </summary>
     internal const string StoreParameter = "x-store";
+
+    /// <summary>
+    /// 严格的 UTF-8 编码：编不成即抛出，不换成 U+FFFD
+    /// </summary>
+    private static readonly UTF8Encoding _strictUtf8 = new(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true);
 
     /// <summary>
     /// 选项
@@ -224,12 +229,25 @@ public sealed class HostedBlobUrlSigner(HostedBlobUrlOptions options, TimeProvid
     /// HMAC-SHA256（Base64Url，无填充）
     /// </summary>
     /// <remarks>
-    /// 规范串按行连接版本、方法、命名实例、容器、键、过期时刻与各限定项（缺省为空行）
+    /// 规范串按行连接版本、方法、命名实例、容器、键、过期时刻与各限定项（缺省为空行），严格编码成 UTF-8 再计算（RFC-0012「范围读取、分片上传与预签名」，ADR-0316）
     /// </remarks>
+    /// <exception cref="ArgumentException">规范串里有孤立的代理项，编不成 UTF-8</exception>
     private string Sign(string method, string? store, string container, string key, long expires, string? contentType, string? fileName, string? upload, string? part)
     {
         var canonical = string.Join('\n', "xihan-blob-v1", method, store ?? string.Empty, container, key, expires.ToString(CultureInfo.InvariantCulture), contentType ?? string.Empty, fileName ?? string.Empty, upload ?? string.Empty, part ?? string.Empty);
-        var mac = HMACSHA256.HashData(_options.Secret.Span, Encoding.UTF8.GetBytes(canonical));
+        byte[] bytes;
+        try
+        {
+            bytes = _strictUtf8.GetBytes(canonical);
+        }
+        catch (EncoderFallbackException exception)
+        {
+            // 第二道防线：签进去的各项要么是合文法的标识（键、文件名、上传标识都拒收孤立的代理项），要么是宿主从 UTF-8 字节解码出的路径与查询串，
+            // 编码不成说明有值绕过了文法的核对，是编程错误。宽松编码会把孤立的代理项换成 U+FFFD 再签，签出的地址就打开了另一个对象
+            throw new ArgumentException("The signed URL cannot be computed: a signed value has a lone surrogate and cannot be encoded as UTF-8.", exception);
+        }
+
+        var mac = HMACSHA256.HashData(_options.Secret.Span, bytes);
         return Convert.ToBase64String(mac).TrimEnd('=').Replace('+', '-').Replace('/', '_');
     }
 

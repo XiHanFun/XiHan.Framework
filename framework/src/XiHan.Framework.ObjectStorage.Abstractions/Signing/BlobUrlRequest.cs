@@ -3,6 +3,7 @@
 
 using System.Text;
 using XiHan.Framework.ObjectStorage.Abstractions.Blobs;
+using XiHan.Framework.ObjectStorage.Abstractions.Keys;
 using XiHan.Framework.ObjectStorage.Abstractions.Multipart;
 using XiHan.Framework.Primitives;
 
@@ -116,7 +117,7 @@ public sealed record BlobUrlRequest
     /// 下载地址
     /// </summary>
     /// <param name="expiresIn">有效期；缺省 30 分钟</param>
-    /// <param name="downloadFileName">保存的文件名，不全是空白、不含控制字符、UTF-8 编码后不超过 <see cref="MaxDownloadFileNameBytes"/> 字节（ADR-0219、ADR-0282）；缺省不带 <c>Content-Disposition</c></param>
+    /// <param name="downloadFileName">保存的文件名，不全是空白、不含控制字符与孤立的代理项、UTF-8 编码后不超过 <see cref="MaxDownloadFileNameBytes"/> 字节（ADR-0219、ADR-0282、ADR-0316）；缺省不带 <c>Content-Disposition</c></param>
     public static BlobUrlRequest ForDownload(TimeSpan? expiresIn, string? downloadFileName)
         => new(BlobUrlMethod.Get, expiresIn, null, FileNameOrNull(downloadFileName), null, null);
 
@@ -186,10 +187,10 @@ public sealed record BlobUrlRequest
             : throw new ArgumentException($"The content type must be a media type 'type/subtype', optionally followed by ';' parameters of printable ASCII, not ending with a space and at most {BlobPutOptions.MaxContentTypeLength} characters long.", nameof(contentType));
 
     /// <summary>
-    /// 可选的保存文件名：给了就不能是空白、不能含控制字符、不能过长
+    /// 可选的保存文件名：给了就不能是空白、不能含控制字符与孤立的代理项、不能过长
     /// </summary>
     /// <remarks>
-    /// 它进签名的规范串与 <c>Content-Disposition</c> 头，换行同样能挪动限定项或拆出别的头（ADR-0219）。长度按 UTF-8 字节计（ADR-0282）
+    /// 它进签名的规范串与 <c>Content-Disposition</c> 头，换行同样能挪动限定项或拆出别的头（ADR-0219）。长度按 UTF-8 字节计（ADR-0282）。孤立的代理项编不成 UTF-8，宽松编码会把它签成另一个文件名（ADR-0316）
     /// </remarks>
     private static string? FileNameOrNull(string? fileName)
     {
@@ -199,8 +200,8 @@ public sealed record BlobUrlRequest
         }
 
         // 每个码元至少编成一个字节：码元数已经超过上限的不必再数字节
-        return !string.IsNullOrWhiteSpace(fileName) && fileName.Length <= MaxDownloadFileNameBytes && !fileName.Any(char.IsControl) && Encoding.UTF8.GetByteCount(fileName) <= MaxDownloadFileNameBytes
+        return !string.IsNullOrWhiteSpace(fileName) && fileName.Length <= MaxDownloadFileNameBytes && !fileName.Any(char.IsControl) && !BlobKey.HasLoneSurrogate(fileName) && Encoding.UTF8.GetByteCount(fileName) <= MaxDownloadFileNameBytes
             ? fileName
-            : throw new ArgumentException($"The download file name must not be blank, must be at most {MaxDownloadFileNameBytes} bytes long in UTF-8 and must not contain control characters.", nameof(fileName));
+            : throw new ArgumentException($"The download file name must not be blank, must be at most {MaxDownloadFileNameBytes} bytes long in UTF-8 and must not contain control characters or lone surrogates.", nameof(fileName));
     }
 }

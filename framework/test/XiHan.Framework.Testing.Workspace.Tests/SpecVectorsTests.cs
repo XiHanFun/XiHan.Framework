@@ -146,6 +146,35 @@ public sealed class SpecVectorsTests : IDisposable
     }
 
     [Fact]
+    public void FromCodeUnits_ComposesTheUnitsAsTheyAre_IncludingLoneSurrogates()
+    {
+        Assert.Equal(string.Empty, SpecVectors.FromCodeUnits([]));
+        Assert.Equal("aé键", SpecVectors.FromCodeUnits(["0061", "00E9", "952e"]));
+        // 成对的代理项就是平面以外的那个字符，孤立的照原样留着
+        Assert.Equal("\U0001F600", SpecVectors.FromCodeUnits(["D83D", "DE00"]));
+        Assert.Equal("a\uD800", SpecVectors.FromCodeUnits(["0061", "D800"]));
+        Assert.Equal("\uDE00\uD83D", SpecVectors.FromCodeUnits(["DE00", "D83D"]));
+
+        // 不是四位十六进制的都拒绝：向量写错了不能读成另一个文本
+        foreach (var unit in new[] { "61", "00061", "G000", "+061", " 061", "0x61", string.Empty })
+        {
+            Assert.Throws<FormatException>(() => SpecVectors.FromCodeUnits(["0061", unit]));
+        }
+
+        Assert.Throws<ArgumentNullException>(static () => SpecVectors.FromCodeUnits(null!));
+    }
+
+    [Fact]
+    public void TextOf_TakesTheTextOrTheCodeUnits_ButNotBothOrNeither()
+    {
+        Assert.Equal("a/b", SpecVectors.TextOf("text", "a/b", null));
+        Assert.Equal(string.Empty, SpecVectors.TextOf("empty", string.Empty, null));
+        Assert.Equal("a\uD800", SpecVectors.TextOf("units", null, ["0061", "D800"]));
+        Assert.Contains("'both'", Assert.Throws<InvalidOperationException>(static () => SpecVectors.TextOf("both", "a", ["0061"])).Message, StringComparison.Ordinal);
+        Assert.Throws<InvalidOperationException>(static () => SpecVectors.TextOf("neither", null, null));
+    }
+
+    [Fact]
     public void Read_WithAResolverThatDoesNotKnowTheModel_Throws()
         => Assert.Throws<NotSupportedException>(() => SpecVectors.Read<UnlistedVector>("primitives", "error-codes.json", VectorJsonContext.Default));
 

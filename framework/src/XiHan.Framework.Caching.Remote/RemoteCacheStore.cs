@@ -1,6 +1,7 @@
 // Copyright (c) XiHanFun Contributors. Licensed under the MIT License.
 // See the LICENSE file in the project root for full license text.
 
+using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization.Metadata;
 using Microsoft.Extensions.DependencyInjection;
@@ -16,11 +17,16 @@ namespace XiHan.Framework.Caching.Remote;
 /// 经插件操作集实现的 <see cref="ICacheStore"/>（RFC-0019）
 /// </summary>
 /// <remarks>
-/// 每个操作按 ID 取宿主登记表里的代理操作并直接执行，不经过管道；插件未加载、操作未登记、进程不可达或超时都映射为 <see cref="CachingErrors.StoreUnavailable"/>，不伪装成未命中。批量方法各对应一个批量操作，一次往返；响应数组与请求数组长度不符视为插件违反协议
+/// 每个操作按 ID 取宿主登记表里的代理操作并直接执行，不经过管道；插件未加载、操作未登记、进程不可达或超时都映射为 <see cref="CachingErrors.StoreUnavailable"/>，不伪装成未命中。批量方法各对应一个批量操作，一次往返；响应数组与请求数组长度不符视为插件违反协议。键写进请求之前严格编码成 UTF-8，编不成（绕过了 <see cref="CacheKey"/> 的核对）按编程错误抛出 <see cref="ArgumentException"/>，不发请求（ADR-0316）
 /// </remarks>
 [ApiLevel(Stability.Experimental, "5.0")]
 public sealed class RemoteCacheStore : ICacheStore
 {
+    /// <summary>
+    /// 严格的 UTF-8 编码：编不成即抛出，不换成 U+FFFD
+    /// </summary>
+    private static readonly UTF8Encoding _strictUtf8 = new(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true);
+
     /// <summary>
     /// 根容器：每次操作开一个作用域构造调用上下文
     /// </summary>
@@ -52,7 +58,7 @@ public sealed class RemoteCacheStore : ICacheStore
     /// <inheritdoc />
     public async ValueTask<Maybe<ReadOnlyMemory<byte>>> GetAsync(CacheKey key, CancellationToken cancellationToken)
     {
-        var response = await ExecuteAsync(RemoteCacheOperations.Get, new RemoteCacheOperations.KeyRequest(key.Value), RemoteCacheJsonContext.Default.KeyRequest, RemoteCacheJsonContext.Default.GetResponse, cancellationToken).ConfigureAwait(false);
+        var response = await ExecuteAsync(RemoteCacheOperations.Get, new RemoteCacheOperations.KeyRequest(KeyText(key)), RemoteCacheJsonContext.Default.KeyRequest, RemoteCacheJsonContext.Default.GetResponse, cancellationToken).ConfigureAwait(false);
         return response.Value is null
             ? Maybe.None<ReadOnlyMemory<byte>>()
             : Maybe.Some<ReadOnlyMemory<byte>>(Decode(response.Value, RemoteCacheOperations.Get));
@@ -117,7 +123,7 @@ public sealed class RemoteCacheStore : ICacheStore
     /// <inheritdoc />
     public async ValueTask<bool> RemoveAsync(CacheKey key, CancellationToken cancellationToken)
     {
-        var response = await ExecuteAsync(RemoteCacheOperations.Remove, new RemoteCacheOperations.KeyRequest(key.Value), RemoteCacheJsonContext.Default.KeyRequest, RemoteCacheJsonContext.Default.RemovedResponse, cancellationToken).ConfigureAwait(false);
+        var response = await ExecuteAsync(RemoteCacheOperations.Remove, new RemoteCacheOperations.KeyRequest(KeyText(key)), RemoteCacheJsonContext.Default.KeyRequest, RemoteCacheJsonContext.Default.RemovedResponse, cancellationToken).ConfigureAwait(false);
         return response.Removed;
     }
 
@@ -137,7 +143,7 @@ public sealed class RemoteCacheStore : ICacheStore
     /// <inheritdoc />
     public async ValueTask<bool> TryRemoveAsync(CacheKey key, ReadOnlyMemory<byte> expectedValue, CancellationToken cancellationToken)
     {
-        var request = new RemoteCacheOperations.TryRemoveRequest(key.Value, Convert.ToBase64String(expectedValue.Span));
+        var request = new RemoteCacheOperations.TryRemoveRequest(KeyText(key), Convert.ToBase64String(expectedValue.Span));
         var response = await ExecuteAsync(RemoteCacheOperations.TryRemove, request, RemoteCacheJsonContext.Default.TryRemoveRequest, RemoteCacheJsonContext.Default.RemovedResponse, cancellationToken).ConfigureAwait(false);
         return response.Removed;
     }
@@ -146,7 +152,7 @@ public sealed class RemoteCacheStore : ICacheStore
     public async ValueTask<bool> TryRefreshAsync(CacheKey key, ReadOnlyMemory<byte> expectedValue, TimeSpan timeToLive, CancellationToken cancellationToken)
     {
         ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(timeToLive, TimeSpan.Zero);
-        var request = new RemoteCacheOperations.TryRefreshRequest(key.Value, Convert.ToBase64String(expectedValue.Span), Milliseconds(timeToLive));
+        var request = new RemoteCacheOperations.TryRefreshRequest(KeyText(key), Convert.ToBase64String(expectedValue.Span), Milliseconds(timeToLive));
         var response = await ExecuteAsync(RemoteCacheOperations.TryRefresh, request, RemoteCacheJsonContext.Default.TryRefreshRequest, RemoteCacheJsonContext.Default.RefreshedResponse, cancellationToken).ConfigureAwait(false);
         return response.Refreshed;
     }
@@ -156,7 +162,7 @@ public sealed class RemoteCacheStore : ICacheStore
     /// </summary>
     private static RemoteCacheOperations.SetRequest Write(CacheKey key, ReadOnlyMemory<byte> value, CacheEntryOptions options)
         => new(
-            key.Value,
+            KeyText(key),
             Convert.ToBase64String(value.Span),
             options.TimeToLive is { } ttl ? Milliseconds(ttl) : null,
             options.SlidingExpiration is { } sliding ? Milliseconds(sliding) : null);
@@ -169,10 +175,33 @@ public sealed class RemoteCacheStore : ICacheStore
         var names = new string[keys.Count];
         for (var index = 0; index < keys.Count; index++)
         {
-            names[index] = keys[index].Value;
+            names[index] = KeyText(keys[index]);
         }
 
         return names;
+    }
+
+    /// <summary>
+    /// 取写进请求的键文本，先核对它能严格编码成 UTF-8
+    /// </summary>
+    /// <remarks>
+    /// System.Text.Json 把孤立的代理项写成转义的 U+FFFD、不报错，两个不同的键到了插件就是同一个条目。<see cref="CacheKey"/> 已经拒收孤立的代理项，这里是第二道防线（provider/caching-distributed.md §2，ADR-0316）
+    /// </remarks>
+    /// <exception cref="ArgumentException">键编不成 UTF-8：它绕过了 <see cref="CacheKey"/> 的核对</exception>
+    private static string KeyText(CacheKey key)
+    {
+        var text = key.Value;
+        try
+        {
+            _strictUtf8.GetByteCount(text);
+        }
+        catch (EncoderFallbackException exception)
+        {
+            // 合文法的键总编得成：编不成是绕过核对的编程错误，不发请求，也不当成后端不可用
+            throw new ArgumentException($"Cache key '{text}' has a lone surrogate and cannot be encoded as UTF-8; it did not pass 'CacheKey' validation.", nameof(key), exception);
+        }
+
+        return text;
     }
 
     /// <summary>

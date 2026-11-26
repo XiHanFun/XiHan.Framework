@@ -236,9 +236,39 @@ public sealed class GenerationCacheTests
     }
 
     [Fact]
+    public async Task ScopesWithLoneSurrogates_AreHashedApart_NotOntoOneKey()
+    {
+        // 授予缓存以主体 ID 作范围：这几个 ID 只差在孤立的代理项上。它们不是合法的键文本，写成散列；
+        // 宽松编码把孤立的代理项都换成 U+FFFD，前三个就散列成同一个键，一个主体读到另一个主体的值（ADR-0316）
+        string[] scopes = ["user:a\uD800", "user:a\uDBFF", "user:a\uDC00", "user:a�"];
+        for (var index = 0; index < scopes.Length; index++)
+        {
+            _source[Key(scopes[index], "grants")] = [index.ToString(System.Globalization.CultureInfo.InvariantCulture)];
+        }
+
+        GenerationCacheKey[] keys = [.. scopes.Select(static scope => Key(scope, "grants"))];
+        Assert.Equal(["0", "1", "2", "3"], (await _region.GetOrLoadManyAsync(keys, LoadAsync, CancellationToken.None)).ValueOrThrow().Select(static v => v[0]));
+        Assert.Equal(["0", "1", "2", "3"], (await _region.GetOrLoadManyAsync(keys, LoadAsync, CancellationToken.None)).ValueOrThrow().Select(static v => v[0]));
+        Assert.Single(_loads);
+
+        // 失效一个范围只让它自己重查
+        _loads.Clear();
+        await _region.InvalidateAsync([scopes[0]], CancellationToken.None);
+        Assert.Equal(["0", "1", "2", "3"], (await _region.GetOrLoadManyAsync(keys, LoadAsync, CancellationToken.None)).ValueOrThrow().Select(static v => v[0]));
+        Assert.Equal([scopes[0] + "/grants"], _loads);
+
+        // 散列的输入是 WTF-8：孤立的代理项照 UTF-8 三字节的写法编出（ED A0 80），合法的文本仍是它的 UTF-8
+        byte[] wtf8 = [.. Encoding.UTF8.GetBytes("user:a"), 0xED, 0xA0, 0x80];
+        Assert.NotNull(_store["test:gen:#" + Convert.ToHexStringLower(SHA256.HashData(wtf8))]);
+        Assert.NotNull(_store["test:gen:7.user:a�"]);
+    }
+
+    [Fact]
     public void Constructor_RejectsInvalidRegionAndTimeToLive()
     {
         Assert.Throws<ArgumentException>(() => new GenerationCache<string[]>(_cache, "has space", TimeSpan.FromSeconds(1), NullLogger.Instance));
+        // 区名是合法的缓存键文本：孤立的代理项不行（ADR-0316）
+        Assert.Throws<ArgumentException>(() => new GenerationCache<string[]>(_cache, "region\uD800", TimeSpan.FromSeconds(1), NullLogger.Instance));
         Assert.Throws<ArgumentException>(() => new GenerationCache<string[]>(_cache, new string('r', GenerationCache<string[]>.MaxRegionBytes + 1), TimeSpan.FromSeconds(1), NullLogger.Instance));
         Assert.Equal(TimeSpan.FromSeconds(1), new GenerationCache<string[]>(_cache, new string('r', GenerationCache<string[]>.MaxRegionBytes), TimeSpan.FromSeconds(1), NullLogger.Instance).TimeToLive);
         // 区名的上限按 UTF-8 字节计：43 个 3 字节字符只有 43 个码元，却有 129 字节

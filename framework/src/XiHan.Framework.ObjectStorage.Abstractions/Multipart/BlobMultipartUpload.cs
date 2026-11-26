@@ -20,16 +20,17 @@ public sealed record BlobMultipartUpload
     /// </summary>
     /// <param name="container">容器</param>
     /// <param name="key">完成后对象的键</param>
-    /// <param name="uploadId">Provider 给出的上传标识（不透明，1 到 1024 个可见字符）</param>
+    /// <param name="uploadId">Provider 给出的上传标识（不透明，1 到 1024 个可见字符，不含孤立的代理项）</param>
     /// <remarks>
     /// 覆盖标志经必填的初始化器 <see cref="Overwrite"/> 给出：重建句柄（从签名地址、存下的状态）时漏写就编译不过，不会静默地从「不覆盖」变成「覆盖」（ADR-0163）
     /// </remarks>
     public BlobMultipartUpload(ContainerName container, BlobKey key, string uploadId)
     {
         ArgumentNullException.ThrowIfNull(uploadId);
-        if (uploadId.Length is 0 or > 1024 || uploadId.Any(static ch => char.IsWhiteSpace(ch) || char.IsControl(ch)))
+        // 上传标识进宿主代签地址的查询串与签名的规范串：孤立的代理项经宽松编码会签成另一个标识（ADR-0316）
+        if (uploadId.Length is 0 or > 1024 || uploadId.Any(static ch => char.IsWhiteSpace(ch) || char.IsControl(ch)) || BlobKey.HasLoneSurrogate(uploadId))
         {
-            throw new ArgumentException("The upload ID must be 1 to 1024 visible characters.", nameof(uploadId));
+            throw new ArgumentException("The upload ID must be 1 to 1024 visible characters without lone surrogates.", nameof(uploadId));
         }
 
         Container = container;

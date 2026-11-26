@@ -53,6 +53,19 @@ public sealed class BlobMultipartTests
     }
 
     [Fact]
+    public void UploadIds_WithLoneSurrogates_AreRejected_AndSurrogatePairsAreKept()
+    {
+        // 上传标识进宿主代签地址的查询串与签名的规范串：孤立的代理项经宽松编码会签成另一个标识（RFC-0012「标识」，ADR-0316）
+        foreach (var uploadId in new[] { "u\uD800", "u\uDC00v", "u\uDE00\uD83Dv", "\uDBFF" })
+        {
+            var error = Record.Exception(() => new BlobMultipartUpload(new ContainerName("uploads"), new BlobKey("a"), uploadId) { Overwrite = true });
+            Assert.True(error is ArgumentException, $"The upload ID with {uploadId.Length} code units must be rejected.");
+        }
+
+        Assert.Equal("u\U0001F600", new BlobMultipartUpload(new ContainerName("uploads"), new BlobKey("a"), "u\U0001F600") { Overwrite = true }.UploadId);
+    }
+
+    [Fact]
     public void ValidateUploads_AcceptsAnyListWithoutNull_IncludingTheEmptyOneAndRepeats()
     {
         var upload = Upload("a");

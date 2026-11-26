@@ -1,6 +1,8 @@
 // Copyright (c) XiHanFun Contributors. Licensed under the MIT License.
 // See the LICENSE file in the project root for full license text.
 
+using System.Runtime.CompilerServices;
+using System.Text;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using XiHan.Framework.Caching.Abstractions;
@@ -95,6 +97,41 @@ public sealed class RemoteCachingTests
     }
 
     [Fact]
+    public async Task Store_RefusesAKeyThatCannotBeEncodedAsUtf8_BeforeWritingTheRequest()
+    {
+        await using var host = await TestHost.StartAsync(static b => b.UseFeature<RemoteCachingFeature>().UseFeature<RejectingPluginFeature>());
+        var store = host.Services.GetRequiredService<RemoteCacheStore>();
+        var valid = new CacheKey("orders:1");
+        var lone = Unchecked("orders:\uD800");
+        var options = CacheEntryOptions.Expires(TimeSpan.FromMinutes(1));
+        byte[] value = [1];
+
+        // 第二道防线：CacheKey 已经拒收孤立的代理项，绕过核对的键在写出请求之前按编程错误抛出；
+        // 以前 System.Text.Json 把它写成转义的 U+FFFD，插件收到的是 orders:� 这个别的键（ADR-0316）
+        Func<Task>[] calls =
+        [
+            async () => await store.GetAsync(lone, CancellationToken.None),
+            async () => await store.SetAsync(lone, value, options, CancellationToken.None),
+            async () => await store.TryAddAsync(lone, value, options, CancellationToken.None),
+            async () => await store.RemoveAsync(lone, CancellationToken.None),
+            async () => await store.TryRemoveAsync(lone, value, CancellationToken.None),
+            async () => await store.TryRefreshAsync(lone, value, TimeSpan.FromMinutes(1), CancellationToken.None),
+            async () => await store.GetManyAsync([valid, lone], CancellationToken.None),
+            async () => await store.SetManyAsync([new CacheEntry(valid, value, options), new CacheEntry(lone, value, options)], CancellationToken.None),
+            async () => await store.RemoveManyAsync([valid, lone], CancellationToken.None),
+        ];
+        for (var index = 0; index < calls.Length; index++)
+        {
+            var error = await Record.ExceptionAsync(calls[index]);
+            Assert.True(error is ArgumentException { InnerException: EncoderFallbackException }, $"Call {index} must fail before writing the request, got {error?.GetType().Name ?? "no exception"}: {error?.Message}");
+        }
+
+        // 成对的代理项照常写出：请求到了插件，插件按选项拒绝
+        var reached = await Assert.ThrowsAsync<FrameworkException>(async () => await store.SetAsync(new CacheKey("orders:\U0001F600"), value, options, CancellationToken.None));
+        Assert.Equal(CachingErrors.InvalidOptions, reached.Code);
+    }
+
+    [Fact]
     public void Options_ReadTheTimeoutFromConfiguration()
     {
         var configuration = new ConfigurationBuilder().AddInMemoryCollection([new("XiHan:Caching:Remote:TimeoutMilliseconds", "1500")]).Build();
@@ -119,4 +156,12 @@ public sealed class RemoteCachingTests
         Assert.Equal(9, RemoteCacheOperations.All.Count);
         Assert.All(RemoteCacheOperations.All, static id => Assert.StartsWith("cache-entries.", id, StringComparison.Ordinal));
     }
+
+    /// <summary>
+    /// 不经文法核对的键
+    /// </summary>
+    /// <remarks>
+    /// <see cref="CacheKey"/> 只有一个字符串字段，把字符串引用按位重新解释就得到一个没过 <see cref="CacheKey.Validate"/> 的键：模拟绕过核对的代码，只为测适配器的第二道防线
+    /// </remarks>
+    private static CacheKey Unchecked(string text) => Unsafe.As<string, CacheKey>(ref text);
 }

@@ -193,6 +193,23 @@ public sealed class IdempotencyMiddlewareTests
     }
 
     [Fact]
+    public async Task KeyWithALoneSurrogate_IsRejected_WithoutExecuting()
+    {
+        // 宽松编码把孤立的代理项换成 U+FFFD：后端里 a\uD800 与 a� 是同一条记录，第二个调用会回放第一个的结果（ADR-0316）
+        var lone = Context("a\uD800");
+        await _middleware.InvokeAsync(lone, Handler);
+        Assert.Equal(0, _executions);
+        var error = lone.FindOutcome().ValueOrThrow().Error;
+        Assert.Equal(CachingErrors.InvalidKey, error?.Code);
+        Assert.Equal(CachingMessages.InvalidIdempotencyKey, error?.MessageKey);
+
+        // 成对的代理项是平面以外的字符，照常去重
+        await _middleware.InvokeAsync(Context("a\U0001F600"), Handler);
+        Assert.Equal(1, _executions);
+        Assert.NotNull(_store["idem:-:-:a\U0001F600"]);
+    }
+
+    [Fact]
     public async Task ScopedKey_IsLimitedByUtf8Bytes()
     {
         // 匿名、无租户时作用域键是 idem:-:-: 加幂等键，前缀 9 字节：幂等键最多 503 字节
