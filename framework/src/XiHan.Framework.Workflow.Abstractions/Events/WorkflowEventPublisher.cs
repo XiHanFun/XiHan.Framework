@@ -1,6 +1,7 @@
 // Copyright (c) XiHanFun Contributors. Licensed under the MIT License.
 // See the LICENSE file in the project root for full license text.
 
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using XiHan.Framework.Messaging.Abstractions.Envelopes;
 using XiHan.Framework.Messaging.Abstractions.Publishing;
@@ -26,6 +27,14 @@ internal sealed partial class WorkflowEventPublisher
     private readonly IMessagePublisher? _publisher;
 
     /// <summary>
+    /// 按 <c>type</c> 登记的数据模式
+    /// </summary>
+    /// <remarks>
+    /// 应用没有登记任何模式时为 <see langword="null"/>
+    /// </remarks>
+    private readonly MessageDataSchemas? _schemas;
+
+    /// <summary>
     /// 日志
     /// </summary>
     private readonly ILogger _logger;
@@ -33,10 +42,27 @@ internal sealed partial class WorkflowEventPublisher
     /// <summary>
     /// 创建
     /// </summary>
-    public WorkflowEventPublisher(IMessagePublisher? publisher, ILogger logger)
+    /// <param name="services">这次调用的作用域：发布者与数据模式从这里取，装配了发件箱时事件写进调用方事务里的发件箱</param>
+    /// <param name="logger">日志</param>
+    public WorkflowEventPublisher(IServiceProvider services, ILogger logger)
     {
-        _publisher = publisher;
+        ArgumentNullException.ThrowIfNull(services);
+        _publisher = services.GetService<IMessagePublisher>();
+        _schemas = services.GetService<MessageDataSchemas>();
         _logger = logger;
+    }
+
+    /// <summary>
+    /// 应用给一个 <c>type</c> 登记的数据模式
+    /// </summary>
+    /// <remarks>
+    /// 没有登记为 <see langword="null"/>（RFC-0009「框架事件的数据模式」，ADR-0323）；<see cref="Activities.PublishEventActivity"/> 构造自定义事件时同样用它
+    /// </remarks>
+    internal static string? DataSchemaOf(MessageDataSchemas? schemas, string type)
+    {
+        string? dataSchema = null;
+        _ = schemas?.Find(type).TryGetValue(out dataSchema);
+        return dataSchema;
     }
 
     /// <summary>
@@ -51,7 +77,7 @@ internal sealed partial class WorkflowEventPublisher
 
         foreach (var group in events.GroupBy(static pending => pending.Topic, StringComparer.Ordinal))
         {
-            var envelopes = group.Select(static pending => Envelope(pending)).ToList();
+            var envelopes = group.Select(Envelope).ToList();
             try
             {
                 var results = await _publisher.PublishManyAsync(group.Key, envelopes, cancellationToken).ConfigureAwait(false);
@@ -72,9 +98,12 @@ internal sealed partial class WorkflowEventPublisher
     }
 
     /// <summary>
-    /// 事件 → 信封：来源 <c>/workflow</c>，类型为主题，租户与关联进扩展属性
+    /// 事件 → 信封
     /// </summary>
-    private static MessageEnvelope Envelope(PendingEvent pending)
+    /// <remarks>
+    /// 来源 <c>/workflow</c>，类型为主题，带上这个类型登记的数据模式（ADR-0323），租户与关联进扩展属性
+    /// </remarks>
+    private MessageEnvelope Envelope(PendingEvent pending)
     {
         var envelope = new MessageEnvelope
         {
@@ -83,6 +112,7 @@ internal sealed partial class WorkflowEventPublisher
             Type = pending.Topic,
             Time = pending.Data.At,
             Subject = pending.Subject ?? pending.Data.InstanceId,
+            DataSchema = DataSchemaOf(_schemas, pending.Topic),
             Data = WorkflowJson.SerializeEvent(pending.Data),
         };
         if (pending.Data.TenantId is { Length: > 0 } tenant)

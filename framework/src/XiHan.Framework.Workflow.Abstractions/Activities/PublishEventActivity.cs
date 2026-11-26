@@ -15,7 +15,7 @@ namespace XiHan.Framework.Workflow.Abstractions.Activities;
 /// 发布自定义事件
 /// </summary>
 /// <remarks>
-/// 主题 <c>workflow.custom</c>，信封 <c>Subject</c> 为 <c>EventName</c>（模板），<c>Payload</c> 里的字符串按模板渲染。没有装配消息发布者时跳过
+/// 主题 <c>workflow.custom</c>，信封 <c>Subject</c> 为 <c>EventName</c>（模板），<c>Payload</c> 里的字符串按模板渲染，应用给 <c>workflow.custom</c> 登记了数据模式时带上 <c>dataschema</c>（ADR-0323）。没有装配消息发布者时跳过
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class PublishEventActivity : IActivity
@@ -95,6 +95,7 @@ public sealed class PublishEventActivity : IActivity
                 Type = WorkflowTopics.Custom,
                 Subject = eventName,
                 Time = data.At,
+                DataSchema = WorkflowEventPublisher.DataSchemaOf(context.Services.GetService<MessageDataSchemas>(), WorkflowTopics.Custom),
                 Data = WorkflowJson.SerializeEvent(data),
             };
             var published = await publisher.PublishAsync(WorkflowTopics.Custom, envelope, cancellationToken).ConfigureAwait(false);

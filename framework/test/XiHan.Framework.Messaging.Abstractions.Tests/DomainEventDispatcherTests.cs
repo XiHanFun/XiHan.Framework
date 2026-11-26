@@ -108,6 +108,45 @@ public sealed class DomainEventDispatcherTests
     }
 
     [Fact]
+    public async Task Dispatch_AddsTheDataSchemaRegisteredForTheType_AndOnlyForIt()
+    {
+        // RFC-0009「框架事件的数据模式」（ADR-0323）：修之前领域事件的信封不带 dataschema，要带只能自己构造信封
+        var publisher = new CapturingPublisher();
+        var services = new ServiceCollection();
+        services.AddSingleton(TimeProvider.System);
+        services.AddSingleton<IIdGenerator<Guid>, GuidV7IdGenerator>();
+        services.AddScoped<IMessagePublisher>(_ => publisher);
+        services.AddDomainEvent<OrderCreatedEvent>("orders", "orders.created", DomainEventJsonContext.Default.OrderCreatedEvent);
+        services.AddDomainEvent<OrderShippedEvent>("shipments", "shipments.created", DomainEventJsonContext.Default.OrderShippedEvent);
+        services.AddMessageDataSchema("orders.created", "https://example.com/schemas/order-created.json");
+        await using var provider = services.BuildServiceProvider();
+        await using var scope = provider.CreateAsyncScope();
+        var aggregate = new TestAggregate();
+        aggregate.Raise(new OrderCreatedEvent(Guid.CreateVersion7(), _when));
+        aggregate.Raise(new OrderShippedEvent(Guid.CreateVersion7(), _when));
+
+        (await scope.ServiceProvider.GetRequiredService<IDomainEventDispatcher>().DispatchAsync([aggregate], null, CancellationToken.None)).ThrowIfFailure();
+
+        Assert.Equal("https://example.com/schemas/order-created.json", publisher.Batches[0].Envelopes[0].DataSchema);
+        Assert.Null(publisher.Batches[1].Envelopes[0].DataSchema);
+    }
+
+    [Fact]
+    public async Task Dispatch_WithoutAnyRegisteredDataSchema_LeavesItOut()
+    {
+        var (provider, publisher) = Build();
+        await using var _ = provider;
+        await using var scope = provider.CreateAsyncScope();
+        var aggregate = new TestAggregate();
+        aggregate.Raise(new OrderCreatedEvent(Guid.CreateVersion7(), _when));
+
+        (await scope.ServiceProvider.GetRequiredService<IDomainEventDispatcher>().DispatchAsync([aggregate], null, CancellationToken.None)).ThrowIfFailure();
+
+        Assert.Null(provider.GetService<MessageDataSchemas>());
+        Assert.Null(Assert.Single(publisher.Batches).Envelopes[0].DataSchema);
+    }
+
+    [Fact]
     public async Task Dispatch_UnregisteredEvent_FailsWithoutPublishing_AndPublishFailureKeepsBuffers()
     {
         var (provider, publisher) = Build();

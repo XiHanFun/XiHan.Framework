@@ -6,7 +6,6 @@ using System.Text;
 using System.Text.Json.Nodes;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using XiHan.Framework.Messaging.Abstractions.Publishing;
 using XiHan.Framework.Primitives;
 using XiHan.Framework.Scheduling.Abstractions.Schedules;
 using XiHan.Framework.Workflow.Abstractions.Activities;
@@ -110,7 +109,7 @@ internal sealed partial class WorkflowEngine : IWorkflowEngine
         // 活动在本引擎所在的作用域与调用里执行：与引擎的写入同一事务
         _executor = new ActivityExecutor(_scope, services, registry, evaluator, clock, _logger);
         // 发布者取本作用域的：装配了发件箱时事件写进调用方事务里的发件箱，随事务提交或回滚
-        _events = new WorkflowEventPublisher(services.GetService<IMessagePublisher>(), _logger);
+        _events = new WorkflowEventPublisher(services, _logger);
     }
 
     /// <inheritdoc />

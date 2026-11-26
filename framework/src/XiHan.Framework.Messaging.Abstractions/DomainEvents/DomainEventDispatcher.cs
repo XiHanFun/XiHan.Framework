@@ -34,13 +34,26 @@ internal sealed class DomainEventDispatcher : IDomainEventDispatcher
     private readonly IIdGenerator<Guid> _ids;
 
     /// <summary>
+    /// 按 <c>type</c> 登记的数据模式
+    /// </summary>
+    /// <remarks>
+    /// 应用没有登记任何模式时为空
+    /// </remarks>
+    private readonly MessageDataSchemas? _schemas;
+
+    /// <summary>
     /// 创建
     /// </summary>
-    public DomainEventDispatcher(DomainEventRegistry registry, IMessagePublisher publisher, IIdGenerator<Guid> ids)
+    /// <param name="registry">登记表</param>
+    /// <param name="publisher">当前作用域的发布者</param>
+    /// <param name="ids">信封标识的生成器</param>
+    /// <param name="schemas">按 <c>type</c> 登记的数据模式；容器里没有时为 <see langword="null"/></param>
+    public DomainEventDispatcher(DomainEventRegistry registry, IMessagePublisher publisher, IIdGenerator<Guid> ids, MessageDataSchemas? schemas = null)
     {
         _registry = registry ?? throw new ArgumentNullException(nameof(registry));
         _publisher = publisher ?? throw new ArgumentNullException(nameof(publisher));
         _ids = ids ?? throw new ArgumentNullException(nameof(ids));
+        _schemas = schemas;
     }
 
     /// <inheritdoc />
@@ -66,7 +79,10 @@ internal sealed class DomainEventDispatcher : IDomainEventDispatcher
                     topics.Add(registration.Topic);
                 }
 
-                envelopes.Add(registration.ToEnvelope(domainEvent, _ids.NewId(), tenantId));
+                // 应用给这个 type 登记了数据模式才带上 dataschema（RFC-0009「框架事件的数据模式」，ADR-0323）
+                string? dataSchema = null;
+                _ = _schemas?.Find(registration.CloudEventType).TryGetValue(out dataSchema);
+                envelopes.Add(registration.ToEnvelope(domainEvent, _ids.NewId(), tenantId, dataSchema));
             }
         }
 

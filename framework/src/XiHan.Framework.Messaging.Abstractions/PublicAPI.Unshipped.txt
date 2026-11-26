@@ -1,6 +1,9 @@
 #nullable enable
 XiHan.Framework.Messaging.Abstractions.CloudEvents.CloudEventsFormat
 XiHan.Framework.Messaging.Abstractions.Envelopes.EnvelopeExtensions
+XiHan.Framework.Messaging.Abstractions.Envelopes.MessageDataSchemas
+XiHan.Framework.Messaging.Abstractions.Envelopes.MessageDataSchemas.Count.get -> int
+XiHan.Framework.Messaging.Abstractions.Envelopes.MessageDataSchemas.Find(string! type) -> XiHan.Framework.Primitives.Maybe<string!>
 XiHan.Framework.Messaging.Abstractions.Envelopes.MessageEnvelope
 XiHan.Framework.Messaging.Abstractions.Envelopes.MessageEnvelope.<Clone>$() -> XiHan.Framework.Messaging.Abstractions.Envelopes.MessageEnvelope!
 XiHan.Framework.Messaging.Abstractions.Envelopes.MessageEnvelope.Data.get -> System.ReadOnlyMemory<byte>
@@ -264,6 +267,7 @@ static XiHan.Framework.Messaging.Abstractions.MessagingOptions.operator ==(XiHan
 static XiHan.Framework.Messaging.Abstractions.MessagingRegistration.Configure(XiHan.Framework.Kernel.Hosting.FeatureContext! context) -> XiHan.Framework.Messaging.Abstractions.MessagingOptions!
 static XiHan.Framework.Messaging.Abstractions.MessagingServiceCollectionExtensions.AddDomainEvent<TEvent>(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, string! topic, string! type, System.Text.Json.Serialization.Metadata.JsonTypeInfo<TEvent>! info) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
 static XiHan.Framework.Messaging.Abstractions.MessagingServiceCollectionExtensions.AddDomainEvent<TEvent>(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, string! topic, string! type, System.Text.Json.Serialization.Metadata.JsonTypeInfo<TEvent>! info, System.Func<TEvent, string?>? subject) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+static XiHan.Framework.Messaging.Abstractions.MessagingServiceCollectionExtensions.AddMessageDataSchema(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, string! type, string! dataSchema) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
 static XiHan.Framework.Messaging.Abstractions.MessagingServiceCollectionExtensions.AddMessageHandler<THandler>(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, string! topic) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
 static XiHan.Framework.Messaging.Abstractions.MessagingServiceCollectionExtensions.AddMessageHandler<THandler>(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, string! topic, XiHan.Framework.Messaging.Abstractions.Handlers.SubscriptionMode mode) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
 static XiHan.Framework.Messaging.Abstractions.MessagingServiceCollectionExtensions.GetMessageSubscriptions(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services) -> XiHan.Framework.Messaging.Abstractions.Handlers.MessageSubscriptions!

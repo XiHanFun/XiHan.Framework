@@ -9,6 +9,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using XiHan.Framework.Kernel;
 using XiHan.Framework.Kernel.Hosting;
+using XiHan.Framework.Messaging.Abstractions.Envelopes;
 using XiHan.Framework.Messaging.Abstractions.Publishing;
 using XiHan.Framework.Primitives;
 using XiHan.Framework.Scheduling.Abstractions.Calendars;
@@ -2297,7 +2298,7 @@ public sealed partial class JobSchedulerEngine : IJobScheduler, IDisposable
     private async ValueTask PublishAsync(string topic, SchedulingEventData data, CancellationToken cancellationToken)
     {
         await using var scope = _services.CreateAsyncScope();
-        var publisher = new SchedulingEventPublisher(scope.ServiceProvider.GetService<IMessagePublisher>(), _logger);
+        var publisher = new SchedulingEventPublisher(scope.ServiceProvider.GetService<IMessagePublisher>(), scope.ServiceProvider.GetService<MessageDataSchemas>(), _logger);
         if (publisher.IsEnabled)
         {
             await publisher.PublishAsync(topic, data, cancellationToken).ConfigureAwait(false);

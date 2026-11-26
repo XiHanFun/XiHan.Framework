@@ -5,7 +5,6 @@ using System.Globalization;
 using System.Text.Json.Nodes;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using XiHan.Framework.Messaging.Abstractions.Publishing;
 using XiHan.Framework.Primitives;
 using XiHan.Framework.Workflow.Abstractions.Engine;
 using XiHan.Framework.Workflow.Abstractions.Events;
@@ -66,7 +65,7 @@ internal sealed class WorkflowExternalTaskService : IWorkflowExternalTaskService
         _instances = instances ?? throw new ArgumentNullException(nameof(instances));
         _bookmarks = bookmarks ?? throw new ArgumentNullException(nameof(bookmarks));
         _clock = clock ?? throw new ArgumentNullException(nameof(clock));
-        _events = new WorkflowEventPublisher(services.GetService<IMessagePublisher>(), loggerFactory.CreateLogger<WorkflowExternalTaskService>());
+        _events = new WorkflowEventPublisher(services, loggerFactory.CreateLogger<WorkflowExternalTaskService>());
         _scope = services.GetRequiredService<WorkflowScope>();
     }
 

@@ -71,9 +71,13 @@ internal sealed class DomainEventRegistration
     /// 把一个事件映射成信封
     /// </summary>
     /// <remarks>
-    /// <c>id</c> 为给定标识的 <c>N</c> 格式、<c>source</c> 为 <c>/{主题}</c>、<c>time</c> 为事件发生时间、<c>data</c> 为事件的 JSON；有租户时带 <c>xihantenant</c> 扩展。追踪、主体、关联与区域由发布者从当前调用补齐
+    /// <c>id</c> 为给定标识的 <c>N</c> 格式、<c>source</c> 为 <c>/{主题}</c>、<c>time</c> 为事件发生时间、<c>dataschema</c> 为这个 <c>type</c> 登记的数据模式（没有则省略，ADR-0323）、<c>data</c> 为事件的 JSON；有租户时带 <c>xihantenant</c> 扩展。追踪、主体、关联与区域由发布者从当前调用补齐
     /// </remarks>
-    public MessageEnvelope ToEnvelope(IDomainEvent domainEvent, Guid id, string? tenantId)
+    /// <param name="domainEvent">事件</param>
+    /// <param name="id">信封标识</param>
+    /// <param name="tenantId">当前工作单元的租户；没有为 <see langword="null"/></param>
+    /// <param name="dataSchema">登记的数据模式；没有为 <see langword="null"/></param>
+    public MessageEnvelope ToEnvelope(IDomainEvent domainEvent, Guid id, string? tenantId, string? dataSchema)
     {
         ArgumentNullException.ThrowIfNull(domainEvent);
         var envelope = new MessageEnvelope
@@ -83,6 +87,7 @@ internal sealed class DomainEventRegistration
             Type = CloudEventType,
             Time = domainEvent.OccurredAt,
             Subject = Subject?.Invoke(domainEvent),
+            DataSchema = dataSchema,
             Data = JsonSerializer.SerializeToUtf8Bytes(domainEvent, Info),
         };
         return tenantId is null ? envelope : envelope.WithExtension(EnvelopeExtensions.Tenant, tenantId);

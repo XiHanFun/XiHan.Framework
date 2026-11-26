@@ -26,6 +26,14 @@ internal sealed partial class SchedulingEventPublisher
     private readonly IMessagePublisher? _publisher;
 
     /// <summary>
+    /// 按 <c>type</c> 登记的数据模式
+    /// </summary>
+    /// <remarks>
+    /// 应用没有登记任何模式时为空
+    /// </remarks>
+    private readonly MessageDataSchemas? _schemas;
+
+    /// <summary>
     /// 日志
     /// </summary>
     private readonly ILogger _logger;
@@ -33,9 +41,13 @@ internal sealed partial class SchedulingEventPublisher
     /// <summary>
     /// 创建
     /// </summary>
-    public SchedulingEventPublisher(IMessagePublisher? publisher, ILogger logger)
+    /// <param name="publisher">发布者；没有装配消息能力时为 <see langword="null"/></param>
+    /// <param name="schemas">按 <c>type</c> 登记的数据模式；没有时为 <see langword="null"/></param>
+    /// <param name="logger">日志</param>
+    public SchedulingEventPublisher(IMessagePublisher? publisher, MessageDataSchemas? schemas, ILogger logger)
     {
         _publisher = publisher;
+        _schemas = schemas;
         _logger = logger;
     }
 
@@ -54,6 +66,9 @@ internal sealed partial class SchedulingEventPublisher
             return;
         }
 
+        // 主题就是 type：应用给它登记了数据模式才带上 dataschema（RFC-0009「框架事件的数据模式」，ADR-0323）
+        string? dataSchema = null;
+        _ = _schemas?.Find(topic).TryGetValue(out dataSchema);
         var envelope = new MessageEnvelope
         {
             Id = JobRun.NewId(),
@@ -61,6 +76,7 @@ internal sealed partial class SchedulingEventPublisher
             Type = topic,
             Time = data.At,
             Subject = data.RunId ?? data.Job,
+            DataSchema = dataSchema,
             Data = JsonSerializer.SerializeToUtf8Bytes(data, SchedulingJsonContext.Default.SchedulingEventData),
         };
         try

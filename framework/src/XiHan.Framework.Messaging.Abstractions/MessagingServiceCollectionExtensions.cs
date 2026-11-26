@@ -7,6 +7,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using XiHan.Framework.Domain.Events;
 using XiHan.Framework.Messaging.Abstractions.DomainEvents;
+using XiHan.Framework.Messaging.Abstractions.Envelopes;
 using XiHan.Framework.Messaging.Abstractions.Handlers;
 using XiHan.Framework.Persistence.Abstractions.UnitOfWork;
 using XiHan.Framework.Primitives;
@@ -72,6 +73,43 @@ public static class MessagingServiceCollectionExtensions
         services.GetDomainEventRegistry().Add(new DomainEventRegistration(typeof(TEvent), topic, type, info, selector));
         services.TryAddScoped<IDomainEventDispatcher, DomainEventDispatcher>();
         return services;
+    }
+
+    /// <summary>
+    /// 为一个 CloudEvents <c>type</c> 登记数据模式（RFC-0009「框架事件的数据模式」）
+    /// </summary>
+    /// <remarks>
+    /// 领域事件、调度与工作流发布 <paramref name="type"/> 的信封时带上 <c>dataschema</c> = <paramref name="dataSchema"/>；应用自己构造的信封不受影响。取值照 <see cref="MessageEnvelope.DataSchema"/>：不能为空或只有空白，不核对 URI 语法；<paramref name="type"/> 不能为空或只有空白；两者都不能有孤立的代理项，不合即抛出 <see cref="ArgumentException"/>。
+    /// 同一个 <c>type</c> 再登记同一个值只记一次，另一个值抛出 <see cref="ArgumentException"/>；登记表最多 10000 个 <c>type</c>，满了抛出 <see cref="InvalidOperationException"/>（ADR-0323）
+    /// </remarks>
+    [ApiLevel(Stability.Preview, "5.0")]
+    public static IServiceCollection AddMessageDataSchema(this IServiceCollection services, string type, string dataSchema)
+    {
+        ArgumentNullException.ThrowIfNull(services);
+        services.GetMessageDataSchemas().Add(type, dataSchema);
+        return services;
+    }
+
+    /// <summary>
+    /// 取（必要时创建）数据模式登记表
+    /// </summary>
+    /// <remarks>
+    /// 以实例注册，多次调用返回同一对象
+    /// </remarks>
+    internal static MessageDataSchemas GetMessageDataSchemas(this IServiceCollection services)
+    {
+        ArgumentNullException.ThrowIfNull(services);
+        foreach (var descriptor in services)
+        {
+            if (descriptor.ServiceType == typeof(MessageDataSchemas) && descriptor.ImplementationInstance is MessageDataSchemas existing)
+            {
+                return existing;
+            }
+        }
+
+        var schemas = new MessageDataSchemas();
+        services.AddSingleton(schemas);
+        return schemas;
     }
 
     /// <summary>

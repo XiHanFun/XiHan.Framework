@@ -11,6 +11,7 @@
 * 流程实例随业务事务提交或回滚，数据按平台与租户分区隔离
 * 用户任务支持会签、转办、加签、认领与催办
 * 存储、事务与实例锁是窄契约，由提供程序实现
+* 装配了消息能力时实例、节点与任务的变化发布成 CloudEvents（`WorkflowTopics`）；应用用 `AddMessageDataSchema(WorkflowTopics.InstanceCompleted, …)` 给某个主题登记了数据模式，引擎与 `PublishEvent` 活动发布的信封就带上 `dataschema`
 
 ## 如何使用
 

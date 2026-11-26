@@ -10,6 +10,7 @@
 * 排除日历、misfire 策略、失败重试与执行时限
 * 运行时登记、暂停、恢复、触发、取消作业，并查询运行历史
 * 作业存储与领导选举是窄契约，由提供程序实现
+* 装配了消息能力时作业与运行的变化发布成 CloudEvents（`SchedulingTopics`）；应用用 `AddMessageDataSchema(SchedulingTopics.RunFailed, …)` 给某个主题登记了数据模式，信封就带上 `dataschema`
 
 ## 如何使用
 
