@@ -115,7 +115,7 @@ public sealed class IdempotencyMiddleware(IdempotencyOptions options) : IPipelin
     /// 由首次调用的结果生成已完成记录
     /// </summary>
     /// <remarks>
-    /// 操作调用记下操作 ID；成功且上下文里有响应对象时按描述编成 XGI 的 JSON 一起记（已经过响应过滤，与首次调用拿到的一致）
+    /// 操作调用记下操作 ID；成功且上下文里有响应对象时按描述编成 XGI 的 JSON 一起记（已经过响应过滤，与首次调用拿到的一致）。编出的是空载荷时记下没有响应体（ADR-0318）
     /// </remarks>
     private static IdempotencyRecord Complete(InvocationContext context, Result outcome)
     {
@@ -130,7 +130,14 @@ public sealed class IdempotencyMiddleware(IdempotencyOptions options) : IPipelin
             return record with { Operation = operation.Id };
         }
 
-        using var document = JsonDocument.Parse(operation.EncodeResponse(response));
+        var encoded = operation.EncodeResponse(response);
+        if (encoded.IsEmpty)
+        {
+            // 空载荷表示没有响应体（插件代理交回的，plugin/invocation.md §1）：不是 JSON 文本，不能当 JSON 解析；记下没有响应体，回放时交出同样的空载荷（RFC-0006 幂等第 2 条，ADR-0318）
+            return record with { Operation = operation.Id, EmptyResponse = true };
+        }
+
+        using var document = JsonDocument.Parse(encoded);
         return record with { Operation = operation.Id, Response = document.RootElement.Clone() };
     }
 
@@ -138,7 +145,7 @@ public sealed class IdempotencyMiddleware(IdempotencyOptions options) : IPipelin
     /// 回放已完成的记录
     /// </summary>
     /// <remarks>
-    /// 记录必须属于同一个操作（都不是操作调用时都为空），否则返回 <see cref="CachingErrors.IdempotentMismatch"/>；成功的操作调用把记录的响应解码放回上下文，调用器与宿主端点据此返回首次调用的响应
+    /// 记录必须属于同一个操作（都不是操作调用时都为空），否则返回 <see cref="CachingErrors.IdempotentMismatch"/>；成功的操作调用把记录的响应解码放回上下文，调用器与宿主端点据此返回首次调用的响应。记下没有响应体的按描述解码空载荷：插件代理得到同样的空载荷，类型化的描述解码失败、同样返回 <see cref="CachingErrors.IdempotentMismatch"/>
     /// </remarks>
     private static Result Replay(InvocationContext context, IdempotencyRecord record)
     {
@@ -153,12 +160,22 @@ public sealed class IdempotencyMiddleware(IdempotencyOptions options) : IPipelin
         var outcome = record.ToResult();
         if (outcome.IsSuccess && descriptor is not null)
         {
-            if (record.Response is not { } json)
+            ReadOnlyMemory<byte> payload;
+            if (record.Response is { } json)
+            {
+                payload = Encoding.UTF8.GetBytes(json.GetRawText());
+            }
+            else if (record.EmptyResponse)
+            {
+                // 与首次调用交回的同一个空载荷，由描述决定能否还原：插件代理原样包回，类型化的描述解码失败（RFC-0006 幂等第 4 条，ADR-0318）
+                payload = ReadOnlyMemory<byte>.Empty;
+            }
+            else
             {
                 return Unavailable(descriptor.Id, "the record has no response");
             }
 
-            var decoded = descriptor.DecodeResponse(Encoding.UTF8.GetBytes(json.GetRawText()));
+            var decoded = descriptor.DecodeResponse(payload);
             if (!decoded.TryGetValue(out var response))
             {
                 return Unavailable(descriptor.Id, decoded.Error!.Message);

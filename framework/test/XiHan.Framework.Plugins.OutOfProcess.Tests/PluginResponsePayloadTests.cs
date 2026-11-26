@@ -43,6 +43,8 @@ public sealed class PluginResponsePayloadTests
     public static TheoryData<string, byte[], string> InvalidPayloads => new()
     {
         { "syntax", "{\"a\":"u8.ToArray(), "$" },
+        // 只有空白的载荷不为空：照样核对，空白不是 JSON（ADR-0318）
+        { "whitespace only", " \t\r\n"u8.ToArray(), "$" },
         { "comment", "{\"a\":1 /* x */}"u8.ToArray(), "$" },
         { "two roots", "{} {}"u8.ToArray(), "$" },
         { "nesting", Encoding.ASCII.GetBytes(new string('[', 65) + new string(']', 65)), "$" },
@@ -85,7 +87,7 @@ public sealed class PluginResponsePayloadTests
     [Fact]
     public async Task AnEmptyResponse_IsPassedOnAsBefore()
     {
-        // 空的载荷不做这道检查：协议适配器按没有响应体处理
+        // 空的载荷表示没有响应体，不做这道检查：协议适配器按没有响应体处理（plugin/invocation.md §1，ADR-0318）
         var (proxy, _) = Proxy([]);
 
         var result = await proxy.ExecuteAsync(TestInvocationContext.Create(), new PluginPayload("{}"u8.ToArray()));

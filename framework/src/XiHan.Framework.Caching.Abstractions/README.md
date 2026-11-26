@@ -68,7 +68,7 @@ await prices.InvalidateAsync([tenantId], ct);
 * `ICacheSerializer`、`JsonCacheSerializer`、`CacheSerializerRegistration`、`CacheTypeInfoSource`：共享缓存的值序列化与组件类型的登记
 * `GenerationCache<T>`、`GenerationCacheKey`、`GenerationCacheEntry<T>`：按范围失效的缓存区
 * `InFlightLoadTable`、`InFlightLoad`：同键并发回源的在途表，自己实现 `ICache` 时用它得到同样的合并语义
-* `IdempotencyMiddleware`：按幂等键去重
+* `IdempotencyMiddleware`：按幂等键去重；操作调用成功时记下响应，响应是空载荷（插件代理的应答没有响应体）时记下没有响应体，回放出同样的空载荷
 
 ## 更多文档
 

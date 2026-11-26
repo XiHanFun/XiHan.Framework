@@ -132,6 +132,55 @@ public sealed class IdempotentOperationReplayTests
         Assert.Equal(0, counter.Executions);
     }
 
+    [Fact]
+    public async Task AnEmptyResponse_IsRecordedAndReplayed_AsTheSameEmptyPayload()
+    {
+        // 插件代理交回的空载荷表示没有响应体（plugin/invocation.md §1、RFC-0006 幂等第 2 与第 4 条，ADR-0318）：记下没有响应体，回放出同样的空载荷；
+        // 修之前记录时把空载荷当 JSON 解析而抛出，操作已经执行，首次调用却以 KERNEL_UNEXPECTED_001 结束，「处理中」的标记留到过期，重试得 CACHING_CONFLICT_002
+        await using var host = await StartAsync();
+        var operation = new EmptyResponseOperation("blanks.create");
+        host.Services.GetRequiredService<OperationRegistry>().AddRange("xihan.test.blanks", [operation], []).ThrowIfFailure();
+
+        var first = await host.InvokeOperationRawAsync(new OperationRequest(operation.Id, "{}"u8.ToArray()), Key("empty"));
+        var second = await host.InvokeOperationRawAsync(new OperationRequest(operation.Id, "{}"u8.ToArray()), Key("empty"));
+
+        Assert.True(first.IsSuccess, first.Outcome.ToString());
+        Assert.True(first.Payload.IsEmpty);
+        Assert.True(second.IsSuccess, second.Outcome.ToString());
+        Assert.True(second.Payload.IsEmpty);
+        Assert.Equal(1, operation.Executions);
+
+        // 记录里写的是没有响应体，不是一个 JSON 值
+        var record = (await host.Services.GetRequiredService<ISharedCache>().Store.GetAsync(new CacheKey("idem:-:-:empty"), CancellationToken.None)).ValueOrThrow();
+        using var document = JsonDocument.Parse(record);
+        Assert.True(document.RootElement.GetProperty("emptyResponse").GetBoolean());
+        Assert.Equal(JsonValueKind.Null, document.RootElement.GetProperty("response").ValueKind);
+
+        // 有响应体的记录不写这个成员，与以前写下的记录一样
+        Assert.True((await host.InvokeOperationRawAsync(Request(TicketsFeature.Create, "alice"), Key("typed"))).IsSuccess);
+        var typed = (await host.Services.GetRequiredService<ISharedCache>().Store.GetAsync(new CacheKey("idem:-:-:typed"), CancellationToken.None)).ValueOrThrow();
+        using var typedDocument = JsonDocument.Parse(typed);
+        Assert.False(typedDocument.RootElement.TryGetProperty("emptyResponse", out _));
+        Assert.Equal(JsonValueKind.Object, typedDocument.RootElement.GetProperty("response").ValueKind);
+    }
+
+    [Fact]
+    public async Task ARecordWithoutAResponseBody_IsDecodedAsAnEmptyPayload_AndTypedOperationsCannotReplayIt()
+    {
+        // 记下没有响应体的记录按描述解码空载荷：类型化的操作解码失败，与记录里没有响应一样返回 CACHING_CONFLICT_003，不返回空载荷
+        await using var host = await StartAsync();
+        var counter = host.Services.GetRequiredService<TicketCounter>();
+        var store = host.Services.GetRequiredService<ISharedCache>().Store;
+        await store.SetAsync(new CacheKey("idem:-:-:empty-body"), Encoding.UTF8.GetBytes("""{"state":"completed","operation":"tickets.create","emptyResponse":true}"""), CacheEntryOptions.Default, CancellationToken.None);
+
+        var raw = await host.InvokeOperationRawAsync(Request(TicketsFeature.Create, "alice"), Key("empty-body"));
+
+        Assert.Equal(CachingErrors.IdempotentMismatch, raw.Outcome.Error?.Code);
+        Assert.Equal(CachingMessages.IdempotentResponseUnavailable, raw.Outcome.Error?.MessageKey);
+        Assert.True(raw.Payload.IsEmpty);
+        Assert.Equal(0, counter.Executions);
+    }
+
     /// <summary>
     /// 启动装配了内存缓存（含幂等中间件）与取号操作的宿主
     /// </summary>
