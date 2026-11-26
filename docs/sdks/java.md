@@ -165,14 +165,17 @@ Java 的写法与差异：
 
 - **JSON 文本**：共同检查 `JsonText.check` 是手写的逐字节检查器，不经 Jackson（它会跳过 BOM、按字节猜 UTF-16、放过孤立的代理项）。收字符串的入口（`JsonText.check(String)`、`ManifestJson.tryRead(String)`、`PrimitivesJson.read(mapper, String, …)`）先编成 UTF-8，字符串里有孤立的代理项按语法错误处理，不像 `String.getBytes` 那样换成 `?`。`OperationRequest.of(String id, String json)` 同样严格编码：文本里有孤立的代理项时请求照样建得出，`hasUnencodableText()` 为真，载荷是文本的广义 UTF-8（WTF-8，不是合法的 UTF-8），本地调用器读它报 `KERNEL_VALIDATION_001` + `kernel.operation.invalid_payload`（`reason` 为 `$`）；`Host.invoke` 在回调端点、权限、租户、截止时间与取消的核对之后以同一个错误在本地失败、不发请求；`OperationRequest.of(String, byte[])` 的字节原样发出，由宿主核对（`plugin/invocation.md` §5，ADR-0312）。
 - **发布的数据**：`Envelope.Builder.data(String)` 严格编码成 UTF-8：文本里有孤立的代理项时信封照样建得出，`hasUnencodableData()` 为真，`data()` 是文本的广义 UTF-8（WTF-8，不是合法的 UTF-8）；`Host.publish` 在回调端点、权限、租户、截止时间与取消的核对之后逐项核对，这一项不发出，结果为 `MESSAGING_VALIDATION_002` + `messaging.envelope.invalid`（`reason` 为 `the data has a lone surrogate and cannot be encoded as UTF-8`），其余各项照常组成一次请求、结果放回原位，每一项都编不成时不发请求，结果数按发出的信封数核对；`data(byte[])` 的字节原样发出，由宿主核对（`plugin/invocation.md` §5，ADR-0315）。处理器没有以字符串交回应答的接口：类型化的响应由调用器编码并过 JSON 文本检查，§1 的严格编码一条对 Java 不用改。
-- **线上编码**：无值成功是 `Result<Unit>`，`Result<Maybe<T>>` 的无值是 `"value":null`。解码器自己核对重复成员、64 层与孤立的代理项，不看 `ObjectMapper` 的配置。`Error.literal` 与 `withText` 的文案、`FrameworkException` 的说明为空或只有空白时抛 `IllegalArgumentException`。
+- **写给宿主的错误细节**：插件交回或回调里写出的 `Error.details` 有孤立的代理项、嵌套超过 64 层时，这个错误不带细节、其余字段照写，内部错误的细节各自核对，不再经 protobuf 把孤立的代理项写成 `?`（`plugin/invocation.md` §3，ADR-0320）。
+- **回调客户端关闭之后**：插件停止、运行时收尾之后的 `Host.invoke` 与 `Host.publish` 不发请求、不重新连接，结果是 `PLUGINS_UNAVAILABLE_001` + `plugins.host.unavailable`（`reason` 为 `Unavailable: the plugin runtime has stopped`）。它排在本地核对与载荷、`data` 的编码之后：载荷编不成的照旧是 `kernel.operation.invalid_payload`，`publish` 里编不成的那一项照旧是 `messaging.envelope.invalid`、其余各项是已关闭的错误（`plugin/invocation.md` §5，ADR-0328）。
+- **Baggage 的值**：`BaggageKeys.isAcceptableValue` 还拒收孤立的代理项（成对的照收）：已登记键的这类值经 `Context.Builder.baggage` 进来时丢弃这个成员，`withBaggage` 抛 `IllegalArgumentException`；幂等键照旧不按这条丢弃（ADR-0321）。
+- **线上编码**：无值成功是 `Result<Unit>`，`Result<Maybe<T>>` 的无值是 `"value":null`。解码器自己核对重复成员、64 层与孤立的代理项，不看 `ObjectMapper` 的配置。`PrimitivesModule` 写出 `Result` 与 `Error` 时先写进缓冲、整段文本过共同检查（RFC-0001「写出与转交」，ADR-0320）：字符串（成员名与值，含细节、内部错误与成功值）有孤立的代理项、从结果或错误的根算起嵌套超过 64 层，或任何一层有重复的成员名（自定义序列化器、`@JsonRawValue` 原样嵌进去的文本）时抛 `JsonMappingException`，外层的写出器一个字符也不写，不写成 U+FFFD 或 `\ud800` 这样的转义。`Error.literal` 与 `withText` 的文案、`FrameworkException` 的说明为空或只有空白时抛 `IllegalArgumentException`。
 - **空白**：按 RFC-0001 写死的 25 个码位判断，不用 `Character.isWhitespace` 或 `String.isBlank`（它们不含 U+0085、U+00A0、U+2007、U+202F，却含 U+001C–U+001F）。
 - **模板与区域**：`MessageTemplate.format(template, arguments, locale)` / `tryFormat(…, locale)` / `text(value, locale)` 与 `MessageCatalog.resolve(key, locale, arguments)` 按区域取小数点与分组符，不给区域按不变文化；`Error.message()` 按 `MessageScope` 的进程默认区域。
 - **调用器**：内置步骤的归属是 `OperationInvoker.KERNEL_OWNER`，调用器复制使用者的 `PipelineBuilder` 再加内置步骤，不改动它。Observe 阶段翻译异常时 `java.lang.Error` 不翻译，`FrameworkException` 的错误进 `inner`。响应在管道结束之后编码，编码时关掉 Jackson 的 `WRITE_NAN_AS_STRINGS`，非有限的浮点写不出、调用以未处理失败结束。响应里的字符串（值、成员名与映射的键）有孤立的代理项同样写不出，错误不带 `inner`（ADR-0318）。Jackson 把值与键里的孤立代理项写成转义，由写出之后的 JSON 文本检查拦下；`@JsonProperty` 这类预先编码的成员名由 Jackson 先抛出，原因链里没有框架异常。写出的整段文本过 JSON 文本检查：嵌套超过 64 层（`@JsonRawValue` 原样嵌进去的文本也算，从响应的根算起）或任何一层有重复的成员名（自定义 `JsonSerializer` 两次写同名成员、`@JsonRawValue`）同样写不出、不带 `inner`（ADR-0319）；Jackson 写出时不查重复成员、嵌套上限远大于 64，靠的是这道检查。
 - **载荷**：调用器在反序列化之前按请求类型以文本顺序核对载荷（`RequestShape`），报错的先后不随 Jackson 的内部路径变。
 - **清单**：`ManifestJson.tryRead` / `tryReadFile` 以 `Result<Manifest>` 返回读取失败（`KERNEL_CAPABILITY_006`），`read` / `readFile` 是它们的包装，失败时抛 `FrameworkException`；文件存在却读不出来时两者都照常抛 `IOException`。`tryRead(byte[])` 不跳过 BOM，`tryReadFile` 跳过。`Manifest.Builder.validate()` 以结果返回跨字段约束的失败（`PRIMITIVES_VALIDATION_001`），`build()` 把它抛出。`Manifest` 按生效的值比较，写出的清单再读一遍与原来的相等。
 - **文法与枚举**：规范的正则一律用 `Matcher.matches()` 整串匹配；操作 ID 另有长度上限 128 个字符（`OperationId.MAX_LENGTH`）。按名字编码的枚举（`LifecycleState`、`PipelineStage`、`Stability`、`ManifestKind`、`ManifestRole`、`PluginIsolation`、`Expose`、`Network`、`SubscriptionMode`）都是 `parse(name)` 返回 `Optional`、`wireName()` 给出线上的名字。
-- **插件运行时**：`Instant` 精确到纳秒，`deadline` 的九位小数不截断。运行时的消息键目录 `PluginMessages` 带 10 种区域，只供本地渲染，不随握手发送。
+- **插件运行时**：`Instant` 精确到纳秒，`deadline` 的九位小数不截断。运行时的消息键目录 `PluginMessages` 带 10 种区域，只供本地渲染，不随握手发送；另收了本地报出的 `messaging.envelope.invalid`（`PluginMessages.ENVELOPE_INVALID`，ADR-0315），`catalog()` 与 `templates()` 多这个键。
 
 ## 语言映射
 
@@ -194,7 +197,7 @@ Java 的写法与差异：
 
 ## 一致性
 
-- 现状：原语、清单、调用上下文、管道、操作与进程外插件运行时可用，示例插件 `examples/echo` 通过规范黑盒运行器的全部用例（Linux 上经 Unix 域套接字，Windows 上经回环 TCP 与 `.cmd` 启动脚本）。
+- 现状：原语、清单、调用上下文、管道、操作与进程外插件运行时可用，示例插件 `examples/echo` 通过规范黑盒运行器的全部 15 个用例（Linux 上经 Unix 域套接字，Windows 上经回环 TCP 与 `.cmd` 启动脚本）；`events.list` 回显处理器拿到的信封（`envelopes`），以 `--envelopes events.list` 跑 `event-envelope`（ADR-0327）。
 - 认领的档（RFC-0024）：`core` 与 `plugin`；档的定义见规范仓库的 [`conformance/profiles.json`](https://github.com/XiHanFun/framework-spec/blob/main/conformance/profiles.json)。
 - 缺口：无。
 - 钉的规范版本：SDK 仓库 `spec/` 子模块指向的提交；发版时子模块必须正好在规范标签上。
@@ -202,6 +205,7 @@ Java 的写法与差异：
 - 尚未提供：流式操作（操作契约还没有流式形态，`InvokeStream` 读第一帧后以 `InvalidArgument` 或 `Unimplemented` 结束）、Wasm 载体与远程 Provider 的插件侧（如 `caching.distributed@1`）。
 - 怎样验证：测试直接读取 `spec/conformance/vectors`，期望值逐字相等；`VectorCoverageTest` 按档表核对认领的档要求的每个向量要么有测试回放、要么列为缺口；`EchoConformanceTest` 用 submodule 里的黑盒运行器跑示例插件的全部用例。CI 在 Linux 与 Windows 上都跑。
 - 信封的 `time`：回放 `plugin/sdk-envelope-times.json` 的纳秒一列（ADR-0310）。写出的文本与 `text.nanoseconds` 逐字相同，读出的时刻与 `utc.nanoseconds` 相等，`unreadable` 的每一条投递都以 `INVALID_ARGUMENT` 拒绝。`Instant` 是纳秒精度，不截断，没有跳过的用例。`plugin/envelope-times.json` 现在同在 `plugin` 档。
+- Baggage 的值：`primitives/baggage-keys.json` 的 `values` 另有以码元写出的 `acceptableUtf16` 与 `unacceptableUtf16`，按 UTF-16 码元直接组成字符串回放：前一组照收，后一组 `isAcceptableValue` 为假、`withBaggage` 抛出（ADR-0321）。
 
 ## 破坏性改动与迁移
 
@@ -223,3 +227,8 @@ Java 的写法与差异：
 - 错误细节里的孤立代理项当作没有细节，原先换成 `?` 读出（ADR-0301）→ 不用改。
 - `OperationRequest.of(String, String)` 严格编码成 UTF-8：孤立的代理项不再换成 `?`，本地调用得到 `KERNEL_VALIDATION_001` + `kernel.operation.invalid_payload`（`reason` 为 `$`），`Host.invoke` 不发请求、在本地以同一个错误失败；新增 `OperationRequest.hasUnencodableText()`（ADR-0312）→ 不用改；要发出的 JSON 文本里不要有孤立的代理项。
 - `Envelope.Builder.data(String)` 严格编码成 UTF-8：孤立的代理项不再换成 `?`，`Host.publish` 不发出这一项、在本地以 `MESSAGING_VALIDATION_002` + `messaging.envelope.invalid` 失败，其余照常发布；新增 `Envelope.hasUnencodableData()`，`equals` 与 `hashCode` 也比较它（ADR-0315）→ 不用改；要发布的文本里不要有孤立的代理项。
+- `PrimitivesModule` 写出 `Result` 与 `Error` 时，字符串有孤立的代理项、从根算起嵌套超过 64 层或有重复成员即抛 `JsonMappingException`、什么也不写，原先孤立的代理项写成 `\ud800` 这样的转义、深层与重复成员照写（ADR-0320）→ 写出之前去掉这类值。
+- 已登记 Baggage 键的值有孤立的代理项时 `BaggageKeys.isAcceptableValue` 为假：`Context.Builder.baggage` 丢弃这个成员、`withBaggage` 抛 `IllegalArgumentException`，原先照收（ADR-0321）→ 从外部输入拼值之前先去掉孤立的代理项。
+- 插件写给宿主的错误细节有孤立的代理项或超过 64 层时这个错误不带细节、其余照写，原先孤立的代理项被 protobuf 写成 `?`（ADR-0320）→ 不用改。
+- `PluginMessages` 新增 `ENVELOPE_INVALID`，`catalog()` 与 `templates()` 多了 `messaging.envelope.invalid` 这个键（ADR-0315）→ 按键集断言的测试要更新。
+- 回调客户端关闭之后的 `Host.invoke` 与 `Host.publish` 不发请求、不重新连接，以 `plugins.host.unavailable` 结束，排在载荷与 `data` 的编码之后（ADR-0328）→ 不用改。

@@ -186,14 +186,16 @@ go run ./cmd/xihan-conformance plugin --dir <插件目录> --sample 'greetings.c
 
 PHP 的写法与差异：
 
-- **`Result` 与 `Error` 的读写**：读取按结果的种类选入口（`Result::fromJson`、`unitFromJson`、`maybeFromJson`），它们先过 JSON 文本的共同检查；`fromWire` 收已解码的值，看不出重复成员。写出用 `toJson()`，数字按值模型；自己 `json_encode` 时要带 `JSON_PRESERVE_ZERO_FRACTION`，并把 `serialize_precision` 设为 `-1`。`Error::literal()` 与 `withText()` 的文案为空或只有空白时抛 `InvalidArgumentException`。
+- **`Result` 与 `Error` 的读写**：读取按结果的种类选入口（`Result::fromJson`、`unitFromJson`、`maybeFromJson`），它们先过 JSON 文本的共同检查；`fromWire` 收已解码的值，看不出重复成员。写出用 `toJson()`，数字按值模型；自己 `json_encode` 时要带 `JSON_PRESERVE_ZERO_FRACTION`，并把 `serialize_precision` 设为 `-1`。`toJson()` 写出严格（RFC-0001「写出与转交」，ADR-0320）：字符串不是合法的 UTF-8（含编成 UTF-8 的代理项）由 `json_encode` 先报，从结果或错误的根算起嵌套超过 64 层（成功值的最外层是第 2 层，`RawJson` 原样放回的原文也算），或任何一层有重复的成员名时同样写不出，都抛 `\JsonException`、不交出文本；`json_encode` 在 512 层以内照写，所以写完再过 `JsonText::check`。`Error::literal()` 与 `withText()` 的文案为空或只有空白时抛 `InvalidArgumentException`。
 - **空白**：按 RFC-0001 写死的 25 个码位、以 UTF-8 码位判断，不用只认 ASCII 的 `ctype_space` 与 `trim`。
 - **调用器**：传入的 `PipelineBuilder` 不变，三个内置步骤登记在它的副本上，再登记同名的中间件是重复登记。下游抛出 amphp 的 `Amp\CancelledException`（SDK 不依赖 amphp，按类名认出它）按取消归因，不当作未处理的异常。响应写不出（浮点是 NaN 或无穷；非法 UTF-8，含编码成 UTF-8 的代理项（`"\xED\xA0\x80"`）与单个 `0xFF`，值、数组的键、`JsonObject` 的成员名与对象的属性名都算；编码函数抛出）时调用以未处理失败结束，不抛给调用方；非法 UTF-8 的错误不带 `inner`，不写成 U+FFFD（ADR-0318）。写出的整段文本还要过 JSON 文本的共同检查（`JsonText::check`）：嵌套超过 64 层（`RawJson` 原样嵌进去的文本也算，从响应的根算起）同样写不出、不带 `inner`（ADR-0319）；`json_encode` 在 512 层以内照写，所以写完再核对。数组、`JsonObject` 与对象写不出重复的成员名。中间件以成功短路时，可以经 `Current::setResponsePayload` 交出记录的响应。
-- **上下文**：`Context::create(baggage: …)` 是外部输入，丢弃不合的成员；`withBaggage()` 给出不合的值抛 `InvalidArgumentException`。`sampled()` 在没有上游的采样决定时是 `null`，`isSampled()` 给出布尔。没有事件循环时，截止时间在轮询令牌时核对时钟。
+- **上下文**：`Context::create(baggage: …)` 是外部输入，丢弃不合的成员；`withBaggage()` 给出不合的值抛 `InvalidArgumentException`。PHP 的字符串是字节，`BaggageKeys::isAcceptableValue` 拒收不是合法 UTF-8 的值，编成 UTF-8 的孤立代理项（`ED A0 80` 等）也在其中（ADR-0321）。`sampled()` 在没有上游的采样决定时是 `null`，`isSampled()` 给出布尔。没有事件循环时，截止时间在轮询令牌时核对时钟。
 - **清单**：`Manifest::tryRead` / `tryReadFile` 以 `Result` 返回读取失败（`KERNEL_CAPABILITY_006`），`read` / `readFile` 是它们的包装，失败时抛 `ConfigurationException`，`toError()` 是逐字的错误。`tryRead` 不跳过 BOM，`tryReadFile` 跳过。跨字段约束在 `Manifest::validate()`（`PRIMITIVES_VALIDATION_001`），构造清单时不核对。
 - **模板**：`MessageTemplate::format()` / `tryFormat()` 与 `MessageCatalog` 按区域取小数点与分组符（`MessageTemplate::numberSymbols()`），`describe` 按不变文化。
 - **插件运行时**：PHP 的时刻精确到微秒，`deadline` 更细的小数截断。运行时消息键的 10 种区域模板在 `PluginMessages::catalog()`，只供本地渲染，不随握手发送。
 - **回调的载荷**：`Host::invoke` 的 `$payload` 与信封的 `$data` 都是字节串，原样发出，由宿主核对；PHP 没有字符串与 UTF-8 之间的转换，`plugin/invocation.md` §1、§5 的严格编码（ADR-0312、ADR-0315）对 PHP 不用改。
+- **回调客户端关闭之后**：`Host::close()`（运行时收尾时调用，可以调用多次）之后的回调不发请求、不重新连接，结果是 `PLUGINS_UNAVAILABLE_001` + `plugins.host.unavailable`（`reason` 为 `Unavailable: the host client is closed`），排在本地核对之后，`publish` 的每一项都是这个错误；进行中的回调被切断时按映射表的 `Cancelled` 一行。`GrpcClient` 的连接是惰性的，原先关闭之后的回调会重新连上、照常发出（`plugin/invocation.md` §5，ADR-0328）。
+- **写给宿主的错误细节**：插件交回或回调里写出的 `Error.details` 不是合法的 UTF-8 或超过 64 层时，这个错误不带细节、其余字段照写，内部错误的细节各自核对（`plugin/invocation.md` §3，ADR-0320）。
 
 ## 语言映射
 
@@ -219,7 +221,7 @@ PHP 的写法与差异：
 
 ## 一致性
 
-- 现状：原语、清单、调用上下文、管道、操作与进程外插件运行时可用，示例插件 `examples/echo` 通过规范黑盒运行器的全部用例。
+- 现状：原语、清单、调用上下文、管道、操作与进程外插件运行时可用，示例插件 `examples/echo` 通过规范黑盒运行器的全部用例：`events.list` 回显处理器拿到的信封（`envelopes`），以 `--envelopes events.list` 跑 `event-envelope`（ADR-0327）。
 - 认领的档（RFC-0024）：`core` 与 `plugin`；档的定义见规范仓库的 [`conformance/profiles.json`](https://github.com/XiHanFun/framework-spec/blob/main/conformance/profiles.json)。
 - 缺口：无。
 - 钉的规范版本：SDK 仓库 `spec/` 子模块指向的提交；发版时子模块必须正好在规范标签上。
@@ -227,6 +229,7 @@ PHP 的写法与差异：
 - 尚未提供：流式操作（操作契约还没有流式形态，`InvokeStream` 读第一帧后以 `InvalidArgument` 或 `Unimplemented` 结束）、Wasm 载体与远程 Provider 的插件侧（如 `caching.distributed@1`）；管道运行期的成组登记与按归属撤回是宿主能力，不提供。
 - 怎样验证：测试直接回放 `spec/conformance/vectors`；[`tests/VectorCoverageTest.php`](https://github.com/XiHanFun/framework-sdk-php/blob/main/tests/VectorCoverageTest.php) 按档表核对认领的档要求的每个向量要么被测试回放、要么列为缺口；`tests/Plugin/ConformanceTest.php` 用黑盒运行器对示例插件跑全部用例，要求全部通过、没有跳过。CI 在 ubuntu 与 windows 上都跑，并核对插件协议的生成代码与 `plugin.proto` 一致。
 - 信封的 `time`：回放 `plugin/sdk-envelope-times.json` 的微秒一列（ADR-0310）。写出的文本与 `text.microseconds` 逐字相同，读出的时刻与 `utc.microseconds` 相等（比微秒更细的小数截断），`unreadable` 的每一条投递都以 `InvalidArgument` 拒绝。`plugin/envelope-times.json` 现在同在 `plugin` 档。
+- Baggage 的值：`primitives/baggage-keys.json` 的 `values` 另有以码元写出的 `acceptableUtf16` 与 `unacceptableUtf16`，按 WTF-8 组成字节回放：前一组（成对的代理项合成平面以外的一个字符）照收，后一组（编成 UTF-8 的孤立代理项）`isAcceptableValue` 为假（ADR-0321）。
 
 ## 破坏性改动与迁移
 
@@ -245,3 +248,6 @@ PHP 的写法与差异：
 - 新增 `Envelope::$dataSchema`（ADR-0305）→ 不用改。
 - 类型化响应写出的文本嵌套超过 64 层时，调用器与插件 `Invoke` 都以 `KERNEL_UNEXPECTED_001` + `kernel.invocation.unhandled_exception` 结束，没有参数、不带 `inner`、没有载荷；原先在 512 层以内照写，插件交回之后由宿主以 `PLUGINS_UNEXPECTED_001` 拒绝（ADR-0319）→ 响应不要超过 64 层。
 - `KernelErrors::unhandledException()` 的参数可以不传（缺省 `null`，不带 `inner`）→ 不用改。
+- `Result::toJson()` 与 `Error::toJson()` 写出的文本从根算起嵌套超过 64 层或有重复成员时抛 `\JsonException`、不写出文本，原先在 512 层以内照写；非法的 UTF-8 照旧抛出（ADR-0320）→ 写出之前把值控制在 64 层以内，`RawJson` 只放没有重复成员的文本。
+- 插件写给宿主的错误细节超过 64 层时这个错误不带细节、其余照写（ADR-0320）→ 不用改。
+- `Host::close()` 之后的回调不再懒连接照常发出，在本地核对之后以 `plugins.host.unavailable` 结束、不发请求（ADR-0328）→ 不用改。
