@@ -171,7 +171,7 @@ TypeScript 的写法与差异：
 - **文法**：规范的正则都按整串匹配。JavaScript 的 `$` 在没有 `m` 标志时只匹配输入的末尾，本 SDK 的正则都不带 `m`。
 - **插件运行时**：JavaScript 的时钟精度是毫秒，读 `deadline` 时第三位之后的小数截断，写出时补零到七位。`healthInterval` 选项以毫秒给出健康回调的轮询间隔（缺省 10 秒）。`parseHandshakeLine`、`parseEndpoint`、`parseHostAddresses`、`selectHostEndpoint` 是握手行与端点文法的公开入口；运行时消息键的目录是 `pluginMessages`，只用于本地渲染与日志。
 - **回调的载荷**：`Host.invoke` 的字符串载荷与 `Host.publish` 信封的字符串 `data` 在发出之前严格编码成 UTF-8，先逐个码元核对代理项成对，不像 `TextEncoder` 那样换成 U+FFFD。`Host.invoke` 的载荷有孤立的代理项时不发请求，结果是 `KERNEL_VALIDATION_001` + `kernel.operation.invalid_payload`（`id` 为操作 ID，`reason` 为 `$`）；`Host.publish` 里 `data` 编不成的那一项不发出，结果是 `MESSAGING_VALIDATION_002` + `messaging.envelope.invalid`（`reason` 为 `the data has a lone surrogate and cannot be encoded as UTF-8`），其余各项照常组成一次请求、结果放回原位，每一项都编不成时不发请求。两者都排在回调端点、权限、租户、截止时间与取消的本地核对之后，整批不合时每一项都是整批的那个错误。`Uint8Array` 原样发出，由宿主核对（`plugin/invocation.md` §5，ADR-0312、ADR-0315）。
-- **应答载荷**：运行时把调用器交回的应答严格编码成 UTF-8 写进 `InvokeResponse.payload`，编不成即 `KERNEL_UNEXPECTED_001` + `kernel.invocation.unhandled_exception`、载荷为空（`plugin/invocation.md` §1，ADR-0315）。调用器用 `writeJson` 写出响应，字符串里孤立的代理项写成 `\ud800` 这样的转义；宿主核对插件交回的应答，带这种转义的应答以 `PLUGINS_UNEXPECTED_001` + `plugins.process.failed`（`reason` 为 `the response payload is not valid JSON text at '<路径>'`）失败，所以响应对象里的字符串要是合法的 Unicode。
+- **应答载荷**：调用器用 `writeJson(…, { nonFinite: 'reject', loneSurrogates: 'reject' })` 写出类型化的响应，字符串（成员名与值，含 `JsonMembers` 的成员名与 `toJSON` 交出的字符串）有孤立的代理项即写不出，以 `KERNEL_UNEXPECTED_001` + `kernel.invocation.unhandled_exception` 结束，没有参数、不带 `inner`、没有载荷，不写成 `\ud800` 这样的转义交给宿主（RFC-0011 规则 10 的「编码」，ADR-0318）。运行时把应答严格编码成 UTF-8 写进 `InvokeResponse.payload`，编不成同样是这个结果（`plugin/invocation.md` §1，ADR-0315）。
 
 ## 语言映射
 
@@ -180,7 +180,7 @@ TypeScript 的写法与差异：
 - **请求的形状**：`RequestShape` 相当于 .NET 的序列化元数据。`string()` 读成 `string | null`；`boolean()`、`int32()`（`number`）、`int64()`（`bigint`）、`float64()`（`number`）不接受 `null`；`array(item)`、`record(value)`、`object(members)` 与 `json()` 接受 `null`。对象成员缺省是可选的，没有给出时不出现在结果里；`RequestShape.required(shape)` 声明必填，只要求出现，值为 `null` 也算出现。`RequestShape.custom(decode)` 相当于自定义转换器，抛出 `RequestDecodeError(path)` 时取它的路径。`RequestShapeType<typeof S>` 取出形状读出的类型。
 - **数字**：安全整数的 `number`（负零除外）与 64 位范围内的 `bigint` 是整数；其余 `number`、超出 64 位的 `bigint` 与 `Float64` 是双精度浮点。`number` 分不出 `2` 与 `2.0`，值恰好是整数的浮点装进 `Float64`（`new Float64(2)`，算术照常可用）。
 - **读到的 JSON 数字**：整数写法且在 64 位范围内是整数，安全整数读成 `number`，其余读成 `bigint`；浮点的值恰好是安全整数（`2.0`、`1e2`）时读成 `Float64`，否则读成 `number`。换成数值再写出会与原文不同的（`1e400`、超出 64 位的整数、多于双精度的有效数字）读成保留原文的 `JsonNumber`，任意 JSON 的成员因此写回时 JSON 值相等。
-- **写出**：`writeJson` 按 `JSON.stringify` 的规则写（先调用 `toJSON`），只是数字按值模型：整数写十进制，整数值的浮点补 `.0`，`JsonNumber` 照原文；非有限值缺省写成字符串（无类型的值，如错误细节），`{ nonFinite: 'reject' }` 时写不出（类型化的值，如操作的响应）。
+- **写出**：`writeJson` 按 `JSON.stringify` 的规则写（先调用 `toJSON`），只是数字按值模型：整数写十进制，整数值的浮点补 `.0`，`JsonNumber` 照原文；非有限值缺省写成字符串（无类型的值，如错误细节），`{ nonFinite: 'reject' }` 时写不出（类型化的值，如操作的响应）。字符串里孤立的代理项缺省写成 `\ud800` 这样的转义（RFC-0010 的模板与错误细节照旧），`{ loneSurrogates: 'reject' }` 时写不出、抛出 `TypeError`（操作的类型化响应）；两个选项都在 `JsonWriteOptions` 里。
 - **对象的顺序**：JavaScript 对象把整数样式的键（`"1"`）提到前面，要按文本顺序报错的检查用 `JsonMembers`，`toJsonValue` 转成普通对象。名为 `__proto__` 的成员是普通成员，不改原型。
 - **模板里的其他值**：数组、类型化数组、`Set` 与其他可迭代对象是数组；普通对象、`JsonMembers` 与 `Map` 是对象；嵌套的 `undefined` 写 `null`；`Date` 写 `toISOString()`；类实例、symbol 与函数写 `String(value)`。这些文本不跨语言，插件要跨语言格式化时先转成字符串。
 
@@ -224,3 +224,4 @@ TypeScript 的写法与差异：
 - `PluginBinding` 多了成员 `properties`（`ReadonlyMap<string, string>`，绑定的属性，ADR-0285）；运行时交出的绑定的 `JSON.stringify` 写成 `{"name":…,"type":…,"propertyNames":[…]}`（属性名按升序），`console.log` 同样不再带 `value` → 读绑定的代码不用改；自己用对象字面量构造 `PluginBinding` 的补上 `properties: new Map()`；要把值写出来的直接读 `binding.value`。
 - `Envelope.time` 由 `string` 改为 `Date`，`DeliveredEnvelope.time` 由 `string`（空串为没有）改为 `Date | undefined`（ADR-0306）；宿主写来的 `time` 读不出的投递以 `InvalidArgument` 拒绝 → 发布处把 `time: date.toISOString()` 改成 `time: date`；读 `envelope.time` 的按 `Date` 读，原先判空串的改判 `undefined`。
 - `Envelope` 与 `DeliveredEnvelope` 新增 `dataSchema`（CloudEvents `dataschema`，ADR-0305，投递时总在、空串是没有）→ 不用改；自己构造 `DeliveredEnvelope`（如测试里直接调处理器）的补上 `dataSchema: ''`。
+- 操作的响应里的字符串有孤立的代理项时，调用在本地以 `KERNEL_UNEXPECTED_001` + `kernel.invocation.unhandled_exception` 失败、没有载荷，原先写成 `\ud800` 这样的转义，插件交回后由宿主以 `PLUGINS_UNEXPECTED_001` 拒绝、进程内调用照常成功（ADR-0318）；`JsonWriteOptions` 新增 `loneSurrogates?: 'escape' | 'reject'`，缺省不变 → 外部来的文本放进响应之前先用 `isWellFormed` / `toWellFormed` 核对或替换。

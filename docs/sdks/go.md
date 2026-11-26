@@ -145,7 +145,7 @@ Go 的写法与差异：
 - **清单**：`manifest.Read` / `ReadFile` 失败是 `*primitives.Error`（`KERNEL_CAPABILITY_006`），`Read` 不跳过 BOM、`ReadFile` 跳过；`Manifest.Validate` 的码是 `PRIMITIVES_VALIDATION_001`；`manifest.Write` 不做校验。可选的字符串 `Package`、`Entry` 与 `ConfigContribution.Schema` 是 `*string`（`nil` 是没写，指向空串是写了空串），用 `manifest.Text("…")` 赋值。`contributes.pipeline` 的规则由 `plugin.Serve` 核对，`manifest.Read` 不查。
 - **模板**：带区域的入口是 `FormatMessageIn`、`TryFormatMessageIn`、`FormatArgumentIn`，不带区域的 `FormatMessage` 等按不变文化。`Catalog.Resolve` 是严格解析（缺键或缺值即返回假），`FormatMessage` 是宽松的（缺值的占位符原样保留）。
 - **调用器**：`operation.NewInvoker` 在管道的副本里加上三个内置步骤 `ObserveMiddleware`、`DeadlineMiddleware`、`ValidationMiddleware`，管道里不能再登记同名的中间件，`Invoker.Pipeline()` 返回实际执行的管道。响应在管道结束之后才用 `encoding/json` 编码，中间件用 `operation.ResponseOf(ctx)` 看编码之前的对象；`operation.Current`、`RequestOf` 只在调用期间的上下文上可见。
-- **应答与发布的数据**：回调载荷、`Envelope.Data` 与操作的响应都是 `[]byte`，响应由 `encoding/json` 写出，`plugin/invocation.md` §1、§5 的严格编码（ADR-0312、ADR-0315）对 Go 不用改：字节原样发出，由宿主核对。
+- **应答与发布的数据**：回调载荷与 `Envelope.Data` 是 `[]byte`，原样发出，由宿主核对（`plugin/invocation.md` §5，ADR-0312、ADR-0315）。操作的响应由 `encoding/json` 写出，写不成合法的 JSON 文本即写不出（RFC-0011 规则 10 的「编码」，ADR-0318）：要写出的字符串（成员名与值，含 map 的键、`MarshalText` 的结果与 `primitives.ID` / `Maybe` 里的值）不是合法的 UTF-8（含编成 UTF-8 的孤立代理项），`json.Marshaler` 交出的原文有非法字节、孤立代理项的转义或重复成员，或嵌套超过 64 层，都以 `KERNEL_UNEXPECTED_001` + `kernel.invocation.unhandled_exception` 结束，没有参数、不带 `inner`、没有载荷，原因与出错的路径写进调用器的日志。`encoding/json` 把非法的 UTF-8 换成 U+FFFD 照常写出，SDK 在它写成功之后照它的规则（导出字段、`json:"-"`、嵌入、`omitzero`、指针与值接收者的 `MarshalJSON` / `MarshalText`）把要写出的字符串再查一遍；`MarshalJSON` 自己换成 U+FFFD 的看不出来。
 - **远程缓存 Provider**：`caching.RegisterOperations` 的九个操作都先在适配层校验键、选项与 base64，再调 `Store`；`Store` 返回的错误是（或用 `%w` 包着）`*primitives.Error` 时原样交给宿主，别的按后端不可用。
 
 ## 语言映射
@@ -201,7 +201,7 @@ Go 自己的文本（日期、`Duration`、结构体）不跨语言：插件的�
 
 ### 文法与空白
 
-操作 ID、主题、清单的激活事件、缓存键、协议版本协商、端点与回调失败的映射直接调规范一致性模块的 `rules`，SDK 里不另存一份。操作 ID 不超过 128 个字符（`operation.MaxIDLength`），缓存键按 UTF-8 编码后不超过 512 字节（`caching.MaxKeyLength`）。空白指 RFC-0001「空白字符」写死的 25 个码位（`rules.IsWhitespace`），握手行、`Error` 的 `message` 与自由文本共用。
+操作 ID、主题、清单的激活事件、缓存键、协议版本协商、端点与回调失败的映射直接调规范一致性模块的 `rules`，SDK 里不另存一份。操作 ID 不超过 128 个字符（`operation.MaxIDLength`），缓存键按 UTF-8 编码后不超过 512 字节（`caching.MaxKeyLength`）。空白指 RFC-0001「空白字符」写死的 25 个码位（`rules.IsWhitespace`），握手行、`Error` 的 `message` 与自由文本共用。缓存键还要是合法的 UTF-8：孤立的代理项在 Go 里只能是非法的字节，`caching.IsKey` / `ValidateKey` 拒收（ADR-0316）。
 
 ## 设计取舍
 
@@ -220,6 +220,7 @@ Go 自己的文本（日期、`Duration`、结构体）不跨语言：插件的�
 - 范围外：流式操作（操作契约还没有流式形态，`InvokeStream` 读第一帧后以 `InvalidArgument` 或 `Unimplemented` 结束）与 Wasm 载体。
 - 怎样验证：各包的测试经一致性模块读取内嵌的向量并回放，仓库根的 [`vectors_test.go`](https://github.com/XiHanFun/framework-sdk-go/blob/main/vectors_test.go) 按档表核对认领的档要求的每个向量要么有测试回放、要么列为缺口；两个示例的测试构建插件，用 `go.mod` 里同一版本的 `xihan-conformance` 跑全部用例。CI 在 Linux 与 Windows 上都跑。用 Go 实现的分布式缓存另经远程 Provider 适配器通过 .NET 的缓存一致性套件（`framework/samples/CacheGoPlugin`）。
 - 信封的 `time`：回放 `plugin/sdk-envelope-times.json` 的纳秒一列（ADR-0310）。作者给的时刻经 `ToProtoEnvelope` 写出的文本与 `text.nanoseconds` 逐字相同，宿主写来的文本经 `FromProtoEnvelope` 读出的时刻与 `utc.nanoseconds` 相等，`unreadable` 的每一条投递都以 `InvalidArgument` 拒绝。`time.Time` 是纳秒精度，不截断，没有跳过的用例。`plugin/envelope-times.json` 现在同在 `plugin` 档。
+- 缓存键：`caching/cache-keys.json` 里以 `utf16` 码元给出的键（孤立的代理项，ADR-0316）按 WTF-8 组成字节（一致性模块的 `Input()`），`IsKey` 与 `ValidateKey` 都拒收；它们写不进宿主的 JSON，按码元写成转义的请求在解码时以 `KERNEL_VALIDATION_001`（`reason` 为 `$`）被拒。
 
 ## 破坏性改动与迁移
 
@@ -239,3 +240,5 @@ Go 自己的文本（日期、`Duration`、结构体）不跨语言：插件的�
 - `json.Marshal` 绑定（含 `[]Binding`、`Configuration` 与 `NewLogHandler` 的 JSON 日志）只写 `name`、`type` 与按升序排列的 `propertyNames`，不再写 `Name`、`Type`、`Value` 字段；slog 里的绑定组同样是这三个成员 → 要持久化主值或属性的逐字段自己取；按旧字段名解析 JSON 或日志的改用新成员名。
 - `plugin.Envelope.Time` 由 `string` 改为 `*time.Time`（nil 是没有，ADR-0306），SDK 写出以 `Z` 结尾、去掉小数末尾 0 的 RFC 3339，投递时把宿主的文本读成 UTC 时刻；宿主写来的 `time` 读不出的投递以 gRPC `InvalidArgument` 拒绝；`plugin.FromProtoEnvelope` 改为返回 `(Envelope, bool)` → 发布处把 `Time: t.UTC().Format(time.RFC3339Nano)` 改成 `Time: new(t)`（或 `&t`）；读 `envelope.Time` 的先判 nil；调用 `FromProtoEnvelope` 的接住第二个返回值。
 - `plugin.Envelope` 与 `plugin/v1.Envelope` 新增 `DataSchema`（CloudEvents `dataschema`，ADR-0305）→ 不用改；不带字段名的 `Envelope` 复合字面量补上字段名。
+- 操作的响应里有不是合法 UTF-8 的字符串（含 map 的键、`MarshalText` 的结果、`primitives.ID` / `Maybe` 里的值），`json.Marshaler` 的原文有非法字节、孤立代理项的转义或重复成员，或嵌套超过 64 层时，调用以 `KERNEL_UNEXPECTED_001` + `kernel.invocation.unhandled_exception` 失败、没有载荷，原先写成 U+FFFD 照常成功（ADR-0318）→ 外部来的字节放进响应之前先用 `utf8.ValidString` 核对或用 `strings.ToValidUTF8` 换掉，`json.RawMessage` 只放合法的 JSON 文本。
+- `caching.IsKey` / `ValidateKey` 拒收不是合法 UTF-8 的键（`CACHING_VALIDATION_001`），原先按 U+FFFD 读、照常接受（ADR-0316）→ 自己拼键的地方保证键是合法的 UTF-8。

@@ -188,7 +188,7 @@ PHP 的写法与差异：
 
 - **`Result` 与 `Error` 的读写**：读取按结果的种类选入口（`Result::fromJson`、`unitFromJson`、`maybeFromJson`），它们先过 JSON 文本的共同检查；`fromWire` 收已解码的值，看不出重复成员。写出用 `toJson()`，数字按值模型；自己 `json_encode` 时要带 `JSON_PRESERVE_ZERO_FRACTION`，并把 `serialize_precision` 设为 `-1`。`Error::literal()` 与 `withText()` 的文案为空或只有空白时抛 `InvalidArgumentException`。
 - **空白**：按 RFC-0001 写死的 25 个码位、以 UTF-8 码位判断，不用只认 ASCII 的 `ctype_space` 与 `trim`。
-- **调用器**：传入的 `PipelineBuilder` 不变，三个内置步骤登记在它的副本上，再登记同名的中间件是重复登记。下游抛出 amphp 的 `Amp\CancelledException`（SDK 不依赖 amphp，按类名认出它）按取消归因，不当作未处理的异常。响应写不出（浮点是 NaN 或无穷、非法 UTF-8、编码函数抛出）时调用以未处理失败结束，不抛给调用方。中间件以成功短路时，可以经 `Current::setResponsePayload` 交出记录的响应。
+- **调用器**：传入的 `PipelineBuilder` 不变，三个内置步骤登记在它的副本上，再登记同名的中间件是重复登记。下游抛出 amphp 的 `Amp\CancelledException`（SDK 不依赖 amphp，按类名认出它）按取消归因，不当作未处理的异常。响应写不出（浮点是 NaN 或无穷；非法 UTF-8，含编码成 UTF-8 的代理项（`"\xED\xA0\x80"`）与单个 `0xFF`，值、数组的键、`JsonObject` 的成员名与对象的属性名都算；编码函数抛出）时调用以未处理失败结束，不抛给调用方；非法 UTF-8 的错误不带 `inner`，不写成 U+FFFD（ADR-0318）。中间件以成功短路时，可以经 `Current::setResponsePayload` 交出记录的响应。
 - **上下文**：`Context::create(baggage: …)` 是外部输入，丢弃不合的成员；`withBaggage()` 给出不合的值抛 `InvalidArgumentException`。`sampled()` 在没有上游的采样决定时是 `null`，`isSampled()` 给出布尔。没有事件循环时，截止时间在轮询令牌时核对时钟。
 - **清单**：`Manifest::tryRead` / `tryReadFile` 以 `Result` 返回读取失败（`KERNEL_CAPABILITY_006`），`read` / `readFile` 是它们的包装，失败时抛 `ConfigurationException`，`toError()` 是逐字的错误。`tryRead` 不跳过 BOM，`tryReadFile` 跳过。跨字段约束在 `Manifest::validate()`（`PRIMITIVES_VALIDATION_001`），构造清单时不核对。
 - **模板**：`MessageTemplate::format()` / `tryFormat()` 与 `MessageCatalog` 按区域取小数点与分组符（`MessageTemplate::numberSymbols()`），`describe` 按不变文化。
