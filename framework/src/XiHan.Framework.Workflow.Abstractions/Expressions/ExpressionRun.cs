@@ -14,9 +14,9 @@ namespace XiHan.Framework.Workflow.Abstractions.Expressions;
 /// 一次求值或一次渲染的状态：作用域与累计的工作量
 /// </summary>
 /// <remarks>
-/// 工作量的规则来自 RFC-0021「表达式」的「长度与上限」（ADR-0296、ADR-0303、ADR-0309）：每开始求值一个节点记 <see cref="StepWork"/>；运算读到的字符串记它的长度（<c>isNullOrEmpty</c> 只读到能判定为止），读到的数字记它的写法的长度（从 JSON 文本读来的是原文，别的是写成 JSON 的文本），读到的数组与对象记它里面每个值 <see cref="StepWork"/>（它自己也算一个）加上全部字符串、数字与成员名的长度；累计超过 <see cref="MaxWork"/> 即以 <see cref="WorkflowMessages.ExpressionBudgetExceeded"/> 失败。工作量只取决于表达式、值与求值的次序，与平台和机器的快慢无关，所以能写进向量。读标量的方法交回运算接着用的值或文本，一次运算里同一个字符串只取出一次。一次 <c>Render</c> 的全部占位共用一个实例
+/// 工作量的规则来自 RFC-0021「表达式」的「长度与上限」（ADR-0296、ADR-0303、ADR-0309）：每开始求值一个节点记 <see cref="StepWork"/>；运算读到的字符串记它的长度（<c>isNullOrEmpty</c> 只读到能判定为止），读到的数字记它的写法的长度（从 JSON 文本读来的是原文，别的是写成 JSON 的文本），读到的数组与对象记它里面每个值 <see cref="StepWork"/>（它自己也算一个）加上全部字符串、数字与成员名的长度；累计超过 <see cref="MaxWork"/> 即以 <see cref="WorkflowMessages.ExpressionBudgetExceeded"/> 失败。工作量只取决于表达式、值与求值的次序，与平台和机器的快慢无关，所以能写进向量。读的方法交回运算接着用的值或文本（标量、作文本的数组与对象、<c>contains</c> 要比较的元素），一次运算里同一个字符串只取出一次。一次 <c>Render</c> 的全部占位共用一个实例
 /// </remarks>
-internal sealed class ExpressionRun
+internal sealed class ExpressionRun : IValueTextTally
 {
     /// <summary>
     /// 一次求值的工作量上限（UTF-16 码元）
@@ -101,7 +101,7 @@ internal sealed class ExpressionRun
     /// 读一个值并取出它的文本
     /// </summary>
     /// <remarks>
-    /// 读取量与 <see cref="Read"/> 相同，文本与 <see cref="WorkflowValueText.Of"/> 相同。字符串只取出一次，同一份文本既量长度又交给运算：<c>len</c>（ADR-0309）、<c>upper</c> 等文本函数、拼接与渲染以前各取两遍，从 JSON 文本读来的值每取一遍都要解码全文。数字先记它的写法的长度再写成文本，读先于运算
+    /// 读取量与 <see cref="Read"/> 相同，文本与 <see cref="WorkflowValueText.Of"/> 相同。字符串只取出一次，同一份文本既量长度又交给运算：<c>len</c>（ADR-0309）、<c>upper</c> 等文本函数、拼接与渲染以前各取两遍，从 JSON 文本读来的值每取一遍都要解码全文。数字先记它的写法的长度再写成文本，读先于运算。数组与对象边量规模边写文本（ADR-0326），里面的每个字符串同样只取一次
     /// </remarks>
     /// <param name="node">值</param>
     /// <returns>值的文本形式</returns>
@@ -119,9 +119,8 @@ internal sealed class ExpressionRun
                 Add(MeasureScalar(value));
                 return WorkflowValues.AsString(value);
             default:
-                // 数组与对象先量规模再写成文本：量到超过上限即停，几十万个值的容器不必先写出来
-                Read(node);
-                return WorkflowValueText.Of(node);
+                // 数组与对象边写文本边记读取量：写每个值之前先记它，累计超过上限即在那里失败、不再往下写，几十万个值的容器不必写完；先量再写要把每个字符串取两遍
+                return WorkflowValueText.Json(node, this);
         }
     }
 
@@ -142,6 +141,40 @@ internal sealed class ExpressionRun
         }
 
         return empty;
+    }
+
+    /// <summary>
+    /// 读一个数组，交回与要找的值比较时用的元素
+    /// </summary>
+    /// <remarks>
+    /// <c>contains</c> 在数组里找时用（ADR-0326）：读取量与 <see cref="Read"/> 相同。是字符串的元素量长度时取出全文，取出的这份文本经返回值交给比较（<see cref="Materialize"/>），比较不再取第二遍；别的元素照 <see cref="Read"/> 量，原样交回
+    /// </remarks>
+    /// <param name="array">数组</param>
+    /// <returns>与 <paramref name="array"/> 等长同序的元素</returns>
+    public JsonNode?[] ReadItems(JsonArray array)
+    {
+        var items = new JsonNode?[array.Count];
+        // 与 Measure 同一种量法：数组自己一步，每个元素一步加它的读取量；累计超过剩下的额度即停，记上即失败，没量到的元素不必再看
+        var limit = MaxWork - Work;
+        long total = StepWork;
+        for (var index = 0; index < items.Length && total <= limit; index++)
+        {
+            var item = array[index];
+            if (item is JsonValue value && value.GetValueKind() == JsonValueKind.String)
+            {
+                var text = WorkflowValues.AsString(value);
+                total += StepWork + text.Length;
+                items[index] = Materialize(value, text);
+            }
+            else
+            {
+                MeasureContainer(item, 2, limit, ref total);
+                items[index] = item;
+            }
+        }
+
+        Add(total);
+        return items;
     }
 
     /// <summary>
@@ -183,6 +216,21 @@ internal sealed class ExpressionRun
         Add(amount * times);
         return compared;
     }
+
+    /// <inheritdoc />
+    /// <remarks>
+    /// 写数组与对象的文本时（<see cref="ReadText"/>）每个值一步，与 <see cref="Read"/> 量容器的规模相同
+    /// </remarks>
+    void IValueTextTally.Value() => Add(StepWork);
+
+    /// <inheritdoc />
+    void IValueTextTally.Name(string name) => Add(name.Length);
+
+    /// <inheritdoc />
+    void IValueTextTally.Text(string text) => Add(text.Length);
+
+    /// <inheritdoc />
+    void IValueTextTally.Number(JsonValue value) => Add(NumberLength(value));
 
     /// <summary>
     /// 一个值的读取量

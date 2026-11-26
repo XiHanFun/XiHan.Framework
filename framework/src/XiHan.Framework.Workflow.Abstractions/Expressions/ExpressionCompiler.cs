@@ -501,10 +501,10 @@ internal sealed class ExpressionCompiler
                     var needle = args[1](run);
                     if (haystack is JsonArray array)
                     {
-                        // 每个元素都与要找的值比一次：读数组一遍，再按元素个数读要找的值；要找的字符串只取出一次，每次比较都用这一份
-                        run.Read(array);
+                        // 每个元素都与要找的值比一次：读数组一遍，再按元素个数读要找的值；量元素时取出的字符串就是比较用的那份，要找的字符串也只取出一次，每次比较都用这一份
+                        var items = run.ReadItems(array);
                         var compared = run.ReadTimes(needle, array.Count);
-                        foreach (var item in array)
+                        foreach (var item in items)
                         {
                             if (AreEqual(item, compared))
                             {

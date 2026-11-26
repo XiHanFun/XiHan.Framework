@@ -31,16 +31,23 @@ internal static class WorkflowValueText
     {
         null => string.Empty,
         JsonValue value => WorkflowValues.AsString(value),
-        _ => Json(node),
+        _ => Json(node, default(Untallied)),
     };
 
     /// <summary>
-    /// 数组或对象的紧凑 JSON 文本
+    /// 数组或对象的紧凑 JSON 文本，写的同时把读到的每个值记进 <paramref name="tally"/>
     /// </summary>
-    private static string Json(JsonNode node)
+    /// <remarks>
+    /// 文本与 <see cref="Of"/> 相同。每个字符串只取一次文本，记的与写的是同一份；<paramref name="tally"/> 抛出即停下，不再往下写
+    /// </remarks>
+    /// <typeparam name="TTally">记读取量的一方</typeparam>
+    /// <param name="node">数组或对象</param>
+    /// <param name="tally">逐个记下读到的值</param>
+    public static string Json<TTally>(JsonNode node, TTally tally)
+        where TTally : IValueTextTally
     {
         var builder = new StringBuilder();
-        Write(builder, node, 1);
+        Write(builder, node, 1, tally);
         return builder.ToString();
     }
 
@@ -50,18 +57,23 @@ internal static class WorkflowValueText
     /// <remarks>
     /// 没有空白；对象的成员按名字的序数顺序（逐个 UTF-16 码元比较）；数字写规范文本；超过 <see cref="MaxDepth"/> 层的容器写成 <c>null</c>
     /// </remarks>
+    /// <typeparam name="TTally">记读取量的一方</typeparam>
     /// <param name="builder">输出</param>
     /// <param name="node">要写的值</param>
     /// <param name="depth">本值作为容器时所在的层数，最外层为 1</param>
-    private static void Write(StringBuilder builder, JsonNode? node, int depth)
+    /// <param name="tally">逐个记下读到的值</param>
+    private static void Write<TTally>(StringBuilder builder, JsonNode? node, int depth, TTally tally)
+        where TTally : IValueTextTally
     {
+        // 每个值先记一步再写：null、布尔与超过层数的容器只有这一步
+        tally.Value();
         switch (node)
         {
             case null:
                 builder.Append("null");
                 return;
             case JsonValue value:
-                WriteScalar(builder, value);
+                WriteScalar(builder, value, tally);
                 return;
             case JsonArray array when depth <= MaxDepth:
                 builder.Append('[');
@@ -72,7 +84,7 @@ internal static class WorkflowValueText
                         builder.Append(',');
                     }
 
-                    Write(builder, array[index], depth + 1);
+                    Write(builder, array[index], depth + 1, tally);
                 }
 
                 builder.Append(']');
@@ -88,9 +100,10 @@ internal static class WorkflowValueText
                     }
 
                     first = false;
+                    tally.Name(name);
                     WriteString(builder, name);
                     builder.Append(':');
-                    Write(builder, member, depth + 1);
+                    Write(builder, member, depth + 1, tally);
                 }
 
                 builder.Append('}');
@@ -108,17 +121,28 @@ internal static class WorkflowValueText
     /// <remarks>
     /// 数字写规范文本（超出数字范围的照 JSON 里的原文），布尔写 <c>true</c> / <c>false</c>，字符串按 JSON 字符串写法
     /// </remarks>
-    private static void WriteScalar(StringBuilder builder, JsonValue value)
+    /// <typeparam name="TTally">记读取量的一方</typeparam>
+    /// <param name="builder">输出</param>
+    /// <param name="value">要写的标量</param>
+    /// <param name="tally">记下读到的字符串与数字</param>
+    private static void WriteScalar<TTally>(StringBuilder builder, JsonValue value, TTally tally)
+        where TTally : IValueTextTally
     {
         switch (value.GetValueKind())
         {
             case JsonValueKind.Number:
+                tally.Number(value);
+                builder.Append(WorkflowValues.AsString(value));
+                return;
             case JsonValueKind.True:
             case JsonValueKind.False:
                 builder.Append(WorkflowValues.AsString(value));
                 return;
             case JsonValueKind.String:
-                WriteString(builder, WorkflowValues.AsString(value));
+                // 只取一次文本：记的长度与写进去的是同一份
+                var text = WorkflowValues.AsString(value);
+                tally.Text(text);
+                WriteString(builder, text);
                 return;
             default:
                 // 由带自定义转换器的 CLR 对象构造的值：照它的 JSON 形式
@@ -187,5 +211,31 @@ internal static class WorkflowValueText
         }
 
         builder.Append('"');
+    }
+
+    /// <summary>
+    /// 什么也不记：只写文本
+    /// </summary>
+    private readonly struct Untallied : IValueTextTally
+    {
+        /// <inheritdoc />
+        public void Value()
+        {
+        }
+
+        /// <inheritdoc />
+        public void Name(string name)
+        {
+        }
+
+        /// <inheritdoc />
+        public void Text(string text)
+        {
+        }
+
+        /// <inheritdoc />
+        public void Number(JsonValue value)
+        {
+        }
     }
 }

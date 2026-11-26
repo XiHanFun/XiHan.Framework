@@ -11,7 +11,7 @@ namespace XiHan.Framework.Workflow.Abstractions.Tests;
 /// 一次求值的工作量上限（RFC-0021「表达式」的「长度与上限」）
 /// </summary>
 /// <remarks>
-/// ADR-0296、ADR-0303、ADR-0309。计数规则逐条由 <c>expression-limits.json</c> 的 <c>budgets</c> 回放；这里核对向量写不出来的部分：几十万个值的容器、溢出的乘积、工作量按求值与渲染分开计、进程内由 CLR 类型构造的数字与写进存储再读回来的读取量相同、表达式得出的数字写成 JSON 是数字的文本、<c>len</c> 与 <c>isNullOrEmpty</c> 对从 JSON 读来与进程内构造的字符串记同样的读取量、读字符串的运算接着用量长度时取出的文本之后结果与工作量不变
+/// ADR-0296、ADR-0303、ADR-0309。计数规则逐条由 <c>expression-limits.json</c> 的 <c>budgets</c> 回放；这里核对向量写不出来的部分：几十万个值的容器、溢出的乘积、工作量按求值与渲染分开计、进程内由 CLR 类型构造的数字与写进存储再读回来的读取量相同、表达式得出的数字写成 JSON 是数字的文本、<c>len</c> 与 <c>isNullOrEmpty</c> 对从 JSON 读来与进程内构造的字符串记同样的读取量、读字符串的运算接着用量长度时取出的文本之后结果与工作量不变、数组与对象作文本实参以及 <c>contains</c> 在数组里找时每个字符串只取一次文本
 /// </remarks>
 public sealed class ExpressionBudgetTests
 {
@@ -240,6 +240,7 @@ public sealed class ExpressionBudgetTests
             "items[i]", "fields[k]", "contains(words, s)", "contains(s, 'é')", "startsWith(s, 'a')", "endsWith(s, e)",
             "len(s)", "len(n)", "isNullOrEmpty(s)", "isNullOrEmpty(e)", "upper(s)", "lower(s)", "trim(n)", "toString(s)", "date(t)", "s + e + n",
             "toNumber(n)", "abs(n)", "min(n, p)", "max(n, p)", "round(n, p)", "format(n, p)",
+            "toString(words)", "upper(fields)", "words + e", "contains(fields, 'x')", "startsWith(words, '[')", "contains(words, 'x')", "contains(words, e)",
         ];
 
         foreach (var expression in expressions)
@@ -250,9 +251,52 @@ public sealed class ExpressionBudgetTests
         }
 
         // 渲染时占位的字符串同样只取一次，写进结果的文本与工作量相同
-        const string Template = "{{ s }}|{{ n }}|{{ fields }}";
+        const string Template = "{{ s }}|{{ n }}|{{ fields }}|{{ words }}";
         var rendered = _evaluator.Render(Template, new ExpressionScope(parsed, TimeProvider.System), out var renderedWork).ValueOrThrow();
         Assert.Equal((_evaluator.Render(Template, new ExpressionScope(constructed, TimeProvider.System), out var expectedWork).ValueOrThrow(), expectedWork), (rendered, renderedWork));
+    }
+
+    [Fact]
+    public void ContainersReadAsText_TakeEachStringOnce()
+    {
+        // 数组与对象作文本实参时边量规模边写文本：容器里的每个字符串只取一次文本，量长度的与写进结果的是同一份
+        var listed = new CountingText("aé😀\n");
+        var nested = new CountingText("x");
+        string[] expressions =
+        [
+            "toString(items)", "upper(items)", "lower(fields)", "trim(fields)", "items + ''", "'' + fields",
+            "contains(fields, 'zz')", "startsWith(items, '[')", "endsWith(fields, '}')",
+        ];
+
+        foreach (var expression in expressions)
+        {
+            // 两个容器里各有一份这两个值，每个表达式只读其中一个容器
+            var scope = Scope(
+                ("items", new JsonArray(listed.ToValue(), 1, true, null, new JsonObject { ["k"] = nested.ToValue() })),
+                ("fields", new JsonObject { ["b"] = new JsonArray(nested.ToValue()), ["a"] = listed.ToValue(), ["c"] = 2.5m }));
+            Assert.True(_evaluator.Evaluate(expression, scope, out _).IsSuccess);
+            Assert.Equal((expression, 1, 1), (expression, listed.Takes, nested.Takes));
+        }
+
+        // 渲染时整个容器作占位同样只取一次
+        var rendered = Scope(("items", new JsonArray(listed.ToValue(), new JsonObject { ["k"] = nested.ToValue() })));
+        Assert.Equal("[\"aé😀\\n\",{\"k\":\"x\"}]", _evaluator.Render("{{ items }}", rendered, out _).ValueOrThrow());
+        Assert.Equal((1, 1), (listed.Takes, nested.Takes));
+    }
+
+    [Fact]
+    public void FindingInAnArrayReadFromJson_DecodesEachElementOnce()
+    {
+        // contains 在数组里找：量元素时取出的字符串就是比较用的那份。从 JSON 文本读来的字符串每取一次文本都要解码全文、分配一个新的字符串，一百万码元的元素只解码一次
+        var items = (JsonArray)JsonNode.Parse("[\"" + new string('a', 1_048_576) + "\"]")!;
+        var scope = Scope(("items", items));
+        Assert.False(_evaluator.Evaluate("contains(items, 'b')", scope, out _).ValueOrThrow().OrNull()?.GetValue<bool>());
+
+        var once = Allocated(() => _ = items[0]!.GetValue<string>());
+        var found = Allocated(() => _ = _evaluator.Evaluate("contains(items, 'b')", scope, out _));
+
+        // 比解码一次多出的只是比较用的值与几步的状态，远小于再解码一次
+        Assert.InRange(found, 0, once + (once / 2));
     }
 
     /// <summary>
@@ -286,6 +330,16 @@ public sealed class ExpressionBudgetTests
         }
 
         return new ExpressionScope(obj, TimeProvider.System);
+    }
+
+    /// <summary>
+    /// 执行一次在当前线程上分配的字节数
+    /// </summary>
+    private static long Allocated(Action action)
+    {
+        var before = GC.GetAllocatedBytesForCurrentThread();
+        action();
+        return GC.GetAllocatedBytesForCurrentThread() - before;
     }
 
     /// <summary>
