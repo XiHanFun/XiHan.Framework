@@ -119,7 +119,7 @@ public abstract class PluginProtocolConformance
     /// 调用用例使用的示例请求（操作 ID → JSON）
     /// </summary>
     /// <remarks>
-    /// 没有示例的操作以 <c>{}</c> 调用
+    /// 没有示例的操作以 <c>{}</c> 调用。示例严格编码成 UTF-8：有孤立的代理项即用例以 <see cref="InvalidOperationException"/> 失败（配置错误），不换成 U+FFFD 发出（ADR-0327）
     /// </remarks>
     protected virtual IReadOnlyDictionary<string, string> SampleRequests => new Dictionary<string, string>(StringComparer.Ordinal);
 
@@ -702,7 +702,7 @@ public abstract class PluginProtocolConformance
     /// 组装一次调用
     /// </summary>
     /// <remarks>
-    /// 载荷取 <see cref="SampleRequests"/>（没有时为 <c>{}</c>），带 traceparent 与已登记的 Baggage
+    /// 载荷取 <see cref="SampleRequests"/>（没有时为 <c>{}</c>）并严格编码，带 traceparent 与已登记的 Baggage
     /// </remarks>
     private InvokeRequest InvokeRequest(string operation)
     {
@@ -710,7 +710,7 @@ public abstract class PluginProtocolConformance
         return new InvokeRequest
         {
             Operation = operation,
-            Payload = ByteString.CopyFromUtf8(payload),
+            Payload = SamplePayloads.Encode(operation, payload),
             Metadata = new InvocationMetadata { TraceParent = TraceParent, Baggage = { [BaggageKeys.Correlation] = "conformance" } },
         };
     }

@@ -54,7 +54,7 @@ public abstract class WasmPluginConformance
     /// 调用用例使用的示例请求（操作 ID → JSON）
     /// </summary>
     /// <remarks>
-    /// 没有示例的操作以 <c>{}</c> 调用
+    /// 没有示例的操作以 <c>{}</c> 调用。示例严格编码成 UTF-8：有孤立的代理项即用例以 <see cref="InvalidOperationException"/> 失败（配置错误），不换成 U+FFFD 发出（ADR-0327）
     /// </remarks>
     protected virtual IReadOnlyDictionary<string, string> SampleRequests => new Dictionary<string, string>(StringComparer.Ordinal);
 
@@ -159,7 +159,7 @@ public abstract class WasmPluginConformance
         {
             var payload = SampleRequests.TryGetValue(operation.Contract.Id, out var sample) ? sample : "{}";
             var metadata = new InvocationMetadata { TraceParent = "00-0af7651916cd43dd8448eb211c80319c-b7ad6b7169203331-01", Baggage = { ["xihan.correlation"] = "conformance" } };
-            var response = session.Call<InvokeResponse>("xihan_invoke", new InvokeRequest { Operation = operation.Contract.Id, Payload = ByteString.CopyFromUtf8(payload), Metadata = metadata });
+            var response = session.Call<InvokeResponse>("xihan_invoke", new InvokeRequest { Operation = operation.Contract.Id, Payload = SamplePayloads.Encode(operation.Contract.Id, payload), Metadata = metadata });
 
             Assert.True(response.Status is not null, $"Operation '{operation.Contract.Id}' must return a status.");
             if (response.Status.Ok)

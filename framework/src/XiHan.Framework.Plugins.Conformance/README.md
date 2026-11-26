@@ -38,6 +38,7 @@ public sealed class EchoPluginConformanceTests : PluginProtocolConformance
 * `SampleRequests`、`ExcludedOperations`：为操作提供样例请求、排除故意崩溃的操作
 * `VerifiesSessionToken`：缺省为真，只在插件 SDK 还没有发布校验会话令牌的版本时临时关掉，令牌用例随之跳过
 * `EnvelopeOperation`：回显交给处理器的信封的操作（以 `{}` 调用，载荷是 `{"envelopes":[{"id":…,"dataSchema":…}]}`），用例 `event-envelope` 用它核对 `dataschema` 原样交给处理器；缺省为空，那个用例跳过
+* `SampleRequests` 的样例严格编码成 UTF-8：有孤立的代理项即用例按配置错误失败，不换成 U+FFFD 发出
 
 ## 更多文档
 
