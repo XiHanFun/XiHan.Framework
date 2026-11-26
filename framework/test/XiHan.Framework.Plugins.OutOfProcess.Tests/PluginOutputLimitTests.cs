@@ -17,7 +17,7 @@ namespace XiHan.Framework.Plugins.OutOfProcess.Tests;
 /// <remarks>
 /// 插件不可信：宿主逐行读它的输出，一行不带换行符写上几十 MB，宿主就得把它整行装进内存。用脚本作插件（Windows 上 <c>.cmd</c> 经 <c>type</c> 原样输出文件，Unix 上 <c>/bin/sh</c> 经 <c>cat</c>），输出预先写好的内容
 /// </remarks>
-public sealed class PluginOutputLimitTests : IDisposable
+public sealed class PluginOutputLimitTests : IAsyncDisposable
 {
     /// <summary>
     /// 超长行的字符数
@@ -25,12 +25,36 @@ public sealed class PluginOutputLimitTests : IDisposable
     private const int Huge = 8 * 1024 * 1024;
 
     /// <summary>
+    /// 删临时目录时最多等几次
+    /// </summary>
+    private const int DeleteAttempts = 50;
+
+    /// <summary>
     /// 脚本与输出文件所在的临时目录
     /// </summary>
+    /// <remarks>
+    /// 每个用例一个，也是脚本插件的工作目录
+    /// </remarks>
     private readonly DirectoryInfo _directory = Directory.CreateTempSubdirectory("xihan-flood-");
 
     /// <inheritdoc />
-    public void Dispose() => _directory.Delete(recursive: true);
+    public async ValueTask DisposeAsync()
+    {
+        // 这个目录是脚本插件（cmd.exe 或 sh）的工作目录，脚本还读着里面的输出文件。宿主只等到根进程退出，进程树里别的进程（Windows 上的 conhost）的终止是异步的，
+        // 全量测试负载高时它们放开目录与文件的句柄要晚一些，删除即以 IOException 失败；稍等再删，最多约 5 秒，仍删不掉照常抛出
+        for (var attempt = 1; ; attempt++)
+        {
+            try
+            {
+                _directory.Delete(recursive: true);
+                return;
+            }
+            catch (IOException) when (attempt < DeleteAttempts)
+            {
+                await Task.Delay(100);
+            }
+        }
+    }
 
     [Fact]
     public async Task OverlongHandshakeLine_IsRejected_WithoutKeepingTheWholeLine()
