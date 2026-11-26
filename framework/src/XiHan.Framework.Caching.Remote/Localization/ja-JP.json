@@ -1,5 +1,5 @@
 {
-  "caching.remote.key_invalid": "キャッシュキー '{key}' は無効です。空でなく、空白や制御文字を含まず、UTF-8 で 512 バイト以内である必要があります。",
+  "caching.remote.key_invalid": "キャッシュキー '{key}' は無効です。空でなく、空白、制御文字、孤立したサロゲートを含まず、UTF-8 で 512 バイト以内である必要があります。",
   "caching.remote.options_invalid": "キャッシュエントリのオプションが無効です: {reason}。",
   "caching.remote.store_unavailable": "キャッシュストアを利用できません: {reason}。",
   "caching.remote.capacity_reached": "キャッシュストアがいっぱいです（{capacity} 件）。"
