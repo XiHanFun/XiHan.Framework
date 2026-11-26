@@ -22,7 +22,7 @@ namespace XiHan.Framework.ObjectStorage.S3;
 /// S3 对象存储
 /// </summary>
 /// <remarks>
-/// 容器即桶，键即对象键。不覆盖写入用条件请求（<c>If-None-Match: *</c>）保证原子，已存在返回 <see cref="ObjectStorageErrors.BlobExists"/>；服务是否认条件写入要先探明（ADR-0089、ADR-0090）：特性启动或命名实例建出时探一次，没探明就在后台重试，这期间不覆盖的写入与分片上传返回 <see cref="ObjectStorageErrors.ConditionalWriteUnconfirmed"/>，探明不认或选项关闭条件写入时一律返回 <see cref="ObjectStorageErrors.ConditionalWriteUnavailable"/>；批量删除先逐键 HEAD 得知是否存在，再一次 <c>DeleteObjects</c>；列举经 <c>ListObjectsV2</c>，条目只有键、长度、ETag 与修改时间（内容类型为默认值、自定义元数据为空，需要时再 HEAD）。范围读取经 <c>Range</c> 请求头；分片上传直接映射 S3 的 multipart（不覆盖的完成带 <c>If-None-Match: *</c>）；预签名地址由 SDK 本地签出（签名 V4），客户端直连存储。不存在的键与桶映射为 <see cref="ObjectStorageErrors.BlobNotFound"/>，其余服务端与网络错误映射为 <see cref="ObjectStorageErrors.StoreUnavailable"/>，服务应答成功却缺了必需的内容同此（发起分片上传的应答没有可用的上传标识，ADR-0302；上传分片的应答没有可用的 ETag、列出的分片没有可用的编号或 ETag 或长度为负，ADR-0308；读取、HEAD 与写入的应答没有可用的 ETag，读取与 HEAD 的应答没有修改时间，列举截断却没有能前进的续页标记、列出的对象缺 ETag 或修改时间，列出分片的分页不前进或超过 10000 片，批量删除的错误项认不出是哪一项，ADR-0313）。写入结果的修改时间取本机时钟：PutObject 的应答本来就不带修改时间（ADR-0313）。内容类型原样存取：SDK 写不出原值的（<see cref="S3ContentTypeHeader"/>）写入与分片上传的发起返回 <see cref="ObjectStorageErrors.ContentTypeUnsupported"/>，不发请求；读取时 SDK 按 .NET 的写法交出它解析得了的值（ADR-0295）。没有公开构造（ADR-0266，公开面不出现 SDK 的类型）：缺省实例由 <see cref="S3ObjectStorageFeature"/> 建出，客户端归容器所有，释放实例什么都不做；命名实例由 <see cref="S3BlobStoreProvider"/> 按定义建出（经 <c>BlobStores</c>，或直接调它的 <c>CreateAsync</c>），自己建客户端并在后台重试探测，释放实例即停止重试、释放客户端
+/// 容器即桶，键即对象键。不覆盖写入用条件请求（<c>If-None-Match: *</c>）保证原子，已存在返回 <see cref="ObjectStorageErrors.BlobExists"/>；服务是否认条件写入要先探明（ADR-0089、ADR-0090）：特性启动或命名实例建出时探一次，没探明就在后台重试，这期间不覆盖的写入与分片上传返回 <see cref="ObjectStorageErrors.ConditionalWriteUnconfirmed"/>，探明不认或选项关闭条件写入时一律返回 <see cref="ObjectStorageErrors.ConditionalWriteUnavailable"/>；批量删除先逐键 HEAD 得知是否存在，再一次 <c>DeleteObjects</c>；列举经 <c>ListObjectsV2</c>，条目只有键、长度、ETag 与修改时间（内容类型为默认值、自定义元数据为空，需要时再 HEAD）。范围读取经 <c>Range</c> 请求头；分片上传直接映射 S3 的 multipart（不覆盖的完成带 <c>If-None-Match: *</c>）；预签名地址由 SDK 本地签出（签名 V4），客户端直连存储。不存在的键与桶映射为 <see cref="ObjectStorageErrors.BlobNotFound"/>，其余服务端与网络错误映射为 <see cref="ObjectStorageErrors.StoreUnavailable"/>，服务应答成功却缺了必需的内容同此（发起分片上传的应答没有可用的上传标识，ADR-0302；上传分片的应答没有可用的 ETag、列出的分片没有可用的编号或 ETag 或长度为负，ADR-0308；读取、HEAD 与写入的应答没有可用的 ETag，读取与 HEAD 的应答没有修改时间，列举截断却没有能前进的续页标记、列出的对象缺 ETag 或修改时间，列出分片的分页不前进或超过 10000 片，批量删除的错误项认不出是哪一项，ADR-0313；整读的 ETag 不是十六进制、SDK 当作 MD5 解码不了，ADR-0317）。写入结果的修改时间取本机时钟：PutObject 的应答本来就不带修改时间（ADR-0313）。内容类型原样存取：SDK 写不出原值的（<see cref="S3ContentTypeHeader"/>）写入与分片上传的发起返回 <see cref="ObjectStorageErrors.ContentTypeUnsupported"/>，不发请求；读取时 SDK 按 .NET 的写法交出它解析得了的值（ADR-0295）。没有公开构造（ADR-0266，公开面不出现 SDK 的类型）：缺省实例由 <see cref="S3ObjectStorageFeature"/> 建出，客户端归容器所有，释放实例什么都不做；命名实例由 <see cref="S3BlobStoreProvider"/> 按定义建出（经 <c>BlobStores</c>，或直接调它的 <c>CreateAsync</c>），自己建客户端并在后台重试探测，释放实例即停止重试、释放客户端
 /// </remarks>
 [ApiLevel(Stability.Stable, "5.0")]
 public sealed partial class S3BlobStore : IBlobStore, IBlobMultipartStore, IBlobUrlSigner, IDisposable, IAsyncDisposable
@@ -145,6 +145,22 @@ public sealed partial class S3BlobStore : IBlobStore, IBlobMultipartStore, IBlob
     /// 错误项没有键，或带的键不在这一批里（ADR-0313）
     /// </remarks>
     private const string DeleteErrorKeyMissingReason = "DeleteObjects returned an error without a usable Key";
+
+    /// <summary>
+    /// 整读的 ETag 不是十六进制时 <c>reason</c> 的文本
+    /// </summary>
+    /// <remarks>
+    /// 固定文本，不带应答里的值（ADR-0317）
+    /// </remarks>
+    private const string ETagNotHexadecimalReason = "GetObject returned an ETag that is not hexadecimal";
+
+    /// <summary>
+    /// SDK 整读时解码 ETag 的那一帧在调用栈里的写法
+    /// </summary>
+    /// <remarks>
+    /// 类型名取自 SDK 的公开类型（改名即编译失败），方法是私有的、只能写名字（ADR-0317）
+    /// </remarks>
+    private static readonly string _etagDecodingFrame = typeof(Amazon.S3.Internal.AmazonS3ResponseHandler).FullName + ".ProcessResponseHandlers(";
 
     /// <summary>
     /// 读取的应答
@@ -294,6 +310,12 @@ public sealed partial class S3BlobStore : IBlobStore, IBlobMultipartStore, IBlob
         catch (AmazonS3Exception exception) when (IsNotFound(exception))
         {
             return NotFound(container, key);
+        }
+        catch (Exception exception) when (IsUndecodableETag(exception))
+        {
+            // SDK 整读时把 ETag 当作内容的 MD5，解不了十六进制就在交出应答之前抛出（应答已由 SDK 释放）：
+            // 是服务一侧的不合规应答，同缺 ETag 按服务端错误返回，不把编程错误类的异常抛给调用方，不重发（ADR-0317）
+            return UnusableAnswer(container, "GetObject", ETagNotHexadecimalReason);
         }
         catch (Exception exception) when (IsStoreFailure(exception, cancellationToken))
         {
@@ -898,6 +920,17 @@ public sealed partial class S3BlobStore : IBlobStore, IBlobMultipartStore, IBlob
     /// </remarks>
     internal static bool IsUsableUploadId([NotNullWhen(true)] string? uploadId)
         => uploadId is { Length: > 0 and <= MaxUploadIdLength } && !uploadId.Any(static ch => char.IsWhiteSpace(ch) || char.IsControl(ch));
+
+    /// <summary>
+    /// 异常是 SDK 整读时把 ETag 当作 MD5 解码失败
+    /// </summary>
+    /// <remarks>
+    /// 依据 AWS SDK for .NET 4.0 的实现（ADR-0317）：<c>AmazonS3ResponseHandler.ProcessResponseHandlers</c> 在解组之后、交出应答之前，对不带范围的 <c>GetObject</c> 以 <c>AWSSDKUtils.HexStringToBytes</c> 解码去掉引号的 ETag，它为空或字符数为奇数时抛 <see cref="ArgumentOutOfRangeException"/>，含十六进制数字之外的字符时由 <see cref="Convert.FromHexString(string)"/> 抛 <see cref="FormatException"/>；这个方法处理整读的应答时不会因别的原因抛这两类异常。所以只认这两类、且调用栈里有那一帧的：解组时头解析失败的 <see cref="FormatException"/>（修改时间、长度写错）不经过那一帧，别的 <see cref="ArgumentException"/> 也不算。认那一帧而不认 <c>HexStringToBytes</c>：后者很短，可能被内联而不出现在调用栈里。用例 <c>S3WholeReadETagTests</c> 钉住这一 SDK 行为
+    /// </remarks>
+    internal static bool IsUndecodableETag(Exception exception)
+        => exception is ArgumentOutOfRangeException or FormatException
+            && exception.StackTrace is { } trace
+            && trace.Contains(_etagDecodingFrame, StringComparison.Ordinal);
 
     /// <summary>
     /// 去掉引号之后的 ETag 可用

@@ -47,7 +47,7 @@ public sealed class S3ObjectResponseTests
     /// <see cref="Content"/> 的 MD5，即单次写入的 ETag
     /// </summary>
     /// <remarks>
-    /// SDK 拿 ETag 核对写入与整读的内容：不是内容的 MD5 时它自己抛出，到不了存储
+    /// SDK 整读时拿 ETag 当内容的 MD5 核对：不是十六进制时在交出应答之前抛出（Provider 按不合规的应答返回，见 <see cref="S3WholeReadETagTests"/>），是十六进制而不是内容的 MD5 时读内容的流抛出；写入时不核对（ADR-0317）
     /// </remarks>
     private const string ContentETag = "900150983cd24fb0d6963f7d28e17f72";
 
@@ -73,7 +73,7 @@ public sealed class S3ObjectResponseTests
     /// 整读的应答缺的那一项，与 <c>reason</c> 里点名的字段
     /// </summary>
     /// <remarks>
-    /// 没有只有引号的 ETag：整读时 SDK 先拿 ETag 当内容的 MD5 去核对，只有引号的 ETag 它自己就抛出，到不了存储
+    /// 没有只有引号的 ETag：整读时 SDK 先拿 ETag 当内容的 MD5 解码，只有引号的 ETag 在那一步就失败，原因不同，见 <see cref="S3WholeReadETagTests"/>（ADR-0317）
     /// </remarks>
     public static TheoryData<string[], string> MissingHeaders => new()
     {
