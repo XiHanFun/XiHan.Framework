@@ -123,7 +123,7 @@ binary 模式：
   - `CommandLineRunnerTests`：字段选项的三种情形与重复选项都是新的文案。
   - `IdempotentOperationReplayTests`：照插件代理写的操作交回空载荷，开了幂等的两次调用都成功、都是空载荷，操作只执行一次，记录里 `emptyResponse` 为真；有响应体的记录不写这个成员；记下没有响应体的记录交给类型化的操作是 `CACHING_CONFLICT_003`。改之前第一条失败（`KERNEL_UNEXPECTED_001`）。
   - `PluginResponsePayloadTests`：只有空白的载荷不为空，调用与回放都没过检查。
-- **文档**：`Protocols.CloudEvents`、`Kernel`、`Hosting.CommandLine`、`Caching.Abstractions`、`Plugins.OutOfProcess`、`Plugins.Wasm` 的 README 已同步；文档站的 `protocols/cloudevents`、`protocols/command-line`、`plugins/out-of-process`、`plugins/wasm`、缓存的幂等一页、各 SDK 页、`appendix/spec` 与更新日志待改。
+- **文档**：`Protocols.CloudEvents`、`Kernel`、`Hosting.CommandLine`、`Caching.Abstractions`、`Plugins.OutOfProcess`、`Plugins.Wasm` 的 README 已同步；文档站的 `protocols/cloudevents`、`protocols/command-line`、`plugins/out-of-process`、`plugins/wasm`、缓存的幂等一页、各 SDK 页、`appendix/spec` 与更新日志已同步。
 - **待定**：binary 的数据体的检查（备选 5）；幂等记录响应时写不出的处置；binary 入站对非法百分号序列的读法。
 
 ## 修订（2026-11-26）
