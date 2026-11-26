@@ -110,7 +110,7 @@ public abstract class WorkflowStoreConformance
     public async Task Instances_ListFiltersAndOrders_NodeInstancesOrdered_DeleteCascades()
     {
         await using var host = await StartAsync().ConfigureAwait(false);
-        var now = DateTimeOffset.UtcNow;
+        var now = Now();
         var a = Instance("conf-list", "inst-a", now.AddMinutes(-2));
         a.DisplayName = "Expense 50% Claim";
         var b = Instance("conf-list", "inst-b", now.AddMinutes(-1));
@@ -204,7 +204,7 @@ public abstract class WorkflowStoreConformance
     public async Task Bookmarks_Queries_Order_AndDelete()
     {
         await using var host = await StartAsync().ConfigureAwait(false);
-        var now = DateTimeOffset.UtcNow;
+        var now = Now();
         var task1 = Bookmark("inst-1", "ni-1", BookmarkKinds.UserTask, "alice", null, now.AddSeconds(-3));
         var task2 = Bookmark("inst-2", "ni-2", BookmarkKinds.UserTask, "alice", null, now.AddSeconds(-2));
         var timerLate = Bookmark("inst-1", "ni-3", BookmarkKinds.Timer, null, now.AddMinutes(5), now.AddSeconds(-1));
@@ -278,7 +278,7 @@ public abstract class WorkflowStoreConformance
     {
         await using var host = await StartAsync().ConfigureAwait(false);
         // 取整到秒：恰好等于此刻的到期时刻要原样存取，不受各存储时间精度的影响
-        var now = DateTimeOffset.UtcNow;
+        var now = Now();
         now = now.AddTicks(-(now.Ticks % TimeSpan.TicksPerSecond));
         var fresh = Bookmark("inst-1", "ni-1", BookmarkKinds.External, "pay", null, now.AddSeconds(-3));
         var expired = Bookmark("inst-2", "ni-2", BookmarkKinds.External, "pay", now.AddSeconds(-1), now.AddSeconds(-2));
@@ -346,7 +346,7 @@ public abstract class WorkflowStoreConformance
     public async Task Partitions_AreIsolated()
     {
         await using var host = await StartAsync().ConfigureAwait(false);
-        var now = DateTimeOffset.UtcNow;
+        var now = Now();
         var definition = Definition("conf-part", 1, WorkflowDefinitionStatus.Published) with { TenantId = "t1" };
         var instance = Instance("conf-part", "inst-part");
         instance.TenantId = "t1";
@@ -440,7 +440,7 @@ public abstract class WorkflowStoreConformance
     {
         await using var host = await StartAsync().ConfigureAwait(false);
         // 取整到秒：创建时间的边界条件不受各存储时间精度的影响
-        var now = DateTimeOffset.UtcNow;
+        var now = Now();
         now = now.AddTicks(-(now.Ticks % TimeSpan.TicksPerSecond));
         var a = Instance("conf.a", "inst-qa", now.AddMinutes(-1));
         a.DisplayName = "Expense Claim";
@@ -645,7 +645,7 @@ public abstract class WorkflowStoreConformance
     {
         await using var host = await StartAsync().ConfigureAwait(false);
         // 取整到秒：时间列的精度各库不同
-        var now = DateTimeOffset.UtcNow;
+        var now = Now();
         now = now.AddTicks(-(now.Ticks % TimeSpan.TicksPerSecond));
         var a1 = Definition("conf-s-alpha", 1, WorkflowDefinitionStatus.Published) with { DisplayName = "delta flow", CreatedAt = now.AddMinutes(-5), PublishedAt = now.AddMinutes(-4) };
         var a2 = Definition("conf-s-alpha", 2, WorkflowDefinitionStatus.Draft) with { DisplayName = "delta flow", CreatedAt = now.AddMinutes(-3) };
@@ -727,7 +727,7 @@ public abstract class WorkflowStoreConformance
     public async Task Instances_List_SortsByEachField_WithStableTieBreaks()
     {
         await using var host = await StartAsync().ConfigureAwait(false);
-        var now = DateTimeOffset.UtcNow;
+        var now = Now();
         now = now.AddTicks(-(now.Ticks % TimeSpan.TicksPerSecond));
         var i1 = Instance("conf-s-alpha", "inst-s1", now.AddMinutes(-5));
         i1.DisplayName = "delta order";
@@ -813,7 +813,7 @@ public abstract class WorkflowStoreConformance
     public async Task Definitions_Query_SortsByMultipleItemsInOrder()
     {
         await using var host = await StartAsync().ConfigureAwait(false);
-        var now = DateTimeOffset.UtcNow;
+        var now = Now();
         now = now.AddTicks(-(now.Ticks % TimeSpan.TicksPerSecond));
         var d1 = Definition("conf-m-alpha", 1, WorkflowDefinitionStatus.Published) with { DisplayName = "bravo", CreatedAt = now.AddMinutes(-6), PublishedAt = now.AddMinutes(-5) };
         var d2 = Definition("conf-m-alpha", 2, WorkflowDefinitionStatus.Draft) with { DisplayName = "bravo", CreatedAt = now.AddMinutes(-2) };
@@ -869,7 +869,7 @@ public abstract class WorkflowStoreConformance
     public async Task Instances_List_SortsByMultipleItemsInOrder()
     {
         await using var host = await StartAsync().ConfigureAwait(false);
-        var now = DateTimeOffset.UtcNow;
+        var now = Now();
         now = now.AddTicks(-(now.Ticks % TimeSpan.TicksPerSecond));
         var j1 = Instance("conf-m-alpha", "inst-m1", now.AddMinutes(-6));
         j1.DisplayName = "bravo";
@@ -980,6 +980,18 @@ public abstract class WorkflowStoreConformance
         => (await stores.Bookmarks.AvailableAsync(stores.TenantId, BookmarkKinds.External, "pay", now, limit, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().Select(static bookmark => bookmark.Id).ToList();
 
     /// <summary>
+    /// 截到整微秒的当前 UTC 时刻
+    /// </summary>
+    /// <remarks>
+    /// 数据库实现的时间列只到微秒（RFC-0005，Oracle 是 <c>timestamp(6)</c>），写入时舍去或舍入不足一微秒的部分，查询参数却原样比较；用带 100 纳秒的时刻做开区间的边界，结果取决于那一位是几，所以用例里的时刻一律对齐到微秒
+    /// </remarks>
+    private static DateTimeOffset Now()
+    {
+        var current = TimeProvider.System.GetUtcNow();
+        return current.AddTicks(-(current.Ticks % TimeSpan.TicksPerMicrosecond));
+    }
+
+    /// <summary>
     /// 一个最小的定义（平台分区）
     /// </summary>
     protected static WorkflowDefinition Definition(string name, int version, WorkflowDefinitionStatus status) => new()
@@ -989,7 +1001,7 @@ public abstract class WorkflowStoreConformance
         Version = version,
         Status = status,
         Nodes = [new WorkflowNode { Id = "start", ActivityType = new ActivityType(ActivityTypes.Start) }],
-        CreatedAt = DateTimeOffset.UtcNow,
+        CreatedAt = Now(),
         Properties = new JsonObject { ["tag"] = version },
     };
 
@@ -1001,8 +1013,8 @@ public abstract class WorkflowStoreConformance
         Id = id,
         DefinitionId = "def-" + definitionName,
         DefinitionName = new WorkflowName(definitionName),
-        CreatedAt = createdAt ?? DateTimeOffset.UtcNow,
-        StartedAt = createdAt ?? DateTimeOffset.UtcNow,
+        CreatedAt = createdAt ?? Now(),
+        StartedAt = createdAt ?? Now(),
     };
 
     /// <summary>
@@ -1029,6 +1041,6 @@ public abstract class WorkflowStoreConformance
         Kind = kind,
         Key = key,
         DueAt = dueAt,
-        CreatedAt = createdAt ?? DateTimeOffset.UtcNow,
+        CreatedAt = createdAt ?? Now(),
     };
 }
