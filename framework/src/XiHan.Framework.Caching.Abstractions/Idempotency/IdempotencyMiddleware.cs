@@ -7,6 +7,7 @@ using System.Text.Json;
 using Microsoft.Extensions.DependencyInjection;
 using XiHan.Framework.Caching.Abstractions.Caches;
 using XiHan.Framework.Caching.Abstractions.Stores;
+using XiHan.Framework.Kernel;
 using XiHan.Framework.Kernel.Operations;
 using XiHan.Framework.Kernel.Pipeline;
 using XiHan.Framework.Kernel.Security;
@@ -18,7 +19,7 @@ namespace XiHan.Framework.Caching.Abstractions.Idempotency;
 /// Idempotency 阶段的中间件
 /// </summary>
 /// <remarks>
-/// Baggage 里有 <see cref="BaggageKeys.IdempotencyKey"/> 时，按（租户、主体、键）在 <see cref="ISharedCache"/> 的存储里去重。首次调用写入"处理中"标记并执行，完成后用调用结果替换标记（操作调用另记操作 ID 与成功的响应）；处理中的重复调用返回 <see cref="CachingErrors.IdempotentInProgress"/>；已完成的重复调用直接回放结果、不执行处理器，操作调用同时还原响应对象，记录属于另一个调用时返回 <see cref="CachingErrors.IdempotentMismatch"/>。处理器抛出异常时清除标记，允许重试
+/// Baggage 里有 <see cref="BaggageKeys.IdempotencyKey"/> 时，按（租户、主体、键）在 <see cref="ISharedCache"/> 的存储里去重。首次调用写入"处理中"标记并执行，完成后用调用结果替换标记（操作调用另记操作 ID 与成功的响应）；处理中的重复调用返回 <see cref="CachingErrors.IdempotentInProgress"/>；已完成的重复调用直接回放结果、不执行处理器，操作调用同时还原响应对象，记录属于另一个调用时返回 <see cref="CachingErrors.IdempotentMismatch"/>。处理器抛出异常时清除标记，允许重试；处理器成功而响应写不出时，用写不出的错误（与 XGI 入口相同的 <see cref="KernelErrors.Unexpected"/>）替换标记并作为本次调用的结果，重试回放同一个错误（RFC-0006 幂等第 2 条，ADR-0324）
 /// </remarks>
 [ApiLevel(Stability.Stable, "5.0")]
 public sealed class IdempotencyMiddleware(IdempotencyOptions options) : IPipelineMiddleware
@@ -84,7 +85,7 @@ public sealed class IdempotencyMiddleware(IdempotencyOptions options) : IPipelin
                 throw;
             }
 
-            // 处理完成后用结果替换"处理中"标记；没有显式结果视为成功
+            // 处理完成后用结果替换"处理中"标记；没有显式结果视为成功。响应写不出时 Complete 已把结果换成写不出的错误，记下的也是它
             var outcome = context.FindOutcome().ValueOr(Result.Success());
             await store.SetAsync(key, Serialize(Complete(context, outcome)), CacheEntryOptions.Expires(_options.TimeToLive), context.CancellationToken).ConfigureAwait(false);
             return;
@@ -115,7 +116,8 @@ public sealed class IdempotencyMiddleware(IdempotencyOptions options) : IPipelin
     /// 由首次调用的结果生成已完成记录
     /// </summary>
     /// <remarks>
-    /// 操作调用记下操作 ID；成功且上下文里有响应对象时按描述编成 XGI 的 JSON 一起记（已经过响应过滤，与首次调用拿到的一致）。编出的是空载荷时记下没有响应体（ADR-0318）
+    /// 操作调用记下操作 ID；成功且上下文里有响应对象时按描述编成 XGI 的 JSON 一起记（已经过响应过滤，与首次调用拿到的一致）。编出的是空载荷时记下没有响应体（ADR-0318）。
+    /// 响应写不出（<see cref="OperationDescriptor.EncodeResponse"/> 抛出，或编出的不是 JSON 文本）时把写不出的错误设为本次调用的结果，记下的是这个失败（ADR-0324）
     /// </remarks>
     private static IdempotencyRecord Complete(InvocationContext context, Result outcome)
     {
@@ -130,15 +132,30 @@ public sealed class IdempotencyMiddleware(IdempotencyOptions options) : IPipelin
             return record with { Operation = operation.Id };
         }
 
-        var encoded = operation.EncodeResponse(response);
-        if (encoded.IsEmpty)
+        JsonElement json;
+        try
         {
-            // 空载荷表示没有响应体（插件代理交回的，plugin/invocation.md §1）：不是 JSON 文本，不能当 JSON 解析；记下没有响应体，回放时交出同样的空载荷（RFC-0006 幂等第 2 条，ADR-0318）
-            return record with { Operation = operation.Id, EmptyResponse = true };
+            var encoded = operation.EncodeResponse(response);
+            if (encoded.IsEmpty)
+            {
+                // 空载荷表示没有响应体（插件代理交回的，plugin/invocation.md §1）：不是 JSON 文本，不能当 JSON 解析；记下没有响应体，回放时交出同样的空载荷（RFC-0006 幂等第 2 条，ADR-0318）
+                return record with { Operation = operation.Id, EmptyResponse = true };
+            }
+
+            using var document = JsonDocument.Parse(encoded);
+            json = document.RootElement.Clone();
+        }
+        catch (Exception exception) when (exception is not OperationCanceledException)
+        {
+            // 操作已经执行、响应写不出（NaN、孤立的代理项、超过 64 层、重复成员）：不清除标记（那样重试会再执行一次），
+            // 也不让异常把「处理中」的标记留到过期；与 XGI 入口写不出时同一个错误（RFC-0011 规则 10「编码」），作本次调用的结果并记下，
+            // 重试回放它、不再执行（RFC-0006 幂等第 2 条，ADR-0324）
+            var failure = Error.Unexpected(KernelErrors.Unexpected, KernelMessages.UnhandledException, null, exception is FrameworkException framework ? framework.ToError() : null);
+            context.SetOutcome(failure);
+            return IdempotencyRecord.From(failure) with { Operation = operation.Id };
         }
 
-        using var document = JsonDocument.Parse(encoded);
-        return record with { Operation = operation.Id, Response = document.RootElement.Clone() };
+        return record with { Operation = operation.Id, Response = json };
     }
 
     /// <summary>

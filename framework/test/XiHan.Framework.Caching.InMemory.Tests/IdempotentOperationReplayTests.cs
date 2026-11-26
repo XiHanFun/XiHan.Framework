@@ -8,6 +8,7 @@ using XiHan.Framework.Caching.Abstractions;
 using XiHan.Framework.Caching.Abstractions.Caches;
 using XiHan.Framework.Caching.Abstractions.Stores;
 using XiHan.Framework.Caching.InMemory.Tests.Fixtures;
+using XiHan.Framework.Kernel;
 using XiHan.Framework.Kernel.Operations;
 using XiHan.Framework.Primitives;
 using XiHan.Framework.Testing;
@@ -179,6 +180,77 @@ public sealed class IdempotentOperationReplayTests
         Assert.Equal(CachingMessages.IdempotentResponseUnavailable, raw.Outcome.Error?.MessageKey);
         Assert.True(raw.Payload.IsEmpty);
         Assert.Equal(0, counter.Executions);
+    }
+
+    [Fact]
+    public async Task AResponseThatCannotBeRecorded_ReplacesTheMarkerWithTheFailure_ThroughTheXgiEntry()
+    {
+        // 处理器成功、响应写不出（孤立的代理项）：用写不出的错误替换「处理中」标记并返回，重试回放同一个错误、不再执行（RFC-0006 幂等第 2 条，ADR-0324）；
+        // 修之前记录时抛出的异常在清除标记的 try 之外：首次调用以 KERNEL_UNEXPECTED_001 结束，「处理中」的标记留到过期，这段时间里的重试得 CACHING_CONFLICT_002
+        await using var host = await StartAsync();
+        var counter = host.Services.GetRequiredService<TicketCounter>();
+
+        var first = await host.InvokeOperationRawAsync(Request(TicketsFeature.Create, TicketsOperation.Unencodable), Key("unencodable-raw"));
+        var second = await host.InvokeOperationRawAsync(Request(TicketsFeature.Create, TicketsOperation.Unencodable), Key("unencodable-raw"));
+
+        AssertUnencodable(first.Outcome.Error);
+        Assert.True(first.Payload.IsEmpty);
+        AssertUnencodable(second.Outcome.Error);
+        Assert.True(second.Payload.IsEmpty);
+        Assert.Equal(1, counter.Executions);
+        await AssertRecordedFailureAsync(host, "unencodable-raw");
+    }
+
+    [Fact]
+    public async Task AResponseThatCannotBeRecorded_ReplacesTheMarkerWithTheFailure_ThroughTheTypedEntry()
+    {
+        // 类型化入口本身不编码响应，但幂等要把它记下：记不下与 XGI 入口相同，首次调用拿到同一个错误，重试从哪个入口来都回放它
+        await using var host = await StartAsync();
+        var counter = host.Services.GetRequiredService<TicketCounter>();
+
+        var first = await host.InvokeOperationAsync<TicketRequest, TicketReply>(TicketsFeature.Create, new TicketRequest(TicketsOperation.Unencodable), Key("unencodable-typed"));
+        var second = await host.InvokeOperationAsync<TicketRequest, TicketReply>(TicketsFeature.Create, new TicketRequest(TicketsOperation.Unencodable), Key("unencodable-typed"));
+        var raw = await host.InvokeOperationRawAsync(Request(TicketsFeature.Create, TicketsOperation.Unencodable), Key("unencodable-typed"));
+
+        AssertUnencodable(first.Error);
+        AssertUnencodable(second.Error);
+        AssertUnencodable(raw.Outcome.Error);
+        Assert.True(raw.Payload.IsEmpty);
+        Assert.Equal(1, counter.Executions);
+        await AssertRecordedFailureAsync(host, "unencodable-typed");
+
+        // 另一个操作拿同一个键：记录属于 tickets.create，照旧是键被复用，不回放这个错误
+        var other = await host.InvokeOperationAsync<TicketRequest, TicketReply>(TicketsFeature.Update, new TicketRequest("alice"), Key("unencodable-typed"));
+        Assert.Equal(CachingErrors.IdempotentMismatch, other.Error?.Code);
+        Assert.Equal(1, counter.Executions);
+    }
+
+    /// <summary>
+    /// 断言是写不出响应的错误
+    /// </summary>
+    /// <remarks>
+    /// 与 XGI 入口写不出时相同：没有参数、不带 <c>inner</c>
+    /// </remarks>
+    private static void AssertUnencodable(Error? error)
+    {
+        Assert.NotNull(error);
+        Assert.Equal((KernelErrors.Unexpected, KernelMessages.UnhandledException), (error.Code, error.MessageKey));
+        Assert.True(error.Details is null || error.Details.Count == 0, error.ToString());
+        Assert.Null(error.Inner);
+    }
+
+    /// <summary>
+    /// 断言存储里的记录已经由「处理中」换成写不出的失败记录
+    /// </summary>
+    private static async Task AssertRecordedFailureAsync(TestHost host, string key)
+    {
+        var record = (await host.Services.GetRequiredService<ISharedCache>().Store.GetAsync(new CacheKey("idem:-:-:" + key), CancellationToken.None)).ValueOrThrow();
+        using var document = JsonDocument.Parse(record);
+        Assert.Equal("completed", document.RootElement.GetProperty("state").GetString());
+        Assert.Equal(KernelErrors.Unexpected, document.RootElement.GetProperty("errorCode").GetString());
+        Assert.Equal(KernelMessages.UnhandledException, document.RootElement.GetProperty("errorMessageKey").GetString());
+        Assert.Equal(TicketsFeature.Create, document.RootElement.GetProperty("operation").GetString());
+        Assert.Equal(JsonValueKind.Null, document.RootElement.GetProperty("response").ValueKind);
     }
 
     /// <summary>
