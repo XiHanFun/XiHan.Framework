@@ -248,10 +248,16 @@ internal sealed partial class EchoPluginService(PluginState state, HostClient ho
     /// <inheritdoc />
     public override Task<HandleEventResponse> HandleEvent(HandleEventRequest request, ServerCallContext context)
     {
-        // 核对顺序：会话令牌（拦截器）→ 信封与方式 → 订阅 → 是否可服务（invocation.md §4）
+        // 核对顺序：会话令牌（拦截器）→ 信封、方式与 time → 订阅 → 是否可服务（invocation.md §4）
         if (request.Envelope is not { } envelope || request.Mode is not ("" or Competing or Broadcast))
         {
             throw new RpcException(new Grpc.Core.Status(StatusCode.InvalidArgument, "HandleEvent needs an envelope and a mode of 'competing' or 'broadcast'."));
+        }
+
+        // 宿主写来的 time 读不出同属请求本身不合法，排在找订阅之前（ADR-0306）
+        if (!EnvelopeTime.IsReadable(envelope.Time))
+        {
+            throw new RpcException(new Grpc.Core.Status(StatusCode.InvalidArgument, "HandleEvent needs an envelope time that follows RFC-0003 rule 8."));
         }
 
         var mode = request.Mode.Length == 0 ? Competing : request.Mode;
@@ -271,7 +277,7 @@ internal sealed partial class EchoPluginService(PluginState state, HostClient ho
             // 匹配的订阅按声明顺序依次处理，第一个失败即为结果（与 RFC-0009 的派发器相同）；这里的处理器只记下投递
             foreach (var _ in matched)
             {
-                state.Record(envelope.Id, mode);
+                state.Record(envelope.Id, mode, envelope.DataSchema);
                 LogEvent(logger, envelope.Id, envelope.Type, envelope.Topic, mode, request.Attempt);
             }
 
@@ -330,6 +336,9 @@ internal sealed partial class EchoPluginService(PluginState state, HostClient ho
                 {
                     ["ids"] = new JsonArray(state.Events.Select(static id => (JsonNode)id).ToArray()),
                     ["deliveries"] = new JsonArray(state.Deliveries.Select(static delivery => (JsonNode)delivery).ToArray()),
+
+                    // 回显处理器拿到的信封，一致性套件的 event-envelope 用它核对 dataschema（invocation.md §7）；没有 dataschema 写 null
+                    ["envelopes"] = new JsonArray(state.Envelopes.Select(static e => (JsonNode)new JsonObject { ["id"] = e.Id, ["dataSchema"] = e.DataSchema.Length == 0 ? null : e.DataSchema }).ToArray()),
                 });
             default:
                 // 调用方已经按声明的操作过滤过

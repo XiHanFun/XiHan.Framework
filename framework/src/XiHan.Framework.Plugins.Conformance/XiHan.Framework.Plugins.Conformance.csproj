@@ -21,4 +21,10 @@
     <PackageReference Include="xunit.v3.assert" />
     <PackageReference Include="xunit.v3.extensibility.core" />
   </ItemGroup>
+
+  <ItemGroup>
+    <!-- 读不出的信封 time 与宿主的写法取自规范向量，随包内嵌，不另抄一份（spec/plugin/invocation.md §7，ADR-0327） -->
+    <EmbeddedResource Include="../../spec/conformance/vectors/plugin/envelope-times.json" LogicalName="Vectors/plugin/envelope-times.json" WithCulture="false" Visible="false" />
+    <EmbeddedResource Include="../../spec/conformance/vectors/plugin/sdk-envelope-times.json" LogicalName="Vectors/plugin/sdk-envelope-times.json" WithCulture="false" Visible="false" />
+  </ItemGroup>
 </Project>

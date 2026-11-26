@@ -19,4 +19,7 @@ public sealed class EchoPluginConformanceTests : PluginProtocolConformance
 
     /// <inheritdoc />
     protected override IReadOnlyDictionary<string, string> SampleRequests => new Dictionary<string, string>(StringComparer.Ordinal) { ["echoes.create"] = """{"text":"conformance"}""" };
+
+    /// <inheritdoc />
+    protected override string? EnvelopeOperation => "events.list";
 }

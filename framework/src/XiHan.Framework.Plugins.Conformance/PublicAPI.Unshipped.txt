@@ -3,6 +3,7 @@ XiHan.Framework.Plugins.Conformance.PluginProtocolConformance
 XiHan.Framework.Plugins.Conformance.PluginProtocolConformance.Calls_WithoutTheSessionToken_AreUnauthenticated() -> System.Threading.Tasks.Task!
 XiHan.Framework.Plugins.Conformance.PluginProtocolConformance.Configuration_NotAJsonObject_FailsThePlugin() -> System.Threading.Tasks.Task!
 XiHan.Framework.Plugins.Conformance.PluginProtocolConformance.HandleEvent_ForADeclaredSubscription_IsAcknowledged() -> System.Threading.Tasks.Task!
+XiHan.Framework.Plugins.Conformance.PluginProtocolConformance.HandleEvent_HandsTheDataSchemaToTheHandler() -> System.Threading.Tasks.Task!
 XiHan.Framework.Plugins.Conformance.PluginProtocolConformance.Handshake_PublishesAnEndpoint_NegotiatesTheVersion_AndMatchesTheManifest() -> System.Threading.Tasks.Task!
 XiHan.Framework.Plugins.Conformance.PluginProtocolConformance.Handshake_WithoutACommonVersion_IsRefused() -> System.Threading.Tasks.Task!
 XiHan.Framework.Plugins.Conformance.PluginProtocolConformance.InvokeStream_EndsOnTheFirstFrame() -> System.Threading.Tasks.Task!
@@ -28,6 +29,7 @@ XiHan.Framework.Plugins.Conformance.WasmPluginConformance.WasmPluginConformance(
 abstract XiHan.Framework.Plugins.Conformance.PluginProtocolConformance.PluginDirectory.get -> string!
 abstract XiHan.Framework.Plugins.Conformance.WasmPluginConformance.PluginDirectory.get -> string!
 virtual XiHan.Framework.Plugins.Conformance.PluginProtocolConformance.ConfigurationJson.get -> string!
+virtual XiHan.Framework.Plugins.Conformance.PluginProtocolConformance.EnvelopeOperation.get -> string?
 virtual XiHan.Framework.Plugins.Conformance.PluginProtocolConformance.ExcludedOperations.get -> System.Collections.Generic.IReadOnlySet<string!>!
 virtual XiHan.Framework.Plugins.Conformance.PluginProtocolConformance.SampleRequests.get -> System.Collections.Generic.IReadOnlyDictionary<string!, string!>!
 virtual XiHan.Framework.Plugins.Conformance.PluginProtocolConformance.Timeout.get -> System.TimeSpan

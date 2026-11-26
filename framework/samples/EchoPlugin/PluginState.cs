@@ -31,6 +31,11 @@ internal sealed class PluginState : IDisposable
     private readonly ConcurrentQueue<string> _deliveries = new();
 
     /// <summary>
+    /// 处理器拿到的信封：事件 ID 与 <c>dataschema</c>（空串为没有，按投递顺序）
+    /// </summary>
+    private readonly ConcurrentQueue<(string Id, string DataSchema)> _envelopes = new();
+
+    /// <summary>
     /// 健康状态变化的订阅者
     /// </summary>
     private readonly ConcurrentDictionary<Guid, Func<Task>> _watchers = new();
@@ -134,6 +139,11 @@ internal sealed class PluginState : IDisposable
     /// 收到的投递快照，每项是「方式:事件 ID」
     /// </summary>
     public IReadOnlyList<string> Deliveries => _deliveries.ToArray();
+
+    /// <summary>
+    /// 处理器拿到的信封快照：事件 ID 与 <c>dataschema</c>（空串为没有）
+    /// </summary>
+    public IReadOnlyList<(string Id, string DataSchema)> Envelopes => _envelopes.ToArray();
 
     /// <summary>
     /// 配置里的问候语
@@ -395,12 +405,13 @@ internal sealed class PluginState : IDisposable
     }
 
     /// <summary>
-    /// 记一条收到的事件与它投递的订阅方式
+    /// 记一条收到的事件、它投递的订阅方式与处理器拿到的 <c>dataschema</c>
     /// </summary>
-    public void Record(string eventId, string mode)
+    public void Record(string eventId, string mode, string dataSchema)
     {
         _events.Enqueue(eventId);
         _deliveries.Enqueue($"{mode}:{eventId}");
+        _envelopes.Enqueue((eventId, dataSchema));
     }
 
     /// <summary>

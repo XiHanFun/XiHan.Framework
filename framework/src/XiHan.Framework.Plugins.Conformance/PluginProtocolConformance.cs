@@ -27,7 +27,7 @@ namespace XiHan.Framework.Plugins.Conformance;
 /// 进程外插件协议 <c>xihan.plugin.v1</c> 的黑盒一致性套件
 /// </summary>
 /// <remarks>
-/// RFC-0017，<c>spec/plugin/invocation.md</c> §7。以宿主身份启动插件目录里的进程，核对握手行、版本协商、清单一致性、生命周期、调用次序、调用、事件与退出约定。任何语言的插件实现都应以其构建产物目录继承本类运行。用例与 framework-spec 的运行器 <c>xihan-conformance plugin</c> 一一对应，每个用例的说明里写着它在运行器里的名字；插件都以两项的 <c>XIHAN_PLUGIN_HOST_ADDRESS</c> 启动（<c>handshake.md</c> §4），套件不提供 <c>Host</c> 服务，两项都没人监听
+/// RFC-0017，<c>spec/plugin/invocation.md</c> §7。以宿主身份启动插件目录里的进程，核对握手行、版本协商、清单一致性、生命周期、调用次序、调用、事件（含读不出的信封 <c>time</c> 被拒、<c>dataschema</c> 交给处理器）与退出约定。任何语言的插件实现都应以其构建产物目录继承本类运行。用例与 framework-spec 的运行器 <c>xihan-conformance plugin</c> 一一对应，每个用例的说明里写着它在运行器里的名字；插件都以两项的 <c>XIHAN_PLUGIN_HOST_ADDRESS</c> 启动（<c>handshake.md</c> §4），套件不提供 <c>Host</c> 服务，两项都没人监听
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public abstract class PluginProtocolConformance
@@ -72,6 +72,14 @@ public abstract class PluginProtocolConformance
     /// <c>lifecycle.md</c> §7.2、<c>plugin/plugin-messages.json</c>
     /// </remarks>
     private const string ConfigurationReason = "the configuration is not a JSON object";
+
+    /// <summary>
+    /// 用例 event-envelope 依次投递的 <c>data_schema</c>
+    /// </summary>
+    /// <remarks>
+    /// <c>invocation.md</c> §7（ADR-0327）：一个 URI 库会改写的写法（大小写、点段）、一个带非 ASCII 字符的 URN 与空串（没有 <c>dataschema</c>）；处理器拿到的必须与投递时逐字符相同，与运行器的 <c>envelopeDataSchemas</c> 相同
+    /// </remarks>
+    private static readonly string[] _envelopeDataSchemas = ["HTTPS://Schemas.Example.COM/conformance/./v1/../order.json?v=1#Frag", "urn:xihan:conformance:数据模式", ""];
 
     /// <summary>
     /// 本实例的会话令牌
@@ -127,6 +135,16 @@ public abstract class PluginProtocolConformance
     /// 缺省 <see langword="true"/>，规范要求校验（<c>spec/plugin/handshake.md</c> §4，ADR-0202）；只在插件 SDK 还没有发布校验令牌的版本时临时覆写为 <see langword="false"/>，用例随之跳过
     /// </remarks>
     protected virtual bool VerifiesSessionToken => true;
+
+    /// <summary>
+    /// 回显交给处理器的信封的操作 ID
+    /// </summary>
+    /// <remarks>
+    /// 用例 event-envelope 用它（<c>spec/plugin/invocation.md</c> §7，ADR-0327）：插件声明的一个操作，以 <c>{}</c> 调用时答 <c>ok</c>，载荷是 JSON 对象，成员 <c>envelopes</c> 是数组，
+    /// 每一项是处理器在一次投递里拿到的信封，<c>id</c> 是信封的 <c>id</c>，<c>dataSchema</c> 是拿到的 <c>dataschema</c>（没有时为 <c>null</c>、空串或不写）。
+    /// 缺省 <see langword="null"/>，那个用例跳过；运行器里对应 <c>--envelopes</c>
+    /// </remarks>
+    protected virtual string? EnvelopeOperation => null;
 
     /// <summary>
     /// 用例 handshake：握手与清单相符
@@ -325,10 +343,58 @@ public abstract class PluginProtocolConformance
     }
 
     /// <summary>
+    /// 用例 event-envelope：处理器拿到宿主写来的 <c>dataschema</c>
+    /// </summary>
+    /// <remarks>
+    /// <c>invocation.md</c> §4、§7（ADR-0327）：Start 之后向第一个订阅按它声明的方式与类型投递三条信封，<c>time</c> 是宿主的写法，<c>data_schema</c> 依次是会被 URI 库改写的写法、带非 ASCII 字符的 URN 与空串，都必须得到确认；
+    /// 再以 <c>{}</c> 调用 <see cref="EnvelopeOperation"/>，三条都要列在 <c>envelopes</c> 里，同一个 <c>id</c> 的每一项 <c>dataSchema</c> 都与投递时逐字符相同，空串那一条是没有。没有指明回显的操作或插件没有订阅时跳过
+    /// </remarks>
+    [Fact]
+    public async Task HandleEvent_HandsTheDataSchemaToTheHandler()
+    {
+        var echo = EnvelopeOperation;
+        Assert.SkipWhen(echo is null, "No operation that echoes the delivered envelopes is given (EnvelopeOperation).");
+        await using var session = await LaunchAsync().ConfigureAwait(false);
+        var subscription = session.Response.Subscriptions.Count > 0 ? session.Response.Subscriptions[0] : null;
+        Assert.SkipWhen(subscription is null, "The plugin declares no subscriptions.");
+        Assert.True(session.Response.Operations.Any(o => o.Id == echo), $"The operation '{echo}' that echoes the delivered envelopes is not declared in the handshake.");
+        await StartAsync(session).ConfigureAwait(false);
+
+        var delivered = new List<(string Id, string DataSchema)>();
+        foreach (var dataSchema in _envelopeDataSchemas)
+        {
+            var request = EventRequest(subscription!.Topic, TypeOf(subscription), DeliveryMode(subscription.Mode));
+            request.Envelope.DataSchema = dataSchema;
+            request.Envelope.Time = EnvelopeTimeSamples.HostWritten;
+
+            var response = await session.Client.HandleEventAsync(request, deadline: Deadline()).ConfigureAwait(false);
+
+            Assert.True(response.Status?.Ok, $"A delivery to the subscription '{subscription.Topic}' with the data schema '{dataSchema}' and the time '{request.Envelope.Time}' must be acknowledged, got {Describe(response.Status)}.");
+            delivered.Add((request.Envelope.Id, dataSchema));
+        }
+
+        var echoed = await session.Client.InvokeAsync(new InvokeRequest { Operation = echo, Payload = ByteString.CopyFromUtf8("{}"), Metadata = new InvocationMetadata { TraceParent = TraceParent } }, deadline: Deadline()).ConfigureAwait(false);
+        Assert.True(echoed.Status?.Ok, $"Operation '{echo}' that echoes the delivered envelopes must succeed, got {Describe(echoed.Status)}.");
+        var received = EchoedEnvelopes.Read(echoed.Payload.Span, out var problem);
+        Assert.True(received is not null, $"Operation '{echo}' that echoes the delivered envelopes: {problem}.");
+        foreach (var (id, dataSchema) in delivered)
+        {
+            Assert.True(received.TryGetValue(id, out var schemas), $"Operation '{echo}' does not list the envelope '{id}' delivered with the data schema '{dataSchema}'.");
+
+            // 同一条信封交给了几个处理器就可能列几项，每一项都要对
+            foreach (var schema in schemas)
+            {
+                Assert.True(schema == dataSchema, $"The handler got the data schema '{schema}' for the envelope '{id}', want '{dataSchema}' exactly (an empty one is none).");
+            }
+        }
+    }
+
+    /// <summary>
     /// 用例 unsubscribed：投递找不到订阅，或方式与信封不合法
     /// </summary>
     /// <remarks>
-    /// <c>invocation.md</c> §4（ADR-0237）：Start 之后向没人订阅的主题投递，以 <c>KERNEL_NOTFOUND_001</c> + <c>plugins.event.unsubscribed</c> 失败，方式为空时按 <c>competing</c>；未知的投递方式与没有信封的投递以 gRPC <c>InvalidArgument</c> 拒绝
+    /// <c>invocation.md</c> §4（ADR-0237）：Start 之后向没人订阅的主题投递，以 <c>KERNEL_NOTFOUND_001</c> + <c>plugins.event.unsubscribed</c> 失败，方式为空时按 <c>competing</c>；未知的投递方式与没有信封的投递以 gRPC <c>InvalidArgument</c> 拒绝。
+    /// 信封的 <c>time</c> 逐条取规范向量 <c>envelope-times.json</c> 的 <c>invalid</c> 与 <c>sdk-envelope-times.json</c> 的 <c>unreadable</c> 时同样以 <c>InvalidArgument</c> 拒绝：它排在找订阅之前，所以投给没人订阅的主题也是（§7，ADR-0327）
     /// </remarks>
     [Fact]
     public async Task Unsubscribed_DeliveryWithoutASubscription_IsNotFound()
@@ -349,6 +415,13 @@ public abstract class PluginProtocolConformance
         var withoutEnvelope = EventRequest(topic, EventType, PluginSubscriptionModes.Competing);
         withoutEnvelope.Envelope = null;
         await ExpectCodeAsync(async () => await session.Client.HandleEventAsync(withoutEnvelope, deadline: Deadline()).ConfigureAwait(false), StatusCode.InvalidArgument, "A delivery without an envelope").ConfigureAwait(false);
+
+        foreach (var time in EnvelopeTimeSamples.Unreadable)
+        {
+            var unreadable = EventRequest(topic, EventType, PluginSubscriptionModes.Competing);
+            unreadable.Envelope.Time = time;
+            await ExpectCodeAsync(async () => await session.Client.HandleEventAsync(unreadable, deadline: Deadline()).ConfigureAwait(false), StatusCode.InvalidArgument, $"A delivery whose envelope time '{time}' cannot be read").ConfigureAwait(false);
+        }
     }
 
     /// <summary>

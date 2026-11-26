@@ -6,7 +6,7 @@
 
 ## 主要特性
 
-* `PluginProtocolConformance`：进程外插件，套件以宿主身份启动进程并核对握手、会话令牌、调用次序、生命周期、操作、订阅、流式调用、配置节、停止与健康；用例与 framework-spec 的运行器 `xihan-conformance plugin` 一一对应（`handshake`、`refusal`、`session`、`lifecycle`、`order`、`unknown-operation`、`declared-operations`、`unavailable`、`event`、`unsubscribed`、`stream`、`configuration`、`stop-early`、`stdin`），插件以两项的 `XIHAN_PLUGIN_HOST_ADDRESS` 启动
+* `PluginProtocolConformance`：进程外插件，套件以宿主身份启动进程并核对握手、会话令牌、调用次序、生命周期、操作、订阅、流式调用、配置节、停止与健康；用例与 framework-spec 的运行器 `xihan-conformance plugin` 一一对应（`handshake`、`refusal`、`session`、`lifecycle`、`order`、`unknown-operation`、`declared-operations`、`unavailable`、`event`、`event-envelope`、`unsubscribed`、`stream`、`configuration`、`stop-early`、`stdin`），插件以两项的 `XIHAN_PLUGIN_HOST_ADDRESS` 启动；`unsubscribed` 另核对信封的 `time` 读不出的投递以 `InvalidArgument` 拒绝，用到的文本取自随包内嵌的规范向量
 * `WasmPluginConformance`：Wasm 插件，套件在进程内实例化模块并核对 ABI、操作、中间件与陷阱后重建
 
 ## 如何使用
@@ -37,6 +37,7 @@ public sealed class EchoPluginConformanceTests : PluginProtocolConformance
 * `WasmPluginConformance`：Wasm 插件套件，`TrapOperation` 指定故意陷阱的操作
 * `SampleRequests`、`ExcludedOperations`：为操作提供样例请求、排除故意崩溃的操作
 * `VerifiesSessionToken`：缺省为真，只在插件 SDK 还没有发布校验会话令牌的版本时临时关掉，令牌用例随之跳过
+* `EnvelopeOperation`：回显交给处理器的信封的操作（以 `{}` 调用，载荷是 `{"envelopes":[{"id":…,"dataSchema":…}]}`），用例 `event-envelope` 用它核对 `dataschema` 原样交给处理器；缺省为空，那个用例跳过
 
 ## 更多文档
 
