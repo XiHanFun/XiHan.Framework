@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Http;
 using XiHan.Framework.Messaging.Abstractions;
 using XiHan.Framework.Messaging.Abstractions.CloudEvents;
 using XiHan.Framework.Messaging.Abstractions.Envelopes;
+using XiHan.Framework.Primitives;
 using XiHan.Framework.Protocols.CloudEvents.Inbound;
 
 namespace XiHan.Framework.Protocols.CloudEvents.Tests;
@@ -15,6 +16,21 @@ namespace XiHan.Framework.Protocols.CloudEvents.Tests;
 /// </summary>
 public sealed class CloudEventsHttpBindingTests
 {
+    /// <summary>
+    /// 孤立的高代理项
+    /// </summary>
+    private const char HighSurrogate = (char)0xD800;
+
+    /// <summary>
+    /// 孤立的低代理项
+    /// </summary>
+    private const char LowSurrogate = (char)0xDC00;
+
+    /// <summary>
+    /// 本来就是 U+FFFD 的字符
+    /// </summary>
+    private const char ReplacementCharacter = (char)0xFFFD;
+
     /// <summary>
     /// 缺省选项（请求体与 batch 的上限）
     /// </summary>
@@ -196,5 +212,58 @@ public sealed class CloudEventsHttpBindingTests
         // 可打印 ASCII 原样（含空格），% 与非 ASCII、控制字符按 UTF-8 百分号编码
         Assert.Equal("a%25b x%C2%A0%C3%A9%0A", CloudEventsHttpBinding.EncodeHeaderValue("a%b x é\n"));
         Assert.Equal("a%b x é\n", CloudEventsHttpBinding.DecodeHeaderValue("a%25b x%C2%A0%C3%A9%0A"));
+    }
+
+    [Fact]
+    public void Write_BinaryMode_RefusesAnAttributeWithALoneSurrogate_BeforeWritingAnyHeader()
+    {
+        // protocol/cloudevents.md「出站」与 RFC-0001「写出与转交」（ADR-0318）：与 structured 经 CloudEventsFormat.Encode 的拒绝相同，同一个码、同一句消息；
+        // 修之前 binary 不经这道核对，头值的百分号编码把孤立的代理项编成 %EF%BF%BD，Webhook 缺省的单条发布照样写成 U+FFFD
+        var envelope = new MessageEnvelope { Id = "1", Source = "/o", Type = "t" };
+        (string Attribute, MessageEnvelope Envelope)[] broken =
+        [
+            ("id", envelope with { Id = "a" + HighSurrogate }),
+            ("source", envelope with { Source = "/o" + LowSurrogate }),
+            ("type", envelope with { Type = "t" + HighSurrogate + "x" }),
+            ("subject", envelope with { Subject = new string([LowSurrogate, HighSurrogate]) }),
+            ("dataschema", envelope with { DataSchema = "urn:" + HighSurrogate }),
+            ("datacontenttype", envelope with { DataContentType = "text/plain" + HighSurrogate }),
+            ("note", envelope.WithExtension("note", "n" + HighSurrogate)),
+        ];
+
+        foreach (var (attribute, message) in broken)
+        {
+            using var request = new HttpRequestMessage(HttpMethod.Post, "https://hooks.test/orders");
+            var refused = Assert.Throws<FrameworkException>(() => CloudEventsHttpBinding.Write(message, request, CloudEventsContentMode.Binary));
+            Assert.Equal(MessagingErrors.InvalidEnvelope, refused.Code);
+            Assert.Contains($"attribute '{attribute}' has a lone surrogate", refused.Message, StringComparison.Ordinal);
+            Assert.Equal(Assert.Throws<FrameworkException>(() => CloudEventsFormat.Encode(message)).Message, refused.Message);
+
+            // 一个头也没写，请求体也没有：调用方拿到异常，不会发出半份请求
+            Assert.Empty(request.Headers);
+            Assert.Null(request.Content);
+        }
+    }
+
+    [Fact]
+    public void Write_BinaryMode_EncodesSurrogatePairs_AndAGenuineReplacementCharacter()
+    {
+        // 代理对是合法的 UTF-16，按 UTF-8 的四个字节编码；本来就是 U+FFFD 的字符照常编码，不当作孤立的代理项
+        var envelope = new MessageEnvelope { Id = "1", Source = "/o", Type = "t", Subject = "订单 😀" }.WithExtension("note", ReplacementCharacter.ToString());
+        using var request = new HttpRequestMessage(HttpMethod.Post, "https://hooks.test/orders");
+
+        CloudEventsHttpBinding.Write(envelope, request, CloudEventsContentMode.Binary);
+
+        Assert.Equal("%E8%AE%A2%E5%8D%95 %F0%9F%98%80", request.Headers.GetValues("ce-subject").Single());
+        Assert.Equal("%EF%BF%BD", request.Headers.GetValues("ce-note").Single());
+    }
+
+    [Fact]
+    public void EncodeHeaderValue_RefusesALoneSurrogate()
+    {
+        // 头值按 UTF-8 字节百分号编码，孤立的代理项没有 UTF-8 字节：不再悄悄编成 U+FFFD 的 %EF%BF%BD（ADR-0318）
+        Assert.Throws<ArgumentException>(static () => CloudEventsHttpBinding.EncodeHeaderValue("a" + HighSurrogate));
+        Assert.Throws<ArgumentException>(static () => CloudEventsHttpBinding.EncodeHeaderValue(LowSurrogate + "b"));
+        Assert.Equal("%F0%9F%98%80", CloudEventsHttpBinding.EncodeHeaderValue("😀"));
     }
 }

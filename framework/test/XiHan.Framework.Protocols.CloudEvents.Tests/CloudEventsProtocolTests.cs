@@ -277,6 +277,24 @@ public sealed class CloudEventsProtocolTests
         EnvelopeAssert.Same(envelope, CloudEventsFormat.Decode(captured.Body).ValueOrThrow());
     }
 
+    [Theory]
+    [InlineData("Binary")]
+    [InlineData("Structured")]
+    public async Task Outbound_AnEnvelopeWithALoneSurrogate_IsRefusedBeforeSending_InEitherMode(string mode)
+    {
+        // 缺省的 binary 与 structured 同一个口径（protocol/cloudevents.md「出站」，ADR-0318）：发布即抛出 MESSAGING_VALIDATION_002，请求不发出；
+        // 修之前 binary 把孤立的代理项编成 %EF%BF%BD 照发，接收方读到的主题里是 U+FFFD
+        var (app, _, _, outbound) = await StartAsync(("XiHan:Protocols:CloudEvents:Webhooks:orders", "https://hooks.test/orders"), ("XiHan:Protocols:CloudEvents:Outbound", mode));
+        await using var host = app;
+        var envelope = new MessageEnvelope { Id = "evt-1", Source = "/orders", Type = "orders.placed", Subject = "order/" + (char)0xD800, Data = "{}"u8.ToArray() };
+
+        var refused = await Assert.ThrowsAsync<FrameworkException>(async () => await app.Services.GetRequiredService<CloudEventsWebhookPublisher>().PublishAsync("orders", envelope, CancellationToken.None));
+
+        Assert.Equal(MessagingErrors.InvalidEnvelope, refused.Code);
+        Assert.Contains("attribute 'subject' has a lone surrogate", refused.Message, StringComparison.Ordinal);
+        Assert.Empty(outbound.Requests);
+    }
+
     [Fact]
     public async Task Outbound_PublishMany_PostsOneBatchRequest()
     {

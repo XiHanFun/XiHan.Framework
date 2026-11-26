@@ -45,6 +45,14 @@ public static class CloudEventsHttpBinding
     private const string SpecVersionHeader = HeaderPrefix + "specversion";
 
     /// <summary>
+    /// 严格的 UTF-8 编码
+    /// </summary>
+    /// <remarks>
+    /// 遇到孤立的代理项抛出，不悄悄换成 U+FFFD（ADR-0318）
+    /// </remarks>
+    private static readonly UTF8Encoding _strictUtf8 = new(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true);
+
+    /// <summary>
     /// 不作为扩展属性的核心属性名
     /// </summary>
     /// <remarks>
@@ -140,7 +148,7 @@ public static class CloudEventsHttpBinding
     /// 把一个信封写进出站请求
     /// </summary>
     /// <remarks>
-    /// binary 模式写 <c>ce-*</c> 头与数据体，structured 模式写结构化 JSON 体；多条用 <see cref="WriteBatch"/>
+    /// binary 模式写 <c>ce-*</c> 头与数据体，structured 模式写结构化 JSON 体；多条用 <see cref="WriteBatch"/>。写不出的信封在动请求之前抛出携带 <see cref="MessagingErrors.InvalidEnvelope"/> 的 <see cref="FrameworkException"/>：structured 照 <see cref="CloudEventsFormat.Encode"/>；binary 的字符串属性有孤立的代理项时同样抛出，消息与 <see cref="CloudEventsFormat.Encode"/> 的相同、带属性名（<c>spec/protocol/cloudevents.md</c>「出站」，ADR-0318，以前编成 U+FFFD 的 <c>%EF%BF%BD</c>）
     /// </remarks>
     public static void Write(MessageEnvelope envelope, HttpRequestMessage request, CloudEventsContentMode mode)
     {
@@ -153,6 +161,12 @@ public static class CloudEventsHttpBinding
                 request.Content.Headers.ContentType = new MediaTypeHeaderValue(StructuredContentType);
                 break;
             case CloudEventsContentMode.Binary:
+                // 写任何头之前先核对：与 structured 同一个口径，写到一半才发现就留下半份请求（RFC-0001「写出与转交」，ADR-0318）
+                if (LoneSurrogateAttributeOf(envelope) is { } attribute)
+                {
+                    throw new FrameworkException(MessagingErrors.InvalidEnvelope, $"Envelope '{envelope.Id}' cannot be encoded: attribute '{attribute}' has a lone surrogate.");
+                }
+
                 request.Headers.TryAddWithoutValidation(SpecVersionHeader, MessageEnvelope.SpecVersion);
                 request.Headers.TryAddWithoutValidation(HeaderPrefix + "id", EncodeHeaderValue(envelope.Id));
                 request.Headers.TryAddWithoutValidation(HeaderPrefix + "source", EncodeHeaderValue(envelope.Source));
@@ -189,11 +203,16 @@ public static class CloudEventsHttpBinding
     /// 按 CloudEvents HTTP 绑定编码头值
     /// </summary>
     /// <remarks>
-    /// 可打印 ASCII（<c>%</c> 除外）原样，其余按 UTF-8 字节百分号编码
+    /// 可打印 ASCII（<c>%</c> 除外）原样，其余按 UTF-8 字节百分号编码。孤立的代理项没有 UTF-8 字节，抛出 <see cref="ArgumentException"/>（ADR-0318，以前编成 U+FFFD 的 <c>%EF%BF%BD</c>）
     /// </remarks>
     public static string EncodeHeaderValue(string value)
     {
         ArgumentNullException.ThrowIfNull(value);
+        if (!IsEncodable(value))
+        {
+            throw new ArgumentException("The header value has a lone surrogate and cannot be percent-encoded as UTF-8.", nameof(value));
+        }
+
         var builder = new StringBuilder(value.Length);
         Span<byte> utf8 = stackalloc byte[4];
         foreach (var rune in value.EnumerateRunes())
@@ -212,6 +231,62 @@ public static class CloudEventsHttpBinding
         }
 
         return builder.ToString();
+    }
+
+    /// <summary>
+    /// 字符串里有孤立的代理项的第一个属性
+    /// </summary>
+    /// <remarks>
+    /// 属性与先后都与 <see cref="CloudEventsFormat.Encode"/> 的核对相同：规范属性按结构化文档里的先后，再按扩展属性的顺序；扩展属性名合文法（ASCII），只查值
+    /// </remarks>
+    /// <returns>都能严格编码成 UTF-8 时为 <see langword="null"/>；否则是属性名</returns>
+    private static string? LoneSurrogateAttributeOf(MessageEnvelope envelope)
+    {
+        (string Name, string? Value)[] attributes =
+        [
+            ("id", envelope.Id),
+            ("source", envelope.Source),
+            ("type", envelope.Type),
+            ("subject", envelope.Subject),
+            ("dataschema", envelope.DataSchema),
+            ("datacontenttype", envelope.DataContentType),
+        ];
+        foreach (var (name, value) in attributes)
+        {
+            if (value is not null && !IsEncodable(value))
+            {
+                return name;
+            }
+        }
+
+        foreach (var (name, value) in envelope.Extensions)
+        {
+            if (!IsEncodable(value))
+            {
+                return name;
+            }
+        }
+
+        return null;
+    }
+
+    /// <summary>
+    /// 字符串能否严格编码成 UTF-8
+    /// </summary>
+    /// <remarks>
+    /// 编码不成的只有孤立的代理项
+    /// </remarks>
+    private static bool IsEncodable(string text)
+    {
+        try
+        {
+            _strictUtf8.GetByteCount(text);
+            return true;
+        }
+        catch (EncoderFallbackException)
+        {
+            return false;
+        }
     }
 
     /// <summary>
