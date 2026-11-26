@@ -203,6 +203,18 @@ internal sealed class WatPlugin : IDisposable
     public static WatPlugin ExpectingBinding(string name, string type, string expected)
         => Create("invoke", new JsonObject { ["operation"] = "pings.create", ["payload"] = Convert.ToBase64String("{}"u8) }, [], null, bindings: new JsonArray(new JsonObject { ["name"] = name, ["type"] = type }), configureExpects: expected);
 
+    /// <summary>
+    /// 生成一个照 <see cref="ExpectingBinding"/> 核对绑定、调用即陷阱的插件
+    /// </summary>
+    /// <remarks>
+    /// <c>xihan_invoke</c> 是 <c>unreachable</c>：调用一次即崩溃，宿主按退避重建实例并重走握手、配置、启动（<c>spec/plugin/wasm.md</c> §5），用来核对重建时的配置这一步
+    /// </remarks>
+    /// <param name="name">绑定名</param>
+    /// <param name="type">清单声明的资源类型</param>
+    /// <param name="expected">请求里必须出现的文本（取绑定的主值；不含 JSON 要转义的字符）</param>
+    public static WatPlugin ExpectingBindingAndTrapping(string name, string type, string expected)
+        => Create("invoke", new JsonObject { ["operation"] = "pings.create", ["payload"] = Convert.ToBase64String("{}"u8) }, [], null, customBody: "unreachable", bindings: new JsonArray(new JsonObject { ["name"] = name, ["type"] = type }), configureExpects: expected);
+
     /// <inheritdoc />
     public void Dispose()
     {
