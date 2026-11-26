@@ -2,6 +2,7 @@
   "protocols.cloudevents.content_type_unsupported": "リクエストは CloudEvent ではありません: コンテンツタイプ '{contentType}' は CloudEvents の構造化形式でもバッチ形式でもなく、'ce-specversion' ヘッダーもありません。",
   "protocols.cloudevents.body_too_large": "リクエスト本文が {max} バイトを超えています。",
   "protocols.cloudevents.batch_too_large": "batch のイベント数は {count} で、上限 {max} を超えています。",
+  "protocols.cloudevents.header_invalid": "ヘッダー '{header}' は有効な CloudEvents 属性値ではありません: 各 '%' の後には 2 桁の 16 進数字が必要で、デコードしたバイト列は有効な UTF-8 でなければなりません。",
   "protocols.cloudevents.no_subscriber": "トピック '{topic}' を購読しているハンドラーがありません。",
   "protocols.cloudevents.topic_unresolved": "イベントタイプ '{type}' にトピックが設定されておらず、タイプ自体も有効なトピックではありません。",
   "protocols.cloudevents.type_unmapped": "イベント型 '{type}' はトピックにマッピングされていません。XiHan:Protocols:CloudEvents:Topics でマッピングしてください。",

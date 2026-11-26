@@ -7,6 +7,7 @@
 ## 主要特性
 
 * 入站支持 binary、structured、batch 三种内容模式
+* binary 的 `ce-*` 头值按 CloudEvents 的百分号解码严格读：`%` 后不是两位十六进制数字、解出的字节不是合法的 UTF-8 时以 400 `MESSAGING_VALIDATION_002` 拒绝（`CloudEventsHttpBinding.DecodeHeaderValue` 返回 `Maybe<string>`，读不出时无值）
 * 入站可在请求内派发给处理器，也可发布到消息代理
 * 出站 Webhook 按主题配置地址，不外推租户、主体等内部标识
 * 出站写不出的信封在发出之前拒绝：信封的字符串属性有孤立的代理项时，binary（缺省）与 structured 一样抛出 `MESSAGING_VALIDATION_002`，不编成 U+FFFD 照发

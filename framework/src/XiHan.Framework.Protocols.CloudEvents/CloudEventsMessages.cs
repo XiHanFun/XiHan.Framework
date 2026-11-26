@@ -45,6 +45,14 @@ public static class CloudEventsMessages
     public const string BatchTooLarge = "protocols.cloudevents.batch_too_large";
 
     /// <summary>
+    /// binary 模式的头值读不出
+    /// </summary>
+    /// <remarks>
+    /// 参数：<c>header</c>（头名，小写；ADR-0323）
+    /// </remarks>
+    public const string HeaderInvalid = "protocols.cloudevents.header_invalid";
+
+    /// <summary>
     /// 事件类型没有映射到主题
     /// </summary>
     /// <remarks>

@@ -2,6 +2,7 @@
   "protocols.cloudevents.content_type_unsupported": "A requisição não é um CloudEvent: o tipo de conteúdo '{contentType}' não é o formato estruturado nem o formato em lote do CloudEvents, e não há cabeçalho 'ce-specversion'.",
   "protocols.cloudevents.body_too_large": "O corpo da solicitação ultrapassa {max} bytes.",
   "protocols.cloudevents.batch_too_large": "O lote tem {count} eventos e ultrapassa o limite de {max}.",
+  "protocols.cloudevents.header_invalid": "O cabeçalho '{header}' não é um valor de atributo CloudEvents válido: cada '%' deve ser seguido de dois dígitos hexadecimais e os bytes decodificados devem ser UTF-8 válido.",
   "protocols.cloudevents.no_subscriber": "Nenhum manipulador está inscrito no tópico '{topic}'.",
   "protocols.cloudevents.topic_unresolved": "Nenhum tópico está configurado para o tipo de evento '{type}' e o próprio tipo não é um tópico válido.",
   "protocols.cloudevents.type_unmapped": "O tipo de evento '{type}' não está mapeado para um tópico; mapeie-o em XiHan:Protocols:CloudEvents:Topics.",

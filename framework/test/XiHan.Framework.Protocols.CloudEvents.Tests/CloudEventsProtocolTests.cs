@@ -213,6 +213,23 @@ public sealed class CloudEventsProtocolTests
     }
 
     [Fact]
+    public async Task Inbound_AnUndecodableHeaderValue_IsA400ProblemDetails_NamingTheHeader()
+    {
+        // spec/protocol/cloudevents.md「binary 的头值」（ADR-0323）：修之前 %ED%A0%80 原样留成百分号文本，照常派发
+        var (app, client, log, _) = await StartAsync();
+        await using var host = app;
+
+        var rejected = await PostBinaryAsync(client, EventsFeature.Topic, subject: "order/%ED%A0%80");
+
+        Assert.Equal(HttpStatusCode.BadRequest, rejected.StatusCode);
+        Assert.Equal("application/problem+json", rejected.Content.Headers.ContentType!.MediaType);
+        using var problem = JsonDocument.Parse(await rejected.Content.ReadAsStringAsync());
+        Assert.Equal(MessagingErrors.InvalidEnvelope, problem.RootElement.GetProperty("code").GetString());
+        Assert.Contains("'ce-subject'", problem.RootElement.GetProperty("detail").GetString(), StringComparison.Ordinal);
+        Assert.Empty(log.Records);
+    }
+
+    [Fact]
     public async Task Inbound_Publish_HandsEventsToTheBroker()
     {
         var (app, client, log, _) = await StartAsync(("XiHan:Protocols:CloudEvents:Inbound", "publish"));

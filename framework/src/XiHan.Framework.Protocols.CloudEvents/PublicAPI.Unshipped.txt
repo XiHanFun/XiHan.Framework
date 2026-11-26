@@ -52,6 +52,7 @@ const XiHan.Framework.Protocols.CloudEvents.CloudEventsMessages.BatchTooLarge = 
 const XiHan.Framework.Protocols.CloudEvents.CloudEventsMessages.BodyTooLarge = "protocols.cloudevents.body_too_large" -> string!
 const XiHan.Framework.Protocols.CloudEvents.CloudEventsMessages.CatalogName = "protocols.cloudevents" -> string!
 const XiHan.Framework.Protocols.CloudEvents.CloudEventsMessages.ContentTypeUnsupported = "protocols.cloudevents.content_type_unsupported" -> string!
+const XiHan.Framework.Protocols.CloudEvents.CloudEventsMessages.HeaderInvalid = "protocols.cloudevents.header_invalid" -> string!
 const XiHan.Framework.Protocols.CloudEvents.CloudEventsMessages.NoSubscriber = "protocols.cloudevents.no_subscriber" -> string!
 const XiHan.Framework.Protocols.CloudEvents.CloudEventsMessages.TopicUnresolved = "protocols.cloudevents.topic_unresolved" -> string!
 const XiHan.Framework.Protocols.CloudEvents.CloudEventsMessages.TypeUnmapped = "protocols.cloudevents.type_unmapped" -> string!
@@ -73,7 +74,7 @@ static XiHan.Framework.Protocols.CloudEvents.CloudEventsProtocolOptions.FromConf
 static XiHan.Framework.Protocols.CloudEvents.CloudEventsProtocolOptions.operator !=(XiHan.Framework.Protocols.CloudEvents.CloudEventsProtocolOptions? left, XiHan.Framework.Protocols.CloudEvents.CloudEventsProtocolOptions? right) -> bool
 static XiHan.Framework.Protocols.CloudEvents.CloudEventsProtocolOptions.operator ==(XiHan.Framework.Protocols.CloudEvents.CloudEventsProtocolOptions? left, XiHan.Framework.Protocols.CloudEvents.CloudEventsProtocolOptions? right) -> bool
 static XiHan.Framework.Protocols.CloudEvents.Inbound.CloudEventsEndpointRouteBuilderExtensions.MapXiHanCloudEvents(this Microsoft.AspNetCore.Routing.IEndpointRouteBuilder! endpoints, string! pattern = "/events") -> Microsoft.AspNetCore.Builder.IEndpointConventionBuilder!
-static XiHan.Framework.Protocols.CloudEvents.Inbound.CloudEventsHttpBinding.DecodeHeaderValue(string! value) -> string!
+static XiHan.Framework.Protocols.CloudEvents.Inbound.CloudEventsHttpBinding.DecodeHeaderValue(string! value) -> XiHan.Framework.Primitives.Maybe<string!>
 static XiHan.Framework.Protocols.CloudEvents.Inbound.CloudEventsHttpBinding.EncodeHeaderValue(string! value) -> string!
 static XiHan.Framework.Protocols.CloudEvents.Inbound.CloudEventsHttpBinding.ModeOf(Microsoft.AspNetCore.Http.HttpRequest! request) -> XiHan.Framework.Primitives.Maybe<XiHan.Framework.Protocols.CloudEvents.Inbound.CloudEventsContentMode>
 static XiHan.Framework.Protocols.CloudEvents.Inbound.CloudEventsHttpBinding.ReadAsync(Microsoft.AspNetCore.Http.HttpRequest! request, XiHan.Framework.Protocols.CloudEvents.CloudEventsProtocolOptions! options, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<System.Collections.Generic.IReadOnlyList<XiHan.Framework.Messaging.Abstractions.Envelopes.MessageEnvelope!>!>>

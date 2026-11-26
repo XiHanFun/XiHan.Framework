@@ -211,7 +211,7 @@ public sealed class CloudEventsHttpBindingTests
 
         // 可打印 ASCII 原样（含空格），% 与非 ASCII、控制字符按 UTF-8 百分号编码
         Assert.Equal("a%25b x%C2%A0%C3%A9%0A", CloudEventsHttpBinding.EncodeHeaderValue("a%b x é\n"));
-        Assert.Equal("a%b x é\n", CloudEventsHttpBinding.DecodeHeaderValue("a%25b x%C2%A0%C3%A9%0A"));
+        Assert.Equal("a%b x é\n", CloudEventsHttpBinding.DecodeHeaderValue("a%25b x%C2%A0%C3%A9%0A").ValueOrThrow());
     }
 
     [Fact]

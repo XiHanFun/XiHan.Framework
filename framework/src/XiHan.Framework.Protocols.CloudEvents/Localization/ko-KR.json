@@ -2,6 +2,7 @@
   "protocols.cloudevents.content_type_unsupported": "요청이 CloudEvent가 아닙니다: 콘텐츠 유형 '{contentType}'은(는) CloudEvents 구조화 형식도 배치 형식도 아니며 'ce-specversion' 헤더도 없습니다.",
   "protocols.cloudevents.body_too_large": "요청 본문이 {max}바이트를 초과합니다.",
   "protocols.cloudevents.batch_too_large": "batch의 이벤트가 {count}개로 상한 {max}을(를) 초과합니다.",
+  "protocols.cloudevents.header_invalid": "헤더 '{header}'은(는) 유효한 CloudEvents 속성 값이 아닙니다: 각 '%' 뒤에는 16진수 두 자리가 와야 하며, 디코딩한 바이트는 유효한 UTF-8이어야 합니다.",
   "protocols.cloudevents.no_subscriber": "토픽 '{topic}'을(를) 구독하는 핸들러가 없습니다.",
   "protocols.cloudevents.topic_unresolved": "이벤트 유형 '{type}'에 토픽이 구성되지 않았고 유형 자체도 유효한 토픽이 아닙니다.",
   "protocols.cloudevents.type_unmapped": "이벤트 형식 '{type}'이(가) 토픽에 매핑되지 않았습니다. XiHan:Protocols:CloudEvents:Topics에서 매핑하십시오.",

@@ -6,6 +6,7 @@ using System.Globalization;
 using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
+using System.Text.Unicode;
 using Microsoft.AspNetCore.Http;
 using XiHan.Framework.Hosting.AspNetCore.Endpoints;
 using XiHan.Framework.Kernel.Json;
@@ -309,10 +310,58 @@ public static class CloudEventsHttpBinding
     /// <summary>
     /// 解码头值的百分号编码
     /// </summary>
-    public static string DecodeHeaderValue(string value)
+    /// <remarks>
+    /// CloudEvents HTTP 协议绑定的百分号解码（<c>spec/protocol/cloudevents.md</c>「binary 的头值」，ADR-0323）：逐个字符换成字节，<c>%</c> 与紧跟的两位十六进制数字（大小写都收）是一个字节，其余字符是它的 UTF-8 编码，再按 UTF-8 严格解码；不必要的编码照收。
+    /// <c>%</c> 后不是两位十六进制数字、字节不是合法的 UTF-8、值里有孤立的代理项时无值（以前用 <see cref="Uri.UnescapeDataString(string)"/>，原样留成百分号文本，返回 <see langword="string"/>）
+    /// </remarks>
+    /// <returns>解码出的值；读不出时无值</returns>
+    public static Maybe<string> DecodeHeaderValue(string value)
     {
         ArgumentNullException.ThrowIfNull(value);
-        return Uri.UnescapeDataString(value);
+
+        // 没有 % 的值不用换字节：编得成 UTF-8（没有孤立的代理项）就是它本身
+        if (!value.Contains('%'))
+        {
+            return UnicodeText.HasLoneSurrogate(value) ? default(Maybe<string>) : value;
+        }
+
+        // 一个字符至多三个 UTF-8 字节（代理对两个字符四个字节），百分号序列三个字符一个字节
+        var bytes = ArrayPool<byte>.Shared.Rent(value.Length * 3);
+        try
+        {
+            var length = 0;
+            for (var index = 0; index < value.Length; index++)
+            {
+                if (value[index] == '%')
+                {
+                    // 后面不足两个字符或不是十六进制数字：没编码的 % 是写错的值，不照原样留下（ADR-0323）
+                    if (index + 2 >= value.Length || !byte.TryParse(value.AsSpan(index + 1, 2), NumberStyles.AllowHexSpecifier, CultureInfo.InvariantCulture, out var octet))
+                    {
+                        return default;
+                    }
+
+                    bytes[length++] = octet;
+                    index += 2;
+                    continue;
+                }
+
+                // 孤立的代理项没有 UTF-8 编码
+                if (!Rune.TryGetRuneAt(value, index, out var rune))
+                {
+                    return default;
+                }
+
+                length += rune.EncodeToUtf8(bytes.AsSpan(length));
+                index += rune.Utf16SequenceLength - 1;
+            }
+
+            var decoded = bytes.AsSpan(0, length);
+            return Utf8.IsValid(decoded) ? Encoding.UTF8.GetString(decoded) : default(Maybe<string>);
+        }
+        finally
+        {
+            ArrayPool<byte>.Shared.Return(bytes);
+        }
     }
 
     /// <summary>
@@ -366,26 +415,45 @@ public static class CloudEventsHttpBinding
     /// binary
     /// </summary>
     /// <remarks>
-    /// <c>ce-specversion</c>、<c>ce-id</c>、<c>ce-source</c>、<c>ce-type</c> 必填，<c>ce-time</c>（<see cref="TimestampText"/> 的文法，读出 UTC 时刻）、<c>ce-subject</c>、<c>ce-dataschema</c>（ADR-0305）可选，值为空与没有这个头相同，其余 <c>ce-*</c> 是扩展属性（名字不能是保留名，<c>ce-data</c> 因此不合法，ADR-0298）；数据内容类型取 <c>Content-Type</c>，数据取请求体，声明为 JSON 的数据过与 structured 相同的检查（<see cref="DataProblemOf"/>，ADR-0323）
+    /// <c>ce-specversion</c>、<c>ce-id</c>、<c>ce-source</c>、<c>ce-type</c> 必填，<c>ce-time</c>（<see cref="TimestampText"/> 的文法，读出 UTC 时刻）、<c>ce-subject</c>、<c>ce-dataschema</c>（ADR-0305）可选，值为空与没有这个头相同，其余 <c>ce-*</c> 是扩展属性（名字不能是保留名，<c>ce-data</c> 因此不合法，ADR-0298）；每个 <c>ce-*</c> 头的值经 <see cref="DecodeHeaderValue"/> 解码，读不出即 <see cref="CloudEventsMessages.HeaderInvalid"/>（ADR-0323）；数据内容类型取 <c>Content-Type</c>，数据取请求体，声明为 JSON 的数据过与 structured 相同的检查（<see cref="DataProblemOf"/>，ADR-0323）
     /// </remarks>
     private static Result<IReadOnlyList<MessageEnvelope>> ReadBinary(HttpRequest request, byte[] body)
     {
         var headers = request.Headers;
-        if (!string.Equals(HeaderValue(headers, "specversion"), MessageEnvelope.SpecVersion, StringComparison.Ordinal))
+
+        // 规范属性的头按固定的先后先解码：读不出的值不能当作另一个值往下核对，第一个读不出的即信封不合法（ADR-0323）
+        var core = new Dictionary<string, string>(StringComparer.Ordinal);
+        foreach (var attribute in _coreAttributes)
+        {
+            if (headers.TryGetValue(HeaderPrefix + attribute, out var raw))
+            {
+                if (!DecodeHeaderValue(raw.ToString()).TryGetValue(out var decoded))
+                {
+                    return HeaderInvalid(HeaderPrefix + attribute);
+                }
+
+                core[attribute] = decoded;
+            }
+        }
+
+        // 缺失的头为空串
+        string HeaderValue(string name) => core.GetValueOrDefault(name, string.Empty);
+
+        if (!string.Equals(HeaderValue("specversion"), MessageEnvelope.SpecVersion, StringComparison.Ordinal))
         {
             return Error.Validation(MessagingErrors.InvalidEnvelope, MessagingMessages.EnvelopeSpecVersion, MessageArguments.Of(("specVersion", MessageEnvelope.SpecVersion)));
         }
 
-        var id = HeaderValue(headers, "id");
-        var source = HeaderValue(headers, "source");
-        var type = HeaderValue(headers, "type");
+        var id = HeaderValue("id");
+        var source = HeaderValue("source");
+        var type = HeaderValue("type");
         if (id.Length == 0 || source.Length == 0 || type.Length == 0)
         {
             return Error.Validation(MessagingErrors.InvalidEnvelope, MessagingMessages.EnvelopeAttributesRequired);
         }
 
         DateTimeOffset? time = null;
-        var timeText = HeaderValue(headers, "time");
+        var timeText = HeaderValue("time");
         if (timeText.Length > 0)
         {
             // 与结构化 JSON 的 time 同一条文法（RFC-0009「信封」，ADR-0283）：不交给通用的日期解析，它把没有偏移的时间按本机时区读
@@ -397,10 +465,10 @@ public static class CloudEventsHttpBinding
             time = parsed;
         }
 
-        var subject = HeaderValue(headers, "subject");
-        var dataSchema = HeaderValue(headers, "dataschema");
+        var subject = HeaderValue("subject");
+        var dataSchema = HeaderValue("dataschema");
         // 规范要求 binary 模式用 Content-Type 承载数据内容类型；给了 ce-datacontenttype 也接受
-        var explicitContentType = HeaderValue(headers, "datacontenttype");
+        var explicitContentType = HeaderValue("datacontenttype");
         var contentType = explicitContentType.Length > 0 ? explicitContentType : request.ContentType;
 
         var extensions = new Dictionary<string, string>(StringComparer.Ordinal);
@@ -422,7 +490,12 @@ public static class CloudEventsHttpBinding
                 return Error.Validation(MessagingErrors.InvalidEnvelope, MessagingMessages.EnvelopeInvalidExtension, MessageArguments.Of(("name", name)));
             }
 
-            extensions[name] = DecodeHeaderValue(header.Value.ToString());
+            if (!DecodeHeaderValue(header.Value.ToString()).TryGetValue(out var value))
+            {
+                return HeaderInvalid(HeaderPrefix + name);
+            }
+
+            extensions[name] = value;
         }
 
         try
@@ -501,13 +574,11 @@ public static class CloudEventsHttpBinding
     }
 
     /// <summary>
-    /// 取 <c>ce-&lt;name&gt;</c> 头并解码
+    /// 头值读不出的错误
     /// </summary>
-    /// <remarks>
-    /// 缺失为空串
-    /// </remarks>
-    private static string HeaderValue(IHeaderDictionary headers, string name)
-        => headers.TryGetValue(HeaderPrefix + name, out var values) ? DecodeHeaderValue(values.ToString()) : string.Empty;
+    /// <param name="header">头名，小写</param>
+    private static Error HeaderInvalid(string header)
+        => Error.Validation(MessagingErrors.InvalidEnvelope, CloudEventsMessages.HeaderInvalid, MessageArguments.Of(("header", header)));
 
     /// <summary>
     /// <c>Content-Type</c> 的媒体类型段（去掉参数，小写）
