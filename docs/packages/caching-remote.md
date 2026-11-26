@@ -33,7 +33,7 @@
 
 值与期望值是标准 base64（带填充）；`ttlMs` 与 `slidingMs` 二选一，都不给时用插件的默认存活时间。
 
-每个操作按 ID 从宿主的操作登记表取代理操作，经 `IOperationInvoker.ExecuteAsync` 直接执行，不经过管道：存储会被幂等中间件在管道里使用，走管道会递归，这些内部调用也不需要授权与幂等。键与过期选项在 .NET 侧先按 `CacheKey` / `CacheEntryOptions` 校验，再编码成操作集的 JSON。
+每个操作按 ID 从宿主的操作登记表取代理操作，经 `IOperationInvoker.ExecuteAsync` 直接执行，不经过管道：存储会被幂等中间件在管道里使用，走管道会递归，这些内部调用也不需要授权与幂等。键与过期选项在 .NET 侧先按 `CacheKey` / `CacheEntryOptions` 校验，再编码成操作集的 JSON。写进请求的键另外严格编码成 UTF-8：`CacheKey` 已拒收孤立的代理项，编不成只会出在绕过核对的键上，适配器按编程错误抛 `ArgumentException`（内层是 `EncoderFallbackException`），不发请求，也不当成后端不可用（`CACHING_UNAVAILABLE_001`）；九个操作都经同一处取键。不这样做，System.Text.Json 会把孤立的代理项写成转义的 U+FFFD，两个不同的键到了插件就是同一个条目（ADR-0316）。
 
 在存储之上，特性注册 `ICacheStore`（就是 `RemoteCacheStore`，与内存、Redis 实现一样按接口登记）、`ISharedCache`（`SerializingCache` + `RemoteCacheStore`）、`IDistributedLock`、`IDistributedCache` 与 Idempotency 阶段的 `IdempotencyMiddleware`。从容器按接口取 `ICacheStore` 与取 `ISharedCache.Store` 得到的是同一个实例。
 

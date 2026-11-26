@@ -63,14 +63,14 @@ dotnet add package XiHan.Framework.Caching.Abstractions --prerelease
 | `ISharedCache` | 跨进程共享的 `ICache`（`caching.distributed`） |
 | `SerializingCache` | `ICacheStore` + `ICacheSerializer` 组成的 `ISharedCache` |
 | `InFlightLoadTable`、`InFlightLoad` | 同键并发回源的在途表（Preview），自己实现 `ICache` 时用它得到 `GetOrCreateAsync` 的合并语义：`RunAsync(key, load, ct)` 键上没有在途的回源就登记并执行 `load`、有就等它，`Supersede(key)` / `Supersede(keys)` / `SupersedePrefix(prefix)` 让在途的回源脱钩，`Count` 是在途的条数；`load` 收到的句柄 `InFlightLoad` 用 `IsSuperseded` 给异步的写回核对、`TryWrite(state, write)` 给同步的写回 |
-| `CacheKey` | 键：非空、无空白与控制字符、UTF-8 编码后不超过 `MaxBytes`（512 字节）、区分大小写；从字符串显式转换；`IsValid`、`IsValidPrefix`、`Validate` |
+| `CacheKey` | 键：非空、无空白与控制字符、不含孤立的代理项（成对的代理项即平面以外的字符照常合法）、UTF-8 编码后不超过 `MaxBytes`（512 字节）、区分大小写；从字符串显式转换；`IsValid`、`IsValidPrefix`、`Validate` |
 | `CacheEntryOptions` | 过期：`Expires(ttl)`、`Sliding(window)`、`Default`（Provider 默认存活时间），二选一，`Validated()` 校验组合 |
 | `CacheEntry` | `ICacheStore.SetManyAsync` 的一项：键、值、该项自己的过期选项 |
 | `ICacheSerializer`、`JsonCacheSerializer`、`CacheSerializerRegistration` | 值序列化；`JsonCacheSerializer` 要求选项带 `TypeInfoResolver`；`TryAddJsonSerializer` 供 Provider 按已有登记选序列化器，用应用登记的 `JsonSerializerOptions` 时把组件登记的类型元数据并在应用解析器之后；`AddTypeInfo(services, resolver)` 供组件登记自己放进缓存的类型的源生成上下文，同一个解析器只登记一次 |
 | `CacheTypeInfoSource` | `AddTypeInfo` 在容器里的登记（`Resolver`）；应用自己登记 `ICacheSerializer` 时从容器取出并进自己的解析器 |
 | `GenerationCache<T>`、`GenerationCacheKey`、`GenerationCacheEntry<T>` | 按范围失效的读穿缓存区：`GetOrLoadManyAsync(keys, load)` 批量读、未命中一次查源，`InvalidateAsync(scopes)` / `InvalidateAllAsync()` 换代数让范围或整个区失效；键是（范围，条目），`ForScope(scope)` 只有范围；`GenerationCacheEntry<T>`（区代数、范围代数、值）是跨进程缓存里的存储形状 |
 | `IDistributedLock`、`LockHandle`、`StoreDistributedLock`、`DistributedLockExtensions` | 租约锁：`TryAcquireAsync(resource, ttl)` 返回 `Maybe<LockHandle>`，结果式的 `AcquireAsync` 被占用时返回 `CACHING_CONFLICT_001`；句柄 `ReleaseAsync` / `DisposeAsync` 释放 |
-| `IdempotencyMiddleware`、`IdempotencyOptions` | Idempotency 阶段：按 Baggage `xihan.idempotency-key` 去重，回放结果与操作的响应（存储格式是内部的，记录带操作 ID 与响应）；`WasReplayed(context)` 判断结果是否来自回放 |
+| `IdempotencyMiddleware`、`IdempotencyOptions` | Idempotency 阶段：按 Baggage `xihan.idempotency-key` 去重，回放结果与操作的响应（存储格式是内部的，记录带操作 ID 与响应；响应是空载荷时记下没有响应体）；`WasReplayed(context)` 判断结果是否来自回放 |
 | `CacheStoreDistributedCache`、`DistributedCacheServiceCollectionExtensions` | `IDistributedCache` 适配；`AddXiHanDistributedCache(services, store)` 幂等登记，已有登记不覆盖；`Translate` 换算过期选项 |
 | `ICacheStoreInspector`、`CacheKeyQuery`、`CacheKeyPage`、`CacheEntryInfo` | 可选的字节条目键管理：按前缀分页列键、读字节数与剩余存活、按前缀删除 |
 | `ICacheInspector`、`CachedObjectInfo` | 可选的对象条目键管理：进程内对象缓存的条目不在字节存储里，由它列出 |
@@ -105,11 +105,11 @@ public sealed class OneShotGate(ICacheStore store)
 - 批量方法一次往返、结果与入参顺序一一对应、空集合不触后端；`SetManyAsync` 任一项选项不合法时整批不写；`RemoveManyAsync` 同一个键出现多次第二次为 `false`。
 - `GetOrCreateAsync` 合并同键并发（ADR-0271）：同一个缓存实例上，同一个键、同一种结果类型的并发未命中只回源一次，先到的调用在自己的上下文里用自己的令牌执行工厂，其余调用等它的结局，过期选项也以它为准。等待的调用取消只结束自己的等待；先到的调用取消时工厂随它取消，等待的调用里先到的一个接手、执行自己的工厂；令牌已取消且未命中的调用不回源。工厂抛出而先到的调用没有取消时，当时在等的调用收到同一个异常，不缓存。回源期间经本实例 `SetAsync`、`SetManyAsync`、`RemoveAsync`、`RemoveManyAsync` 改这个键即脱钩：结果不写回，之后的调用重新读缓存；别的实例的变更与绕过缓存经 `ICache.Store` 的写入看不见、不脱钩。结果类型不同、或在途的回源就在当前调用链上时不合并，各自回源。过期选项在未命中时、回源之前校验。合并不跨实例；在途表只存正在进行的回源，结束或被取代即移除。自写的 `ICache` 用 `InFlightLoadTable` 跟上这条契约。
 - `LockHandle` 是抽象类，只释放一次（基类原子置位，并发释放也只执行一次）；锁到期后被他人获取会换成新令牌，原句柄释放返回 `false`。包外实现 `IDistributedLock` 时派生它并实现 `ReleaseCoreAsync` 与 `ExtendCoreAsync`。锁不可重入；`TryExtendAsync` 原子续约，释放之后返回 `false`。
-- 幂等记录的作用域键是 `idem:<租户>:<长度>.<主体>:<键>`（匿名与没有租户为 `-`，主体带长度前缀，ADR-0205），不满足 `CacheKey` 文法时以 `CACHING_VALIDATION_001` 结束调用；处理中返回 `CACHING_CONFLICT_002`；成功与失败的结果都会回放，操作调用回放时还原首次的响应（XGI 载荷、类型化对象、HTTP 状态码与正文），记录属于另一个调用或响应无法还原时返回 `CACHING_CONFLICT_003`（ADR-0064）。
+- 幂等记录的作用域键是 `idem:<租户>:<长度>.<主体>:<键>`（匿名与没有租户为 `-`，主体带长度前缀，ADR-0205），不满足 `CacheKey` 文法时以 `CACHING_VALIDATION_001` 结束调用、不执行处理器（幂等键或主体 ID 含孤立的代理项时同样如此，ADR-0316）；处理中返回 `CACHING_CONFLICT_002`；成功与失败的结果都会回放，操作调用回放时还原首次的响应（XGI 载荷、类型化对象、HTTP 状态码与正文），记录属于另一个调用或响应无法还原时返回 `CACHING_CONFLICT_003`（ADR-0064）。响应编成的是空载荷（插件代理交回的应答没有响应体）时记下没有响应体，回放时按操作的描述解码空载荷：插件代理得到同样的空载荷，类型化的描述解码不了，返回 `CACHING_CONFLICT_003`；不认这一项的旧版本宿主读到这种记录时当作没有响应，同样返回 `CACHING_CONFLICT_003`（ADR-0318）。
 - `CacheStoreDistributedCache`：绝对过期两种写法取较早者，已过去的时刻抛 `ArgumentOutOfRangeException`；与滑动过期同时给时绝对优先；都不给时用 Provider 的默认存活时间（内存与 Redis 缺省 5 分钟）；同步成员阻塞等待异步存储。
 - `ICacheStoreInspector.RemoveByPrefixAsync` 与 `ICacheInspector.RemoveByPrefixAsync` 返回 `Result<long>`，空前缀或不合法的前缀返回 `CACHING_VALIDATION_004`、不访问后端；列键时不合法的前缀同样返回它；`CacheKeyQuery.PageSize` 为 1 到 `MaxPageSize`（1000），默认 100，越界不在构造时抛出，`ListKeysAsync`（返回 `Result<CacheKeyPage>`）以 `CACHING_VALIDATION_003` 返回、不访问后端（ADR-0084）。
 - `ICacheChangeFeed` 的处理器在写入的调用里同步执行，不应阻塞或抛出；本实例的订阅者同步收到通知，其他实例经后端转发、不回送给发出者；跨实例通知尽力而为，可能丢失。
-- `GenerationCache<T>`：区名是合法的缓存键文本、UTF-8 编码后不超过 128 字节（`MaxRegionBytes`），存活时间必须为正。区与每个范围各有一个随机代数，存在同一个 `ICache` 里，存活时间是条目的 10 倍；读取在查源之前取代数，写回的条目带着读取开始时的代数，两个代数都还是当前值才算命中，所以失效之前开始的读取写回的旧值不会被当作命中。结果与入参顺序一一对应，重复位置只查一次，空集合不触缓存；查源失败原样返回、不写缓存。键是 `<区>:gen`、`<区>:gen:<范围>`、`<区>:entry:<范围>:<条目>`，段写成 `<长度>.<文本>`，含空白、控制字符或 UTF-8 编码后超过 128 字节的换成 `#<SHA-256>`，拼出的键最长 400 字节。缓存后端故障时读取直接查源、不写回，每个区每 10 秒最多一条警告；失效把 `CACHING_UNAVAILABLE_001` 抛给调用方。用法见[按范围失效的缓存区](/caching/basics#按范围失效的缓存区)。
+- `GenerationCache<T>`：区名是合法的缓存键文本、UTF-8 编码后不超过 128 字节（`MaxRegionBytes`），存活时间必须为正。区与每个范围各有一个随机代数，存在同一个 `ICache` 里，存活时间是条目的 10 倍；读取在查源之前取代数，写回的条目带着读取开始时的代数，两个代数都还是当前值才算命中，所以失效之前开始的读取写回的旧值不会被当作命中。结果与入参顺序一一对应，重复位置只查一次，空集合不触缓存；查源失败原样返回、不写缓存。键是 `<区>:gen`、`<区>:gen:<范围>`、`<区>:entry:<范围>:<条目>`，段写成 `<长度>.<文本>`，含空白、控制字符、孤立的代理项或 UTF-8 编码后超过 128 字节的换成 `#<SHA-256>`，拼出的键最长 400 字节。散列的输入是文本的 WTF-8：合法文本就是它的 UTF-8，已有的散列键不变；孤立的代理项编成 `ED A0 80`–`ED BF BF`，不换成 U+FFFD，只差在孤立代理项上的两个范围（如两个主体的授予）不再撞成一个键（ADR-0316）。缓存后端故障时读取直接查源、不写回，每个区每 10 秒最多一条警告；失效把 `CACHING_UNAVAILABLE_001` 抛给调用方。用法见[按范围失效的缓存区](/caching/basics#按范围失效的缓存区)。
 
 ## 错误码
 

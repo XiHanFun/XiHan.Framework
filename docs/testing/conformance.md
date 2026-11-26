@@ -127,9 +127,9 @@ xihan-conformance vectors
 | 类型 | 说明 |
 | --- | --- |
 | `FrameworkWorkspace` | `Root`：从测试的输出目录逐级向上第一个含 `XiHan.Framework.slnx` 的目录（仓库里的 `framework/`），第一次读取时找、之后缓存，找不到抛 `InvalidOperationException`。读规范、示例与别的项目的构建产物都以它为起点 |
-| `SpecVectors` | `Directory` 是 `<工作区>/spec/conformance/vectors`；`PathOf(area, fileName)` 只拼路径，给要按 `JsonDocument` 自己读的测试；`Read<T>(area, fileName)` 按反射严格读，`Read<T>(area, fileName, resolver)` 按源生成的上下文严格读 |
+| `SpecVectors` | `Directory` 是 `<工作区>/spec/conformance/vectors`；`PathOf(area, fileName)` 只拼路径，给要按 `JsonDocument` 自己读的测试；`Read<T>(area, fileName)` 按反射严格读，`Read<T>(area, fileName, resolver)` 按源生成的上下文严格读；`FromCodeUnits(codeUnits)` 由向量里以四位十六进制写出的 UTF-16 码元组成字符串（可能含孤立的代理项，有一项不是四位十六进制抛 `FormatException`），`TextOf(name, text, codeUnits)` 取一条用例的文本：原文与码元恰好给一样，都写或都没写抛 `InvalidOperationException` |
 
-下面回放缓存键的向量（`caching/cache-keys.json`）：
+JSON 字符串写不出孤立的代理项（System.Text.Json 读到转义出的孤立代理项即抛出），含它的用例在向量里不写原文 `text`，改以 `utf16` 列出码元（如 `["0061", "D800"]`），也不标 `utf8Bytes`（ADR-0316）。下面回放缓存键的向量（`caching/cache-keys.json`）：
 
 ```csharp
 using XiHan.Framework.Caching.Abstractions.Stores;
@@ -145,14 +145,22 @@ public sealed class CacheKeyVectorTests
 
     [Fact]
     public void IsValid_AcceptsTheValidKeys()
-        => Assert.All(_vectors.Keys.Valid, static key => Assert.True(CacheKey.IsValid(key.Text), key.Name));
+        => Assert.All(_vectors.Keys.Valid, static key => Assert.True(CacheKey.IsValid(key.Input), key.Name));
 
-    // 文件里的每个成员都要在模型里：utf8Bytes 与 utf16Units 这里不用，也得写上
+    [Fact]
+    public void IsValid_RejectsTheInvalidKeys()
+        => Assert.All(_vectors.Keys.Invalid, static key => Assert.False(CacheKey.IsValid(key.Input), key.Name));
+
+    // 文件里的每个成员都要在模型里：utf8Bytes 与 utf16Units 这里不用，也得写上；
+    // 以码元写出的用例没有 text 与 utf8Bytes，这几个成员写成可空、给缺省值
     private sealed record CacheKeyVectors(int MaxBytes, CacheKeyCases Keys, CacheKeyCases Prefixes);
 
     private sealed record CacheKeyCases(CacheKeyCase[] Valid, CacheKeyCase[] Invalid);
 
-    private sealed record CacheKeyCase(string Name, string Text, int Utf8Bytes, int Utf16Units);
+    private sealed record CacheKeyCase(string Name, int Utf16Units, string? Text = null, string[]? Utf16 = null, int? Utf8Bytes = null)
+    {
+        public string Input => SpecVectors.TextOf(Name, Text, Utf16);
+    }
 }
 ```
 

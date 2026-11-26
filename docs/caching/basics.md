@@ -54,7 +54,7 @@
 
 `ICache.Store` 暴露底层字节存储，锁与幂等用它的原子原语。存储不可达时所有方法抛出携带 `CACHING_UNAVAILABLE_001` 的 `FrameworkException`，不会当成未命中返回。
 
-缓存键是 `CacheKey`：非空、不含空白与控制字符、UTF-8 编码后不超过 512 字节（`CacheKey.MaxBytes`）、区分大小写；纯 ASCII 的键就是 512 个字符，全是汉字的键最多 170 个字；从字符串创建用构造或显式转换（`new CacheKey(text)`、`(CacheKey)text`），不合法时抛 `ArgumentException`；`default(CacheKey)` 不是合法键，读 `Value` 抛 `InvalidOperationException`。缓存不自动按租户隔离键，多租户应用要把租户 ID 写进键里（幂等中间件是例外，见[分布式锁与幂等](/caching/locks)）。
+缓存键是 `CacheKey`：非空、不含空白与控制字符、不含孤立的代理项、UTF-8 编码后不超过 512 字节（`CacheKey.MaxBytes`）、区分大小写；纯 ASCII 的键就是 512 个字符，全是汉字的键最多 170 个字；成对的代理项（表情等平面以外的字符）照常合法，孤立的代理项（不在一对之中的 U+D800–U+DFFF 码元）在 Redis 与远程缓存上会被换成 U+FFFD、与另一个键撞成同一个条目，所以不收。从字符串创建用构造或显式转换（`new CacheKey(text)`、`(CacheKey)text`），不合法时抛 `ArgumentException`，拼进用户输入的键先用 `CacheKey.IsValid` 判断；`default(CacheKey)` 不是合法键，读 `Value` 抛 `InvalidOperationException`。缓存不自动按租户隔离键，多租户应用要把租户 ID 写进键里（幂等中间件是例外，见[分布式锁与幂等](/caching/locks)）。
 
 ## 启用
 
@@ -258,7 +258,7 @@ public sealed class TenantPriceCache(ICache cache, IPriceSource source, ILogger<
 - 区与每个范围各有一个代数（随机令牌），也存在 `ICache` 里。条目写回时记下读取开始时的区代数与范围代数，读取时两个代数都还是当前值才算命中。失效就是换一个新代数，不需要知道范围下有哪些条目。
 - 读取在查源之前取代数，缺代数（从未写过、已过期或被淘汰）时先写下新代数再查源。失效之前开始的读取写回的条目带着旧代数，不会被当作命中，失效之后才开始的读取看到新代数。
 - 代数的存活时间是条目的 10 倍；代数丢了只会让旧条目作废、多查一次源，不会把旧条目当作命中。
-- 键是 `<区>:gen`、`<区>:gen:<范围>`、`<区>:entry:<范围>:<条目>`。范围与条目写成 `<长度>.<文本>`；含空白、控制字符或 UTF-8 编码后超过 128 字节的换成 `#<SHA-256 十六进制>`，拼出的键最长 400 字节。共用一个 Redis 的多个应用要用不同的 `KeyPrefix`，否则同名的区会互相覆盖。
+- 键是 `<区>:gen`、`<区>:gen:<范围>`、`<区>:entry:<范围>:<条目>`。范围与条目写成 `<长度>.<文本>`；含空白、控制字符、孤立的代理项或 UTF-8 编码后超过 128 字节的换成 `#<SHA-256 十六进制>`，拼出的键最长 400 字节。散列的输入是文本的 WTF-8（合法文本就是它的 UTF-8，孤立的代理项照三字节的写法编出、不换成 U+FFFD），只差在孤立代理项上的两个范围散列出不同的键。共用一个 Redis 的多个应用要用不同的 `KeyPrefix`，否则同名的区会互相覆盖。
 - 跨进程缓存里存的是 `GenerationCacheEntry<T>`（区代数、范围代数、值）与 `string`（代数），序列化器要认识这两种类型，见下一节。
 
 缓存后端故障（`CACHING_UNAVAILABLE_001`）时，`GetOrLoadManyAsync` 绕过缓存直接查源、不写回，结果仍然正确，每个区每 10 秒最多记一条警告；`InvalidateAsync` 与 `InvalidateAllAsync` 把异常抛给调用方，由它决定拒绝写入还是记日志。写入方的常见做法与框架相同：在写入的事务里失效一次，失败就让调用失败、事务回滚；提交之后再失效一次，挡住在提交之前读到旧数据的读取，这次失败只记错误日志，靠存活时间收敛。
