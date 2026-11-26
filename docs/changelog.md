@@ -71,6 +71,8 @@
 - S3 条件写入探测的发起拿到缺上传标识的应答时，重试从 `HealthProbeIntervalSeconds` 起加倍、最长 1 小时，其间写入不就地探测；累计 10 次后不再探测、缺省实例健康项 Failed，修好服务后要重启：给 `HealthBucket` 配放弃未完成分片上传的生命周期规则
 - CloudEvents Webhook 以 binary（缺省）发布时，信封的字符串属性有孤立的代理项即抛出 `MESSAGING_VALIDATION_002`、不发请求，`CloudEventsHttpBinding.EncodeHeaderValue` 遇孤立的代理项抛 `ArgumentException`：发布之前改正属性
 - 操作的响应里有孤立的代理项时，经 HTTP、gRPC、MCP、命令行、AI 工具与插件回调的调用以 `KERNEL_UNEXPECTED_001` 失败、没有载荷（HTTP 500），不再写成 U+FFFD 照常成功：修处理器，别让响应里出现孤立的代理项；类型化入口不变
+- 扩展数据与属性同名、字典键按命名策略撞名、转换器或原样嵌入的文本里有重复成员、放宽 `MaxDepth` 写出超过 64 层的响应，以前照常成功，现在以 `KERNEL_UNEXPECTED_001`（HTTP 500）失败：改正响应类型或嵌入的文本（ADR-0319）
+- 转换器以 `WriteRawValue` 原样写出、或预先编码成 `JsonEncodedText` 的 `�` 转义，经 XGI 入口写出时同样算写不出：原样写的文本里不要带这个转义（ADR-0318）
 :::
 
 ### 版本与兼容
@@ -97,6 +99,9 @@
 - **调整** `BindingValue.ToString()` 的 `Properties` 只列属性名，属性值不打印（ADR-0285）
 - **调整** 绑定根目录下以 `.` 开头的子目录不是绑定，解析全部与点名都不读、不计入 128 个；Kubernetes 把 projected volume 直接挂到根目录时的 `..data` 与带时间戳的目录不再出现在解析结果里（ADR-0311）
 - **调整** XGI 入口把响应写成载荷时，字符串（成员名、值、字典的键）有孤立的代理项即写不出，以 `KERNEL_UNEXPECTED_001` 结束、没有载荷，不再写成 U+FFFD；类型化入口不经 JSON，不受影响（ADR-0318）
+- **调整** XGI 入口写出的响应文本过 JSON 文本的共同检查，嵌套超过 64 层（从响应的根算起）或任何一层有重复成员即以 `KERNEL_UNEXPECTED_001` 结束；序列化上下文放宽 `MaxDepth` 也只写到 64 层（ADR-0319）
+- **修复** 64 层、最里层有值的响应经 XGI 入口照常写出，以前写不出、请求却读得进同样层数的文本（ADR-0319）
+- **优化** `JsonText.FindProblem` 少分配（约 1 MB 的文本由 5.1 MB 降到 1.1 MB），结果不变
 
 ### 宿主、协议与插件
 

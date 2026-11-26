@@ -245,7 +245,7 @@ public sealed class NightlyOrderSeeder(IServiceScopeFactory scopes)
 
 这样构造的上下文没有凭据与租户：经过 Authenticate 阶段时是匿名调用，带 `Permission` 的操作会被拒绝。后台调用需要身份时，用 `context.SetCredential(new AuthenticationCredential(scheme, value))`（`Security.Abstractions`）放入凭据；需要租户时用带 `InvocationContextOptions` 的重载，在 `Baggage` 里给出 `xihan.tenant`（`BaggageKeys.Tenant`）：`App.CreateContext(services, new InvocationContextOptions { Baggage = new Dictionary<string, string> { [BaggageKeys.Tenant] = tenantId } }, cancellationToken)`，由 Tenant 阶段对照租户存储核对。不要绕过管道直接 `new` 操作类，那样会丢掉校验与事务。细节见[认证](/security/authentication)与[租户解析与隔离](/multi-tenancy/resolution)。
 
-调用器自己的错误码：操作没有登记是 `KERNEL_NOTFOUND_001`（调用不进管道）；载荷不是 JSON、为 `null` 或类型不匹配是 `KERNEL_VALIDATION_001`（`reason` 是 JSON 路径，如 `$.quantity`）；类型化调用的请求或响应类型与登记不符是 `KERNEL_VALIDATION_002`；不满足请求 Schema 与自校验失败分别是 `KERNEL_VALIDATION_003` 与 `KERNEL_VALIDATION_004`。以 JSON 载荷调用时，响应写不成合法的 JSON 文本（浮点成员是 NaN，字符串里有孤立的代理项）即以 `KERNEL_UNEXPECTED_001` 结束、没有载荷，HTTP 上是 500，不把孤立的代理项写成 U+FFFD 照常成功；类型化调用不经 JSON，交出处理器返回的对象（[Kernel](/packages/kernel#行为与限制)，ADR-0318）。
+调用器自己的错误码：操作没有登记是 `KERNEL_NOTFOUND_001`（调用不进管道）；载荷不是 JSON、为 `null` 或类型不匹配是 `KERNEL_VALIDATION_001`（`reason` 是 JSON 路径，如 `$.quantity`）；类型化调用的请求或响应类型与登记不符是 `KERNEL_VALIDATION_002`；不满足请求 Schema 与自校验失败分别是 `KERNEL_VALIDATION_003` 与 `KERNEL_VALIDATION_004`。以 JSON 载荷调用时，响应写不成合法的 JSON 文本（浮点成员是 NaN，字符串里有孤立的代理项，写出的文本嵌套超过 64 层或任何一层有重复的成员）即以 `KERNEL_UNEXPECTED_001` 结束、没有载荷，HTTP 上是 500，不把孤立的代理项写成 U+FFFD 照常成功；64 层、最里层有值的响应照常写出，序列化上下文放宽 `MaxDepth` 也只写到 64 层；类型化调用不经 JSON，交出处理器返回的对象（[Kernel](/packages/kernel#行为与限制)，ADR-0318、ADR-0319）。
 
 ## 常见问题
 
