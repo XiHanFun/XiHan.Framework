@@ -163,14 +163,16 @@ go run ./cmd/xihan-conformance plugin --dir <插件目录> --config '{"greeting"
 TypeScript 的写法与差异：
 
 - **JSON 读写**：读用 `readJsonText`（共同检查，读出保留文档顺序的 `JsonMembers`），写用 `writeJson`。`JSON.parse` 看不出重复成员，`JSON.stringify` 写不出 `bigint`、把 `2.0` 写成 `2`、把 `NaN` 写成 `null`，线上编码不用它们。
-- **`Result` 与 `ErrorInfo`**：成功值不能是 `null` 或 `undefined`，值是 `Maybe` 时用 `Result.parseMaybe` / `Result.fromJSONMaybe`（`null` 即无值）。`ErrorInfo.literal` 与 `withText` 的文案为空或只有空白时抛 `FrameworkError`。`result.toJSON()` 给出 `{ ok, value }` 或 `{ ok, error }` 的普通对象。
+- **`Result` 与 `ErrorInfo`**：成功值不能是 `null` 或 `undefined`，值是 `Maybe` 时用 `Result.parseMaybe` / `Result.fromJSONMaybe`（`null` 即无值）。`ErrorInfo.literal` 与 `withText` 的文案为空或只有空白时抛 `FrameworkError`。`result.toJSON()` 给出 `{ ok, value }` 或 `{ ok, error }` 的普通对象。交给对方按 RFC-0001 读的线上编码写成 `writeJson(result, { loneSurrogates: 'reject', nesting: 'reject', duplicateMembers: 'reject' })`（`ErrorInfo` 同样）：字符串（文案、细节与成功值里的成员名与值）有孤立的代理项、从结果的根算起嵌套超过 64 层或有重复的成员名时抛 `TypeError`、不交出文本，不写成对方读不进的 `\ud800` 转义（RFC-0001「写出与转交」，ADR-0320）。`JSON.stringify` 与缺省选项的 `writeJson` 照旧宽松，不用来写线上编码；SDK 没有另设严格写出的入口。
+- **写给宿主的错误细节**：插件交回或回调里写出的 `Error.details` 用 `nonFinite: 'string'` 加上述三个 `reject` 选项写出，写不出（孤立的代理项、超过 64 层、重复成员）时这个错误不带细节、其余字段照写，内部错误的细节各自核对（`plugin/invocation.md` §3，ADR-0320）。
+- **Baggage 的值**：`isBaggageValueAcceptable` 逐个 UTF-16 码元判定孤立的代理项（高代理项之后必须紧跟低代理项），成对的是平面以外的一个字符、照收；外部输入丢弃这个成员，`withBaggage` 抛 `PRIMITIVES_VALIDATION_001` 的 `FrameworkError`，幂等键照旧不按这条丢弃（ADR-0321）。
 - **空白**：按 RFC-0001 写死的 25 个码位逐个比较，不用 JavaScript 的 `\s` 与 `trim`（它们不认 U+0085、却认 U+FEFF）。
 - **模板**：参数值为 `null` 写空串、不算缺值，`undefined` 算缺值。`formatMessage`、`tryFormatMessage` 与 `formatValue` 可带区域，`MessageCatalog` 按命中的区域取小数点与分组符。导入 `xihan-framework/plugin` 之后，英文回退也覆盖运行时的 `plugins.*` 键。
 - **调用器**：三个内置步骤的名字与归属在 `BuiltInStep`、`KernelOwner`。排在 `ObserveMiddleware` 之前的中间件抛出的异常原样从 `invoke` 抛给调用方，之后的翻译成 `KERNEL_UNEXPECTED_001`。中间件经 `findOperationResponse` 看编码之前的响应；响应里有非有限的浮点或循环引用时调用以未处理失败结束，不抛给调用方。
 - **清单**：`readManifest` 返回 `Result<Manifest>`、不跳过 BOM；`xihan-framework/manifest/node` 的 `readManifestFile` 跳过开头的 BOM，`readManifestSource` / `readManifestBytes` 另返回原文，都按严格的 UTF-8 读。读出的 `Manifest` 补齐缺省值，`$schema` 不在模型里；`writeManifest` 写出后按 `readManifest` 再读一遍，读不回来即抛 `FrameworkError`。
 - **文法**：规范的正则都按整串匹配。JavaScript 的 `$` 在没有 `m` 标志时只匹配输入的末尾，本 SDK 的正则都不带 `m`。
 - **插件运行时**：JavaScript 的时钟精度是毫秒，读 `deadline` 时第三位之后的小数截断，写出时补零到七位。`healthInterval` 选项以毫秒给出健康回调的轮询间隔（缺省 10 秒）。`parseHandshakeLine`、`parseEndpoint`、`parseHostAddresses`、`selectHostEndpoint` 是握手行与端点文法的公开入口；运行时消息键的目录是 `pluginMessages`，只用于本地渲染与日志。
-- **回调的载荷**：`Host.invoke` 的字符串载荷与 `Host.publish` 信封的字符串 `data` 在发出之前严格编码成 UTF-8，先逐个码元核对代理项成对，不像 `TextEncoder` 那样换成 U+FFFD。`Host.invoke` 的载荷有孤立的代理项时不发请求，结果是 `KERNEL_VALIDATION_001` + `kernel.operation.invalid_payload`（`id` 为操作 ID，`reason` 为 `$`）；`Host.publish` 里 `data` 编不成的那一项不发出，结果是 `MESSAGING_VALIDATION_002` + `messaging.envelope.invalid`（`reason` 为 `the data has a lone surrogate and cannot be encoded as UTF-8`），其余各项照常组成一次请求、结果放回原位，每一项都编不成时不发请求。两者都排在回调端点、权限、租户、截止时间与取消的本地核对之后，整批不合时每一项都是整批的那个错误。`Uint8Array` 原样发出，由宿主核对（`plugin/invocation.md` §5，ADR-0312、ADR-0315）。
+- **回调的载荷**：`Host.invoke` 的字符串载荷与 `Host.publish` 信封的字符串 `data` 在发出之前严格编码成 UTF-8，先逐个码元核对代理项成对，不像 `TextEncoder` 那样换成 U+FFFD。`Host.invoke` 的载荷有孤立的代理项时不发请求，结果是 `KERNEL_VALIDATION_001` + `kernel.operation.invalid_payload`（`id` 为操作 ID，`reason` 为 `$`）；`Host.publish` 里 `data` 编不成的那一项不发出，结果是 `MESSAGING_VALIDATION_002` + `messaging.envelope.invalid`（`reason` 为 `the data has a lone surrogate and cannot be encoded as UTF-8`），其余各项照常组成一次请求、结果放回原位，每一项都编不成时不发请求。两者都排在回调端点、权限、租户、截止时间与取消的本地核对之后，整批不合时每一项都是整批的那个错误。`Uint8Array` 原样发出，由宿主核对（`plugin/invocation.md` §5，ADR-0312、ADR-0315）。回调客户端关闭之后（`Host.close()`、运行时收尾）的回调不发请求、不重新连接，结果是 `PLUGINS_UNAVAILABLE_001` + `plugins.host.unavailable`（`reason` 为 `Unavailable: …`）；它排在本地核对与编码之后，载荷编不成的照旧是 `kernel.operation.invalid_payload`，`publish` 里编不成的那一项照旧是 `messaging.envelope.invalid`、其余各项是已关闭的错误（ADR-0328）。
 - **应答载荷**：调用器用 `writeJson(…, { nonFinite: 'reject', loneSurrogates: 'reject', nesting: 'reject', duplicateMembers: 'reject' })` 写出类型化的响应，字符串（成员名与值，含 `JsonMembers` 的成员名与 `toJSON` 交出的字符串）有孤立的代理项即写不出，以 `KERNEL_UNEXPECTED_001` + `kernel.invocation.unhandled_exception` 结束，没有参数、不带 `inner`、没有载荷，不写成 `\ud800` 这样的转义交给宿主（RFC-0011 规则 10 的「编码」，ADR-0318）。嵌套超过 64 层（从响应的根算起，`toJSON` 交出的值与从请求读来的任意 JSON 也算）或同一个对象里有重复的成员名（只有 `JsonMembers` 写得出）同样写不出，同一个错误、不带 `inner`、没有载荷；边写边核对，超过即停（ADR-0319）。运行时把应答严格编码成 UTF-8 写进 `InvokeResponse.payload`，编不成同样是这个结果（`plugin/invocation.md` §1，ADR-0315）。
 
 ## 语言映射
@@ -180,7 +182,7 @@ TypeScript 的写法与差异：
 - **请求的形状**：`RequestShape` 相当于 .NET 的序列化元数据。`string()` 读成 `string | null`；`boolean()`、`int32()`（`number`）、`int64()`（`bigint`）、`float64()`（`number`）不接受 `null`；`array(item)`、`record(value)`、`object(members)` 与 `json()` 接受 `null`。对象成员缺省是可选的，没有给出时不出现在结果里；`RequestShape.required(shape)` 声明必填，只要求出现，值为 `null` 也算出现。`RequestShape.custom(decode)` 相当于自定义转换器，抛出 `RequestDecodeError(path)` 时取它的路径。`RequestShapeType<typeof S>` 取出形状读出的类型。
 - **数字**：安全整数的 `number`（负零除外）与 64 位范围内的 `bigint` 是整数；其余 `number`、超出 64 位的 `bigint` 与 `Float64` 是双精度浮点。`number` 分不出 `2` 与 `2.0`，值恰好是整数的浮点装进 `Float64`（`new Float64(2)`，算术照常可用）。
 - **读到的 JSON 数字**：整数写法且在 64 位范围内是整数，安全整数读成 `number`，其余读成 `bigint`；浮点的值恰好是安全整数（`2.0`、`1e2`）时读成 `Float64`，否则读成 `number`。换成数值再写出会与原文不同的（`1e400`、超出 64 位的整数、多于双精度的有效数字）读成保留原文的 `JsonNumber`，任意 JSON 的成员因此写回时 JSON 值相等。
-- **写出**：`writeJson` 按 `JSON.stringify` 的规则写（先调用 `toJSON`），只是数字按值模型：整数写十进制，整数值的浮点补 `.0`，`JsonNumber` 照原文；非有限值缺省写成字符串（无类型的值，如错误细节），`{ nonFinite: 'reject' }` 时写不出（类型化的值，如操作的响应）。字符串里孤立的代理项缺省写成 `\ud800` 这样的转义（RFC-0010 的模板与错误细节照旧），`{ loneSurrogates: 'reject' }` 时写不出、抛出 `TypeError`（操作的类型化响应）。嵌套层数与重复的成员名缺省不核对：`{ nesting: 'reject' }` 时写出的文本超过 `maxJsonDepth`（64）层写不出，`{ duplicateMembers: 'reject' }` 时同一个对象里重复的成员名写不出（普通对象的键不会重复，只有 `JsonMembers` 写得出；名字按 UTF-16 码元比较），都抛出 `TypeError`（操作的类型化响应，ADR-0319）。四个选项都在 `JsonWriteOptions` 里。
+- **写出**：`writeJson` 按 `JSON.stringify` 的规则写（先调用 `toJSON`），只是数字按值模型：整数写十进制，整数值的浮点补 `.0`，`JsonNumber` 照原文；非有限值缺省写成字符串（无类型的值，如错误细节），`{ nonFinite: 'reject' }` 时写不出（类型化的值，如操作的响应）。字符串里孤立的代理项缺省写成 `\ud800` 这样的转义（RFC-0010 的模板与日志这类诊断文本照旧），`{ loneSurrogates: 'reject' }` 时写不出、抛出 `TypeError`（操作的类型化响应、`Result` 与 `ErrorInfo` 的线上编码、写给宿主的错误细节，ADR-0320）。嵌套层数与重复的成员名缺省不核对：`{ nesting: 'reject' }` 时写出的文本超过 `maxJsonDepth`（64）层写不出，`{ duplicateMembers: 'reject' }` 时同一个对象里重复的成员名写不出（普通对象的键不会重复，只有 `JsonMembers` 写得出；名字按 UTF-16 码元比较），都抛出 `TypeError`（操作的类型化响应，ADR-0319）。四个选项都在 `JsonWriteOptions` 里。
 - **对象的顺序**：JavaScript 对象把整数样式的键（`"1"`）提到前面，要按文本顺序报错的检查用 `JsonMembers`，`toJsonValue` 转成普通对象。名为 `__proto__` 的成员是普通成员，不改原型。
 - **模板里的其他值**：数组、类型化数组、`Set` 与其他可迭代对象是数组；普通对象、`JsonMembers` 与 `Map` 是对象；嵌套的 `undefined` 写 `null`；`Date` 写 `toISOString()`；类实例、symbol 与函数写 `String(value)`。这些文本不跨语言，插件要跨语言格式化时先转成字符串。
 
@@ -195,7 +197,7 @@ TypeScript 的写法与差异：
 
 ## 一致性
 
-- 现状：原语、清单、调用上下文、管道、操作与进程外插件运行时可用，示例插件 echo 通过规范黑盒运行器的全部用例。
+- 现状：原语、清单、调用上下文、管道、操作与进程外插件运行时可用，示例插件 echo 通过规范黑盒运行器的全部用例：`events.list` 回显处理器拿到的信封（`envelopes`），以 `--envelopes events.list` 跑 `event-envelope`（ADR-0327）。
 - 认领的档（RFC-0024）：`core` 与 `plugin`；档的定义见规范仓库的 [`conformance/profiles.json`](https://github.com/XiHanFun/framework-spec/blob/main/conformance/profiles.json)。
 - 缺口：无。
 - 钉的规范版本：SDK 仓库 `spec/` 子模块指向的提交；发版时子模块必须正好在规范标签上。
@@ -203,6 +205,7 @@ TypeScript 的写法与差异：
 - 尚未提供：流式操作（操作契约还没有流式形态，`InvokeStream` 读第一帧后以 `InvalidArgument` 或 `Unimplemented` 结束）、Wasm 载体与远程 Provider 的插件侧（如 `caching.distributed@1`）。
 - 怎样验证：[`test/conformance-vectors.test.ts`](https://github.com/XiHanFun/framework-sdk-typescript/blob/main/test/conformance-vectors.test.ts) 按档表核对认领的档要求的每个向量要么被测试回放、要么列为缺口；[`test/plugin-conformance.test.ts`](https://github.com/XiHanFun/framework-sdk-typescript/blob/main/test/plugin-conformance.test.ts) 用黑盒运行器跑示例插件 echo。CI 在 Windows 与 Linux 上都跑。
 - 信封的 `time`：回放 `plugin/sdk-envelope-times.json` 的毫秒一列（ADR-0310）。写出的文本与 `text.milliseconds` 逐字相同；读出的时刻与 `utc.milliseconds` 相等，纪元之前的时刻向下截到毫秒；`unreadable` 的每一条投递都以 `InvalidArgument` 拒绝。`plugin/envelope-times.json` 现在同在 `plugin` 档。
+- Baggage 的值：`primitives/baggage-keys.json` 的 `values` 另有以码元写出的 `acceptableUtf16` 与 `unacceptableUtf16`，按 UTF-16 码元直接组成字符串回放：前一组照收，后一组 `isBaggageValueAcceptable` 为假、`InvocationContext` 丢弃（ADR-0321）。
 
 ## 破坏性改动与迁移
 
@@ -226,3 +229,6 @@ TypeScript 的写法与差异：
 - `Envelope` 与 `DeliveredEnvelope` 新增 `dataSchema`（CloudEvents `dataschema`，ADR-0305，投递时总在、空串是没有）→ 不用改；自己构造 `DeliveredEnvelope`（如测试里直接调处理器）的补上 `dataSchema: ''`。
 - 操作的响应里的字符串有孤立的代理项时，调用在本地以 `KERNEL_UNEXPECTED_001` + `kernel.invocation.unhandled_exception` 失败、没有载荷，原先写成 `\ud800` 这样的转义，插件交回后由宿主以 `PLUGINS_UNEXPECTED_001` 拒绝、进程内调用照常成功（ADR-0318）；`JsonWriteOptions` 新增 `loneSurrogates?: 'escape' | 'reject'`，缺省不变 → 外部来的文本放进响应之前先用 `isWellFormed` / `toWellFormed` 核对或替换。
 - 操作的响应嵌套超过 64 层或同一个对象里有重复的成员名时，调用在本地以 `KERNEL_UNEXPECTED_001` + `kernel.invocation.unhandled_exception` 失败、没有载荷，原先照写，插件交回后由宿主以 `PLUGINS_UNEXPECTED_001` 拒绝、进程内调用照常成功（ADR-0319）；`JsonWriteOptions` 新增 `nesting?: 'unbounded' | 'reject'` 与 `duplicateMembers?: 'write' | 'reject'`，缺省不变 → `JsonMembers` 用不重复的名字，响应嵌套不超过 64 层。
+- 已登记 Baggage 键的值有孤立的代理项时 `isBaggageValueAcceptable` 为假，外部输入丢弃这个成员、`withBaggage` 抛 `PRIMITIVES_VALIDATION_001`，原先照收（ADR-0321）→ 从外部输入拼值之前先核对代理项成对。
+- `Result` 与 `ErrorInfo` 的线上编码改写成 `writeJson(value, { loneSurrogates: 'reject', nesting: 'reject', duplicateMembers: 'reject' })`：有孤立的代理项、从结果的根算起超过 64 层或有重复成员时抛 `TypeError`，不再写出对方读不进的文本（ADR-0320）→ 自己把结果写成线上文本的地方换上这三个选项，接住 `TypeError`。
+- 插件写给宿主的错误细节写不出时这个错误不带细节、其余照写，原先写成 `\ud800` 这样的转义（ADR-0320）→ 不用改；要宿主看到细节就保证细节里的字符串成对、层数与成员名合规。

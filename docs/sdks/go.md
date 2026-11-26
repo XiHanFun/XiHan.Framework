@@ -140,8 +140,10 @@ Go 的写法与差异：
 
 - **JSON 读取**：线上编码、载荷与清单都不交给 `encoding/json` 读（它不查重复成员、成员名不区分大小写、把孤立的代理项换成 U+FFFD），SDK 先做规范的共同检查，再按自己的规则解码。写出时字符串只转义必须转义的字符，`<`、`>`、`&` 与非 ASCII 原样。
 - **`Result`**：`Success()` / `Result[Unit]` 写 `{"ok":true}`。可能没有的值用 `Result[Maybe[T]]`；值编码成 `null`（`nil` 指针、`nil` 切片）而类型不是 `Maybe` 时写出报错，空集合用非 `nil` 的空切片或空映射。
+- **`Result` 与 `Error` 的写出**：`Result[T].MarshalJSON` 与 `(*Error).MarshalJSON` 写不成合法的 JSON 文本即返回 `PRIMITIVES_VALIDATION_001` 的 `FrameworkError`、不交出文本（RFC-0001「写出与转交」，ADR-0320）：字符串（文案、细节与值的成员名与值，含映射的键、`ID` 与 `Maybe` 里的，以及内部错误的）不是合法的 UTF-8（含编成 UTF-8 的孤立代理项），整段文本从结果的根算起超过 64 层（成功值的最外层是第 2 层），或原样嵌进去的文本（`json.Marshaler`、`json.RawMessage`）有重复成员、`\ud800` 这样的转义或非法的字节。不写成 U+FFFD 或转义：`encoding/json` 把非法的字节换成 U+FFFD，SDK 写完之后按值再查一遍字符串。操作的响应里嵌着这样的 `Result` 或 `Error` 时，调用以 `kernel.invocation.unhandled_exception` 结束、不带 `inner`。插件写给宿主的错误（`ToProtoError`）细节写不出时这个错误不带细节、其余字段照写，内部错误的细节各自核对。
 - **数字**：`Error.Details` 按值模型读成 `int64` / `float64`；`Result[any]` 与值里的 `any` 保留原文的 `json.Number`，它不是合法的 JSON 数字时写出报错。
 - **`Error`**：`Literal` 与 `WithText` 的文案为空或只有空白时 panic。`(*Error).Unwrap()` 返回 `Inner`，`errors.Is` / `errors.As` 沿错误链查找。
+- **Baggage 的值**：已登记键的值除了非空、不超过 256 个 UTF-16 码元、不含控制字符，还必须是合法的 UTF-8：Go 的字符串以字节存放，孤立的代理项只能是编成 UTF-8 的代理项（`ED A0 80`–`ED BF BF`）这类非法字节，`primitives.IsBaggageEntryAcceptable` 拒收。外部输入（选项 `WithBaggage`、插件元数据）丢弃这个成员，`Context.WithBaggage` 当作编程错误 panic；幂等键照旧不按这条丢弃（ADR-0321）。
 - **清单**：`manifest.Read` / `ReadFile` 失败是 `*primitives.Error`（`KERNEL_CAPABILITY_006`），`Read` 不跳过 BOM、`ReadFile` 跳过；`Manifest.Validate` 的码是 `PRIMITIVES_VALIDATION_001`；`manifest.Write` 不做校验。可选的字符串 `Package`、`Entry` 与 `ConfigContribution.Schema` 是 `*string`（`nil` 是没写，指向空串是写了空串），用 `manifest.Text("…")` 赋值。`contributes.pipeline` 的规则由 `plugin.Serve` 核对，`manifest.Read` 不查。
 - **模板**：带区域的入口是 `FormatMessageIn`、`TryFormatMessageIn`、`FormatArgumentIn`，不带区域的 `FormatMessage` 等按不变文化。`Catalog.Resolve` 是严格解析（缺键或缺值即返回假），`FormatMessage` 是宽松的（缺值的占位符原样保留）。
 - **调用器**：`operation.NewInvoker` 在管道的副本里加上三个内置步骤 `ObserveMiddleware`、`DeadlineMiddleware`、`ValidationMiddleware`，管道里不能再登记同名的中间件，`Invoker.Pipeline()` 返回实际执行的管道。响应在管道结束之后才用 `encoding/json` 编码，中间件用 `operation.ResponseOf(ctx)` 看编码之前的对象；`operation.Current`、`RequestOf` 只在调用期间的上下文上可见。
@@ -212,7 +214,7 @@ Go 自己的文本（日期、`Duration`、结构体）不跨语言：插件的�
 
 ## 一致性
 
-- 现状：原语、清单、调用上下文、管道、操作、进程外插件运行时与远程缓存 Provider 的插件侧可用，示例 `examples/echo` 与 `examples/cache` 通过规范黑盒运行器的用例（`examples/cache` 没有订阅，`event` 用例按规则跳过）。
+- 现状：原语、清单、调用上下文、管道、操作、进程外插件运行时与远程缓存 Provider 的插件侧可用，示例 `examples/echo` 与 `examples/cache` 通过规范黑盒运行器的用例：`examples/echo` 的 `events.list` 回显处理器拿到的信封（`envelopes`，没有 `dataschema` 的写 `null`），以 `--envelopes events.list` 跑，`event-envelope` 通过（ADR-0327）；`examples/cache` 没有订阅与回显操作，`event` 与 `event-envelope` 按规则跳过。
 - 认领的档（RFC-0024）：`core`、`plugin` 与 `provider:caching.distributed@1`；档的定义见规范仓库的 [`conformance/profiles.json`](https://github.com/XiHanFun/framework-spec/blob/main/conformance/profiles.json)。
 - 缺口：无。
 - 钉的规范版本：SDK 仓库的 `spec/` 子模块与 `go.mod` 里的一致性模块，两者是同一个规范提交。
@@ -221,6 +223,7 @@ Go 自己的文本（日期、`Duration`、结构体）不跨语言：插件的�
 - 怎样验证：各包的测试经一致性模块读取内嵌的向量并回放，仓库根的 [`vectors_test.go`](https://github.com/XiHanFun/framework-sdk-go/blob/main/vectors_test.go) 按档表核对认领的档要求的每个向量要么有测试回放、要么列为缺口；两个示例的测试构建插件，用 `go.mod` 里同一版本的 `xihan-conformance` 跑全部用例。CI 在 Linux 与 Windows 上都跑。用 Go 实现的分布式缓存另经远程 Provider 适配器通过 .NET 的缓存一致性套件（`framework/samples/CacheGoPlugin`）。
 - 信封的 `time`：回放 `plugin/sdk-envelope-times.json` 的纳秒一列（ADR-0310）。作者给的时刻经 `ToProtoEnvelope` 写出的文本与 `text.nanoseconds` 逐字相同，宿主写来的文本经 `FromProtoEnvelope` 读出的时刻与 `utc.nanoseconds` 相等，`unreadable` 的每一条投递都以 `InvalidArgument` 拒绝。`time.Time` 是纳秒精度，不截断，没有跳过的用例。`plugin/envelope-times.json` 现在同在 `plugin` 档。
 - 缓存键：`caching/cache-keys.json` 里以 `utf16` 码元给出的键（孤立的代理项，ADR-0316）按 WTF-8 组成字节（一致性模块的 `Input()`），`IsKey` 与 `ValidateKey` 都拒收；它们写不进宿主的 JSON，按码元写成转义的请求在解码时以 `KERNEL_VALIDATION_001`（`reason` 为 `$`）被拒。
+- Baggage 的值：`primitives/baggage-keys.json` 的 `values` 另有以码元写出的 `acceptableUtf16` 与 `unacceptableUtf16`，按 WTF-8 组成字节回放（一致性模块的 `Input()`）：前一组（成对的代理项）照收，后一组（孤立的代理项）`IsBaggageEntryAcceptable` 拒收、`WithBaggage` 丢弃（ADR-0321）。
 
 ## 破坏性改动与迁移
 
@@ -234,7 +237,7 @@ Go 自己的文本（日期、`Duration`、结构体）不跨语言：插件的�
 - `caching` 的九个操作都在适配层先校验键，`try-remove` 在键与 `expected` 都不合法时改报键（`CACHING_VALIDATION_001`）→ 自己实现的 `Store` 不必再校验键；按错误内容断言的测试更新期望。
 - 超过 128 个字符的操作 ID 不再合法：`operation.Add` 返回 `PRIMITIVES_VALIDATION_001`，读清单为 `kernel.manifest.invalid`，原先不设上限；新增常量 `operation.MaxIDLength` → 把 ID 缩到 128 个字符以内。
 - 清单 `activation` 里 `onEvent:` 的模式可以带下划线（如 `onEvent:order_events.*`），原先读不出 → 不用改。
-- 示例 `examples/cache` 的 `caching.remote.key_invalid` 文案由「不超过 512 个字符」改为「按 UTF-8 编码后不超过 512 字节」（`en-US` 是 `at most 512 bytes long in UTF-8`）→ 照抄这份消息目录的插件，目录要与宿主 `Caching.Remote` 的同名目录逐字一致，两边同时升级。
+- 示例 `examples/cache` 的 `caching.remote.key_invalid` 文案由「不超过 512 个字符」改为「不含空白、控制字符与孤立的代理项、按 UTF-8 编码后不超过 512 字节」（`en-US` 是 `The cache key '{key}' is invalid: it must be non-empty, contain no whitespace, control characters or lone surrogates, and be at most 512 bytes long in UTF-8.`）→ 照抄这份消息目录的插件，目录要与宿主 `Caching.Remote` 的同名目录逐字一致，两边同时升级。
 - `plugin.Binding` 新增 `Properties map[string]string`（绑定的属性，ADR-0285），类型因此不再可比较 → `==` 与拿它作 map 键的地方改为逐字段比较，不带字段名的复合字面量补上字段名；`reflect.DeepEqual` 区分 nil 与空表，运行时交出的没有属性的绑定是空表。
 - `plugin.Binding` 经 `fmt` 与 `slog` 输出时不再带 `Value`，只带绑定名、类型与属性名 → 确实要看主值的地方直接读 `binding.Value`。
 - `json.Marshal` 绑定（含 `[]Binding`、`Configuration` 与 `NewLogHandler` 的 JSON 日志）只写 `name`、`type` 与按升序排列的 `propertyNames`，不再写 `Name`、`Type`、`Value` 字段；slog 里的绑定组同样是这三个成员 → 要持久化主值或属性的逐字段自己取；按旧字段名解析 JSON 或日志的改用新成员名。
@@ -242,3 +245,6 @@ Go 自己的文本（日期、`Duration`、结构体）不跨语言：插件的�
 - `plugin.Envelope` 与 `plugin/v1.Envelope` 新增 `DataSchema`（CloudEvents `dataschema`，ADR-0305）→ 不用改；不带字段名的 `Envelope` 复合字面量补上字段名。
 - 操作的响应里有不是合法 UTF-8 的字符串（含 map 的键、`MarshalText` 的结果、`primitives.ID` / `Maybe` 里的值），`json.Marshaler` 的原文有非法字节、孤立代理项的转义或重复成员，或嵌套超过 64 层时，调用以 `KERNEL_UNEXPECTED_001` + `kernel.invocation.unhandled_exception` 失败、没有载荷，原先写成 U+FFFD 照常成功（ADR-0318）→ 外部来的字节放进响应之前先用 `utf8.ValidString` 核对或用 `strings.ToValidUTF8` 换掉，`json.RawMessage` 只放合法的 JSON 文本。ADR-0319 把其中嵌套与重复成员的核对写进了规范，Go 的行为不变。
 - `caching.IsKey` / `ValidateKey` 拒收不是合法 UTF-8 的键（`CACHING_VALIDATION_001`），原先按 U+FFFD 读、照常接受（ADR-0316）→ 自己拼键的地方保证键是合法的 UTF-8。
+- `Result[T].MarshalJSON` 与 `(*Error).MarshalJSON` 遇到不是合法 UTF-8 的字符串、从结果的根算起超过 64 层，或原样嵌进去的文本有重复成员、孤立代理项的转义或非法的字节时返回 `PRIMITIVES_VALIDATION_001` 的 `FrameworkError`，原先写成 U+FFFD 或 `\ud800` 照常交出（ADR-0320）→ 外部来的字节放进结果与错误之前先用 `utf8.ValidString` 核对或用 `strings.ToValidUTF8` 换掉，`json.RawMessage` 只放合法、不过深的 JSON 文本。
+- 插件写给宿主的错误细节写不出时这个错误不带细节、其余照写，原先写成 U+FFFD 或 `\ud800`（ADR-0320）→ 不用改；要宿主看到细节就保证细节里的字符串是合法的 UTF-8。
+- 已登记 Baggage 键的值不是合法的 UTF-8（含编成 UTF-8 的孤立代理项）时，外部输入丢弃这个成员、`Context.WithBaggage` panic，原先照收（ADR-0321）→ 从外部输入拼值之前先用 `utf8.ValidString` 核对。

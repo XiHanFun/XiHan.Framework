@@ -198,6 +198,8 @@ assert_eq!(failed, r#"{"ok":false,"error":{"code":"ORDERS_CONFLICT_001","message
 ```
 
 - `Result<()>` 是不带值的成功，只写 `{"ok":true}`；值类型是 `Maybe<T>`（`Option<T>`）时 `value` 可以是 `null`；`TypedId` 编码为底层值。
+- `WireResult` 与 `Error` 序列化时先把整段文本写进缓冲、过 JSON 文本的共同检查，通过了才交给序列化器（RFC-0001「写出与转交」，ADR-0320）：从结果或错误的根算起嵌套超过 64 层（成功值的最外层是第 2 层），或 `RawValue`（含 `json::Json`）原样写进去的文本有重复成员、`"\ud800"` 这样的孤立代理项转义时写不出，序列化以 `PRIMITIVES_VALIDATION_001` 的错误失败、不交出文本。对任何序列化器都生效，代价是多写一遍；嵌在里面的 `WireResult` 与 `Error` 由最外层一并核对。`String` 总是合法的 UTF-8，字符串规则不用另查。
+- 插件写给宿主的错误细节是值树，字符串合法、成员名不重复，写不出的只有嵌套超过 64 层：这时这个错误不带细节、其余字段照写，内部错误的细节各自核对，正好 64 层照常写出（`plugin/invocation.md` §3，ADR-0320）。
 - 线上文本用 `primitives::json::from_slice` 读：它先过共同的 JSON 读取检查，数字按值模型。直接用 `serde_json::from_str` 读不到这些检查。写出用 `json::to_vec`（类型化，非有限的浮点写不出）或 `json::Model` / `json::to_value`（无类型，非有限的浮点写成字符串）。
 - `Error::literal` 与 `Error::with_text` 的文案为空或只有空白时 panic，`try_literal` 与 `try_with_text` 返回 `PRIMITIVES_VALIDATION_001`。空白按 RFC-0001 写死的 25 个码位判断（`primitives::is_whitespace`、`is_blank`），不用 `char::is_whitespace`。
 - 应答与发布的数据：`Envelope.data`、`Host::invoke` 的载荷与操作的应答都是字节（`Vec<u8>`），收字符串的入口（`Host::invoke`、`Envelope::with_data`）经 `Into<Vec<u8>>`，`&str` 总是合法的 UTF-8，`plugin/invocation.md` §1、§5 的严格编码（ADR-0312、ADR-0315）对 Rust 不用改。
@@ -241,7 +243,7 @@ RFC-0010「模板」。模板参数与错误细节是 `serde_json::Value`：
 
 ### 文法
 
-规范里的正则都是手写的逐字节判定，整串匹配，结尾的换行不算匹配。
+规范里的正则都是手写的逐字节判定，整串匹配，结尾的换行不算匹配。RFC-0001「孤立的代理项」在 Rust 里遇不到：`&str` 总是合法的 UTF-8，组不出孤立的代理项，Baggage 的值（`is_baggage_value_acceptable`）不用另判（ADR-0321）。
 
 ## 设计取舍
 
@@ -262,7 +264,7 @@ RFC-0010「模板」。模板参数与错误细节是 `serde_json::Value`：
 
 ## 一致性
 
-- 现状：原语、清单、调用上下文、管道、操作与进程外插件运行时可用，示例 echo 通过规范黑盒运行器的全部用例。
+- 现状：原语、清单、调用上下文、管道、操作与进程外插件运行时可用，示例 echo 通过规范黑盒运行器的全部用例：`events.list` 回显处理器拿到的信封（`envelopes`），以 `--envelopes events.list` 跑 `event-envelope`（ADR-0327）。
 - 认领的档（RFC-0024）：`core` 与 `plugin`；档的定义见规范仓库的 [`conformance/profiles.json`](https://github.com/XiHanFun/framework-spec/blob/main/conformance/profiles.json)。
 - 缺口：无。
 - 钉的规范版本：SDK 仓库 `spec/` 子模块指向的规范标签。
@@ -270,6 +272,7 @@ RFC-0010「模板」。模板参数与错误细节是 `serde_json::Value`：
 - 尚未提供（不在认领的档里）：流式操作（操作契约还没有流式形态，`InvokeStream` 读第一帧后以 `InvalidArgument` 或 `Unimplemented` 结束）、Wasm 插件（RFC-0018，见 [Wasm 插件](/plugins/wasm)）与远程 Provider 的操作集（RFC-0019，首个是 `caching.distributed@1`）。
 - 怎样验证：测试直接读取 `spec/conformance/vectors/`；[`tests/conformance_vectors.rs`](https://github.com/XiHanFun/framework-sdk-rust/blob/main/tests/conformance_vectors.rs) 按档表核对认领的档要求的每个向量要么被回放、要么列为缺口；[`tests/plugin_conformance.rs`](https://github.com/XiHanFun/framework-sdk-rust/blob/main/tests/plugin_conformance.rs) 构建示例 echo，用黑盒运行器跑全部用例。CI 在 ubuntu 与 windows 上跑这些测试，另以最低 Rust 版本编译库、测试与示例。
 - 信封的 `time`：回放 `plugin/sdk-envelope-times.json` 里本平台 `SystemTime` 精度的一列（ADR-0310）：Windows 取 `hundredNanoseconds`，其余平台取 `nanoseconds`。写出的文本与 `text` 逐字相同，读出的时刻与 `utc` 相等，`unreadable` 的每一条投递都以 `InvalidArgument` 拒绝。Windows 的 `SystemTime` 从 1601 年起，表示不了更早的时刻：换算成 UTC 早于 1601 年的两条写出用例（0001 年）跳过，读入里「最早的时刻之后 100 纳秒」按读不出核对，投递以 `InvalidArgument` 拒绝。`plugin/envelope-times.json` 现在同在 `plugin` 档。
+- Baggage 的值：`primitives/baggage-keys.json` 的 `values` 另有以码元写出的 `acceptableUtf16` 与 `unacceptableUtf16`：前一组（成对的代理项）组成字符串后 `is_baggage_value_acceptable` 照收，后一组组不成 Rust 的字符串，测试核对组字符串失败（ADR-0321）。
 
 ## 破坏性改动与迁移
 
@@ -288,3 +291,5 @@ RFC-0010「模板」。模板参数与错误细节是 `serde_json::Value`：
 - `plugin::Envelope.time` 由 `Option<String>` 改为 `Option<SystemTime>`，新增 `with_time`（ADR-0306）；宿主写来的 `time` 读不出（Windows 上还有 1601 年之前）的投递以 `InvalidArgument` 拒绝 → 发布处把 `time = Some(t.to_rfc3339())` 改成 `.with_time(t.into())`（chrono 的 `DateTime` 可以 `into()` 成 `SystemTime`）；读 `envelope.time` 的按 `SystemTime` 读。
 - `plugin::Envelope` 新增字段 `data_schema` 与 `with_data_schema`（ADR-0305），重新生成的 `plugin::v1::Envelope` 多了字段 `data_schema` → 写插件的代码不用改；用结构体字面量构造 `v1::Envelope` 的补上 `data_schema` 或写 `..Default::default()`。
 - 类型化响应写出的文本嵌套超过 64 层、有重复的成员名或 `RawValue` 里有孤立代理项的转义时，调用器与插件 `Invoke` 都以 `KERNEL_UNEXPECTED_001` + `kernel.invocation.unhandled_exception` 结束、没有载荷，原先照常写出，插件交回之后由宿主以 `PLUGINS_UNEXPECTED_001` 拒绝、进程内调用照常成功（ADR-0319）→ 自定义的 `Serialize` 与 `flatten` 不写重复的名字，响应嵌套不超过 64 层，`RawValue` 只放合法的 JSON 文本（任意 JSON 用 `json::Json`）。
+- `WireResult` 与 `Error` 的线上编码从结果或错误的根算起超过 64 层，或 `RawValue`（含 `json::Json`）原样写进去的文本有重复成员、孤立代理项的转义时，序列化以 `PRIMITIVES_VALIDATION_001` 的错误失败、不交出文本，原先照写对方读不进的文本（ADR-0320）→ 放进结果与错误的 `RawValue` 只放合法的 JSON 文本，层数不超过上限。
+- 插件写给宿主的错误细节超过 64 层时这个错误不带细节、其余照写（ADR-0320）→ 不用改。
