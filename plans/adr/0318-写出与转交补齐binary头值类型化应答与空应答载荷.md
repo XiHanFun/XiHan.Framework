@@ -173,3 +173,12 @@ ADR-0320 改了上面「修订（2026-11-26）」第 5 条的一处，其余不�
 1. `EncodeResponse` 超过写出深度时不再原样抛出 System.Text.Json 的 `JsonException`，包成 `ArgumentException`、原异常放进 `InnerException`，写不出只抛这一种；XGI 入口的结果不变（`KERNEL_UNEXPECTED_001`，不带 `inner`）。
 2. 第 5 条的三处边角照所有者的决定维持，写进 `EncodeResponse` 的 XML 文档：不经编码器原样写出的转义 U+FFFD 被当成写不出；序列化上下文的 `MaxDepth` 比 64 小时写出照它；只认原选项的自定义解析器第一次写出即失败。
 3. 第 2 条的核对挪进内核 internal 的 `StrictJson`，`ResultJson`、`PluginJson.SerializeDetails` 与 Validate 阶段为 Schema 校验编出的请求共用（ADR-0320）；备选 12 列出的「类型化的请求」「Result 与 Error 的线上编码」并进了 RFC-0001「写出与转交」。
+
+## 修订（2026-11-27，二）
+
+ADR-0323 做了备选 5，其余不变：
+
+1. binary 声明为 JSON 的数据照 `CloudEventsFormat.Encode` 核对：出站写任何头之前把信封照结构化 JSON 写一遍、结果丢掉，属性与数据的核对、先后与异常都与 structured 相同；不是 JSON 的数据照旧只查属性（上面的决策 1）。入站照 structured 读同一个事件核对数据，以前两个方向都原样收发。
+2. 备选 5 当初「binary 的数据原样作为请求体，不嵌进一份 JSON 文档」的理由不再成立：接收方与发布到远程代理时都按结构化 JSON 的规则读它。
+3. 「发现而没改的」后两条（binary 的数据体、入站的百分号序列）与「待定」里的两项由 ADR-0323 做掉；binary 入站的 `DecodeHeaderValue` 改成严格解码、返回 `Maybe<string>`。
+4. 同一轮发现 `Encode` 本身把 JSON 数据字符串里不合法的 UTF-8 字节写成转义的 U+FFFD，ADR-0323 补上这一项。

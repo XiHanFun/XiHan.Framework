@@ -8,6 +8,7 @@ using System.Text;
 using System.Text.Json;
 using Microsoft.AspNetCore.Http;
 using XiHan.Framework.Hosting.AspNetCore.Endpoints;
+using XiHan.Framework.Kernel.Json;
 using XiHan.Framework.Messaging.Abstractions;
 using XiHan.Framework.Messaging.Abstractions.CloudEvents;
 using XiHan.Framework.Messaging.Abstractions.Envelopes;
@@ -43,6 +44,16 @@ public static class CloudEventsHttpBinding
     /// 规范版本头
     /// </summary>
     private const string SpecVersionHeader = HeaderPrefix + "specversion";
+
+    /// <summary>
+    /// 文档根的路径
+    /// </summary>
+    private const string RootPath = "$";
+
+    /// <summary>
+    /// 把 binary 的数据当作结构化文档的 <c>data</c> 成员时，数据前面的文本
+    /// </summary>
+    private static ReadOnlySpan<byte> DataMemberPrefix => "{\"data\":"u8;
 
     /// <summary>
     /// 严格的 UTF-8 编码
@@ -148,7 +159,7 @@ public static class CloudEventsHttpBinding
     /// 把一个信封写进出站请求
     /// </summary>
     /// <remarks>
-    /// binary 模式写 <c>ce-*</c> 头与数据体，structured 模式写结构化 JSON 体；多条用 <see cref="WriteBatch"/>。写不出的信封在动请求之前抛出携带 <see cref="MessagingErrors.InvalidEnvelope"/> 的 <see cref="FrameworkException"/>：structured 照 <see cref="CloudEventsFormat.Encode"/>；binary 的字符串属性有孤立的代理项时同样抛出，消息与 <see cref="CloudEventsFormat.Encode"/> 的相同、带属性名（<c>spec/protocol/cloudevents.md</c>「出站」，ADR-0318，以前编成 U+FFFD 的 <c>%EF%BF%BD</c>）
+    /// binary 模式写 <c>ce-*</c> 头与数据体，structured 模式写结构化 JSON 体；多条用 <see cref="WriteBatch"/>。写不出的信封在动请求之前抛出携带 <see cref="MessagingErrors.InvalidEnvelope"/> 的 <see cref="FrameworkException"/>：structured 照 <see cref="CloudEventsFormat.Encode"/>；binary 的字符串属性有孤立的代理项时同样抛出，消息与 <see cref="CloudEventsFormat.Encode"/> 的相同、带属性名（<c>spec/protocol/cloudevents.md</c>「出站」，ADR-0318，以前编成 U+FFFD 的 <c>%EF%BF%BD</c>）。binary 声明为 JSON 的数据（<see cref="MessageEnvelope.IsJsonData"/>）照 <see cref="CloudEventsFormat.Encode"/> 核对，structured 写不出的（不是 JSON、重复的成员、嵌套让文档超过 64 层、字符串不是合法的 Unicode）抛出同样的异常（ADR-0323，以前原样作请求体发出）
     /// </remarks>
     public static void Write(MessageEnvelope envelope, HttpRequestMessage request, CloudEventsContentMode mode)
     {
@@ -161,8 +172,14 @@ public static class CloudEventsHttpBinding
                 request.Content.Headers.ContentType = new MediaTypeHeaderValue(StructuredContentType);
                 break;
             case CloudEventsContentMode.Binary:
-                // 写任何头之前先核对：与 structured 同一个口径，写到一半才发现就留下半份请求（RFC-0001「写出与转交」，ADR-0318）
-                if (LoneSurrogateAttributeOf(envelope) is { } attribute)
+                // 写任何头之前先核对：与 structured 同一个口径，写到一半才发现就留下半份请求（RFC-0001「写出与转交」，ADR-0318）。
+                // 声明为 JSON 的数据原样作请求体，接收方照结构化 JSON 的规则读它：照结构化 JSON 写一遍，属性与数据的核对、先后与异常都与 structured 相同（ADR-0323）；
+                // 其余数据不按 JSON 读，只查属性
+                if (envelope.IsJsonData && !envelope.Data.IsEmpty)
+                {
+                    _ = CloudEventsFormat.Encode(envelope);
+                }
+                else if (LoneSurrogateAttributeOf(envelope) is { } attribute)
                 {
                     throw new FrameworkException(MessagingErrors.InvalidEnvelope, $"Envelope '{envelope.Id}' cannot be encoded: attribute '{attribute}' has a lone surrogate.");
                 }
@@ -349,7 +366,7 @@ public static class CloudEventsHttpBinding
     /// binary
     /// </summary>
     /// <remarks>
-    /// <c>ce-specversion</c>、<c>ce-id</c>、<c>ce-source</c>、<c>ce-type</c> 必填，<c>ce-time</c>（<see cref="TimestampText"/> 的文法，读出 UTC 时刻）、<c>ce-subject</c>、<c>ce-dataschema</c>（ADR-0305）可选，值为空与没有这个头相同，其余 <c>ce-*</c> 是扩展属性（名字不能是保留名，<c>ce-data</c> 因此不合法，ADR-0298）；数据内容类型取 <c>Content-Type</c>，数据取请求体
+    /// <c>ce-specversion</c>、<c>ce-id</c>、<c>ce-source</c>、<c>ce-type</c> 必填，<c>ce-time</c>（<see cref="TimestampText"/> 的文法，读出 UTC 时刻）、<c>ce-subject</c>、<c>ce-dataschema</c>（ADR-0305）可选，值为空与没有这个头相同，其余 <c>ce-*</c> 是扩展属性（名字不能是保留名，<c>ce-data</c> 因此不合法，ADR-0298）；数据内容类型取 <c>Content-Type</c>，数据取请求体，声明为 JSON 的数据过与 structured 相同的检查（<see cref="DataProblemOf"/>，ADR-0323）
     /// </remarks>
     private static Result<IReadOnlyList<MessageEnvelope>> ReadBinary(HttpRequest request, byte[] body)
     {
@@ -427,11 +444,59 @@ public static class CloudEventsHttpBinding
                 envelope = envelope with { DataContentType = contentType };
             }
 
+            // 声明为 JSON 的数据过与 structured 相同的检查：读进来的信封都要写得成结构化 JSON，否则处理器收到 structured 读不进的数据，发布模式下远程代理写不出它（ADR-0323）
+            if (envelope.IsJsonData && body.Length > 0 && DataProblemOf(body).TryGetValue(out var path))
+            {
+                return Error.Validation(MessagingErrors.InvalidEnvelope, MessagingMessages.EnvelopeInvalidJson, MessageArguments.Of(("reason", path)));
+            }
+
             return Result.Success<IReadOnlyList<MessageEnvelope>>([envelope]);
         }
         catch (ArgumentException exception)
         {
             return Error.Validation(MessagingErrors.InvalidEnvelope, MessagingMessages.EnvelopeInvalid, MessageArguments.Of(("reason", exception.Message)));
+        }
+    }
+
+    /// <summary>
+    /// binary 声明为 JSON 的数据没过检查的位置
+    /// </summary>
+    /// <remarks>
+    /// 照 structured 读同一个事件：把数据当作结构化文档里的 <c>data</c> 成员（第 2 层），这份文档过 RFC-0001「JSON 文本」的共同检查，位置写法与 <see cref="CloudEventsFormat.Decode"/> 的相同；包进去之后合法、单独却不是一个 JSON 值的（如 <c>1,"a":2</c>）同样不合法，位置为 <c>$</c>
+    /// </remarks>
+    /// <returns>通过时无值；否则是 <c>reason</c> 参数</returns>
+    private static Maybe<string> DataProblemOf(byte[] data)
+    {
+        var length = DataMemberPrefix.Length + data.Length + 1;
+        var rented = ArrayPool<byte>.Shared.Rent(length);
+        try
+        {
+            DataMemberPrefix.CopyTo(rented);
+            data.CopyTo(rented.AsSpan(DataMemberPrefix.Length));
+            rented[length - 1] = (byte)'}';
+            if (JsonText.FindProblem(rented.AsSpan(0, length)).TryGetValue(out var problem))
+            {
+                return problem.Path;
+            }
+        }
+        finally
+        {
+            ArrayPool<byte>.Shared.Return(rented);
+        }
+
+        // 包进去的文档已经过了检查，单独读数据只剩一种失败：它不是一个值，而是几个成员拼起来的文本
+        var reader = new Utf8JsonReader(data);
+        try
+        {
+            while (reader.Read())
+            {
+            }
+
+            return default;
+        }
+        catch (JsonException)
+        {
+            return RootPath;
         }
     }
 

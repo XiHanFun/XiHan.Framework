@@ -10,6 +10,7 @@
 * 入站可在请求内派发给处理器，也可发布到消息代理
 * 出站 Webhook 按主题配置地址，不外推租户、主体等内部标识
 * 出站写不出的信封在发出之前拒绝：信封的字符串属性有孤立的代理项时，binary（缺省）与 structured 一样抛出 `MESSAGING_VALIDATION_002`，不编成 U+FFFD 照发
+* binary 模式声明为 JSON 的数据与 structured 同一套检查：重复的成员、嵌进结构化文档之后超过 64 层、不是 JSON 或字符串不是合法的 Unicode，出站在发出之前抛出 `MESSAGING_VALIDATION_002`，入站以 400 `MESSAGING_VALIDATION_002` 拒绝，`reason` 是数据在结构化文档里的位置
 
 ## 如何使用
 

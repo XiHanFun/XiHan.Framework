@@ -350,6 +350,39 @@ public sealed class MessageContractTests
     }
 
     [Fact]
+    public void CloudEventsFormat_Encode_RefusesJsonData_WithInvalidUtf8_AndKeepsAGenuineReplacementCharacter()
+    {
+        // RFC-0009「信封」的写出（ADR-0323）：数据是调用方给的 UTF-8 字节，修之前写出器把字符串与成员名里不合法的字节换成转义的 U+FFFD，
+        // 文档过得了读取一侧的检查，处理器读到的是另一份数据；HTTP 协议绑定的 binary 模式照这里核对，原样发出的字节接收方会拒绝
+        var envelope = new MessageEnvelope { Id = "1", Source = "/o", Type = "t" };
+        byte[][] broken =
+        [
+            [(byte)'"', 0xED, 0xA0, 0x80, (byte)'"'],
+            [(byte)'"', (byte)'a', 0xC3, (byte)'"'],
+            [(byte)'{', (byte)'"', 0xFF, (byte)'"', (byte)':', (byte)'1', (byte)'}'],
+            [(byte)'"', 0xC0, 0xA0, (byte)'"'],
+        ];
+
+        foreach (var data in broken)
+        {
+            var refused = Assert.Throws<FrameworkException>(() => CloudEventsFormat.Encode(envelope with { Data = data }));
+            Assert.Equal(MessagingErrors.InvalidEnvelope, refused.Code);
+            Assert.Contains("not valid Unicode", refused.Message, StringComparison.Ordinal);
+        }
+
+        // 本来就是 U+FFFD 的字符照常写出、读回不变；不是 JSON 的数据按 Base64 写出，字节不论是否合法的 UTF-8 都照原样
+        var genuine = envelope with { Data = Encoding.UTF8.GetBytes("{\"note\":\"\uFFFD\"}") };
+        // 写出器转义非 ASCII 字符，数据的文本不逐字节保留，值不变
+        using (var roundTripped = JsonDocument.Parse(CloudEventsFormat.Decode(CloudEventsFormat.Encode(genuine)).ValueOrThrow().Data))
+        {
+            Assert.Equal("\uFFFD", roundTripped.RootElement.GetProperty("note").GetString());
+        }
+
+        var binary = envelope with { DataContentType = "application/octet-stream", Data = broken[0] };
+        Assert.Equal(broken[0], CloudEventsFormat.Decode(CloudEventsFormat.Encode(binary)).ValueOrThrow().Data.ToArray());
+    }
+
+    [Fact]
     public void CloudEventsFormat_Encode_RefusesAStringAttributeWithALoneSurrogate()
     {
         // RFC-0009「信封」的写出与 RFC-0001「写出与转交」（ADR-0315）：规范属性与扩展属性的字符串里有孤立的代理项时发布就拒绝；

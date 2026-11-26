@@ -188,6 +188,30 @@ public sealed class CloudEventsProtocolTests
         Assert.Equal(["evt-1", "b-1", "b-2"], log.Records.Select(static r => r.Delivery.Envelope.Id));
     }
 
+    [Theory]
+    [InlineData("dispatch")]
+    [InlineData("publish")]
+    public async Task Inbound_BinaryJsonData_StructuredWouldReject_IsA400_AndNothingIsHandled(string inbound)
+    {
+        // spec/protocol/cloudevents.md「入站」（ADR-0323）：与 structured 读同一个事件时同一个 400；
+        // 修之前照收，派发模式交给处理器，发布模式交给代理（远程代理写结构化 JSON 时才抛出）
+        var (app, client, log, _) = await StartAsync(("XiHan:Protocols:CloudEvents:Inbound", inbound));
+        await using var host = app;
+        using var request = new HttpRequestMessage(HttpMethod.Post, "/events") { Content = new StringContent("""{"id":1,"id":2}""", Encoding.UTF8, "application/json") };
+        request.Headers.TryAddWithoutValidation("ce-specversion", "1.0");
+        request.Headers.TryAddWithoutValidation("ce-id", "evt-1");
+        request.Headers.TryAddWithoutValidation("ce-source", "/external");
+        request.Headers.TryAddWithoutValidation("ce-type", EventsFeature.Topic);
+
+        var rejected = await client.SendAsync(request);
+
+        Assert.Equal(HttpStatusCode.BadRequest, rejected.StatusCode);
+        Assert.Equal(MessagingErrors.InvalidEnvelope, await CodeOf(rejected));
+        Assert.Equal(HttpStatusCode.Accepted, (await PostBinaryAsync(client, EventsFeature.Topic, "evt-2")).StatusCode);
+        await log.WaitAsync(1, TimeSpan.FromSeconds(10));
+        Assert.Equal("evt-2", Assert.Single(log.Records).Delivery.Envelope.Id);
+    }
+
     [Fact]
     public async Task Inbound_Publish_HandsEventsToTheBroker()
     {
@@ -292,6 +316,23 @@ public sealed class CloudEventsProtocolTests
 
         Assert.Equal(MessagingErrors.InvalidEnvelope, refused.Code);
         Assert.Contains("attribute 'subject' has a lone surrogate", refused.Message, StringComparison.Ordinal);
+        Assert.Empty(outbound.Requests);
+    }
+
+    [Theory]
+    [InlineData("Binary")]
+    [InlineData("Structured")]
+    public async Task Outbound_JsonDataStructuredCannotWrite_IsRefusedBeforeSending_InEitherMode(string mode)
+    {
+        // binary 与 structured 同一个口径（spec/protocol/cloudevents.md「出站」，ADR-0323）：修之前 binary 把重复成员的数据原样作请求体发出
+        var (app, _, _, outbound) = await StartAsync(("XiHan:Protocols:CloudEvents:Webhooks:orders", "https://hooks.test/orders"), ("XiHan:Protocols:CloudEvents:Outbound", mode));
+        await using var host = app;
+        var envelope = new MessageEnvelope { Id = "evt-1", Source = "/orders", Type = "orders.placed", Data = """{"id":1,"id":2}"""u8.ToArray() };
+
+        var refused = await Assert.ThrowsAsync<FrameworkException>(async () => await app.Services.GetRequiredService<CloudEventsWebhookPublisher>().PublishAsync("orders", envelope, CancellationToken.None));
+
+        Assert.Equal(MessagingErrors.InvalidEnvelope, refused.Code);
+        Assert.Contains("member '$.data.id' would appear twice", refused.Message, StringComparison.Ordinal);
         Assert.Empty(outbound.Requests);
     }
 

@@ -51,7 +51,7 @@ public static class CloudEventsFormat
     /// 编码
     /// </summary>
     /// <remarks>
-    /// 写出的文档必须读得回来，写不出这样的文档时抛出携带 <see cref="MessagingErrors.InvalidEnvelope"/> 的 <see cref="FrameworkException"/>：JSON 数据不是合法 JSON，或文档过不了读取一侧的共同检查（RFC-0001「JSON 文本」）——JSON 数据里有重复的成员名、嵌套让文档超过 64 层、字符串里有不成对的代理项转义；规范属性与扩展属性的字符串值里有孤立的代理项时同样抛出，消息带属性名（ADR-0315，以前写成 U+FFFD）。扩展属性与规范属性同名的信封构造不出来（<see cref="EnvelopeExtensions.ReservedNames"/>，ADR-0298），写出之后的检查照样覆盖整份文档
+    /// 写出的文档必须读得回来，写不出这样的文档时抛出携带 <see cref="MessagingErrors.InvalidEnvelope"/> 的 <see cref="FrameworkException"/>：JSON 数据不是合法 JSON，或文档过不了读取一侧的共同检查（RFC-0001「JSON 文本」）——JSON 数据里有重复的成员名、嵌套让文档超过 64 层、字符串里有不成对的代理项转义或不合法的 UTF-8 字节（后者 ADR-0323，以前写成 U+FFFD）；规范属性与扩展属性的字符串值里有孤立的代理项时同样抛出，消息带属性名（ADR-0315，以前写成 U+FFFD）。扩展属性与规范属性同名的信封构造不出来（<see cref="EnvelopeExtensions.ReservedNames"/>，ADR-0298），写出之后的检查照样覆盖整份文档
     /// </remarks>
     public static byte[] Encode(MessageEnvelope envelope)
     {
@@ -124,6 +124,14 @@ public static class CloudEventsFormat
             throw new FrameworkException(
                 MessagingErrors.InvalidEnvelope,
                 problem.Kind == JsonTextProblemKind.DuplicateMember ? $"Envelope '{envelope.Id}' cannot be encoded: member '{problem.Path}' would appear twice in the document." : Unreadable(envelope));
+        }
+
+        // 写出器把数据字符串里不合法的 UTF-8 换成转义的 U+FFFD，上面的检查看不出来，处理器读到的却是另一份数据（ADR-0323）：
+        // 写出的文本里有这个转义才回头查原始数据，本来就是 U+FFFD 的字符查过照常写出；属性已经在开头严格核对过，换出来的只可能在数据里
+        if (envelope.IsJsonData && encoded.AsSpan().IndexOf(@"\uFFFD"u8) >= 0
+            && JsonText.FindProblem(envelope.Data.Span).TryGetValue(out var dataProblem) && dataProblem.Kind == JsonTextProblemKind.InvalidUtf8)
+        {
+            throw new FrameworkException(MessagingErrors.InvalidEnvelope, Unreadable(envelope));
         }
 
         return encoded;
