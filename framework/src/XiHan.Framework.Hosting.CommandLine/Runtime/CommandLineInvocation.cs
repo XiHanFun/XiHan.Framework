@@ -74,9 +74,9 @@ public static class CommandLineInvocation
             baggage[BaggageKeys.Correlation] = correlation;
         }
 
-        if (context.Option("locale").TryGetValue(out var locale) && LocaleName.IsValid(locale))
+        if (FindLocale(context).TryGetValue(out var locale))
         {
-            baggage[BaggageKeys.Locale] = LocaleName.Normalize(locale);
+            baggage[BaggageKeys.Locale] = locale;
         }
 
         DateTimeOffset? deadline = null;
@@ -107,4 +107,13 @@ public static class CommandLineInvocation
 
         return Result.Success(invocation);
     }
+
+    /// <summary>
+    /// 命令行给出的区域
+    /// </summary>
+    /// <remarks>
+    /// <c>--locale</c> 是合法的区域名时交出规范形式；没给或不合法时无值，按默认区域。调用写进 Baggage 的与没有发起调用的失败翻译用的是同一个值（ADR-0325）
+    /// </remarks>
+    internal static Maybe<string> FindLocale(CommandContext context)
+        => context.Option("locale").TryGetValue(out var locale) && LocaleName.IsValid(locale) ? Maybe.Some(LocaleName.Normalize(locale)) : default;
 }

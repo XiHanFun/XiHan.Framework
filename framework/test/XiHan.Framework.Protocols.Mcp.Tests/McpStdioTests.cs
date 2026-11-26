@@ -342,4 +342,27 @@ public sealed class McpStdioTests
             await host.StopAsync();
         }
     }
+
+    [Fact]
+    public async Task Command_InvalidOptions_AreReportedInTheLocaleOfTheLocaleOption()
+    {
+        // 会话选项不合法时没有发起调用：stderr 的用法错误同样按 --locale 翻译（protocol/commandline.md「操作映射」，ADR-0325）；修之前总按默认区域
+        using var host = await StartAsync();
+        try
+        {
+            var localizer = host.Services.GetRequiredService<IMessageLocalizer>();
+
+            var (code, output, error) = await RunCommandAsync(host, ["--timeout", "0", "--locale", "zh-CN"], """{"jsonrpc":"2.0","id":1,"method":"ping"}""");
+
+            Assert.Equal(CommandLineExitCodes.Usage, code);
+            Assert.Empty(output);
+            using var failure = JsonDocument.Parse(error);
+            Assert.Equal(localizer.Localize(CommandLineMessages.InvokeTimeoutInvalid, "zh-CN", null), failure.RootElement.GetProperty("detail").GetString());
+            Assert.NotEqual(localizer.Localize(CommandLineMessages.InvokeTimeoutInvalid, "en-US", null), failure.RootElement.GetProperty("detail").GetString());
+        }
+        finally
+        {
+            await host.StopAsync();
+        }
+    }
 }

@@ -52,11 +52,11 @@ internal sealed class McpStdioCommand : ICommand
     {
         ArgumentNullException.ThrowIfNull(context);
 
-        // 会话选项先校验一次：凭据格式或时限不合法时不进入会话、不读 stdin，按用法错误退出
+        // 会话选项先校验一次：凭据格式或时限不合法时不进入会话、不读 stdin，按用法错误退出，文案按 --locale 翻译（ADR-0325）
         var probe = CommandLineInvocation.Create(context, Name);
         if (!probe.IsSuccess)
         {
-            return await CommandLineFailure.WriteAsync(context.Error, probe.Error!, context.Services, null, CommandLineExitCodes.Usage).ConfigureAwait(false);
+            return await CommandLineFailure.WriteAsync(context, probe.Error!, CommandLineExitCodes.Usage).ConfigureAwait(false);
         }
 
         // 标准输入按字节交给传输，由它分行再严格解码，不经 Console.In 的控制台代码页

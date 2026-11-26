@@ -100,8 +100,9 @@ public sealed class CommandLineRunner
                 return await ExecuteAsync(invoke, new CommandContext(shorthand, scope.ServiceProvider, output, error, cancellationToken)).ConfigureAwait(false);
             }
 
-            await CommandLineFailure.WriteAsync(error, Error.NotFound(CommandLineErrors.CommandUnknown, CommandLineMessages.CommandUnknown, MessageArguments.Of(("command", parsed.Command))), scope.ServiceProvider, null, CommandLineExitCodes.Usage).ConfigureAwait(false);
-            return CommandLineExitCodes.Usage;
+            // 未知命令没有发起调用：文案按命令行给出的 --locale 翻译（ADR-0325）
+            var unknown = new CommandContext(parsed, scope.ServiceProvider, output, error, cancellationToken);
+            return await CommandLineFailure.WriteAsync(unknown, Error.NotFound(CommandLineErrors.CommandUnknown, CommandLineMessages.CommandUnknown, MessageArguments.Of(("command", parsed.Command))), CommandLineExitCodes.Usage).ConfigureAwait(false);
         }
 
         return await ExecuteAsync(command, new CommandContext(parsed, scope.ServiceProvider, output, error, cancellationToken)).ConfigureAwait(false);

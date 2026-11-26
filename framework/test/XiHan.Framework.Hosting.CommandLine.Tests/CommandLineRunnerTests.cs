@@ -7,6 +7,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using XiHan.Framework.Hosting.CommandLine.Runtime;
 using XiHan.Framework.Kernel.Pipeline;
+using XiHan.Framework.Localization.Abstractions.Messages;
 using XiHan.Framework.Profiles.Minimal;
 using XiHan.Framework.Security.InMemory;
 
@@ -350,6 +351,50 @@ public sealed class CommandLineRunnerTests : IAsyncLifetime
             Assert.Empty(usageOutput);
             Assert.Equal(CommandLineErrors.UsageInvalid, Json(Assert.Single(usageError.Split(Environment.NewLine, StringSplitOptions.RemoveEmptyEntries))).GetProperty("code").GetString());
         }
+    }
+
+    [Theory]
+    [InlineData("zh-CN", "zh-CN")]
+    [InlineData("ja-jp", "ja-JP")]
+    [InlineData("zh", "zh-CN")]
+    [InlineData("de-AT", "de-DE")]
+    public async Task FailuresBeforeTheInvocation_AreLocalizedByTheLocaleOption(string requested, string expected)
+    {
+        // 没有发起调用就返回的失败（用法错误与未暴露的操作）同样按 --locale 翻译：规范化后与调用一样协商出启用的区域（protocol/commandline.md「操作映射」，ADR-0325）；
+        // 修之前在建调用上下文之前就返回，detail 总是默认区域，--locale 只对发起了的调用生效
+        var localizer = _host.Services.GetRequiredService<IMessageLocalizer>();
+        foreach (var (args, key, arguments) in new (string[] Args, string Key, IReadOnlyDictionary<string, object?>? Arguments)[]
+        {
+            (["nope"], CommandLineMessages.CommandUnknown, Primitives.MessageArguments.Of(("command", "nope"))),
+            (["invoke"], CommandLineMessages.InvokeOperationMissing, null),
+            (["invoke", "orders.secret"], CommandLineMessages.OperationNotExposed, Primitives.MessageArguments.Of(("id", "orders.secret"))),
+            (["invoke", "orders.get", "--json", "[1]"], CommandLineMessages.InvokeJsonInvalid, Primitives.MessageArguments.Of(("reason", "the root must be an object"))),
+            (["invoke", "orders.get", "--timeout", "abc"], CommandLineMessages.InvokeTimeoutInvalid, null),
+            (["orders", "get", "--authorization", "no-scheme"], CommandLineMessages.InvokeAuthorizationInvalid, null),
+        })
+        {
+            var (_, output, error) = await RunAsync([.. args, "--locale", requested]);
+            var detail = Json(error).GetProperty("detail").GetString();
+
+            Assert.Empty(output);
+            Assert.Equal(localizer.Localize(key, expected, arguments), detail);
+            Assert.NotEqual(localizer.Localize(key, "en-US", arguments), detail);
+        }
+
+        Assert.Empty(_host.Services.GetRequiredService<OriginLog>().Origins);
+    }
+
+    [Theory]
+    [InlineData]
+    [InlineData("--locale", "not a locale")]
+    [InlineData("--locale", "")]
+    public async Task FailuresBeforeTheInvocation_UseTheDefaultLocale_WithoutAValidLocaleOption(params string[] locale)
+    {
+        // --locale 没给或不合法：与调用一样不进 Baggage，按默认区域
+        var (code, _, error) = await RunAsync(["invoke", "orders.get", "--timeout", "abc", .. locale]);
+
+        Assert.Equal(CommandLineExitCodes.Usage, code);
+        Assert.Equal("The value of --timeout must be a positive number of seconds.", Json(error).GetProperty("detail").GetString());
     }
 
     [Fact]

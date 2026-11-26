@@ -39,30 +39,30 @@ internal sealed class InvokeCommand : ICommand
         ArgumentNullException.ThrowIfNull(context);
         if (context.Arguments.Count == 0)
         {
-            return await CommandLineFailure.WriteAsync(context.Error, Error.Validation(CommandLineErrors.UsageInvalid, CommandLineMessages.InvokeOperationMissing), context.Services, null, CommandLineExitCodes.Usage).ConfigureAwait(false);
+            return await CommandLineFailure.WriteAsync(context, Error.Validation(CommandLineErrors.UsageInvalid, CommandLineMessages.InvokeOperationMissing), CommandLineExitCodes.Usage).ConfigureAwait(false);
         }
 
         var id = context.Arguments[0];
         var registry = context.Services.GetRequiredService<OperationRegistry>();
         if (!registry.Find(id).TryGetValue(out var descriptor) || !descriptor.Contract.IsExposedTo(Expose.CommandLine) || descriptor.Contract.Stability == Stability.Internal)
         {
-            return await CommandLineFailure.WriteAsync(context.Error, Error.NotFound(CommandLineErrors.OperationNotExposed, CommandLineMessages.OperationNotExposed, MessageArguments.Of(("id", id))), context.Services, null).ConfigureAwait(false);
+            return await CommandLineFailure.WriteAsync(context, Error.NotFound(CommandLineErrors.OperationNotExposed, CommandLineMessages.OperationNotExposed, MessageArguments.Of(("id", id))), null).ConfigureAwait(false);
         }
 
         var payload = await PayloadAsync(context, descriptor).ConfigureAwait(false);
         if (!payload.TryGetValue(out var bytes))
         {
-            return await CommandLineFailure.WriteAsync(context.Error, payload.Error!, context.Services, null, CommandLineExitCodes.Usage).ConfigureAwait(false);
+            return await CommandLineFailure.WriteAsync(context, payload.Error!, CommandLineExitCodes.Usage).ConfigureAwait(false);
         }
 
         var invocation = CommandLineInvocation.Create(context, id);
         if (!invocation.TryGetValue(out var invocationContext))
         {
-            return await CommandLineFailure.WriteAsync(context.Error, invocation.Error!, context.Services, null, CommandLineExitCodes.Usage).ConfigureAwait(false);
+            return await CommandLineFailure.WriteAsync(context, invocation.Error!, CommandLineExitCodes.Usage).ConfigureAwait(false);
         }
 
         // 弃用的操作照常调用，只在 stderr 提示一句：stdout 与退出码不变，脚本的管道不受影响（ADR-0280）。
-        // 写在上下文建好之后，才知道调用方的区域（--locale）；用法错误在这之前已经返回，没有发起调用就不提示
+        // 写在上下文建好之后：用法错误在这之前已经返回（按 --locale 翻译，ADR-0325），没有发起调用就不提示
         if (descriptor.Contract.Stability == Stability.Deprecated)
         {
             await context.Error.WriteLineAsync(invocationContext.Localize(CommandLineMessages.OperationDeprecated, MessageArguments.Of(("id", id)))).ConfigureAwait(false);
