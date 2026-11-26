@@ -5,6 +5,7 @@ using System.Net;
 using System.Text;
 using System.Text.Json;
 using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -226,6 +227,37 @@ public sealed class CloudEventsProtocolTests
         using var problem = JsonDocument.Parse(await rejected.Content.ReadAsStringAsync());
         Assert.Equal(MessagingErrors.InvalidEnvelope, problem.RootElement.GetProperty("code").GetString());
         Assert.Contains("'ce-subject'", problem.RootElement.GetProperty("detail").GetString(), StringComparison.Ordinal);
+        Assert.Empty(log.Records);
+    }
+
+    [Fact]
+    public async Task Inbound_AnEmptyDataSchemaHeader_IsA400_LikeAnEmptyStructuredMember()
+    {
+        // binary 的空 ce-dataschema 头与 structured 的空串同一个 400（ADR-0323）；修之前当作没有，照常派发。
+        // HttpClient 不发空值的头，直接在服务端的请求上设，与 HTTP/1.1 的空字段行到达时相同
+        var (app, client, log, _) = await StartAsync();
+        await using var host = app;
+
+        var binary = await app.GetTestServer().SendAsync(static context =>
+        {
+            context.Request.Method = HttpMethods.Post;
+            context.Request.Path = "/events";
+            context.Request.ContentType = "application/json";
+            context.Request.Headers["ce-specversion"] = "1.0";
+            context.Request.Headers["ce-id"] = "evt-1";
+            context.Request.Headers["ce-source"] = "/external";
+            context.Request.Headers["ce-type"] = EventsFeature.Topic;
+            context.Request.Headers["ce-dataschema"] = string.Empty;
+            context.Request.Body = new MemoryStream("{}"u8.ToArray());
+        });
+        var structured = await PostAsync(client, CloudEventsHttpBinding.StructuredContentType, $$"""{"specversion":"1.0","id":"evt-2","source":"/external","type":"{{EventsFeature.Topic}}","dataschema":""}""");
+
+        Assert.Equal(StatusCodes.Status400BadRequest, binary.Response.StatusCode);
+        Assert.Equal(HttpStatusCode.BadRequest, structured.StatusCode);
+        Assert.Equal("application/problem+json", binary.Response.ContentType?.Split(';')[0]);
+        using var problem = await JsonDocument.ParseAsync(binary.Response.Body);
+        Assert.Equal(await CodeOf(structured), problem.RootElement.GetProperty("code").GetString());
+        Assert.Equal(MessagingErrors.InvalidEnvelope, problem.RootElement.GetProperty("code").GetString());
         Assert.Empty(log.Records);
     }
 

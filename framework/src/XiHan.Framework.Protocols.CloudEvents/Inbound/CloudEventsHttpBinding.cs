@@ -415,7 +415,7 @@ public static class CloudEventsHttpBinding
     /// binary
     /// </summary>
     /// <remarks>
-    /// <c>ce-specversion</c>、<c>ce-id</c>、<c>ce-source</c>、<c>ce-type</c> 必填，<c>ce-time</c>（<see cref="TimestampText"/> 的文法，读出 UTC 时刻）、<c>ce-subject</c>、<c>ce-dataschema</c>（ADR-0305）可选，值为空与没有这个头相同，其余 <c>ce-*</c> 是扩展属性（名字不能是保留名，<c>ce-data</c> 因此不合法，ADR-0298）；每个 <c>ce-*</c> 头的值经 <see cref="DecodeHeaderValue"/> 解码，读不出即 <see cref="CloudEventsMessages.HeaderInvalid"/>（ADR-0323）；数据内容类型取 <c>Content-Type</c>，数据取请求体，声明为 JSON 的数据过与 structured 相同的检查（<see cref="DataProblemOf"/>，ADR-0323）
+    /// <c>ce-specversion</c>、<c>ce-id</c>、<c>ce-source</c>、<c>ce-type</c> 必填，<c>ce-time</c>（<see cref="TimestampText"/> 的文法，读出 UTC 时刻）、<c>ce-subject</c> 可选、值为空与没有这个头相同，<c>ce-dataschema</c>（ADR-0305）可选、值为空与结构化 JSON 的空串一样不合法（ADR-0323），其余 <c>ce-*</c> 是扩展属性（名字不能是保留名，<c>ce-data</c> 因此不合法，ADR-0298）；每个 <c>ce-*</c> 头的值经 <see cref="DecodeHeaderValue"/> 解码，读不出即 <see cref="CloudEventsMessages.HeaderInvalid"/>（ADR-0323）；数据内容类型取 <c>Content-Type</c>，数据取请求体，声明为 JSON 的数据过与 structured 相同的检查（<see cref="DataProblemOf"/>，ADR-0323）
     /// </remarks>
     private static Result<IReadOnlyList<MessageEnvelope>> ReadBinary(HttpRequest request, byte[] body)
     {
@@ -466,7 +466,6 @@ public static class CloudEventsHttpBinding
         }
 
         var subject = HeaderValue("subject");
-        var dataSchema = HeaderValue("dataschema");
         // 规范要求 binary 模式用 Content-Type 承载数据内容类型；给了 ce-datacontenttype 也接受
         var explicitContentType = HeaderValue("datacontenttype");
         var contentType = explicitContentType.Length > 0 ? explicitContentType : request.ContentType;
@@ -507,8 +506,8 @@ public static class CloudEventsHttpBinding
                 Type = type,
                 Time = time,
                 Subject = subject.Length > 0 ? subject : null,
-                // 头值为空按没有读，与 ce-subject、ce-time 相同；只有空白的由信封的 init 拒绝
-                DataSchema = dataSchema.Length > 0 ? dataSchema : null,
+                // 有这个头就交给信封：空值与只有空白的由 init 拒绝，与结构化 JSON 的空串同一条路（ADR-0323；以前空头与没有这个头相同，ce-subject、ce-time 仍是那样）
+                DataSchema = core.TryGetValue("dataschema", out var dataSchema) ? dataSchema : null,
                 Data = body,
                 Extensions = extensions,
             };

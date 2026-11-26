@@ -77,3 +77,12 @@
 - 领域事件的登记（`AddDomainEvent`）没有给 `dataschema` 的选择器，调度与工作流发布的框架事件也不带它；要带的应用目前只能自己构造信封发布。
 - 按较早的规范实现的宿主收到插件发布的 `data_schema` 时静默丢掉它（备选 8）：插件与宿主的规范版本不一致时，数据模式不会到达处理器，也没有日志。
 - .NET 的 `Plugins.Conformance` 套件与 Go 运行器都不核对插件一侧有没有把 `data_schema` 交给作者：插件的处理器不回显信封，运行器看不到；SDK 的单元测试自己核对。
+
+## 修订（2026-11-27）
+
+ADR-0323 改了备选 4 的一处，补上「没有解决的」第 1 条，其余不变：
+
+1. **备选 4**：binary 模式的空 `ce-dataschema` 头不再与没有这个头相同，改为与结构化 JSON 的 `"dataschema": ""` 一样不合法：有这个头就交给信封，空值经 `init` 抛出、转成 `MESSAGING_VALIDATION_002` + `messaging.envelope.invalid`（备选 5 的那条路）。理由是两种写法的空值读法不对称，同一个写错的值换一种内容模式就读得出。
+2. **插件协议的空串不变**：`Envelope.data_schema` 的空串仍表示没有。proto3 的字符串字段分不出空串与没有，与 `subject`、`time` 同一个约定；HTTP 的头与 JSON 的成员分得出有没有，空值就是写错的值。规范在 RFC-0009「各传输上的 `dataschema`」与 `protocol/cloudevents.md` 的信封映射里写明两者的区别。
+3. **`ce-subject`、`ce-time`** 的空头仍与没有这个头相同，不在这次决定之内。
+4. **「没有解决的」第 1 条**：应用按 CloudEvents `type` 登记数据模式（`services.AddMessageDataSchema(type, dataSchema)`），领域事件、调度与工作流的框架事件构造信封时按自己的 `type` 带上它（RFC-0009「框架事件的数据模式」）。取值规则仍是本 ADR 定的「非空字符串、不核对 URI 语法」，另拒孤立的代理项。

@@ -121,17 +121,29 @@ public sealed class CloudEventsHttpBindingTests
     }
 
     [Fact]
-    public async Task Read_BinaryMode_AnEmptyDataSchemaHeader_IsNoDataSchema_AndABlankOneIsInvalid()
+    public async Task Read_BinaryMode_AnEmptyOrBlankDataSchemaHeader_IsInvalid_LikeAnEmptyStructuredMember()
     {
-        // 头值为空与没有这个头相同（同 ce-subject、ce-time）；只有空白的由信封拒绝，与 ce-source 只有空白时同一条路
+        // 与结构化 JSON 的 "dataschema": "" 同一个错误（RFC-0009「各传输上的 dataschema」，ADR-0323）：修之前空头与没有这个头相同，两种写法的空值读法不对称；
+        // 只有空白的照旧由信封拒绝，与 ce-source 只有空白时同一条路
         var empty = Request("application/json", "{}", ("ce-specversion", "1.0"), ("ce-id", "1"), ("ce-source", "/s"), ("ce-type", "t"), ("ce-dataschema", ""));
         var blank = Request("application/json", "{}", ("ce-specversion", "1.0"), ("ce-id", "1"), ("ce-source", "/s"), ("ce-type", "t"), ("ce-dataschema", "%20"));
+        var structured = Request(CloudEventsHttpBinding.StructuredContentType, """{"specversion":"1.0","id":"1","source":"/s","type":"t","dataschema":""}""");
 
-        var read = Assert.Single((await CloudEventsHttpBinding.ReadAsync(empty, _options, CancellationToken.None)).ValueOrThrow());
-        var error = (await CloudEventsHttpBinding.ReadAsync(blank, _options, CancellationToken.None)).Error;
+        var expected = (await CloudEventsHttpBinding.ReadAsync(structured, _options, CancellationToken.None)).Error;
+        var emptyError = (await CloudEventsHttpBinding.ReadAsync(empty, _options, CancellationToken.None)).Error;
+        var blankError = (await CloudEventsHttpBinding.ReadAsync(blank, _options, CancellationToken.None)).Error;
 
-        Assert.Null(read.DataSchema);
-        Assert.Equal((MessagingErrors.InvalidEnvelope, MessagingMessages.EnvelopeInvalid), (error?.Code, error?.MessageKey));
+        Assert.Equal((MessagingErrors.InvalidEnvelope, MessagingMessages.EnvelopeInvalid), (expected?.Code, expected?.MessageKey));
+        Assert.Equal((expected!.Code, expected.MessageKey, expected.Details!["reason"]), (emptyError?.Code, emptyError?.MessageKey, emptyError?.Details!["reason"]));
+        Assert.Equal((MessagingErrors.InvalidEnvelope, MessagingMessages.EnvelopeInvalid), (blankError?.Code, blankError?.MessageKey));
+    }
+
+    [Fact]
+    public async Task Read_BinaryMode_WithoutADataSchemaHeader_HasNoDataSchema()
+    {
+        var envelope = Assert.Single((await CloudEventsHttpBinding.ReadAsync(Request("application/json", "{}", ("ce-specversion", "1.0"), ("ce-id", "1"), ("ce-source", "/s"), ("ce-type", "t")), _options, CancellationToken.None)).ValueOrThrow());
+
+        Assert.Null(envelope.DataSchema);
     }
 
     [Theory]
