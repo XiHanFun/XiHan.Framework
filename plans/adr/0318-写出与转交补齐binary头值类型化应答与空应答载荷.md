@@ -128,7 +128,7 @@ binary 模式：
 
 ## 修订（2026-11-26）
 
-仓库所有者不接受内核里的 `unsafe`：.NET 的实现由备选 10a 改成 10c 的一种做法，行为照本 ADR 不变。
+仓库所有者不接受内核里的 `unsafe`：.NET 的实现由备选 10a 改成 10c 的一种做法，行为照本 ADR 不变。同日 ADR-0319 要求类型化响应写出的整段文本过 JSON 文本的共同检查，.NET 在同一个方法里一并满足（第 4 条）。
 
 1. **10a 为什么留不住**：.NET 10 的 `TextEncoder` 有两个带指针参数的抽象成员（`FindFirstCharacterToEncode(char*, int)` 与 `TryEncodeUnicodeScalar(int, char*, int, out int)`），不带指针的 `FindFirstCharacterToEncode(ReadOnlySpan<char>)` 是 `private protected`。派生任何编码器都得覆写那两个，不在 unsafe 上下文里编译不过（CS0214，实测）。`JavaScriptEncoder.Create(…)` 只能选放行的区段，管不到写出器怎样处理孤立的代理项；`Utf8JsonWriter` 是密封类，包不了一层。自定义编码器这条路整个不通，也不挪到别的环层去。
 2. **现在的做法**（`OperationDescriptor<…>.EncodeResponse`，`StrictJsonEncoder` 删掉，内核不再开 `AllowUnsafeBlocks`）：
@@ -138,17 +138,30 @@ binary 模式：
    - 序列化上下文用了自定义的编码器时总要再写一遍：实测有的自定义编码器不报需要转义，写出器就把孤立的代理项连同其后的字符截掉、不留痕迹；第二遍用的是内置编码器，照样拦得下。
 3. **10c 当初否决的两条理由**：
    - 靠「换出来的总被转义」这一实现细节：照所有者的决定接受，由测试钉住。`ResponseEncodingTests` 在四种内置编码器下核对每种写不出的形状都拦得下、合法的文本逐字节等于 `SerializeToUtf8Bytes`，System.Text.Json 哪天改了这一处，CI 的 Release 测试先红。依赖的是发布版的行为，不靠 `Debug.Assert` 一类只在调试版成立的细节。
-   - 可疑时写两遍：只有文本里有 `\uFFFD` 的响应才写两遍，见第 5 条的数字。
-4. **行为的差别**：与 10a 相比，写不出的形状、异常类型与消息、XGI 入口的结果都不变，合法响应的字节与 `SerializeToUtf8Bytes` 相同。多一种误拒：不经编码器写出的 `\uFFFD`（转换器以 `WriteRawValue` 原样写的文本、预先编码的 `JsonEncodedText`、缺省编码器下名字里有 U+FFFD 的属性名）在第二遍里仍是 `\uFFFD`，会被当成写不出；10a 不经手这些文本，照写。框架自己的响应类型没有这样的写法。
-5. **性能**（同一台机器、BenchmarkDotNet 进程内、Release；小响应 118 B，大响应约 1 MB、10,500 个对象，「带 U+FFFD」是大响应里有一个本来就是 U+FFFD 的字符）：
+   - 可疑时写两遍：只有文本里有 `\uFFFD` 的响应才写两遍，见第 6 条的数字。
+4. **ADR-0319 的 .NET 做法**（同一个方法）：
+   - 写完之后整段文本过 `JsonText.FindProblem`（语法、64 层、合法的 UTF-8 与 Unicode、任何一层没有重复成员），没过即抛出 `ArgumentException`，XGI 入口的结果与上面相同。原样嵌进去的文本（`WriteRawValue`，含其中的深度与 `\ud800` 这样的转义）、转换器写两次的成员、扩展数据与声明成员同名、字典的键按命名策略撞名、带重复成员的 `JsonElement` 与 `JsonNode` 都在这里拦下。孤立的代理项被写出器换成 U+FFFD 的情形这道检查看不出，仍按第 2 条核对。
+   - 写出的深度上限放到「序列化上下文的上限与 64 取小，再加 1」：System.Text.Json 写到上限那一层的值就失败（缺省上限 64 时，64 层、最里层有值的响应写不出），读取却读得进同样层数的文本；多给的一层由写完之后的检查卡在 64，层数从响应的根算起。上下文把上限放宽（如 128）时写出仍到 64 层为止；设得比 64 小（如 8）时照它，与按同一个上下文读请求的层数相同。
+   - 每次调用都要过这一遍，`JsonText.FindProblem` 改成按层复用状态（对象的成员名集合清空再用、装过 64 个以上成员的不留），只在找到重复成员时才拼路径，没有代理项转义（`\uD…`）的字符串不还原、有的还原到租来的缓冲里。结果不变：`JsonTextTests`、规范向量的回放与读取一侧的用例照过；约 1 MB 的文本分配由 5,122,986 B 降到 1,092,689 B，剩下的是成员名的字符串。
+   - 上限是 `JsonSerializerOptions` 的属性，写出用的元数据要重新取：按响应类型的选项建一份只改了 `MaxDepth` 的副本（`new JsonSerializerOptions(options)`，解析器链随之复制），再 `GetTypeInfo(typeof(TResponse))`。源生成的上下文在副本的解析器链里，为副本另建元数据，不经反射；副本按原选项缓存在 `ConditionalWeakTable` 里，同一个上下文的描述共用一份，元数据在第一次写出时才取，启动不多花。
+5. **行为的差别**：
+   - 与 10a 相比，写不出的形状、XGI 入口的结果都不变，合法响应的字节与 `SerializeToUtf8Bytes` 相同。多一种误拒：不经编码器写出的 `\uFFFD`（转换器以 `WriteRawValue` 原样写的文本、预先编码的 `JsonEncodedText`、缺省编码器下名字里有 U+FFFD 的属性名）在第二遍里仍是 `\uFFFD`，会被当成写不出；10a 不经手这些文本，照写。框架自己的响应类型没有这样的写法。
+   - 异常消息改成同时说明 ADR-0319 的几种情形；超过写出深度时抛出的是 System.Text.Json 的 `JsonException`，其余是 `ArgumentException`，XGI 入口的处理相同。
+   - 序列化上下文的解析器为副本给不出元数据时（只认原选项的自定义解析器），第一次写出即失败、按未处理的异常结束。
+6. **性能**（同一台机器、BenchmarkDotNet 进程内、Release；小响应 118 B，大响应约 1 MB、10,500 个对象，「带 U+FFFD」是大响应里有一个本来就是 U+FFFD 的字符）：
 
-   | 响应 | `SerializeToUtf8Bytes` | 10a（改前） | 现在 |
-   | --- | --- | --- | --- |
-   | 小 | 302 ns / 176 B | 356 ns / 480 B | 312 ns / 176 B |
-   | 约 1 MB | 2.21 ms / 1,007,443 B | 2.27 ms / 2,225,808 B | 2.22 ms / 1,007,565 B |
-   | 约 1 MB、带 U+FFFD | 2.15 ms / 1,007,354 B | 2.20 ms / 2,226,302 B | 3.29 ms / 2,016,814 B |
+   | 响应 | `SerializeToUtf8Bytes` | 10a（改前） | 10c，不含 ADR-0319 的检查 | 现在 |
+   | --- | --- | --- | --- | --- |
+   | 小 | 306 ns / 176 B | 356 ns / 480 B | 312 ns / 176 B | 896 ns / 952 B |
+   | 约 1 MB | 2.17 ms / 1,007,587 B | 2.27 ms / 2,225,808 B | 2.22 ms / 1,007,565 B | 5.34 ms / 2,100,482 B |
+   | 约 1 MB、带 U+FFFD | 2.15 ms / 1,007,555 B | 2.20 ms / 2,226,302 B | 3.29 ms / 2,016,814 B | 6.70 ms / 3,110,085 B |
 
-   合法、不带 U+FFFD 的响应回到池化路径，不多分配；带 U+FFFD 的多写一遍、多一份与载荷同样大的缓冲。
-6. **体积**：内核 409,088 B → 407,040 B，与原语（103,424 B）合计 510,464 B，回到性能门禁的 512,000 B 以内（以前 512,512 B）。
-7. **门禁**：架构测试 `SourceHygieneTests` 新增两条，与「Ring 0/1 零反射」放在一起：手写的源码（正式包、测试、示例、基准与实验包）不写 `unsafe`，去掉字符串、字符字面量与行注释之后找关键字，生成代码在构建输出里、不在扫描之内；`AllowUnsafeBlocks` 只给源码里有 `[LibraryImport(` 的项目开，Ring 0/1 与公共的 `Directory.Build.*` 都不开。现在开着的四个包（`ObjectStorage.FileSystem`、`Observability.Host`、`Plugins.OutOfProcess`、`Plugins.Wasm`）都只为 `LibraryImport` 的生成代码。
-8. **测试**：`ResponseEncodingTests` 写不出的形状加 `JsonNode` 的值与成员名、以 UTF-8 交来的非法字节三种；合法的文本在字典的键、`JsonNode` 的值与成员名、UTF-8 字节里也放了 U+FFFD；新增一条按四种内置编码器核对。10a 的实现与现在的都通过，去掉核对时 20 条失败。
+   - 去掉 unsafe 本身不多花：不带 U+FFFD 的响应回到池化路径，耗时与分配和 `SerializeToUtf8Bytes` 相同；带 U+FFFD 的多写一遍、多一份与载荷同样大的缓冲。
+   - 多出的主要是 ADR-0319 的检查：`JsonText.FindProblem` 单独量是小响应 536 ns / 776 B、约 1 MB 3.04 ms / 1,092,689 B（改之前 4.16 ms / 5,122,986 B）。写出的一方核对整段文本，代价与把它读一遍相当；这是 ADR-0319 的规则本身的成本，Go 与 Java 写完之后的核对同样如此。
+   - `SerializeToUtf8Bytes` 一列各轮之间差 2% 以内，表里取与「现在」同一轮的值；10a 与「10c，不含检查」两列是另一轮里量的。
+
+7. **体积**：内核 409,088 B → 408,064 B，与原语（103,424 B）合计 511,488 B（只去掉 unsafe、不含 ADR-0319 时是 407,040 B），回到性能门禁的 512,000 B 以内（以前 512,512 B）。
+8. **门禁**：架构测试 `SourceHygieneTests` 新增两条，与「Ring 0/1 零反射」放在一起：手写的源码（正式包、测试、示例、基准与实验包）不写 `unsafe`，去掉字符串、字符字面量与行注释之后找关键字，生成代码在构建输出里、不在扫描之内；`AllowUnsafeBlocks` 只给源码里有 `[LibraryImport(` 的项目开，Ring 0/1 与公共的 `Directory.Build.*` 都不开。现在开着的四个包（`ObjectStorage.FileSystem`、`Observability.Host`、`Plugins.OutOfProcess`、`Plugins.Wasm`）都只为 `LibraryImport` 的生成代码。
+9. **测试**：
+   - `ResponseEncodingTests`：写不出的形状加 `JsonNode` 的值与成员名、以 UTF-8 交来的非法字节三种；合法的文本在字典的键、`JsonNode` 的值与成员名、UTF-8 字节里也放了 U+FFFD；新增一条按四种内置编码器核对。10a 的实现与现在的都通过，去掉核对时 20 条失败。
+   - `ResponseTextCheckTests`（新增，ADR-0319）：65 层、原样嵌进去的 64 层（共 65 层）、六种重复成员与原样嵌进去的孤立代理项转义，XGI 入口都是 `KERNEL_UNEXPECTED_001`、不带 `inner`、没有载荷；64 层、最里层有值的响应照常写出并解码回 64 层；合法的响应字节等于 `SerializeToUtf8Bytes`；上下文的上限放宽到 128 与收紧到 8 两种。改之前 13 条里 11 条失败。

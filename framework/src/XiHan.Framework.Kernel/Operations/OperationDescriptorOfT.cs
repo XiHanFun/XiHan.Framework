@@ -32,7 +32,7 @@ public sealed class OperationDescriptor<TOperation, TRequest, TResponse> : Opera
     /// <summary>
     /// 响应写不出时异常的消息
     /// </summary>
-    private const string UnwritableMessage = "The value has a string with a lone surrogate or invalid UTF-8, which cannot be written as JSON text.";
+    private const string UnwritableMessage = "The response cannot be written as JSON text: a string has a lone surrogate or invalid UTF-8, the text nests deeper than 64 levels, or an object has a duplicate member.";
 
     /// <summary>
     /// 请求类型的序列化元数据
@@ -43,6 +43,14 @@ public sealed class OperationDescriptor<TOperation, TRequest, TResponse> : Opera
     /// 响应类型的序列化元数据
     /// </summary>
     private readonly JsonTypeInfo<TResponse> _responseInfo;
+
+    /// <summary>
+    /// 写出响应用的序列化元数据
+    /// </summary>
+    /// <remarks>
+    /// 按 <see cref="OperationDescriptor.ResponseWriteOptions"/> 的选项向同一个解析器重新取得，第一次写出时才取；并发时可能取两次，结果相同
+    /// </remarks>
+    private JsonTypeInfo<TResponse>? _writeInfo;
 
     /// <summary>
     /// 创建描述
@@ -116,31 +124,20 @@ public sealed class OperationDescriptor<TOperation, TRequest, TResponse> : Opera
 
     /// <inheritdoc />
     /// <remarks>
-    /// 写不成合法的 JSON 文本即抛出：响应里的字符串有孤立的代理项（以 UTF-8 交来的不是合法的 UTF-8）时是 <see cref="ArgumentException"/>，不像 System.Text.Json 的缺省那样写成转义的 U+FFFD（RFC-0011 规则 10「编码」，ADR-0318），与浮点成员是 NaN 时一样由 XGI 入口按未处理的异常结束。
-    /// 交出的字节就是 <see cref="JsonSerializer.SerializeToUtf8Bytes{TValue}(TValue, JsonTypeInfo{TValue})"/> 的结果；文本里有 <c>\uFFFD</c> 或序列化上下文用了自定义的编码器时，另写一遍只为核对
+    /// 写不成合法的 JSON 文本即抛出 <see cref="ArgumentException"/>，与浮点成员是 NaN 时一样由 XGI 入口按未处理的异常结束（RFC-0011 规则 10「编码」）：
+    /// 响应里的字符串有孤立的代理项（以 UTF-8 交来的不是合法的 UTF-8），不像 System.Text.Json 的缺省那样写成转义的 U+FFFD（ADR-0318）；写出的整段文本没过 <see cref="JsonText.FindProblem"/>，即嵌套超过 64 层、有重复成员或孤立代理项的转义（ADR-0319）。
+    /// 交出的字节与 <see cref="JsonSerializer.SerializeToUtf8Bytes{TValue}(TValue, JsonTypeInfo{TValue})"/> 写出的相同；文本里有 <c>\uFFFD</c> 或序列化上下文用了自定义的编码器时，另写一遍只为核对
     /// </remarks>
     public override ReadOnlyMemory<byte> EncodeResponse(object response)
     {
         ArgumentNullException.ThrowIfNull(response);
         var value = (TResponse)response;
-        var payload = JsonSerializer.SerializeToUtf8Bytes(value, _responseInfo);
-        var options = _responseInfo.Options;
+        var info = _writeInfo ??= (JsonTypeInfo<TResponse>)ResponseWriteOptions(_responseInfo.Options).GetTypeInfo(typeof(TResponse));
+        var payload = JsonSerializer.SerializeToUtf8Bytes(value, info);
 
-        // 写出器把孤立的代理项与非法的 UTF-8 换成 U+FFFD 照写，内置的编码器总把换出来的写成 \uFFFD：没有这个转义就没有被换过的字符，多数响应到这里就完
-        // 自定义的编码器不在此列（实测有的把字符串截断、不留痕迹），总要核对
-        if (payload.AsSpan().IndexOf("\\uFFFD"u8) < 0 && (options.Encoder is null || options.Encoder.GetType() == JavaScriptEncoder.Default.GetType()))
-        {
-            return payload;
-        }
-
-        // 换不转义非 ASCII 的内置编码器再写一遍：本来就是 U+FFFD 的字符原样写成 EF BF BD，换出来的仍是 \uFFFD，两者分得开；这一遍只看不交，不会发给调用方
-        var check = new ArrayBufferWriter<byte>(payload.Length);
-        using (var writer = new Utf8JsonWriter(check, new JsonWriterOptions { Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping, MaxDepth = options.MaxDepth, SkipValidation = true }))
-        {
-            JsonSerializer.Serialize(writer, value, _responseInfo);
-        }
-
-        return check.WrittenSpan.IndexOf("\\uFFFD"u8) < 0 ? payload : throw new ArgumentException(UnwritableMessage);
+        // 整段文本过共同检查：转换器、原样嵌进去的文本、命名策略与扩展数据都可能写出超过 64 层、有重复成员或孤立代理项转义的文本，读的一方都会拒绝（ADR-0319）
+        // 被写出器换成 U+FFFD 的字符这道检查看不出，另外核对
+        return JsonText.FindProblem(payload).HasValue || HasReplacedCharacter(value, info, payload) ? throw new ArgumentException(UnwritableMessage) : payload;
     }
 
     /// <inheritdoc />
@@ -158,6 +155,34 @@ public sealed class OperationDescriptor<TOperation, TRequest, TResponse> : Opera
         var operation = context.Services.GetRequiredService<TOperation>();
         var result = await operation.HandleAsync(typed, context).ConfigureAwait(false);
         return result.TryGetValue(out var value) ? Result.Success<object>(value!) : Result.Failure<object>(result.Error!);
+    }
+
+    /// <summary>
+    /// 写出时是否有字符被换成了 U+FFFD
+    /// </summary>
+    /// <remarks>
+    /// 写出器把孤立的代理项与非法的 UTF-8 换成 U+FFFD 照写，得到的仍是合法的文本。内置的编码器总把换出来的写成 <c>\uFFFD</c>，文本里没有这个转义就没有换过的字符；
+    /// 有，就换不转义非 ASCII 的内置编码器再写一遍分辨：本来就是 U+FFFD 的字符原样写成 <c>EF BF BD</c>，换出来的仍是 <c>\uFFFD</c>。这一遍只看不交
+    /// </remarks>
+    /// <param name="value">响应对象</param>
+    /// <param name="info">写出用的序列化元数据</param>
+    /// <param name="payload">已经写出的文本</param>
+    private static bool HasReplacedCharacter(TResponse value, JsonTypeInfo<TResponse> info, byte[] payload)
+    {
+        // 自定义的编码器不在此列（实测有的不报需要转义，写出器就把孤立的代理项连同后面的字符截掉、不留痕迹），总要再写一遍
+        var encoder = info.Options.Encoder;
+        if (payload.AsSpan().IndexOf("\\uFFFD"u8) < 0 && (encoder is null || encoder.GetType() == JavaScriptEncoder.Default.GetType()))
+        {
+            return false;
+        }
+
+        var check = new ArrayBufferWriter<byte>(payload.Length);
+        using (var writer = new Utf8JsonWriter(check, new JsonWriterOptions { Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping, MaxDepth = info.Options.MaxDepth, SkipValidation = true }))
+        {
+            JsonSerializer.Serialize(writer, value, info);
+        }
+
+        return check.WrittenSpan.IndexOf("\\uFFFD"u8) >= 0;
     }
 
     /// <summary>

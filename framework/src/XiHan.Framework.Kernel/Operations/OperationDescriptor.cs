@@ -1,8 +1,10 @@
 // Copyright (c) XiHanFun Contributors. Licensed under the MIT License.
 // See the LICENSE file in the project root for full license text.
 
+using System.Runtime.CompilerServices;
 using System.Text.Json;
 using System.Text.Json.Serialization.Metadata;
+using XiHan.Framework.Kernel.Json;
 using XiHan.Framework.Primitives;
 
 namespace XiHan.Framework.Kernel.Operations;
@@ -16,6 +18,14 @@ namespace XiHan.Framework.Kernel.Operations;
 [ApiLevel(Stability.Stable, "5.0")]
 public abstract class OperationDescriptor
 {
+    /// <summary>
+    /// 各序列化选项写出响应用的副本
+    /// </summary>
+    /// <remarks>
+    /// 按原选项缓存：同一个序列化上下文的描述共用一份副本，副本里的元数据只建一次；原选项回收时副本随之回收
+    /// </remarks>
+    private static readonly ConditionalWeakTable<JsonSerializerOptions, JsonSerializerOptions> _responseWriteOptions = new();
+
     /// <summary>
     /// 创建描述
     /// </summary>
@@ -139,6 +149,17 @@ public abstract class OperationDescriptor
 
     /// <inheritdoc />
     public override string ToString() => $"{Id} ({OperationType.Name}: {RequestType.Name} -> {ResponseType.Name})";
+
+    /// <summary>
+    /// 写出响应用的序列化选项
+    /// </summary>
+    /// <remarks>
+    /// 原选项的副本，只把深度上限改成原上限与 64 取小再加 1：System.Text.Json 写到上限那一层的值就失败，读取却读得进同样层数的文本。
+    /// 多给的一层由写完之后的 JSON 文本检查卡住，层数从响应的根算起（RFC-0001「JSON 文本」，ADR-0319）；写出用的元数据要按副本向同一个解析器重新取，源生成的上下文也一样
+    /// </remarks>
+    /// <param name="options">响应类型的序列化选项</param>
+    private protected static JsonSerializerOptions ResponseWriteOptions(JsonSerializerOptions options)
+        => _responseWriteOptions.GetValue(options, static o => new JsonSerializerOptions(o) { MaxDepth = Math.Min(o.MaxDepth == 0 ? JsonText.MaxDepth : o.MaxDepth, JsonText.MaxDepth) + 1 });
 
     /// <summary>
     /// 构造响应载荷不合法的失败结果

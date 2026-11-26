@@ -8,7 +8,7 @@ using XiHan.Framework.Primitives.Manifests;
 namespace XiHan.Framework.Kernel.Tests.Fixtures;
 
 /// <summary>
-/// 登记 <see cref="TextsOperation"/> 的特性
+/// 登记 <see cref="TextsOperation"/> 与 <see cref="CheckedOperation"/> 的特性
 /// </summary>
 internal sealed class TextsFeature : IFeature
 {
@@ -27,5 +27,8 @@ internal sealed class TextsFeature : IFeature
 
     /// <inheritdoc />
     public void Configure(FeatureContext context)
-        => context.AddOperation<TextsOperation, EchoRequest, TextsResponse>(new(TextsOperation.Id), EchoJsonContext.Default.EchoRequest, TextsJsonContext.Default.TextsResponse, null);
+    {
+        context.AddOperation<TextsOperation, EchoRequest, TextsResponse>(new(TextsOperation.Id), EchoJsonContext.Default.EchoRequest, TextsJsonContext.Default.TextsResponse, null);
+        context.AddOperation<CheckedOperation, EchoRequest, CheckedResponse>(new(CheckedOperation.Id), EchoJsonContext.Default.EchoRequest, CheckedJsonContext.Default.CheckedResponse, null);
+    }
 }
