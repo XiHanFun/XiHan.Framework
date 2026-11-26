@@ -169,7 +169,7 @@ cp target/wasm32-wasip1/release/echo_wasm_plugin.wasm plugin/echo.wasm
 | 未声明的操作 | 插件返回 `KERNEL_NOTFOUND_001` 的失败状态 |
 | 陷阱、导出返回 `0` | 插件 `Failed`（`PLUGINS_UNEXPECTED_002`，细节 `trap` 只写陷阱种类或异常类型，陷阱原文进日志），按 1 秒起翻倍、上限 60 秒退避重建实例 |
 | 导出的响应不是合法的 JSON 消息（宿主按严格的 UTF-8 解码，非法字节序列也算，不换成 U+FFFD） | 调用以 `PLUGINS_UNEXPECTED_001` 失败（`plugins.process.failed`，`reason` 为 `the response is not a valid JSON message`），实例按崩溃重建 |
-| 响应是合法的消息，成功应答的 `payload` 不为空却过不了 JSON 文本的共同检查（语法、64 层、合法的 UTF-8 与 Unicode、重复成员） | 调用以 `PLUGINS_UNEXPECTED_001` 失败（`plugins.process.failed`，`reason` 为 `the response payload is not valid JSON text at '<路径>'`），载荷不交给调用方；实例不重建、仍是 `Ready`（ADR-0315） |
+| 响应是合法的消息，成功应答的 `payload` 不为空却过不了 JSON 文本的共同检查（语法、64 层、合法的 UTF-8 与 Unicode、重复成员） | 调用以 `PLUGINS_UNEXPECTED_001` 失败（`plugins.process.failed`，`reason` 为 `the response payload is not valid JSON text at '<路径>'`），载荷不交给调用方；实例不重建、仍是 `Ready`（ADR-0315）。`payload` 为空表示没有响应体，不做这道检查，开了幂等的调用照常记录、回放出同样的空载荷（ADR-0318） |
 | 导入 `invoke`、`publish` 的请求不是合法的 JSON 消息（同上，非法 UTF-8 也算） | 以 `PLUGINS_VALIDATION_005`（`plugins.module.invalid`）应答，实例不变 |
 | 调用超过截止时间 | 调用方得到 `KERNEL_TIMEOUT_001`，实例按崩溃重建 |
 | 回调嵌套超过 8 层、客体内存分配失败 | `PLUGINS_UNAVAILABLE_002` |

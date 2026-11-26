@@ -79,7 +79,7 @@ builder.AddXiHan(xihan => xihan
 | `MessageEnvelope` | CloudEvents 信封：`Id`、`Source`、`Type`（必填）、`Time`、`Subject`、`DataSchema`（CloudEvents 的 `dataschema`，`null` 是没有，空串或只有空白抛 `ArgumentException`，不核对 URI 语法，ADR-0305）、`DataContentType`（缺省 `application/json`）、`Data`、`Extensions`；`WithExtension`、`Extension`、`IsJsonData` |
 | `EnvelopeExtensions` | 扩展属性名常量 `Tenant`（`xihantenant`）、`Principal`（`xihanprincipal`）、`Correlation`（`xihancorrelation`）、`Locale`（`xihanlocale`）、`TraceParent`、`PartitionKey`（`xihankey`）；扩展与 Baggage 键的对应 `BaggageMappings`；保留名 `ReservedNames`（CloudEvents 的规范属性名与结构化 JSON 的成员名，按序数升序的只读列表）；`IsValidName`（小写字母与数字、1 到 20 个字符，且不是保留名）。`MessageEnvelope` 的 `Extensions` 与 `WithExtension` 遇到保留名抛 `ArgumentException` |
 | `TopicName` | 主题文法 `^[a-z0-9][a-z0-9._-]{0,127}$`；`IsValid`、`Validate`、`MaxLength`（128） |
-| `CloudEventsFormat` | 结构化 JSON 编解码：`Encode`、`Decode`（返回 `Result<MessageEnvelope>`）、`ContentType`。`Decode` 先过内核 `JsonText.FindProblem` 的共同检查，再按 RFC-0009「信封」读，规则见下文「行为与限制」；`Encode` 写完自己再过一遍检查，读不回来时抛出 `MESSAGING_VALIDATION_002`，字符串属性有孤立的代理项时写之前就抛出 |
+| `CloudEventsFormat` | 结构化 JSON 编解码：`Encode`、`Decode`（返回 `Result<MessageEnvelope>`）、`ContentType`。`Decode` 先过内核 `JsonText.FindProblem` 的共同检查，再按 RFC-0009「信封」读，规则见下文「行为与限制」；`Encode` 写完自己再过一遍检查，读不回来时抛出 `MESSAGING_VALIDATION_002`，字符串属性有孤立的代理项时写之前就抛出；CloudEvents 的 binary 模式不经 `Encode`，写头之前做同样的属性核对 |
 | `IMessagePublisher`、`DirectPublisher` | 应用发布入口（作用域服务）：`PublishAsync`、`PublishManyAsync`，主题不合法逐项返回 `MESSAGING_VALIDATION_001`；在调用内发布时从当前调用补齐缺失的扩展 |
 | `IMessageBroker` | Provider 实现的传输：发布、`StartAsync(subscriptions, dispatch, ct)`（每个订阅一份消费）、`StopAsync` |
 | `IMessageReplayer` | 流能力：`ReplayAsync(topic, since, ct)` 按时刻重放 |

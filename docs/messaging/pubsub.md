@@ -73,7 +73,7 @@ builder.AddXiHan(xihan => xihan
 - `dataschema` 是规范属性，读成 `DataSchema`、不进扩展属性，写出时有则写成同名的字符串成员、没有则不写；它是空串或只有空白（`messaging.envelope.invalid`）、不是字符串（`messaging.envelope.invalid_json`，`reason` 为 `$.dataschema`）时信封不合法。
 - 规范属性之外的顶层成员是扩展属性，名字要合上表的规则。
 
-不合这些的信封是 `MESSAGING_VALIDATION_002`，按无法解码的消息处理：竞争订阅原样进死信，广播订阅丢弃。自己写结构化 JSON 或 `ce-time` 头的发送方用带偏移的写法：JavaScript 的 `Date.prototype.toISOString()`、Go 的 `time.RFC3339Nano`、Java 的 `Instant.toString()`、.NET 带偏移的 `ToString("O")` 都合文法。`Encode` 写完之后自己再过一遍读取的检查，写不出读得回来的文档（JSON 数据里有重复的成员或孤立的代理项转义、数据嵌套得让文档超过 64 层）时抛出携带 `MESSAGING_VALIDATION_002` 的 `FrameworkException`，发布的调用方当场得到。规范属性（`id`、`source`、`type`、`subject`、`dataschema`、`datacontenttype`）与扩展属性的字符串值里有孤立的代理项时，`Encode` 在写出之前同样抛出这个异常，消息带属性名，不再照 JSON 写出器的缺省写成 U+FFFD（RFC-0001「写出与转交」，ADR-0315）。内存代理不经线上编码，这类数据在它上面照样能发，换成别的代理或接上发件箱时在发布处抛出。
+不合这些的信封是 `MESSAGING_VALIDATION_002`，按无法解码的消息处理：竞争订阅原样进死信，广播订阅丢弃。自己写结构化 JSON 或 `ce-time` 头的发送方用带偏移的写法：JavaScript 的 `Date.prototype.toISOString()`、Go 的 `time.RFC3339Nano`、Java 的 `Instant.toString()`、.NET 带偏移的 `ToString("O")` 都合文法。`Encode` 写完之后自己再过一遍读取的检查，写不出读得回来的文档（JSON 数据里有重复的成员或孤立的代理项转义、数据嵌套得让文档超过 64 层）时抛出携带 `MESSAGING_VALIDATION_002` 的 `FrameworkException`，发布的调用方当场得到。规范属性（`id`、`source`、`type`、`subject`、`dataschema`、`datacontenttype`）与扩展属性的字符串值里有孤立的代理项时，`Encode` 在写出之前同样抛出这个异常，消息带属性名，不再照 JSON 写出器的缺省写成 U+FFFD（RFC-0001「写出与转交」，ADR-0315）；CloudEvents Webhook 以 binary 模式（缺省）发布时不经 `Encode`，写头之前做同样的核对，见 [CloudEvents](/protocols/cloudevents)（ADR-0318）。内存代理不经线上编码，这类数据在它上面照样能发，换成别的代理或接上发件箱时在发布处抛出。
 
 ## 最小示例
 

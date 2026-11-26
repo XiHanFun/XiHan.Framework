@@ -188,7 +188,8 @@ Wasm 插件清单 `contributes.pipeline` 的每一项在对应阶段插入一个
 | --- | --- |
 | 陷阱、导出返回 `0` | 插件 `Failed`（`PLUGINS_UNEXPECTED_002`，细节只写陷阱种类，原文进日志），按 1 秒起翻倍、上限 60 秒退避重建实例，重建后的握手声明必须与首次一致 |
 | 导出的响应不是合法的 JSON 消息（含非法的 UTF-8 字节序列） | 调用方得到 `PLUGINS_UNEXPECTED_001`（`reason` 为 `the response is not a valid JSON message`），实例按崩溃重建 |
-| 响应是合法的消息，成功应答的 `payload` 不为空却过不了 JSON 文本的共同检查（语法、64 层、合法的 UTF-8 与 Unicode、重复成员） | 这次调用 `PLUGINS_UNEXPECTED_001`（`reason` 为 `the response payload is not valid JSON text at '<路径>'`），载荷不交给调用方；实例不重建、仍是 `Ready`，与进程外插件同一处核对（ADR-0315） |
+| 响应是合法的消息，成功应答的 `payload` 不为空却过不了 JSON 文本的共同检查（语法、64 层、合法的 UTF-8 与 Unicode、重复成员） | 这次调用 `PLUGINS_UNEXPECTED_001`（`reason` 为 `the response payload is not valid JSON text at '<路径>'`），载荷不交给调用方；实例不重建、仍是 `Ready`，与进程外插件同一处核对（ADR-0315）。`payload` 为空表示没有响应体，不做这道检查，开了幂等的调用照常记录、回放出同样的空载荷；只有空白的不为空，照样检查（ADR-0318） |
+| 插件一侧的类型化响应写不成合法的 JSON 文本（字符串有孤立的代理项，或在以字节存放字符串的语言里不是合法的 UTF-8，浮点成员是 NaN） | 插件一侧本地失败：`Status.error` 为 `KERNEL_UNEXPECTED_001` + `kernel.invocation.unhandled_exception`（没有参数、不带 `inner`），`payload` 为空，不写成 U+FFFD 或转义交给宿主；宿主照常读入这个错误，实例不变（`plugin/invocation.md` §1，ADR-0318） |
 | 导入 `invoke`、`publish` 的请求不是合法的 JSON 消息（含非法的 UTF-8 字节序列） | 以 `PLUGINS_VALIDATION_005` 应答，实例不变 |
 | 调用超过截止时间 | 调用方得到 `KERNEL_TIMEOUT_001`，实例按崩溃重建 |
 | 内存超过上限 | `memory.grow` 失败或陷阱，按崩溃重建 |

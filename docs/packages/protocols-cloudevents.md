@@ -21,7 +21,7 @@ CloudEvents 协议适配器，提供 `protocols.cloudevents@1`：消息子系统
 
 入站：`MapXiHanCloudEvents()` 映射 `POST /events`，按 `Content-Type` 与 `ce-specversion` 头识别内容模式，把事件读成 `MessageEnvelope`，事件类型经 `Topics` 映射到主题（没有映射时类型本身须是合法主题）。`Inbound = Dispatch`（缺省）时在请求内经 `MessageDispatcher` 派发给本实例里主题的处理器（竞争订阅与广播订阅各一次投递，先竞争后广播），处理器的结果就是响应，要让广播订阅到达每个实例用 `Publish`；`Inbound = Publish` 时发布到消息代理后立即 202。扩展属性 `xihantenant`、`xihanprincipal`、`xihancorrelation`、`xihanlocale` 与 `traceparent` 在派发时进入调用上下文。入站端点经过 `UseXiHan()`，请求凭据在外层认证。框架不给端点加任何要求，权限要由宿主自己加（`MapXiHanCloudEvents().RequireXiHanPermission(...)`）：扩展属性里的租户与主体是发送方给的，能调端点的人就能选租户（ADR-0121）。
 
-出站：`CloudEventsWebhookPublisher` 实现 `IMessagePublisher`，把信封 POST 到 `Webhooks:<主题>`，模式为 `Binary`（缺省）或 `Structured`，批量时用 batch 内容模式一次 POST。它只按具体类型登记，不替换消息代理的发布者。信封按原样发出：它不像 `DirectPublisher`、`OutboxPublisher` 那样从当前调用补齐 `traceparent`、租户、主体、关联与区域扩展，租户 ID、主体 ID 等内部标识不会外推给接收方。这是定下的规则（ADR-0074）：接收方是第三方，内部标识推出去会暴露内部结构与身份、让第三方依赖内部 ID，追踪链是否跨出组织边界也由调用方决定；要让接收方拿到的扩展由调用方显式写进信封。HTTP 层同理（ADR-0083）：启用追踪时 .NET 的 HttpClient 本会按当前 Activity 写 W3C 的 `traceparent`、`tracestate` 与 `baggage` 头（与信封扩展无关），Webhook 的命名客户端 `xihan.protocols.cloudevents` 缺省不写这些头；要把追踪链接到接收方，设 `XiHan:Protocols:CloudEvents:PropagateTraceContext` 为 `true`，按 .NET 的全局传播器写。这只作用于 Webhook 的命名客户端（主处理器 `SocketsHttpHandler` 的 `ActivityHeadersPropagator`），不改进程全局的传播，出站请求的客户端跨度照常记录。调连接参数用 `UseSocketsHttpHandler` 配置同一个处理器，缺省保留；整个替换主处理器（`ConfigurePrimaryHttpMessageHandler`）则由替换后的处理器决定是否传播。
+出站：`CloudEventsWebhookPublisher` 实现 `IMessagePublisher`，把信封 POST 到 `Webhooks:<主题>`，模式为 `Binary`（缺省）或 `Structured`，批量时用 batch 内容模式一次 POST。写不出的信封在发出之前拒绝：字符串属性（含扩展属性的值）有孤立的代理项时，binary 与 structured 一样抛出携带 `MESSAGING_VALIDATION_002` 的 `FrameworkException`、消息带属性名，binary 在写任何头之前就核对，不编成 U+FFFD 照发（ADR-0318）。它只按具体类型登记，不替换消息代理的发布者。信封按原样发出：它不像 `DirectPublisher`、`OutboxPublisher` 那样从当前调用补齐 `traceparent`、租户、主体、关联与区域扩展，租户 ID、主体 ID 等内部标识不会外推给接收方。这是定下的规则（ADR-0074）：接收方是第三方，内部标识推出去会暴露内部结构与身份、让第三方依赖内部 ID，追踪链是否跨出组织边界也由调用方决定；要让接收方拿到的扩展由调用方显式写进信封。HTTP 层同理（ADR-0083）：启用追踪时 .NET 的 HttpClient 本会按当前 Activity 写 W3C 的 `traceparent`、`tracestate` 与 `baggage` 头（与信封扩展无关），Webhook 的命名客户端 `xihan.protocols.cloudevents` 缺省不写这些头；要把追踪链接到接收方，设 `XiHan:Protocols:CloudEvents:PropagateTraceContext` 为 `true`，按 .NET 的全局传播器写。这只作用于 Webhook 的命名客户端（主处理器 `SocketsHttpHandler` 的 `ActivityHeadersPropagator`），不改进程全局的传播，出站请求的客户端跨度照常记录。调连接参数用 `UseSocketsHttpHandler` 配置同一个处理器，缺省保留；整个替换主处理器（`ConfigurePrimaryHttpMessageHandler`）则由替换后的处理器决定是否传播。
 
 ## 何时使用
 
@@ -83,7 +83,7 @@ app.MapXiHanCloudEvents();   // POST /events
 | `CloudEventsProtocolFeature` | 特性入口 |
 | `CloudEventsProtocolOptions` | `Inbound`、`Outbound`、`Topics`、`Webhooks`；`TopicFor(type)`；`FromConfiguration` |
 | `Inbound.CloudEventsEndpointRouteBuilderExtensions` | `MapXiHanCloudEvents(pattern)`，缺省 `/events` |
-| `Inbound.CloudEventsHttpBinding` | HTTP 绑定：`ModeOf`、`ReadAsync`、`Write`、`WriteBatch`、`EncodeHeaderValue` / `DecodeHeaderValue`；常量 `StructuredContentType`、`BatchContentType`、`HeaderPrefix` = `ce-` |
+| `Inbound.CloudEventsHttpBinding` | HTTP 绑定：`ModeOf`、`ReadAsync`、`Write`、`WriteBatch`、`EncodeHeaderValue` / `DecodeHeaderValue`（`EncodeHeaderValue` 按 UTF-8 字节百分号编码，遇孤立的代理项抛 `ArgumentException`，本来就是 U+FFFD 的字符照常编成 `%EF%BF%BD`）；常量 `StructuredContentType`、`BatchContentType`、`HeaderPrefix` = `ce-` |
 | `Inbound.CloudEventsContentMode` | `Binary`、`Structured`、`Batch` |
 | `Inbound.CloudEventsInboundMode` | `Dispatch`、`Publish` |
 | `Outbound.CloudEventsWebhookPublisher` | 出站发布者：`PublishAsync`、`PublishManyAsync`；常量 `HttpClientName` = `xihan.protocols.cloudevents` |

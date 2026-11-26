@@ -59,7 +59,7 @@ return await builder.Build().RunXiHanCommandLineAsync(args);
 | `Runtime.CommandLineRunner` | 命令表与分发 |
 | `CommandLineExitCodes` | 退出码常量与 `For(error)` |
 | `CommandLineErrors` | `HOSTING_VALIDATION_001`、`HOSTING_NOTFOUND_001`、`HOSTING_NOTFOUND_002` |
-| `CommandLineMessages` | 本包的消息键常量（`hosting.commandline.*`），含调用弃用的操作时 stderr 上那一句的 `OperationDeprecated` |
+| `CommandLineMessages` | 本包的消息键常量（`hosting.commandline.*`），含调用弃用的操作时 stderr 上那一句的 `OperationDeprecated`、字段选项写不成 JSON 载荷的 `InvokeFieldInvalid` |
 
 ## 使用示例
 
@@ -74,7 +74,7 @@ XIHAN_AUTHORIZATION="ApiKey dev-alice-key" dotnet run --project framework/sample
 ## 行为与限制
 
 - 解析：第一个非选项记号是命令名；`--name value`、`--name=value`、无值的 `--flag` 记为 `true`；`--` 之后全是位置参数；载荷按 `--json`（须为对象，文本严格编码成 UTF-8，有孤立的代理项是用法错误、退出码 64）> `--data <file>`（可写 `@file`）> 字段选项的顺序取，字段选项重复时成数组。
-- 字段选项按操作的请求 Schema 写成对应类型（布尔、整数、浮点、数组），转换不了的值留字符串，由 Validate 阶段报 `KERNEL_VALIDATION_003`；选项的名字或值有孤立的代理项时写之前就报用法错误（`HOSTING_VALIDATION_001`，退出码 64，消息键沿用 `hosting.commandline.invoke_json_invalid`），不发起调用、不写成 U+FFFD（ADR-0315）；`--json` 与 `--data` 的载荷原样进入。操作没有 Schema 时值都是字符串，请求类型要从字符串读数字，序列化上下文需要 `NumberHandling = JsonNumberHandling.AllowReadingFromString`。
+- 字段选项按操作的请求 Schema 写成对应类型（布尔、整数、浮点、数组），转换不了的值留字符串，由 Validate 阶段报 `KERNEL_VALIDATION_003`；选项的名字或值有孤立的代理项时写之前就报用法错误（`HOSTING_VALIDATION_001`，退出码 64，消息键 `hosting.commandline.invoke_field_invalid`，即 `CommandLineMessages.InvokeFieldInvalid`，参数 `reason`），不发起调用、不写成 U+FFFD（ADR-0315、ADR-0318）；`--json` 与 `--data` 的载荷原样进入。操作没有 Schema 时值都是字符串，请求类型要从字符串读数字，序列化上下文需要 `NumberHandling = JsonNumberHandling.AllowReadingFromString`。
 - 保留选项 `json`、`data`、`authorization`、`tenant`、`correlation`、`locale`、`timeout`、`help` 不进载荷。
 - `--authorization` 与 `XIHAN_AUTHORIZATION` 只作用于 `invoke`；`mcp` 命令的调用以匿名主体执行。
 - 命令名重复时 `CommandLineRunner` 构造失败（`ArgumentException`）。
