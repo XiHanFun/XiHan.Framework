@@ -11,6 +11,7 @@ namespace XiHan.Framework.Workflow.Database.Tests;
 /// <remarks>
 /// 环境变量 <c>XIHAN_TEST_ORACLE</c>，未设置即跳过（<see cref="OracleSchema"/>），由 CI 的 oracle 分片运行
 /// </remarks>
+[Collection(nameof(OracleGroup))]
 public sealed class OracleWorkflowStoreConformanceTests : WorkflowStoreConformance
 {
     /// <inheritdoc />
