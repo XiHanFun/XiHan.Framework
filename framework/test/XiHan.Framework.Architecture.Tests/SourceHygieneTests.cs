@@ -10,7 +10,7 @@ namespace XiHan.Framework.Architecture.Tests;
 /// 源码门禁
 /// </summary>
 /// <remarks>
-/// 版权头、XML 文档 <c>&lt;summary&gt;</c> 的三行写法与一句话写法、Ring 0/1 零反射、每个正式包的必备文件
+/// 版权头、XML 文档 <c>&lt;summary&gt;</c> 的三行写法与一句话写法、Ring 0/1 零反射、手写的源码不写 unsafe、每个正式包的必备文件
 /// </remarks>
 public sealed partial class SourceHygieneTests
 {
@@ -179,6 +179,64 @@ public sealed partial class SourceHygieneTests
     }
 
     [Fact]
+    public void Sources_DoNotWriteUnsafeCode()
+    {
+        var failures = new List<string>();
+
+        // 内核不用 unsafe（ADR-0318 修订），开了 AllowUnsafeBlocks 的包也只为 LibraryImport 的生成代码：手写的源码一处都不写，生成代码在构建输出里、不在扫描之内
+        // 先去掉字符串与字符字面量、再截掉行注释才找关键字：CSP 的 'unsafe-inline' 与讲别的语言的注释不算
+        foreach (var directory in CodeRoots)
+        {
+            foreach (var file in Workspace.SourceFiles(directory))
+            {
+                var number = 0;
+                foreach (var line in File.ReadLines(file))
+                {
+                    number++;
+                    var code = Literal().Replace(line, string.Empty);
+                    var comment = code.IndexOf("//", StringComparison.Ordinal);
+                    if (UnsafeKeyword().IsMatch(comment >= 0 ? code[..comment] : code))
+                    {
+                        failures.Add($"'{Workspace.Relative(file)}:{number}' writes unsafe code.");
+                    }
+                }
+            }
+        }
+
+        Assert.True(failures.Count == 0, string.Join(Environment.NewLine, failures));
+    }
+
+    [Fact]
+    public void AllowUnsafeBlocks_IsOnlyForLibraryImportOutsideRings0And1()
+    {
+        var failures = new List<string>();
+
+        // 公共的 props / targets 一律不开，开了就落到下面每个项目；项目开了，源码里得真有 [LibraryImport]（生成代码要它），Ring 0/1 不调本机库、不开
+        var shared = CodeRoots.SelectMany(static d => Directory.EnumerateFiles(d, "Directory.Build.*", SearchOption.AllDirectories))
+            .Concat(Directory.EnumerateFiles(Workspace.Root, "Directory.Build.*", SearchOption.TopDirectoryOnly));
+        foreach (var file in shared.Where(AllowsUnsafeBlocks))
+        {
+            failures.Add($"'{Workspace.Relative(file)}' must not enable 'AllowUnsafeBlocks'; enable it in the project that uses 'LibraryImport'.");
+        }
+
+        foreach (var file in CodeRoots.SelectMany(Workspace.ProjectFiles).Where(AllowsUnsafeBlocks))
+        {
+            var directory = Path.GetDirectoryName(file)!;
+            var source = Workspace.SourceProjects.FirstOrDefault(p => string.Equals(p.ProjectPath, file, StringComparison.OrdinalIgnoreCase));
+            if (source is not null && PackageGrammar.Ring(source.PackageId) <= 1)
+            {
+                failures.Add($"'{source.PackageId}' (ring {PackageGrammar.Ring(source.PackageId)}) must not enable 'AllowUnsafeBlocks'.");
+            }
+            else if (!Workspace.SourceFiles(directory).Any(static f => File.ReadAllText(f).Contains("[LibraryImport(", StringComparison.Ordinal)))
+            {
+                failures.Add($"'{Workspace.Relative(file)}' enables 'AllowUnsafeBlocks' without any 'LibraryImport'.");
+            }
+        }
+
+        Assert.True(failures.Count == 0, string.Join(Environment.NewLine, failures));
+    }
+
+    [Fact]
     public void EverySourceProject_HasReadmeAndPublicApiFiles()
     {
         var failures = new List<string>();
@@ -205,6 +263,21 @@ public sealed partial class SourceHygieneTests
     /// </remarks>
     private static IEnumerable<string> SummaryRoots
         => new[] { Workspace.SourceRoot, Workspace.TestRoot, Path.Combine(Workspace.Root, "samples"), Path.Combine(Workspace.Root, "benchmarks") }.Where(Directory.Exists);
+
+    /// <summary>
+    /// 检查 unsafe 的目录
+    /// </summary>
+    /// <remarks>
+    /// 写 summary 的目录再加实验包
+    /// </remarks>
+    private static IEnumerable<string> CodeRoots
+        => SummaryRoots.Append(Path.Combine(Workspace.Root, "incubator")).Where(Directory.Exists);
+
+    /// <summary>
+    /// 项目文件或公共 props 是否开了 <c>AllowUnsafeBlocks</c>
+    /// </summary>
+    private static bool AllowsUnsafeBlocks(string path)
+        => Workspace.LoadXml(path).Descendants("AllowUnsafeBlocks").Any(static e => string.Equals(e.Value.Trim(), "true", StringComparison.OrdinalIgnoreCase));
 
     /// <summary>
     /// summary 的纯文本
@@ -265,4 +338,16 @@ public sealed partial class SourceHygieneTests
     /// </summary>
     [GeneratedRegex(@"\s+")]
     private static partial Regex Whitespace();
+
+    /// <summary>
+    /// 一行里的字符串与字符字面量
+    /// </summary>
+    [GeneratedRegex(@"""(?:[^""\\]|\\.)*""|'(?:[^'\\]|\\.)*'")]
+    private static partial Regex Literal();
+
+    /// <summary>
+    /// C# 的 <c>unsafe</c> 关键字
+    /// </summary>
+    [GeneratedRegex(@"\bunsafe\b")]
+    private static partial Regex UnsafeKeyword();
 }

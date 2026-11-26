@@ -2,7 +2,10 @@
 // See the LICENSE file in the project root for full license text.
 
 using System.Text;
+using System.Text.Encodings.Web;
 using System.Text.Json;
+using System.Text.Json.Nodes;
+using System.Text.Unicode;
 using Microsoft.Extensions.DependencyInjection;
 using XiHan.Framework.Kernel.Operations;
 using XiHan.Framework.Kernel.Tests.Fixtures;
@@ -19,9 +22,34 @@ namespace XiHan.Framework.Kernel.Tests.Operations;
 public sealed class ResponseEncodingTests
 {
     /// <summary>
-    /// 写不出的形状：孤立的代理项在值、字典的键与数组元素里
+    /// 写不出的形状：孤立的代理项在值、键、数组元素与节点里，或字节不是合法的 UTF-8
     /// </summary>
-    public static TheoryData<string> Unwritable => new() { "value-high", "value-low", "reversed", "key", "item" };
+    public static TheoryData<string> Unwritable => new() { "value-high", "value-low", "reversed", "key", "item", "node-value", "node-key", "utf8" };
+
+    /// <summary>
+    /// 序列化上下文可用的内置编码器
+    /// </summary>
+    /// <remarks>
+    /// 缺省的只转义 ASCII 以外的字符，宽松的与放开全部区段的把本来就是 U+FFFD 的字符原样写出，放开部分区段的介于两者之间
+    /// </remarks>
+    public static TheoryData<string> BuiltInEncoders => new() { "default", "relaxed", "all-ranges", "cjk-ranges" };
+
+    /// <summary>
+    /// 按名字取内置编码器
+    /// </summary>
+    private static JavaScriptEncoder? EncoderOf(string name) => name switch
+    {
+        "relaxed" => JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
+        "all-ranges" => JavaScriptEncoder.Create(UnicodeRanges.All),
+        "cjk-ranges" => JavaScriptEncoder.Create(UnicodeRanges.BasicLatin, UnicodeRanges.CjkUnifiedIdeographs),
+        _ => null,
+    };
+
+    /// <summary>
+    /// 用给定的响应序列化元数据建描述
+    /// </summary>
+    private static OperationDescriptor<TextsOperation, EchoRequest, TextsResponse> DescriptorOf(TextsJsonContext context)
+        => new(new(TextsOperation.Id), "xihan.test.texts", EchoJsonContext.Default.EchoRequest, context.TextsResponse);
 
     /// <summary>
     /// 启动只装配 <see cref="TextsFeature"/> 的应用
@@ -80,11 +108,31 @@ public sealed class ResponseEncodingTests
     {
         // 序列化上下文的选项（这里是缩进）照旧生效：严格的写出只多一道核对
         var indented = new TextsJsonContext(new JsonSerializerOptions { WriteIndented = true });
-        var descriptor = new OperationDescriptor<TextsOperation, EchoRequest, TextsResponse>(new(TextsOperation.Id), "xihan.test.texts", EchoJsonContext.Default.EchoRequest, indented.TextsResponse);
+        var descriptor = DescriptorOf(indented);
         var valid = TextsOperation.Render("valid");
 
         Assert.Equal(JsonSerializer.SerializeToUtf8Bytes(valid, indented.TextsResponse), descriptor.EncodeResponse(valid).ToArray());
         Assert.Throws<ArgumentException>(() => descriptor.EncodeResponse(TextsOperation.Render(shape)));
+    }
+
+    [Theory]
+    [MemberData(nameof(BuiltInEncoders))]
+    public void EncodeResponse_WithABuiltInEncoder_WritesTheSerializerBytes_AndRefusesEveryUnwritableShape(string encoder)
+    {
+        // 合法的响应（每一处都有本来就是 U+FFFD 的字符，以及完全没有它的）写出的字节与 SerializeToUtf8Bytes 逐字节相同；编码器是哪一个，写不出的形状都拦得下
+        var context = new TextsJsonContext(new JsonSerializerOptions { Encoder = EncoderOf(encoder) });
+        var descriptor = DescriptorOf(context);
+        var plain = new TextsResponse("订单 <a> \"q\"", new Dictionary<string, string>(StringComparer.Ordinal) { ["键"] = "值" }, ["a"], new JsonObject { ["k"] = "v" }, new Utf8Text("ok"u8.ToArray()));
+
+        foreach (var valid in new[] { TextsOperation.Render("valid"), plain })
+        {
+            Assert.Equal(JsonSerializer.SerializeToUtf8Bytes(valid, context.TextsResponse), descriptor.EncodeResponse(valid).ToArray());
+        }
+
+        foreach (var shape in Unwritable)
+        {
+            Assert.Throws<ArgumentException>(() => descriptor.EncodeResponse(TextsOperation.Render(shape.Data)));
+        }
     }
 
     [Fact]

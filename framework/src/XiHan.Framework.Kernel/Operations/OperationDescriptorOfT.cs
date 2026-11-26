@@ -30,12 +30,9 @@ public sealed class OperationDescriptor<TOperation, TRequest, TResponse> : Opera
     private static readonly byte[] _emptyObject = "{}"u8.ToArray();
 
     /// <summary>
-    /// 序列化器没有设置深度上限时的缺省值
+    /// 响应写不出时异常的消息
     /// </summary>
-    /// <remarks>
-    /// 与 System.Text.Json 的缺省相同；写出器自己的缺省是 1000
-    /// </remarks>
-    private const int DefaultMaxDepth = 64;
+    private const string UnwritableMessage = "The value has a string with a lone surrogate or invalid UTF-8, which cannot be written as JSON text.";
 
     /// <summary>
     /// 请求类型的序列化元数据
@@ -46,14 +43,6 @@ public sealed class OperationDescriptor<TOperation, TRequest, TResponse> : Opera
     /// 响应类型的序列化元数据
     /// </summary>
     private readonly JsonTypeInfo<TResponse> _responseInfo;
-
-    /// <summary>
-    /// 写出响应的写出器选项
-    /// </summary>
-    /// <remarks>
-    /// 缩进、换行与深度取响应类型的序列化选项，编码器换成包着它自己的编码器的 <see cref="StrictJsonEncoder"/>：写出的字节与序列化器自己写的相同，只多一道字符串的核对
-    /// </remarks>
-    private readonly JsonWriterOptions _responseWriterOptions;
 
     /// <summary>
     /// 创建描述
@@ -83,7 +72,6 @@ public sealed class OperationDescriptor<TOperation, TRequest, TResponse> : Opera
     {
         _requestInfo = requestInfo ?? throw new ArgumentNullException(nameof(requestInfo));
         _responseInfo = responseInfo ?? throw new ArgumentNullException(nameof(responseInfo));
-        _responseWriterOptions = WriterOptionsOf(responseInfo.Options);
     }
 
     /// <inheritdoc />
@@ -128,18 +116,31 @@ public sealed class OperationDescriptor<TOperation, TRequest, TResponse> : Opera
 
     /// <inheritdoc />
     /// <remarks>
-    /// 写不成合法的 JSON 文本即抛出：响应里的字符串有孤立的代理项时是 <see cref="ArgumentException"/>，不像 System.Text.Json 的缺省那样写成转义的 U+FFFD（RFC-0011 规则 10「编码」，ADR-0318），与浮点成员是 NaN 时一样由 XGI 入口按未处理的异常结束
+    /// 写不成合法的 JSON 文本即抛出：响应里的字符串有孤立的代理项（以 UTF-8 交来的不是合法的 UTF-8）时是 <see cref="ArgumentException"/>，不像 System.Text.Json 的缺省那样写成转义的 U+FFFD（RFC-0011 规则 10「编码」，ADR-0318），与浮点成员是 NaN 时一样由 XGI 入口按未处理的异常结束。
+    /// 交出的字节就是 <see cref="JsonSerializer.SerializeToUtf8Bytes{TValue}(TValue, JsonTypeInfo{TValue})"/> 的结果；文本里有 <c>\uFFFD</c> 或序列化上下文用了自定义的编码器时，另写一遍只为核对
     /// </remarks>
     public override ReadOnlyMemory<byte> EncodeResponse(object response)
     {
         ArgumentNullException.ThrowIfNull(response);
-        var buffer = new ArrayBufferWriter<byte>();
-        using (var writer = new Utf8JsonWriter(buffer, _responseWriterOptions))
+        var value = (TResponse)response;
+        var payload = JsonSerializer.SerializeToUtf8Bytes(value, _responseInfo);
+        var options = _responseInfo.Options;
+
+        // 写出器把孤立的代理项与非法的 UTF-8 换成 U+FFFD 照写，内置的编码器总把换出来的写成 \uFFFD：没有这个转义就没有被换过的字符，多数响应到这里就完
+        // 自定义的编码器不在此列（实测有的把字符串截断、不留痕迹），总要核对
+        if (payload.AsSpan().IndexOf("\\uFFFD"u8) < 0 && (options.Encoder is null || options.Encoder.GetType() == JavaScriptEncoder.Default.GetType()))
         {
-            JsonSerializer.Serialize(writer, (TResponse)response, _responseInfo);
+            return payload;
         }
 
-        return buffer.WrittenMemory;
+        // 换不转义非 ASCII 的内置编码器再写一遍：本来就是 U+FFFD 的字符原样写成 EF BF BD，换出来的仍是 \uFFFD，两者分得开；这一遍只看不交，不会发给调用方
+        var check = new ArrayBufferWriter<byte>(payload.Length);
+        using (var writer = new Utf8JsonWriter(check, new JsonWriterOptions { Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping, MaxDepth = options.MaxDepth, SkipValidation = true }))
+        {
+            JsonSerializer.Serialize(writer, value, _responseInfo);
+        }
+
+        return check.WrittenSpan.IndexOf("\\uFFFD"u8) < 0 ? payload : throw new ArgumentException(UnwritableMessage);
     }
 
     /// <inheritdoc />
@@ -158,22 +159,6 @@ public sealed class OperationDescriptor<TOperation, TRequest, TResponse> : Opera
         var result = await operation.HandleAsync(typed, context).ConfigureAwait(false);
         return result.TryGetValue(out var value) ? Result.Success<object>(value!) : Result.Failure<object>(result.Error!);
     }
-
-    /// <summary>
-    /// 按序列化选项建写出器选项
-    /// </summary>
-    /// <remarks>
-    /// 照序列化器自己建写出器时取的那几项；上下文没有设置编码器时包住 <see cref="JavaScriptEncoder.Default"/>，与缺省写出的转义相同
-    /// </remarks>
-    private static JsonWriterOptions WriterOptionsOf(JsonSerializerOptions options) => new()
-    {
-        Encoder = new StrictJsonEncoder(options.Encoder ?? JavaScriptEncoder.Default),
-        Indented = options.WriteIndented,
-        IndentCharacter = options.IndentCharacter,
-        IndentSize = options.IndentSize,
-        NewLine = options.NewLine,
-        MaxDepth = options.MaxDepth == 0 ? DefaultMaxDepth : options.MaxDepth,
-    };
 
     /// <summary>
     /// 构造载荷不合法的失败结果

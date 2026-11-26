@@ -6,8 +6,6 @@
     <PackageTags>xihan;framework;kernel</PackageTags>
     <!-- Ring 1：分析器据此禁止反射 -->
     <XiHanRing>1</XiHanRing>
-    <!-- StrictJsonEncoder 覆写 TextEncoder 带指针参数的抽象成员，只能在 unsafe 上下文里；源码只把指针包成 span 或原样转交，不做指针运算（ADR-0318） -->
-    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
 
   <ItemGroup>

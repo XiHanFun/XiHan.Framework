@@ -2,7 +2,7 @@
 
 ## 状态
 
-已采纳（规范 `protocol/cloudevents.md`「出站」、RFC-0009「信封」的写出、RFC-0001「写出与转交」（新增一条、改第三条与末句）、RFC-0011 规则 2 的「载荷的文本」与规则 10 的「编码」、`plugin/invocation.md` §1、RFC-0006「幂等」第 2 与第 4 条、`protocol/commandline.md` 的字段选项，以及 RFC-0001、RFC-0006、RFC-0009、RFC-0011、RFC-0017 的状态行已改；`Protocols.CloudEvents` 的 `CloudEventsHttpBinding` 在 binary 模式写头之前核对，`EncodeHeaderValue` 拒收孤立的代理项；内核新增 internal 的 `StrictJsonEncoder`，`OperationDescriptor<TOperation, TRequest, TResponse>.EncodeResponse` 经它写出；`Hosting.CommandLine` 新增消息键 `hosting.commandline.invoke_field_invalid`；`Caching.Abstractions` 的幂等记录记下没有响应体；ADR-0315「背景」第 1 条关于 TypeScript 的括注更正；Go、TypeScript、Python SDK 的同类改动由 SDK 一侧跟进；向量、错误码与配置键不变）。
+已采纳（规范 `protocol/cloudevents.md`「出站」、RFC-0009「信封」的写出、RFC-0001「写出与转交」（新增一条、改第三条与末句）、RFC-0011 规则 2 的「载荷的文本」与规则 10 的「编码」、`plugin/invocation.md` §1、RFC-0006「幂等」第 2 与第 4 条、`protocol/commandline.md` 的字段选项，以及 RFC-0001、RFC-0006、RFC-0009、RFC-0011、RFC-0017 的状态行已改；`Protocols.CloudEvents` 的 `CloudEventsHttpBinding` 在 binary 模式写头之前核对，`EncodeHeaderValue` 拒收孤立的代理项；内核新增 internal 的 `StrictJsonEncoder`，`OperationDescriptor<TOperation, TRequest, TResponse>.EncodeResponse` 经它写出（同日修订：内核不用 unsafe，`StrictJsonEncoder` 删掉，改为写出之后核对，见文末「修订（2026-11-26）」）；`Hosting.CommandLine` 新增消息键 `hosting.commandline.invoke_field_invalid`；`Caching.Abstractions` 的幂等记录记下没有响应体；ADR-0315「背景」第 1 条关于 TypeScript 的括注更正；Go、TypeScript、Python SDK 的同类改动由 SDK 一侧跟进；向量、错误码与配置键不变）。
 
 ## 日期
 
@@ -82,7 +82,7 @@ binary 模式：
 
 1. **binary 模式**（`protocol/cloudevents.md`「出站」，RFC-0009「信封」的写出）：写任何头之前核对与结构化写出相同的属性，有孤立的代理项即抛出携带 `MESSAGING_VALIDATION_002` 的异常、消息带属性名，请求不发出；`EncodeHeaderValue` 遇孤立的代理项抛出 `ArgumentException`。
 2. **类型化应答**（RFC-0011 规则 2 与规则 10 的「编码」，RFC-0001「写出与转交」新增一条，`plugin/invocation.md` §1）：XGI 入口把响应写成载荷时，字符串有孤立的代理项（或以字节存放字符串的语言里不是合法的 UTF-8）即写不出，`KERNEL_UNEXPECTED_001` + `kernel.invocation.unhandled_exception`，没有参数、不带 `inner`、没有载荷；宿主与 SDK 相同，插件一侧照这一条报给宿主。RFC-0001 的末句改为逐项列出仍不在规则里的写出。
-3. **.NET**：`OperationDescriptor<…>.EncodeResponse` 经 `StrictJsonEncoder` 写出，写不出时抛出 `ArgumentException`，由 `OperationInvoker` 按未处理的异常结束。
+3. **.NET**：`OperationDescriptor<…>.EncodeResponse` 经 `StrictJsonEncoder` 写出，写不出时抛出 `ArgumentException`，由 `OperationInvoker` 按未处理的异常结束（同日修订为写出之后核对、不用 unsafe，见文末「修订（2026-11-26）」）。
 4. **命令行**：字段选项的用法错误用 `hosting.commandline.invoke_field_invalid`（`protocol/commandline.md`）。
 5. **空的应答载荷**：表示没有响应体，不核对（`plugin/invocation.md` §1、RFC-0001）；幂等记下没有响应体、回放时按描述解码空载荷（RFC-0006「幂等」第 2、4 条），`IdempotencyMiddleware` 不再把空载荷当 JSON 解析。
 6. **更正**：`plugin/invocation.md` §1 与 ADR-0315 关于 TypeScript 的注记改成事实。
@@ -125,3 +125,30 @@ binary 模式：
   - `PluginResponsePayloadTests`：只有空白的载荷不为空，调用与回放都没过检查。
 - **文档**：`Protocols.CloudEvents`、`Kernel`、`Hosting.CommandLine`、`Caching.Abstractions`、`Plugins.OutOfProcess`、`Plugins.Wasm` 的 README 已同步；文档站的 `protocols/cloudevents`、`protocols/command-line`、`plugins/out-of-process`、`plugins/wasm`、缓存的幂等一页、各 SDK 页、`appendix/spec` 与更新日志待改。
 - **待定**：binary 的数据体的检查（备选 5）；幂等记录响应时写不出的处置；binary 入站对非法百分号序列的读法。
+
+## 修订（2026-11-26）
+
+仓库所有者不接受内核里的 `unsafe`：.NET 的实现由备选 10a 改成 10c 的一种做法，行为照本 ADR 不变。
+
+1. **10a 为什么留不住**：.NET 10 的 `TextEncoder` 有两个带指针参数的抽象成员（`FindFirstCharacterToEncode(char*, int)` 与 `TryEncodeUnicodeScalar(int, char*, int, out int)`），不带指针的 `FindFirstCharacterToEncode(ReadOnlySpan<char>)` 是 `private protected`。派生任何编码器都得覆写那两个，不在 unsafe 上下文里编译不过（CS0214，实测）。`JavaScriptEncoder.Create(…)` 只能选放行的区段，管不到写出器怎样处理孤立的代理项；`Utf8JsonWriter` 是密封类，包不了一层。自定义编码器这条路整个不通，也不挪到别的环层去。
+2. **现在的做法**（`OperationDescriptor<…>.EncodeResponse`，`StrictJsonEncoder` 删掉，内核不再开 `AllowUnsafeBlocks`）：
+   - 用 `JsonSerializer.SerializeToUtf8Bytes` 写出，回到池化缓冲、交出恰好大小的数组，交出的就是这份字节。
+   - 序列化上下文用的是内置编码器（没有设置，或与 `JavaScriptEncoder.Default` 同一类型，`UnsafeRelaxedJsonEscaping` 与 `Create(…)` 都是），且文本里没有 `\uFFFD` 这个转义，就没有被换过的字符：内置编码器把孤立的代理项与非法的 UTF-8 换成 U+FFFD 时总写成转义 `\uFFFD`。实测缺省、宽松、放开全部区段与放开部分区段四种，值、成员名、字典的键、`JsonNode` 的值与成员名、以 UTF-8 交来的字节都如此。
+   - 有这个转义，就换 `JavaScriptEncoder.UnsafeRelaxedJsonEscaping` 再写一遍分辨：本来就是 U+FFFD 的字符原样写成 `EF BF BD`，换出来的仍是 `\uFFFD`。这一遍只看不交，有 `\uFFFD` 即抛出 `ArgumentException`。
+   - 序列化上下文用了自定义的编码器时总要再写一遍：实测有的自定义编码器不报需要转义，写出器就把孤立的代理项连同其后的字符截掉、不留痕迹；第二遍用的是内置编码器，照样拦得下。
+3. **10c 当初否决的两条理由**：
+   - 靠「换出来的总被转义」这一实现细节：照所有者的决定接受，由测试钉住。`ResponseEncodingTests` 在四种内置编码器下核对每种写不出的形状都拦得下、合法的文本逐字节等于 `SerializeToUtf8Bytes`，System.Text.Json 哪天改了这一处，CI 的 Release 测试先红。依赖的是发布版的行为，不靠 `Debug.Assert` 一类只在调试版成立的细节。
+   - 可疑时写两遍：只有文本里有 `\uFFFD` 的响应才写两遍，见第 5 条的数字。
+4. **行为的差别**：与 10a 相比，写不出的形状、异常类型与消息、XGI 入口的结果都不变，合法响应的字节与 `SerializeToUtf8Bytes` 相同。多一种误拒：不经编码器写出的 `\uFFFD`（转换器以 `WriteRawValue` 原样写的文本、预先编码的 `JsonEncodedText`、缺省编码器下名字里有 U+FFFD 的属性名）在第二遍里仍是 `\uFFFD`，会被当成写不出；10a 不经手这些文本，照写。框架自己的响应类型没有这样的写法。
+5. **性能**（同一台机器、BenchmarkDotNet 进程内、Release；小响应 118 B，大响应约 1 MB、10,500 个对象，「带 U+FFFD」是大响应里有一个本来就是 U+FFFD 的字符）：
+
+   | 响应 | `SerializeToUtf8Bytes` | 10a（改前） | 现在 |
+   | --- | --- | --- | --- |
+   | 小 | 302 ns / 176 B | 356 ns / 480 B | 312 ns / 176 B |
+   | 约 1 MB | 2.21 ms / 1,007,443 B | 2.27 ms / 2,225,808 B | 2.22 ms / 1,007,565 B |
+   | 约 1 MB、带 U+FFFD | 2.15 ms / 1,007,354 B | 2.20 ms / 2,226,302 B | 3.29 ms / 2,016,814 B |
+
+   合法、不带 U+FFFD 的响应回到池化路径，不多分配；带 U+FFFD 的多写一遍、多一份与载荷同样大的缓冲。
+6. **体积**：内核 409,088 B → 407,040 B，与原语（103,424 B）合计 510,464 B，回到性能门禁的 512,000 B 以内（以前 512,512 B）。
+7. **门禁**：架构测试 `SourceHygieneTests` 新增两条，与「Ring 0/1 零反射」放在一起：手写的源码（正式包、测试、示例、基准与实验包）不写 `unsafe`，去掉字符串、字符字面量与行注释之后找关键字，生成代码在构建输出里、不在扫描之内；`AllowUnsafeBlocks` 只给源码里有 `[LibraryImport(` 的项目开，Ring 0/1 与公共的 `Directory.Build.*` 都不开。现在开着的四个包（`ObjectStorage.FileSystem`、`Observability.Host`、`Plugins.OutOfProcess`、`Plugins.Wasm`）都只为 `LibraryImport` 的生成代码。
+8. **测试**：`ResponseEncodingTests` 写不出的形状加 `JsonNode` 的值与成员名、以 UTF-8 交来的非法字节三种；合法的文本在字典的键、`JsonNode` 的值与成员名、UTF-8 字节里也放了 U+FFFD；新增一条按四种内置编码器核对。10a 的实现与现在的都通过，去掉核对时 20 条失败。
