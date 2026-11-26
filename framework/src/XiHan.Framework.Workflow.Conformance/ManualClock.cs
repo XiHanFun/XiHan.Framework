@@ -7,7 +7,8 @@ namespace XiHan.Framework.Workflow.Conformance;
 /// 只由用例推进的时钟
 /// </summary>
 /// <remarks>
-/// 到期类用例据此判定时刻，不依赖墙钟与固定等待；只替换 <see cref="GetUtcNow"/>，计时器仍是系统的，锁的等待照常进行
+/// 到期类用例据此判定时刻，不依赖墙钟与固定等待；只替换 <see cref="GetUtcNow"/>，计时器仍是系统的，锁的等待照常进行。
+/// 起点截到整微秒：数据库实现的时间列只到微秒（RFC-0005，Oracle 是 <c>timestamp(6)</c> 且写入时四舍五入），带 100 纳秒的起点会让存下的到期时刻比时钟晚，时钟又不会自己走，用例便永远等不到到期
 /// </remarks>
 internal sealed class ManualClock(DateTimeOffset start) : TimeProvider
 {
@@ -19,7 +20,7 @@ internal sealed class ManualClock(DateTimeOffset start) : TimeProvider
     /// <summary>
     /// 当前时刻
     /// </summary>
-    private DateTimeOffset _now = start;
+    private DateTimeOffset _now = start.AddTicks(-(start.Ticks % TimeSpan.TicksPerMicrosecond));
 
     /// <inheritdoc />
     public override DateTimeOffset GetUtcNow()
