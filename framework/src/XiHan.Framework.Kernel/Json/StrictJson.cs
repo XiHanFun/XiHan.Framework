@@ -2,6 +2,7 @@
 // See the LICENSE file in the project root for full license text.
 
 using System.Buffers;
+using System.Text;
 using System.Text.Encodings.Web;
 using System.Text.Json;
 using System.Text.Json.Serialization.Metadata;
@@ -14,7 +15,7 @@ namespace XiHan.Framework.Kernel.Json;
 /// <remarks>
 /// RFC-0001「写出与转交」：System.Text.Json 的写出器把孤立的代理项与非法的 UTF-8 换成 U+FFFD 照写，得到的仍是合法的文本，这里把它当作写不出。
 /// 内置的编码器总把换出来的写成 <c>\uFFFD</c>，文本里没有这个转义就没有换过的字符；有，就换不转义非 ASCII 的内置编码器再写一遍分辨：本来就是 U+FFFD 的字符原样写成 <c>EF BF BD</c>，换出来的仍是 <c>\uFFFD</c>，这一遍只看不交（ADR-0318「修订」）。
-/// 类型化的响应编成载荷时用它（ADR-0318、ADR-0319、ADR-0320）
+/// 类型化的响应、Result 与 Error 的线上编码、插件协议的错误细节与为 Schema 校验编出的请求共用这一份（ADR-0320）
 /// </remarks>
 internal static class StrictJson
 {
@@ -72,6 +73,37 @@ internal static class StrictJson
         }
 
         return HasEscapedReplacement(check.WrittenSpan);
+    }
+
+    /// <summary>
+    /// 照缺省的编码器写出无类型的内容
+    /// </summary>
+    /// <remarks>
+    /// 错误对象与细节由调用方逐个成员写出。整段文本过 <see cref="JsonText.FindProblem"/>（原样写进去的 JSON 元素可能带重复成员、超过 64 层或孤立代理项的转义），再核对有没有被换成 U+FFFD 的字符
+    /// </remarks>
+    /// <param name="state">要写出的内容</param>
+    /// <param name="write">把内容写进写出器</param>
+    /// <returns>写出的文本；写不成合法的 JSON 文本时为 <see langword="null"/></returns>
+    public static string? Write<TState>(TState state, Action<Utf8JsonWriter, TState> write)
+    {
+        var written = Render(state, write, null);
+        return JsonText.FindProblem(written.WrittenSpan).HasValue || (HasEscapedReplacement(written.WrittenSpan) && HasEscapedReplacement(Render(state, write, JavaScriptEncoder.UnsafeRelaxedJsonEscaping).WrittenSpan))
+            ? null
+            : Encoding.UTF8.GetString(written.WrittenSpan);
+    }
+
+    /// <summary>
+    /// 用给定的编码器写一遍
+    /// </summary>
+    private static ArrayBufferWriter<byte> Render<TState>(TState state, Action<Utf8JsonWriter, TState> write, JavaScriptEncoder? encoder)
+    {
+        var buffer = new ArrayBufferWriter<byte>();
+        using (var writer = new Utf8JsonWriter(buffer, new JsonWriterOptions { Encoder = encoder }))
+        {
+            write(writer, state);
+        }
+
+        return buffer;
     }
 
     /// <summary>

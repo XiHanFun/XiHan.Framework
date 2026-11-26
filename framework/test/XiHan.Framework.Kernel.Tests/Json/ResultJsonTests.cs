@@ -160,4 +160,69 @@ public sealed class ResultJsonTests
         Assert.Throws<ArgumentException>(() => ResultJson.Write(Result.Success(value), VectorJsonContext.Default.JsonElement));
         Assert.Throws<ArgumentException>(() => ResultJson.WriteMaybe(Result.Success(Maybe.Some(value)), VectorJsonContext.Default.JsonElement));
     }
+
+    [Fact]
+    public void Write_AnErrorWithALoneSurrogate_CannotBeWritten()
+    {
+        // 写出与转交（RFC-0001，ADR-0320）：修之前写出器把孤立的代理项换成转义的 U+FFFD，对方读到的是另一个错误
+        // 不用理论数据：理论数据经序列化交给测试时孤立代理项已被换掉
+        Error[] errors =
+        [
+            Error.Literal("KERNEL_UNEXPECTED_001", "Stamp \uD800 mismatch."),
+            Error.Literal("KERNEL_UNEXPECTED_001", "Stamp mismatch.", MessageArguments.Of(("id", "a\uDC00"))),
+            Error.Literal("KERNEL_UNEXPECTED_001", "Stamp mismatch.", MessageArguments.Of(("i\uD83D", 1))),
+            Error.Literal("KERNEL_UNEXPECTED_001", "Stamp mismatch.", MessageArguments.Of(("ids", new List<object?> { "a", '\uDBFF' }))),
+            Error.Literal("KERNEL_UNEXPECTED_001", "Stamp mismatch.", MessageArguments.Of(("nested", new Dictionary<string, object?> { ["\uDFFF"] = 1 }))),
+            Error.Literal("PERSISTENCE_CONFLICT_001", "Order changed.", null, Error.Literal("KERNEL_UNEXPECTED_001", "\uD800")),
+        ];
+        foreach (var error in errors)
+        {
+            Assert.Throws<ArgumentException>(() => ResultJson.Write(Result.Failure(error)));
+            Assert.Throws<ArgumentException>(() => ResultJson.Write(Result.Failure<JsonElement>(error), VectorJsonContext.Default.JsonElement));
+            Assert.Throws<ArgumentException>(() => ResultJson.WriteMaybe(Result.Failure<Maybe<JsonElement>>(error), VectorJsonContext.Default.JsonElement));
+            Assert.Throws<ArgumentException>(() => ResultJson.WriteError(error));
+        }
+    }
+
+    [Fact]
+    public void Write_AValueWithALoneSurrogate_CannotBeWritten()
+    {
+        // 成功值按调用方给的元数据写出，同样不换成 U+FFFD
+        var value = new Dictionary<string, int> { ["a\uD800"] = 1 };
+
+        Assert.Throws<ArgumentException>(() => ResultJson.Write(Result.Success(value), VectorJsonContext.Default.DictionaryStringInt32));
+        Assert.Throws<ArgumentException>(() => ResultJson.WriteMaybe(Result.Success(Maybe.Some(value)), VectorJsonContext.Default.DictionaryStringInt32));
+    }
+
+    [Fact]
+    public void Write_TheReplacementCharacterAndSurrogatePairs_ReadBackUnchanged()
+    {
+        // 本来就是 U+FFFD 的字符与代理对照常写出：缺省编码器把它们写成转义，读回来是同一个字符串
+        var error = Error.Literal("KERNEL_UNEXPECTED_001", "\uFFFD \uD83D\uDE00", MessageArguments.Of(("text", "\uFFFD"), ("\uFFFD", "\uD83D\uDE00")));
+        var value = new Dictionary<string, int> { ["\uFFFD\uD83D\uDE00"] = 1 };
+
+        var failure = ResultJson.Read(ResultJson.Write(Result.Failure(error))).ValueOrThrow().Error!;
+        var success = ResultJson.Read(ResultJson.Write(Result.Success(value), VectorJsonContext.Default.DictionaryStringInt32), VectorJsonContext.Default.DictionaryStringInt32).ValueOrThrow().ValueOrThrow();
+
+        Assert.Equal("\uFFFD \uD83D\uDE00", failure.Message);
+        Assert.Equal(("\uFFFD", "\uD83D\uDE00"), (failure.Details!["text"], failure.Details["\uFFFD"]));
+        Assert.Equal(1, success["\uFFFD\uD83D\uDE00"]);
+        Assert.Equal(error.Message, ResultJson.ReadError(ResultJson.WriteError(error)).ValueOrThrow().Message);
+    }
+
+    [Fact]
+    public void Write_TextFailingTheCommonCheck_CannotBeWritten()
+    {
+        // 写出的整段文本过「JSON 文本」的共同检查，读取一侧都会拒绝：层数从结果的根算起（值在第 2 层），值或细节里原样带进来的重复成员也算
+        using var deepest = JsonDocument.Parse(new string('[', 63) + new string(']', 63));
+        using var tooDeep = JsonDocument.Parse(new string('[', 64) + new string(']', 64));
+        using var duplicate = JsonDocument.Parse("""{"x":1,"x":2}""");
+
+        var written = ResultJson.Write(Result.Success(deepest.RootElement.Clone()), VectorJsonContext.Default.JsonElement);
+
+        Assert.True(ResultJson.Read(written, VectorJsonContext.Default.JsonElement).ValueOrThrow().IsSuccess);
+        Assert.Throws<ArgumentException>(() => ResultJson.Write(Result.Success(tooDeep.RootElement.Clone()), VectorJsonContext.Default.JsonElement));
+        Assert.Throws<ArgumentException>(() => ResultJson.Write(Result.Success(duplicate.RootElement.Clone()), VectorJsonContext.Default.JsonElement));
+        Assert.Throws<ArgumentException>(() => ResultJson.WriteError(Error.Literal("KERNEL_UNEXPECTED_001", "x", MessageArguments.Of(("value", duplicate.RootElement.Clone())))));
+    }
 }

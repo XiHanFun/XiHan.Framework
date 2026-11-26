@@ -4,6 +4,7 @@
 using System.Text.Json;
 using Microsoft.Extensions.Configuration;
 using XiHan.Framework.Plugins.Protocol.Mapping;
+using XiHan.Framework.Primitives;
 using ProtoError = XiHan.Framework.Plugins.Protocol.V1.Error;
 
 namespace XiHan.Framework.Plugins.OutOfProcess.Tests;
@@ -63,6 +64,46 @@ public sealed class PluginJsonTests
         Assert.Equal("ECHO_VALIDATION_001", error.Code);
         Assert.Equal("echo.text.empty", error.MessageKey);
         Assert.Null(error.Details);
+    }
+
+    [Fact]
+    public void ToProto_WithALoneSurrogateInTheDetails_WritesTheErrorWithoutDetails()
+    {
+        // 写出与转交（RFC-0001，ADR-0320）：修之前写出器把孤立的代理项换成转义的 U+FFFD，插件读到的是另一份细节。
+        // 写不出即不带细节，错误的其余部分照写，与读入一侧把不合法的细节当作没有相同；内部错误同此
+        IReadOnlyDictionary<string, object?>[] unwritable =
+        [
+            MessageArguments.Of(("id", "a\uD800")),
+            MessageArguments.Of(("i\uDC00d", "a")),
+            MessageArguments.Of(("ids", new List<object?> { "a", '\uDBFF' })),
+            MessageArguments.Of(("nested", new Dictionary<string, object?> { ["\uDFFF"] = 1 })),
+        ];
+        foreach (var details in unwritable)
+        {
+            var proto = PluginErrorMapper.ToProto(new Error("ECHO_VALIDATION_001", "echo.text.empty", details, new Error("ECHO_VALIDATION_002", "echo.text.long", details)));
+
+            Assert.Equal(("ECHO_VALIDATION_001", "echo.text.empty", string.Empty), (proto.Code, proto.MessageKey, proto.Details));
+            Assert.Equal(("ECHO_VALIDATION_002", string.Empty), (proto.Inner.Code, proto.Inner.Details));
+        }
+    }
+
+    [Fact]
+    public void SerializeDetails_KeepsTheReplacementCharacterAndSurrogatePairs()
+    {
+        var written = PluginJson.SerializeDetails(MessageArguments.Of(("id", "\uFFFD"), ("\uFFFD", "\uD83D\uDE00")));
+
+        var read = PluginJson.ParseDetails(written);
+        Assert.NotNull(read);
+        Assert.Equal(("\uFFFD", "\uD83D\uDE00"), (read["id"], read["\uFFFD"]));
+    }
+
+    [Fact]
+    public void SerializeDetails_ThatFailTheCommonJsonCheck_AreNoDetails()
+    {
+        // 原样写进去的 JSON 元素带重复成员：写出的文本插件一侧读不进，同样不带细节
+        using var duplicate = JsonDocument.Parse("""{"x":1,"x":2}""");
+
+        Assert.Equal(string.Empty, PluginJson.SerializeDetails(MessageArguments.Of(("value", duplicate.RootElement.Clone()))));
     }
 
     [Fact]

@@ -27,25 +27,13 @@ internal static class PluginJson
     /// 错误细节（模板参数）写成 JSON 对象
     /// </summary>
     /// <remarks>
-    /// 值按内核的值模型写出（<see cref="JsonValues"/>，与 Result 和 Error 的线上编码同一份）：只处理 JSON 可表示的值，其余按 <see cref="object.ToString"/>
+    /// 值按内核的值模型写出（<see cref="JsonValues"/>，与 Result 和 Error 的线上编码同一份）：只处理 JSON 可表示的值，其余按 <see cref="object.ToString"/>。
+    /// 写不成合法的 JSON 文本（成员名或字符串值有孤立的代理项，或原样写进去的 JSON 元素没过共同检查）时返回空串，这个错误不带细节，与读入一侧把不合法的细节当作没有相同（<c>invocation.md</c> §3，RFC-0001「写出与转交」，ADR-0320）；
+    /// 以前照写出器的缺省把孤立的代理项写成转义的 U+FFFD，对方读到的是另一份细节
     /// </remarks>
+    /// <returns>细节的 JSON 对象文本；写不出时为空串</returns>
     public static string SerializeDetails(IReadOnlyDictionary<string, object?> details)
-    {
-        using var stream = new MemoryStream();
-        using (var writer = new Utf8JsonWriter(stream))
-        {
-            writer.WriteStartObject();
-            foreach (var (name, value) in details)
-            {
-                writer.WritePropertyName(name);
-                JsonValues.Write(writer, value);
-            }
-
-            writer.WriteEndObject();
-        }
-
-        return Encoding.UTF8.GetString(stream.ToArray());
-    }
+        => StrictJson.Write<object?>(details, JsonValues.Write) ?? string.Empty;
 
     /// <summary>
     /// 解析错误细节

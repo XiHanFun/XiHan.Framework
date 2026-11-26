@@ -150,6 +150,42 @@ public sealed class ValidationMiddlewareTests
     }
 
     [Fact]
+    public async Task Invoke_Typed_WithALoneSurrogate_IsInvalidPayload_LikeTheSameRawPayload()
+    {
+        // 为 Schema 校验编出的请求严格编码（RFC-0011「校验」，ADR-0320）：修之前写成 U+FFFD，Schema 校验的是另一份请求，操作照常执行。
+        // 结果与原始调用里同样的请求相同：载荷不合法，reason 是 $
+        var (provider, app) = await StartAsync();
+        await using var _ = provider;
+        await using var scope = provider.CreateAsyncScope();
+        var invoker = provider.GetRequiredService<IOperationInvoker>();
+
+        var typed = await invoker.InvokeAsync<EchoRequest, EchoResponse>(Hosts.Context(scope.ServiceProvider), EchoOperation.Id, new EchoRequest("hi\uD800"));
+        var raw = await invoker.InvokeAsync(Hosts.Context(scope.ServiceProvider), new OperationRequest(EchoOperation.Id, Utf8("""{"text":"hi\ud800"}""")));
+        var paired = await invoker.InvokeAsync<EchoRequest, EchoResponse>(Hosts.Context(scope.ServiceProvider), EchoOperation.Id, new EchoRequest("\uD83D\uDE00\uFFFD"));
+
+        Assert.Equal((KernelErrors.InvalidOperationPayload, "$"), (typed.Error?.Code, typed.Error?.Details?["reason"]));
+        Assert.Equal((raw.Error?.Code, raw.Error?.Details?["reason"]), (typed.Error?.Code, typed.Error?.Details?["reason"]));
+        Assert.Equal("\uD83D\uDE00\uFFFD", paired.ValueOrThrow().Echo);
+        await app.StopAsync(CancellationToken.None);
+    }
+
+    [Fact]
+    public async Task Invoke_Typed_WithoutSchema_IsNotEncoded()
+    {
+        // 编码只为 Schema 校验：没有 Schema 的类型化调用不经 JSON，带孤立代理项的请求照常交给操作
+        var (provider, app) = Hosts.BuildApp(static b => b.UseFeature(new EchoFeature()));
+        await app.StartAsync(CancellationToken.None);
+        await using var _ = provider;
+        await using var scope = provider.CreateAsyncScope();
+        var invoker = provider.GetRequiredService<IOperationInvoker>();
+
+        var typed = await invoker.InvokeAsync<EchoRequest, EchoResponse>(Hosts.Context(scope.ServiceProvider), EchoOperation.Id, new EchoRequest("hi\uD800"));
+
+        Assert.Equal("hi\uD800", typed.ValueOrThrow().Echo);
+        await app.StopAsync(CancellationToken.None);
+    }
+
+    [Fact]
     public async Task WithoutBuiltInMiddleware_NoValidation_AndHandleDecodes()
     {
         var (provider, app) = await StartAsync(builtIn: false);

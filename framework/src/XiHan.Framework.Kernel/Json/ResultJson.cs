@@ -17,7 +17,9 @@ namespace XiHan.Framework.Kernel.Json;
 /// <see cref="Error"/> 按 <c>code</c>、<c>message</c>、<c>messageKey</c>、<c>details</c>、<c>inner</c> 的顺序写出，<c>message</c> 是发送端已解析的文案（<see cref="Error.Message"/>），没有键、细节为空、没有内部错误时对应成员不写。
 /// 读取先过「JSON 文本」的共同检查（语法、64 层、合法 Unicode、任何一层的重复成员），再按规则核对；不合法时返回 <see cref="ErrorCode.InvalidArgument"/> 失败，消息键 <see cref="KernelMessages.WireInvalidJson"/> 或 <see cref="KernelMessages.WireInvalid"/>，<c>reason</c> 是出错的路径。
 /// 对方在线上说的失败是读出的结果本身，所以读取返回结果的结果：外层失败是编码不合法，外层成功时内层才是对方的成功或失败。
-/// 值经调用方给的 <see cref="JsonTypeInfo{T}"/>（源生成）读写，数字的写法由它决定；要按值模型原样往返任意 JSON 用 <see cref="JsonElement"/>，错误细节按值模型读写（64 位范围内的整数写法是整数，其余是双精度）
+/// 值经调用方给的 <see cref="JsonTypeInfo{T}"/>（源生成）读写，数字的写法由它决定；要按值模型原样往返任意 JSON 用 <see cref="JsonElement"/>，错误细节按值模型读写（64 位范围内的整数写法是整数，其余是双精度）。
+/// 写出照 RFC-0001「写出与转交」严格（ADR-0320）：字符串（文案、细节与值里的成员名与字符串值，含内部错误的）有孤立的代理项即写不出，不像 System.Text.Json 的缺省那样写成转义的 U+FFFD；整段文本还要过「JSON 文本」的共同检查，层数从结果的根算起（值的最外层是第 2 层），值或细节里原样写进去的重复成员也算。
+/// 写不出只抛 <see cref="ArgumentException"/>，System.Text.Json 自己的 <see cref="JsonException"/>（超过序列化上下文的深度上限等）放进 <see cref="Exception.InnerException"/>；以前照写成 U+FFFD，超过深度时原样抛出 <see cref="JsonException"/>
 /// </remarks>
 [ApiLevel(Stability.Stable, "5.0")]
 public static class ResultJson
@@ -40,6 +42,7 @@ public static class ResultJson
     /// </summary>
     /// <param name="result">要写出的结果；<c>default</c> 按 <see cref="ErrorCode.UninitializedResult"/> 失败写出</param>
     /// <returns>成功时为 <c>{"ok":true}</c>，失败时带 <c>error</c></returns>
+    /// <exception cref="ArgumentException">错误写不成合法的 JSON 文本</exception>
     public static string Write(Result result)
         => WriteEnvelope(result.Error, default);
 
@@ -52,7 +55,7 @@ public static class ResultJson
     /// <param name="result">要写出的结果；<c>default</c> 按 <see cref="ErrorCode.UninitializedResult"/> 失败写出</param>
     /// <param name="valueInfo">值的类型的序列化元数据（源生成）</param>
     /// <returns>成功时为 <c>{"ok":true,"value":…}</c>，失败时带 <c>error</c></returns>
-    /// <exception cref="ArgumentException">成功值写出来是 JSON 的 <c>null</c></exception>
+    /// <exception cref="ArgumentException">成功值写出来是 JSON 的 <c>null</c>，或者结果写不成合法的 JSON 文本</exception>
     public static string Write<T>(Result<T> result, JsonTypeInfo<T> valueInfo)
     {
         ArgumentNullException.ThrowIfNull(valueInfo);
@@ -61,7 +64,7 @@ public static class ResultJson
             return WriteEnvelope(failure, default);
         }
 
-        var value = JsonSerializer.SerializeToUtf8Bytes(result.ValueOrThrow(), valueInfo);
+        var value = StrictJson.Serialize(result.ValueOrThrow(), valueInfo, checkText: false);
         // 有值成功的 value 不能是 null：写出去对方读不出，可能没有的值是 Maybe
         if (value.AsSpan().SequenceEqual("null"u8))
         {
@@ -80,7 +83,7 @@ public static class ResultJson
     /// <param name="result">要写出的结果；<c>default</c> 按 <see cref="ErrorCode.UninitializedResult"/> 失败写出</param>
     /// <param name="valueInfo">Maybe 里的值的类型的序列化元数据（源生成）</param>
     /// <returns>成功时为 <c>{"ok":true,"value":…}</c>，失败时带 <c>error</c></returns>
-    /// <exception cref="ArgumentException">有值的 Maybe 里的值写出来是 JSON 的 <c>null</c></exception>
+    /// <exception cref="ArgumentException">有值的 Maybe 里的值写出来是 JSON 的 <c>null</c>，或者结果写不成合法的 JSON 文本</exception>
     public static string WriteMaybe<T>(Result<Maybe<T>> result, JsonTypeInfo<T> valueInfo)
     {
         ArgumentNullException.ThrowIfNull(valueInfo);
@@ -94,7 +97,7 @@ public static class ResultJson
             return WriteEnvelope(null, "null"u8);
         }
 
-        var value = JsonSerializer.SerializeToUtf8Bytes(some, valueInfo);
+        var value = StrictJson.Serialize(some, valueInfo, checkText: false);
         // 有值写成 null 就与无值分不开，对方读成 None
         if (value.AsSpan().SequenceEqual("null"u8))
         {
@@ -109,16 +112,11 @@ public static class ResultJson
     /// </summary>
     /// <param name="error">要写出的错误</param>
     /// <returns>按 <c>code</c>、<c>message</c>、<c>messageKey</c>、<c>details</c>、<c>inner</c> 的顺序写出的 JSON 对象</returns>
+    /// <exception cref="ArgumentException">错误写不成合法的 JSON 文本</exception>
     public static string WriteError(Error error)
     {
         ArgumentNullException.ThrowIfNull(error);
-        var buffer = new ArrayBufferWriter<byte>();
-        using (var writer = new Utf8JsonWriter(buffer))
-        {
-            WriteErrorObject(writer, error);
-        }
-
-        return Encoding.UTF8.GetString(buffer.WrittenSpan);
+        return StrictJson.Write(error, WriteErrorObject) ?? throw StrictJson.Unwritable(null);
     }
 
     /// <summary>
@@ -266,31 +264,41 @@ public static class ResultJson
     /// <param name="value">成功值的 JSON 文本；为空表示无值成功</param>
     private static string WriteEnvelope(Error? failure, ReadOnlySpan<byte> value)
     {
+        // 失败的错误由这里逐个成员写出，字符串要核对有没有被换成 U+FFFD（RFC-0001「写出与转交」，ADR-0320）
+        if (failure is not null)
+        {
+            return StrictJson.Write(failure, WriteFailure) ?? throw StrictJson.Unwritable(null);
+        }
+
         var buffer = new ArrayBufferWriter<byte>();
         using (var writer = new Utf8JsonWriter(buffer))
         {
             writer.WriteStartObject();
-            if (failure is not null)
+            writer.WriteBoolean("ok", true);
+            // 无值成功只写 ok：以前各 SDK 分别写成 {"ok":true} 与 {"ok":true,"value":{}}，互相读不出（ADR-0233）
+            if (!value.IsEmpty)
             {
-                writer.WriteBoolean("ok", false);
-                writer.WritePropertyName("error");
-                WriteErrorObject(writer, failure);
-            }
-            else
-            {
-                writer.WriteBoolean("ok", true);
-                // 无值成功只写 ok：以前各 SDK 分别写成 {"ok":true} 与 {"ok":true,"value":{}}，互相读不出（ADR-0233）
-                if (!value.IsEmpty)
-                {
-                    writer.WritePropertyName("value");
-                    writer.WriteRawValue(value, skipInputValidation: true);
-                }
+                writer.WritePropertyName("value");
+                writer.WriteRawValue(value, skipInputValidation: true);
             }
 
             writer.WriteEndObject();
         }
 
-        return Encoding.UTF8.GetString(buffer.WrittenSpan);
+        // 成功值写出时已核对过字符串，不再找 U+FFFD（本来就是 U+FFFD 的字符按值的编码器也写成转义）；整段文本过共同检查，层数从结果的根算起
+        return JsonText.FindProblem(buffer.WrittenSpan).HasValue ? throw StrictJson.Unwritable(null) : Encoding.UTF8.GetString(buffer.WrittenSpan);
+    }
+
+    /// <summary>
+    /// 写出失败的结果
+    /// </summary>
+    private static void WriteFailure(Utf8JsonWriter writer, Error failure)
+    {
+        writer.WriteStartObject();
+        writer.WriteBoolean("ok", false);
+        writer.WritePropertyName("error");
+        WriteErrorObject(writer, failure);
+        writer.WriteEndObject();
     }
 
     /// <summary>
@@ -307,17 +315,11 @@ public static class ResultJson
             writer.WriteString("messageKey", key);
         }
 
-        // 空细节与没有细节相同，不写出
+        // 空细节与没有细节相同，不写出；细节按值模型写成对象
         if (error.Details is { Count: > 0 } details)
         {
-            writer.WriteStartObject("details");
-            foreach (var (name, value) in details)
-            {
-                writer.WritePropertyName(name);
-                JsonValues.Write(writer, value);
-            }
-
-            writer.WriteEndObject();
+            writer.WritePropertyName("details");
+            JsonValues.Write(writer, details);
         }
 
         if (error.Inner is { } inner)

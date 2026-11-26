@@ -15,7 +15,7 @@ namespace XiHan.Framework.Kernel.Validation;
 /// Validate 阶段的内置中间件（RFC-0011）
 /// </summary>
 /// <remarks>
-/// 对带操作描述的调用，先按契约的请求 JSON Schema 校验载荷（<see cref="KernelErrors.SchemaViolation"/>），再解码并对实现 <see cref="IValidatableObject"/> 的请求执行自校验（<see cref="KernelErrors.RequestInvalid"/>）；不通过即以 VALIDATION 结果结束调用，不进 Handle。解码好的请求记录在上下文，Handle 阶段直接执行。没有操作描述的调用原样透传
+/// 对带操作描述的调用，先按契约的请求 JSON Schema 校验载荷（<see cref="KernelErrors.SchemaViolation"/>；类型化调用为此把请求编成 JSON，字符串有孤立的代理项即 <see cref="KernelErrors.InvalidOperationPayload"/>，ADR-0320），再解码并对实现 <see cref="IValidatableObject"/> 的请求执行自校验（<see cref="KernelErrors.RequestInvalid"/>）；不通过即以 VALIDATION 结果结束调用，不进 Handle。解码好的请求记录在上下文，Handle 阶段直接执行。没有操作描述的调用原样透传
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class ValidationMiddleware : IPipelineMiddleware
@@ -53,16 +53,24 @@ public sealed class ValidationMiddleware : IPipelineMiddleware
         }
 
         var request = context.FindOperationRequest().TryGetValue(out var present) ? present : null;
-        // JSON 载荷：原始调用用上下文里的载荷；类型化调用只有对象，按描述的序列化元数据编码一次；都没有（宿主端点自己绑定、插件代理的类型化调用）就跳过 Schema 校验与解码
-        // 分支显式写开：条件表达式会把 null 的 byte[] 转成空的 ReadOnlyMemory（有值），那会被当成 {} 解码
+        // JSON 载荷：原始调用用上下文里的载荷；类型化调用只有对象，描述带 Schema 时按描述的序列化元数据编码一次，只为 Schema 校验，没有 Schema 不经 JSON；
+        // 都没有（宿主端点自己绑定、插件代理的类型化调用）就跳过 Schema 校验与解码。分支显式写开：条件表达式会把 null 的 byte[] 转成空的 ReadOnlyMemory（有值），那会被当成 {} 解码
         ReadOnlyMemory<byte>? payload = null;
         if (context.FindOperationPayload().TryGetValue(out var raw))
         {
             payload = raw;
         }
-        else if (request is not null && descriptor.RequestInfo is { } info)
+        else if (request is not null && descriptor.RequestInfo is { } info && descriptor.Schema is not null)
         {
-            payload = JsonSerializer.SerializeToUtf8Bytes(request, info);
+            var encoded = JsonSerializer.SerializeToUtf8Bytes(request, info);
+            // 写出器把孤立的代理项换成 U+FFFD 照写，校验的就是另一份请求：与原始调用里同样的请求一样按载荷不合法拒绝，路径是 $（RFC-0011「校验」，ADR-0320）
+            if (StrictJson.HasReplacedCharacter(request, info, encoded))
+            {
+                context.SetOutcome(descriptor.InvalidPayload(JsonPath.Root));
+                return;
+            }
+
+            payload = encoded;
         }
 
         if (payload is { } bytes && descriptor.Schema is { } schema)
