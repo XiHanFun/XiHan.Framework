@@ -53,17 +53,40 @@ public sealed class McpStdioTests
         return host;
     }
 
-    [Fact]
-    public void OpenInput_DecodesUtf8_SkipsItsByteOrderMark_AndNeverSwitchesEncodingOnAnotherMark()
+    /// <summary>
+    /// 把字节交给传输运行到输入结束
+    /// </summary>
+    /// <remarks>
+    /// 返回 stdout 的各行
+    /// </remarks>
+    private static async Task<List<string>> RunTransportAsync(IHost host, byte[] input)
     {
-        using var marked = McpStdioTransport.OpenInput(new MemoryStream([0xEF, 0xBB, 0xBF, .. "{\"名\":1}"u8]));
-        Assert.Equal("{\"名\":1}", marked.ReadToEnd());
+        var output = new StringWriter();
+        using var stream = new MemoryStream(input);
+        await McpStdioTransport.RunAsync(host.Services.GetRequiredService<McpServer>(), host.Services, stream, output, CancellationToken.None);
+        return output.ToString().Split('\n', StringSplitOptions.RemoveEmptyEntries).Select(static l => l.TrimEnd('\r')).ToList();
+    }
 
-        // UTF-16 的 BOM 不让读取器改用 UTF-16：后面的字节照旧按 UTF-8 解码。命令行工具的 mcp 命令原先用的读取器会改
-        using var foreign = McpStdioTransport.OpenInput(new MemoryStream([0xFF, 0xFE, .. "ok"u8]));
-        Assert.EndsWith("ok", foreign.ReadToEnd(), StringComparison.Ordinal);
+    [Fact]
+    public async Task Transport_SkipsTheUtf8ByteOrderMark_AndNeverSwitchesEncodingOnAnotherMark()
+    {
+        using var host = await StartAsync();
+        try
+        {
+            // 开头的 UTF-8 BOM 不算内容；UTF-16 的 BOM 不让传输改用 UTF-16，0xFF 0xFE 不是合法的 UTF-8，这一行答复解析错误
+            var marked = await RunTransportAsync(host, [0xEF, 0xBB, 0xBF, .. """{"jsonrpc":"2.0","id":1,"method":"ping"}"""u8]);
+            var foreign = await RunTransportAsync(host, [0xFF, 0xFE, .. """{"jsonrpc":"2.0","id":1,"method":"ping"}"""u8]);
 
-        Assert.Throws<ArgumentNullException>(static () => McpStdioTransport.OpenInput(null!));
+            using var pong = JsonDocument.Parse(Assert.Single(marked));
+            Assert.Equal(1, pong.RootElement.GetProperty("id").GetInt32());
+            using var malformed = JsonDocument.Parse(Assert.Single(foreign));
+            Assert.Equal(-32700, malformed.RootElement.GetProperty("error").GetProperty("code").GetInt32());
+            await Assert.ThrowsAsync<ArgumentNullException>(() => McpStdioTransport.RunAsync(host.Services.GetRequiredService<McpServer>(), host.Services, null!, new StringWriter(), CancellationToken.None));
+        }
+        finally
+        {
+            await host.StopAsync();
+        }
     }
 
     [Fact]
@@ -72,19 +95,15 @@ public sealed class McpStdioTests
         using var host = await StartAsync();
         try
         {
-            var input = new StringReader(string.Join('\n',
+            var lines = await RunTransportAsync(host, Encoding.UTF8.GetBytes(string.Join('\n',
                 """{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"t","version":"1"}}}""",
                 """{"jsonrpc":"2.0","method":"notifications/initialized"}""",
                 string.Empty,
                 """{"jsonrpc":"2.0","id":2,"method":"tools/list"}""",
                 """{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"orders_get","arguments":{"id":"7","page":1}}}""",
                 """{"jsonrpc":"2.0","id":4,"method":"tools/call","params":{"name":"orders_create","arguments":{"name":"x"}}}""",
-                "not json"));
-            var output = new StringWriter();
+                "not json")));
 
-            await McpStdioTransport.RunAsync(host.Services.GetRequiredService<McpServer>(), host.Services, input, output, CancellationToken.None);
-
-            var lines = output.ToString().Split('\n', StringSplitOptions.RemoveEmptyEntries).Select(static l => l.TrimEnd('\r')).ToList();
             Assert.Equal(5, lines.Count);
             Assert.All(lines, static line => Assert.DoesNotContain('\n', line));
             using var initialized = JsonDocument.Parse(lines[0]);
@@ -112,21 +131,15 @@ public sealed class McpStdioTests
     }
 
     [Fact]
-    public async Task Transport_AnswersALineThatCannotBeEncodedAsUtf8_WithAParseError()
+    public async Task Transport_AnswersALineWithAnEncodedSurrogate_WithAParseError()
     {
-        // 读取器交来的一行是字符串，严格编码成 UTF-8 再解析（RFC-0001「JSON 文本」，ADR-0312）：孤立的代理项与不是 JSON 同样答复解析错误，下一行照常处理；
-        // 修之前换成 U+FFFD，tools/call 照常执行
+        // 一行按字节读进来再严格解码（protocol/mcp.md，ADR-0320）：编码成 UTF-8 的代理项与不是 JSON 同样答复解析错误，下一行照常处理；
+        // ADR-0312 时传输收文本读取器，只拦得住读取器交来的孤立代理项，mcp 命令的读取器早已把这样的字节换成 U+FFFD，tools/call 照常执行
         using var host = await StartAsync();
         try
         {
-            var input = new StringReader(string.Join('\n',
-                "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"tools/call\",\"params\":{\"name\":\"orders_get\",\"arguments\":{\"id\":\"7\uD800\",\"page\":1}}}",
-                """{"jsonrpc":"2.0","id":2,"method":"tools/list"}"""));
-            var output = new StringWriter();
+            var lines = await RunTransportAsync(host, [.. "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"tools/call\",\"params\":{\"name\":\"orders_get\",\"arguments\":{\"id\":\"7"u8, 0xED, 0xA0, 0x80, .. "\",\"page\":1}}}\n"u8, .. """{"jsonrpc":"2.0","id":2,"method":"tools/list"}"""u8]);
 
-            await McpStdioTransport.RunAsync(host.Services.GetRequiredService<McpServer>(), host.Services, input, output, CancellationToken.None);
-
-            var lines = output.ToString().Split('\n', StringSplitOptions.RemoveEmptyEntries).Select(static l => l.TrimEnd('\r')).ToList();
             Assert.Equal(2, lines.Count);
             using var malformed = JsonDocument.Parse(lines[0]);
             Assert.Equal(-32700, malformed.RootElement.GetProperty("error").GetProperty("code").GetInt32());
@@ -147,15 +160,82 @@ public sealed class McpStdioTests
     /// <remarks>
     /// 与 MCP 客户端写进 stdin 的一样是字节，解码由命令自己完成。返回退出码、stdout 的各行与 stderr
     /// </remarks>
-    private static async Task<(int ExitCode, List<string> Lines, string Error)> RunCommandAsync(IHost host, string[] args, params string[] messages)
+    private static Task<(int ExitCode, List<string> Lines, string Error)> RunCommandAsync(IHost host, string[] args, params string[] messages)
+        => RunCommandAsync(host, args, Encoding.UTF8.GetBytes(string.Join('\n', messages)));
+
+    /// <summary>
+    /// 以给定的命令行参数执行 <c>mcp</c> 命令，输入是原样的字节
+    /// </summary>
+    /// <remarks>
+    /// 字节可以不是合法的 UTF-8，用来核对命令自己的解码。返回退出码、stdout 的各行与 stderr
+    /// </remarks>
+    private static async Task<(int ExitCode, List<string> Lines, string Error)> RunCommandAsync(IHost host, string[] args, byte[] input)
     {
         var output = new StringWriter();
         var error = new StringWriter();
         await using var scope = host.Services.CreateAsyncScope();
-        var command = new McpStdioCommand(() => new MemoryStream(Encoding.UTF8.GetBytes(string.Join('\n', messages))));
+        var command = new McpStdioCommand(() => new MemoryStream(input));
         var exitCode = await command.ExecuteAsync(new CommandContext(CommandLineParser.Parse(["mcp", .. args]), scope.ServiceProvider, output, error, CancellationToken.None));
         var lines = output.ToString().Split('\n', StringSplitOptions.RemoveEmptyEntries).Select(static l => l.TrimEnd('\r')).ToList();
         return (exitCode, lines, error.ToString());
+    }
+
+    [Fact]
+    public async Task Command_AnswersALineWithInvalidUtf8_WithAParseError_AndReadsTheNextLine()
+    {
+        // stdin 按字节分行再严格解码（protocol/mcp.md「生命周期与传输」，ADR-0320）：编码成 UTF-8 的代理项、单独的 0xFF、截断的序列与过长编码都让这一行不是 JSON，
+        // 答复解析错误、继续下一行；修之前非法的字节被换成 U+FFFD，tools/call 照常执行
+        using var host = await StartAsync();
+        try
+        {
+            byte[][] invalid = [[0xED, 0xA0, 0x80], [0xFF], [0xC3], [0xC0, 0xAF]];
+            foreach (var bytes in invalid)
+            {
+                byte[] input = [.. "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"tools/call\",\"params\":{\"name\":\"orders_get\",\"arguments\":{\"id\":\"7"u8, .. bytes, .. "\",\"page\":1}}}\r\n"u8, .. """{"jsonrpc":"2.0","id":2,"method":"tools/list"}"""u8];
+
+                var (exitCode, lines, error) = await RunCommandAsync(host, [], input);
+
+                Assert.Equal(CommandLineExitCodes.Success, exitCode);
+                Assert.Empty(error);
+                Assert.Equal(2, lines.Count);
+                using var malformed = JsonDocument.Parse(lines[0]);
+                Assert.Equal(-32700, malformed.RootElement.GetProperty("error").GetProperty("code").GetInt32());
+                Assert.Equal(McpErrors.InvalidMessage, malformed.RootElement.GetProperty("error").GetProperty("data").GetProperty("code").GetString());
+                Assert.Equal(JsonValueKind.Null, malformed.RootElement.GetProperty("id").ValueKind);
+                using var listed = JsonDocument.Parse(lines[1]);
+                Assert.Equal(2, listed.RootElement.GetProperty("id").GetInt32());
+            }
+
+            Assert.Empty(host.Services.GetRequiredService<OriginLog>().Origins);
+        }
+        finally
+        {
+            await host.StopAsync();
+        }
+    }
+
+    [Fact]
+    public async Task Command_SplitsLinesAtLfCrAndCrLf_AndSkipsBlankLines()
+    {
+        // 行尾与以前的读取器相同：LF、CR 与 CR LF 都结束一行；只有空白的行（含 U+00A0 这样的 Unicode 空白）跳过，不答复
+        using var host = await StartAsync();
+        try
+        {
+            byte[] input = [.. """{"jsonrpc":"2.0","id":1,"method":"ping"}"""u8, (byte)'\r', .. """{"jsonrpc":"2.0","id":2,"method":"ping"}"""u8, (byte)'\r', (byte)'\n', 0xC2, 0xA0, (byte)'\t', (byte)'\n', (byte)'\n', .. """{"jsonrpc":"2.0","id":3,"method":"ping"}"""u8];
+
+            var (exitCode, lines, _) = await RunCommandAsync(host, [], input);
+
+            Assert.Equal(CommandLineExitCodes.Success, exitCode);
+            Assert.Equal([1, 2, 3], lines.Select(static line =>
+            {
+                using var reply = JsonDocument.Parse(line);
+                return reply.RootElement.GetProperty("id").GetInt32();
+            }));
+        }
+        finally
+        {
+            await host.StopAsync();
+        }
     }
 
     [Fact]

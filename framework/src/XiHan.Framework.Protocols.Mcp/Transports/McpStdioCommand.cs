@@ -13,7 +13,7 @@ namespace XiHan.Framework.Protocols.Mcp.Transports;
 /// 命令行宿主的 <c>mcp</c> 命令：以 stdio 传输提供 MCP，直到 stdin 关闭或取消
 /// </summary>
 /// <remarks>
-/// 会话的上下文取自启动进程的命令行选项与环境变量，与 <c>invoke</c> 同一套映射（<c>--authorization</c> 或 <c>XIHAN_AUTHORIZATION</c>、<c>--tenant</c>、<c>--correlation</c>、<c>--locale</c>、<c>--timeout</c>），作用于每个 <c>tools/call</c>；选项不合法时不进入会话，按用法错误退出（<c>spec/protocol/mcp.md</c>）。标准输入的字节按 UTF-8 解码，与控制台代码页无关；答复只含 ASCII
+/// 会话的上下文取自启动进程的命令行选项与环境变量，与 <c>invoke</c> 同一套映射（<c>--authorization</c> 或 <c>XIHAN_AUTHORIZATION</c>、<c>--tenant</c>、<c>--correlation</c>、<c>--locale</c>、<c>--timeout</c>），作用于每个 <c>tools/call</c>；选项不合法时不进入会话，按用法错误退出（<c>spec/protocol/mcp.md</c>）。标准输入的字节按行严格解码成 UTF-8（非法的 UTF-8 答复解析错误、接着读下一行，ADR-0320），与控制台代码页无关；答复只含 ASCII
 /// </remarks>
 internal sealed class McpStdioCommand : ICommand
 {
@@ -59,9 +59,9 @@ internal sealed class McpStdioCommand : ICommand
             return await CommandLineFailure.WriteAsync(context.Error, probe.Error!, context.Services, null, CommandLineExitCodes.Usage).ConfigureAwait(false);
         }
 
-        // 标准输入直接按 UTF-8 解码字节（McpStdioTransport.OpenInput），不经 Console.In 的控制台代码页
+        // 标准输入按字节交给传输，由它分行再严格解码，不经 Console.In 的控制台代码页
         // 答复不另换编码：服务端写出的 JSON 把非 ASCII 字符都转义成 \uXXXX，只含 ASCII，经宿主给的输出按任何兼容 ASCII 的代码页写出都是同样的字节
-        using var input = McpStdioTransport.OpenInput(_openInput());
+        using var input = _openInput();
         // 每条消息与每个 tools/call 都以同一组选项在自己的作用域里建上下文；来源由服务端改记 mcp 与 tool 名
         await McpStdioTransport.RunAsync(
             context.Services.GetRequiredService<McpServer>(),

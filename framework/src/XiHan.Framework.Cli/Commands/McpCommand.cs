@@ -31,14 +31,14 @@ internal sealed class McpCommand : ICommand
     /// 输入
     /// </summary>
     /// <remarks>
-    /// 为空时执行时以 UTF-8 读标准输入，测试换成内存读取器
+    /// 为空时执行时读标准输入的字节，测试换成内存流
     /// </remarks>
-    private readonly TextReader? _input;
+    private readonly Stream? _input;
 
     /// <summary>
     /// 创建
     /// </summary>
-    public McpCommand(TextReader? input)
+    public McpCommand(Stream? input)
     {
         _input = input;
     }
@@ -69,8 +69,8 @@ internal sealed class McpCommand : ICommand
         await host.StartAsync(context.CancellationToken).ConfigureAwait(false);
         try
         {
-            // 标准输入按 UTF-8 读：Windows 上重定向的 Console.In 用 OEM 代码页解码，中文检索词会变成乱码；与应用的 mcp 命令用同一个读取器
-            using var stdin = _input is null ? McpStdioTransport.OpenInput(Console.OpenStandardInput()) : null;
+            // 标准输入按字节交给传输、逐行严格解码成 UTF-8：Windows 上重定向的 Console.In 用 OEM 代码页解码，中文检索词会变成乱码；与应用的 mcp 命令同一个传输
+            using var stdin = _input is null ? Console.OpenStandardInput() : null;
             await McpStdioTransport.RunAsync(host.Services.GetRequiredService<McpServer>(), host.Services, _input ?? stdin!, context.Output, context.CancellationToken).ConfigureAwait(false);
         }
         finally

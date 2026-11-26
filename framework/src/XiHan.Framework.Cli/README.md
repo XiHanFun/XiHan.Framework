@@ -10,6 +10,7 @@
 * `graph` / `pipeline` / `operations` / `invoke`：转发给应用自己的命令行宿主
 * `mcp` / `setup`：给编码助手提供框架包、配置键与文档的离线检索
 * `migrate`：按来源版本的规则集改写应用代码（当前没有登记规则集）
+* `pack` 读要嵌进 ConfigMap 的文件、`migrate` 读写源码都按宽松的 UTF-8：非法的字节换成 U+FFFD，不报错；`migrate --report` 的报告照写出器的缺省写出。它们读写的是应用自己的文本，不在 RFC-0001「写出与转交」之内（ADR-0320）。`mcp` 的 stdin 按行严格解码，非法的 UTF-8 答复解析错误（`protocol/mcp.md`）
 
 ## 如何使用
 

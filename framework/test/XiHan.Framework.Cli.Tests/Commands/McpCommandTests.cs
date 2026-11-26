@@ -1,6 +1,7 @@
 // Copyright (c) XiHanFun Contributors. Licensed under the MIT License.
 // See the LICENSE file in the project root for full license text.
 
+using System.Text;
 using System.Text.Json;
 using XiHan.Framework.Cli.Migration;
 using XiHan.Framework.Cli.Tests.Integration;
@@ -13,7 +14,7 @@ namespace XiHan.Framework.Cli.Tests.Commands;
 /// <c>xihan mcp</c> 端到端：经 <c>Protocols.Mcp</c> 的 stdio 传输提供三个只读 tool
 /// </summary>
 /// <remarks>
-/// 与 <see cref="CliHostTests"/> 同4E00集合：执行命令会设置进程级的默认消息作用域
+/// 与 <see cref="CliHostTests"/> 同一集合：执行命令会设置进程级的默认消息作用域
 /// </remarks>
 [Collection("Cli")]
 public sealed class McpCommandTests
@@ -25,13 +26,13 @@ public sealed class McpCommandTests
     {
         var output = new StringWriter();
         var error = new StringWriter();
-        var exit = await CliHost.RunAsync(["mcp", .. options], output, error, new RecordingLauncher(), MigrationRuleSets.All, new StringReader(string.Join('\n', messages)), CancellationToken.None);
+        var exit = await CliHost.RunAsync(["mcp", .. options], output, error, new RecordingLauncher(), MigrationRuleSets.All, new MemoryStream(Encoding.UTF8.GetBytes(string.Join('\n', messages))), CancellationToken.None);
         var replies = output.ToString().Split('\n', StringSplitOptions.RemoveEmptyEntries).Select(static l => JsonDocument.Parse(l.TrimEnd('\r'))).ToList();
         return (exit, replies, error.ToString());
     }
 
     /// <summary>
-    /// 4E00条 <c>tools/call</c> 请求
+    /// 一条 <c>tools/call</c> 请求
     /// </summary>
     private static string Call(int id, string tool, string arguments)
         => """{"jsonrpc":"2.0","id":""" + id.ToString(System.Globalization.CultureInfo.InvariantCulture) + ""","method":"tools/call","params":{"name":""" + "\"" + tool + "\"" + ""","arguments":""" + arguments + "}}";

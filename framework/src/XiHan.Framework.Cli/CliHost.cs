@@ -46,9 +46,9 @@ internal static class CliHost
     /// 以指定的子进程启动器、迁移规则集与 <c>mcp</c> 的输入执行（测试用）
     /// </summary>
     /// <remarks>
-    /// <paramref name="input"/> 为空时 <c>mcp</c> 以 UTF-8 读标准输入
+    /// <paramref name="input"/> 为空时 <c>mcp</c> 读标准输入的字节
     /// </remarks>
-    public static async ValueTask<int> RunAsync(IReadOnlyList<string> args, TextWriter output, TextWriter error, IProcessLauncher launcher, IReadOnlyList<MigrationRuleSet> migrationRuleSets, TextReader? input, CancellationToken cancellationToken)
+    public static async ValueTask<int> RunAsync(IReadOnlyList<string> args, TextWriter output, TextWriter error, IProcessLauncher launcher, IReadOnlyList<MigrationRuleSet> migrationRuleSets, Stream? input, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(args);
         ArgumentNullException.ThrowIfNull(launcher);

@@ -84,3 +84,7 @@ SDK：
   - `CommandLineRunnerTests`：`--json` 带孤立的代理项是用法错误、没有发起调用，代理对照常调用（改之前退出码 0）。`McpStdioTests`：读取器交来的一行带孤立的代理项时答复 -32700、`id` 为 `null`、没有执行操作，下一行照常答复。`SetupPlannerTests`：不是合法 UTF-8 的配置报 `CLI_VALIDATION_006`、`Apply` 失败且文件的字节不变，带 UTF-8 BOM 的照常读出。
 - **文档**：`Hosting.CommandLine`、`Plugins.Wasm`、`Protocols.Mcp` 的 README 已同步；文档站的 `protocols/commandline`、`plugins/wasm`、`protocols/mcp`、`appendix/spec` 与更新日志待改，SDK 页随 SDK 的改动。
 - **待定**：`OpenInput` 的严格解码（备选 9）；插件响应载荷的检查；经 JSON 写出器写出的字符串值（备选 2）。
+
+## 修订（2026-11-27）
+
+「决策」里 `McpStdioTransport.RunAsync` 的一条由 ADR-0320 改写：传输改收 stdin 的字节流，按字节分行、逐行严格解码，非法的 UTF-8 答复解析错误、接着读下一行；`OpenInput`（ADR-0254）删去。以前只对读取器交来的字符串严格编码，`mcp` 命令的读取器早已把非法的字节换成 U+FFFD，那道核对在命令里拦不到东西。RFC-0001「写出与转交」里这一项从「以字符串给出」挪到「以字节收到」一条。「影响」里 `xihan pack` 与工作流 `Http` 活动、Nacos 的宽松读入照所有者的决定维持，写进 RFC-0001 的范围说明与各包 README。
