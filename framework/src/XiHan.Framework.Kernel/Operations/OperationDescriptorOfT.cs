@@ -1,6 +1,8 @@
 // Copyright (c) XiHanFun Contributors. Licensed under the MIT License.
 // See the LICENSE file in the project root for full license text.
 
+using System.Buffers;
+using System.Text.Encodings.Web;
 using System.Text.Json;
 using System.Text.Json.Serialization.Metadata;
 using Microsoft.Extensions.DependencyInjection;
@@ -28,6 +30,14 @@ public sealed class OperationDescriptor<TOperation, TRequest, TResponse> : Opera
     private static readonly byte[] _emptyObject = "{}"u8.ToArray();
 
     /// <summary>
+    /// 序列化器没有设置深度上限时的缺省值
+    /// </summary>
+    /// <remarks>
+    /// 与 System.Text.Json 的缺省相同；写出器自己的缺省是 1000
+    /// </remarks>
+    private const int DefaultMaxDepth = 64;
+
+    /// <summary>
     /// 请求类型的序列化元数据
     /// </summary>
     private readonly JsonTypeInfo<TRequest> _requestInfo;
@@ -36,6 +46,14 @@ public sealed class OperationDescriptor<TOperation, TRequest, TResponse> : Opera
     /// 响应类型的序列化元数据
     /// </summary>
     private readonly JsonTypeInfo<TResponse> _responseInfo;
+
+    /// <summary>
+    /// 写出响应的写出器选项
+    /// </summary>
+    /// <remarks>
+    /// 缩进、换行与深度取响应类型的序列化选项，编码器换成包着它自己的编码器的 <see cref="StrictJsonEncoder"/>：写出的字节与序列化器自己写的相同，只多一道字符串的核对
+    /// </remarks>
+    private readonly JsonWriterOptions _responseWriterOptions;
 
     /// <summary>
     /// 创建描述
@@ -65,6 +83,7 @@ public sealed class OperationDescriptor<TOperation, TRequest, TResponse> : Opera
     {
         _requestInfo = requestInfo ?? throw new ArgumentNullException(nameof(requestInfo));
         _responseInfo = responseInfo ?? throw new ArgumentNullException(nameof(responseInfo));
+        _responseWriterOptions = WriterOptionsOf(responseInfo.Options);
     }
 
     /// <inheritdoc />
@@ -108,10 +127,19 @@ public sealed class OperationDescriptor<TOperation, TRequest, TResponse> : Opera
     }
 
     /// <inheritdoc />
+    /// <remarks>
+    /// 写不成合法的 JSON 文本即抛出：响应里的字符串有孤立的代理项时是 <see cref="ArgumentException"/>，不像 System.Text.Json 的缺省那样写成转义的 U+FFFD（RFC-0011 规则 10「编码」，ADR-0318），与浮点成员是 NaN 时一样由 XGI 入口按未处理的异常结束
+    /// </remarks>
     public override ReadOnlyMemory<byte> EncodeResponse(object response)
     {
         ArgumentNullException.ThrowIfNull(response);
-        return JsonSerializer.SerializeToUtf8Bytes((TResponse)response, _responseInfo);
+        var buffer = new ArrayBufferWriter<byte>();
+        using (var writer = new Utf8JsonWriter(buffer, _responseWriterOptions))
+        {
+            JsonSerializer.Serialize(writer, (TResponse)response, _responseInfo);
+        }
+
+        return buffer.WrittenMemory;
     }
 
     /// <inheritdoc />
@@ -130,6 +158,22 @@ public sealed class OperationDescriptor<TOperation, TRequest, TResponse> : Opera
         var result = await operation.HandleAsync(typed, context).ConfigureAwait(false);
         return result.TryGetValue(out var value) ? Result.Success<object>(value!) : Result.Failure<object>(result.Error!);
     }
+
+    /// <summary>
+    /// 按序列化选项建写出器选项
+    /// </summary>
+    /// <remarks>
+    /// 照序列化器自己建写出器时取的那几项；上下文没有设置编码器时包住 <see cref="JavaScriptEncoder.Default"/>，与缺省写出的转义相同
+    /// </remarks>
+    private static JsonWriterOptions WriterOptionsOf(JsonSerializerOptions options) => new()
+    {
+        Encoder = new StrictJsonEncoder(options.Encoder ?? JavaScriptEncoder.Default),
+        Indented = options.WriteIndented,
+        IndentCharacter = options.IndentCharacter,
+        IndentSize = options.IndentSize,
+        NewLine = options.NewLine,
+        MaxDepth = options.MaxDepth == 0 ? DefaultMaxDepth : options.MaxDepth,
+    };
 
     /// <summary>
     /// 构造载荷不合法的失败结果
