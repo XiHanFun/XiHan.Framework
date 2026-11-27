@@ -32,7 +32,9 @@ app.UseXiHan();
 app.MapXiHanMcp();   // POST /mcp
 ```
 
-命令行宿主里 `builder.Services.AddXiHanCommandLine()` 后运行 `app mcp`，MCP 客户端以子进程方式连接。可选配置在 `XiHan:Protocols:Mcp`：`ServerName`、`ServerVersion`、`Instructions`、`Tools:<操作 ID>`。
+命令行宿主里 `builder.Services.AddXiHanCommandLine()` 后运行 `app mcp`，MCP 客户端以子进程方式连接。可选配置在 `XiHan:Protocols:Mcp`：`ServerName`、`ServerVersion`、`Instructions`、`Tools:<操作 ID>`，HTTP 入口的 `AllowedOrigins`、`MaxRequestBodyBytes`，stdio 的 `MaxStdioLineBytes`（一行的字节上限，缺省 4 MiB）。
+
+两种传输交来的每条消息先整条过 JSON 文本的共同检查：非法的 UTF-8、转义出的孤立代理项、任何一层重复的成员、嵌套超过 64 层，都与不是 JSON 一样答复解析错误（-32700，HTTP 400），不执行任何 tool（ADR-0331）。
 
 ## 主要类型
 
@@ -40,7 +42,7 @@ app.MapXiHanMcp();   // POST /mcp
 
 * `McpProtocolFeature`：特性入口
 * `McpProtocolOptions`：服务名、版本、说明与 tool 名覆盖
-* `McpStdioTransport`：stdio 传输（命令行宿主的 `mcp` 命令由特性登记）。`RunAsync` 收 stdin 的字节流（如 `Console.OpenStandardInput()`），先按 LF、CR 或 CR LF 分行、再把每一行严格解码成 UTF-8，开头的 UTF-8 BOM 不算内容；一行里有非法的 UTF-8 时与不是 JSON 一样答复解析错误（-32700）、接着读下一行（ADR-0320）。以前收 `TextReader`，`OpenInput` 已删去：把字节流直接交给 `RunAsync`
+* `McpStdioTransport`：stdio 传输（命令行宿主的 `mcp` 命令由特性登记）。`RunAsync` 收 stdin 的字节流（如 `Console.OpenStandardInput()`），先按 LF、CR 或 CR LF 分行、再把每一行严格解码成 UTF-8，开头的 UTF-8 BOM 不算内容；一行里有非法的 UTF-8 时与不是 JSON 一样答复解析错误（-32700）、接着读下一行（ADR-0320）；一行超过 `MaxStdioLineBytes` 时读到行尾为止丢弃、不缓冲，同样答复解析错误、接着读下一行（ADR-0331）。以前收 `TextReader`，`OpenInput` 已删去：把字节流直接交给 `RunAsync`
 
 ## 更多文档
 

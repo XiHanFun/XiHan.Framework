@@ -67,6 +67,265 @@ public sealed class McpStdioTests
         return output.ToString().Split('\n', StringSplitOptions.RemoveEmptyEntries).Select(static l => l.TrimEnd('\r')).ToList();
     }
 
+    /// <summary>
+    /// 以给定的 stdio 单行上限启动
+    /// </summary>
+    /// <remarks>
+    /// 只装配 MCP 与订单特性：单行上限的用例不涉及认证
+    /// </remarks>
+    private static async Task<IHost> StartWithLineLimitAsync(int maxLineBytes)
+    {
+        var builder = Host.CreateApplicationBuilder();
+        builder.Configuration.AddInMemoryCollection([new("XiHan:Protocols:Mcp:MaxStdioLineBytes", maxLineBytes.ToString(System.Globalization.CultureInfo.InvariantCulture))]);
+        builder.AddXiHan(static xihan => xihan.UseMinimalProfile().UseFeature<InMemorySecurityFeature>().UseFeature<McpProtocolFeature>().UseFeature<OrdersFeature>());
+        builder.Services.AddSingleton<OriginLog>();
+        builder.Services.AddSingleton<CallLog>();
+        var host = builder.Build();
+        await host.StartAsync();
+        return host;
+    }
+
+    /// <summary>
+    /// 恰好给定字节数的一条 <c>ping</c>
+    /// </summary>
+    /// <remarks>
+    /// 在 <c>params</c> 里垫一个字符串成员补足长度；不含行尾
+    /// </remarks>
+    private static byte[] PingOfLength(int id, int length)
+    {
+        var prefix = $$"""{"jsonrpc":"2.0","id":{{id}},"method":"ping","params":{"pad":""" + "\"";
+        const string Suffix = "\"}}";
+        var pad = length - prefix.Length - Suffix.Length;
+        Assert.True(pad >= 0, "The requested line is shorter than an empty ping.");
+        return Encoding.UTF8.GetBytes(prefix + new string('x', pad) + Suffix);
+    }
+
+    /// <summary>
+    /// 答复里的 <c>id</c>：数字照原样，<c>null</c> 写成 <see langword="null"/>
+    /// </summary>
+    private static int? IdOf(string line)
+    {
+        using var reply = JsonDocument.Parse(line);
+        var id = reply.RootElement.GetProperty("id");
+        return id.ValueKind == JsonValueKind.Null ? null : id.GetInt32();
+    }
+
+    /// <summary>
+    /// 一行是否是解析错误的答复
+    /// </summary>
+    /// <remarks>
+    /// -32700，<c>data.code</c> 为 <see cref="McpErrors.InvalidMessage"/>，<c>id</c> 为 <c>null</c>
+    /// </remarks>
+    private static bool IsParseError(string line)
+    {
+        using var reply = JsonDocument.Parse(line);
+        var root = reply.RootElement;
+        return root.GetProperty("id").ValueKind == JsonValueKind.Null
+            && root.TryGetProperty("error", out var error)
+            && error.GetProperty("code").GetInt32() == -32700
+            && error.GetProperty("data").GetProperty("code").GetString() == McpErrors.InvalidMessage;
+    }
+
+    [Fact]
+    public async Task Transport_ALineOfExactlyTheLimit_IsHandled_AndOneByteMoreIsAParseError()
+    {
+        // 一行设字节上限（protocol/mcp.md「生命周期与传输」，ADR-0331）：修之前一行的长度不设上限，整行缓冲进内存
+        using var host = await StartWithLineLimitAsync(256);
+        try
+        {
+            var lines = await RunTransportAsync(host, [.. PingOfLength(1, 256), (byte)'\n', .. PingOfLength(2, 257), (byte)'\r', (byte)'\n', .. PingOfLength(3, 256)]);
+
+            Assert.Equal(3, lines.Count);
+            Assert.True(IdOf(lines[0]) == 1, lines[0]);
+            Assert.True(IsParseError(lines[1]), lines[1]);
+            Assert.Equal(3, IdOf(lines[2]));
+        }
+        finally
+        {
+            await host.StopAsync();
+        }
+    }
+
+    [Fact]
+    public async Task Transport_AnOverlongLine_IsDiscardedToItsEnd_AndTheNextLineIsHandled()
+    {
+        // 超长的一行读到行尾为止丢弃：其中的换行之前看起来像消息的内容不被当成下一行，tools/call 不执行；
+        // 分好几次读入（远超 4 KiB 的块）与紧跟着单独的 CR 行尾时都一样
+        using var host = await StartWithLineLimitAsync(256);
+        try
+        {
+            var call = """{"jsonrpc":"2.0","id":9,"method":"tools/call","params":{"name":"orders_get","arguments":{"id":"7","page":1}}}"""u8.ToArray();
+            byte[] input = [.. call, .. Enumerable.Repeat((byte)' ', 20_000), (byte)'\r', .. PingOfLength(2, 100), (byte)'\n', .. PingOfLength(3, 300)];
+
+            var lines = await RunTransportAsync(host, input);
+
+            Assert.Equal(3, lines.Count);
+            Assert.True(IsParseError(lines[0]), lines[0]);
+            Assert.Equal(2, IdOf(lines[1]));
+            // 输入在超长的一行里结束：同样答复一次再结束会话
+            Assert.True(IsParseError(lines[2]), lines[2]);
+            Assert.Empty(host.Services.GetRequiredService<OriginLog>().Origins);
+        }
+        finally
+        {
+            await host.StopAsync();
+        }
+    }
+
+    [Fact]
+    public async Task Transport_TheByteOrderMark_DoesNotCountTowardsTheLimit()
+    {
+        // 开头的 UTF-8 BOM 不算内容，也不算进一行的长度；没有 BOM 时同样长的第一行超出上限
+        using var host = await StartWithLineLimitAsync(256);
+        try
+        {
+            var marked = await RunTransportAsync(host, [0xEF, 0xBB, 0xBF, .. PingOfLength(1, 256)]);
+            var bare = await RunTransportAsync(host, [.. PingOfLength(1, 259)]);
+
+            Assert.Equal(1, IdOf(Assert.Single(marked)));
+            Assert.True(IsParseError(Assert.Single(bare)));
+        }
+        finally
+        {
+            await host.StopAsync();
+        }
+    }
+
+    [Fact]
+    public async Task Transport_StopsDiscardingAnOverlongLine_WhenCancelled()
+    {
+        // 没有行尾的超长输入：丢弃也按块读取，每读一块前核对取消，不会一直读下去
+        using var host = await StartWithLineLimitAsync(256);
+        try
+        {
+            using var cancellation = new CancellationTokenSource();
+            await using var input = new EndlessStream(cancelAfterReads: 50, cancellation);
+            var output = new StringWriter();
+
+            await Assert.ThrowsAnyAsync<OperationCanceledException>(() => McpStdioTransport.RunAsync(host.Services.GetRequiredService<McpServer>(), host.Services, input, output, cancellation.Token));
+
+            Assert.Equal(50, input.Reads);
+            Assert.Empty(output.ToString());
+        }
+        finally
+        {
+            await host.StopAsync();
+        }
+    }
+
+    [Fact]
+    public async Task Transport_ALineThatFailsTheJsonTextCheck_IsAParseError_AndTheSessionGoesOn()
+    {
+        // 每一行整条过 RFC-0001「JSON 文本」的检查（protocol/mcp.md「操作映射」，ADR-0331）：修之前 method / id 里转义出的孤立代理项让会话以未处理的异常结束，
+        // 重复的成员取最后一个照常处理，arguments 里的到 Validate 阶段才成为 isError 结果
+        using var host = await StartAsync();
+        try
+        {
+            var lines = await RunTransportAsync(host, Encoding.UTF8.GetBytes(string.Join('\n',
+                """{"jsonrpc":"2.0","id":1,"method":"\ud800"}""",
+                """{"jsonrpc":"2.0","id":"\udc00","method":"ping"}""",
+                """{"jsonrpc":"2.0","id":1,"id":2,"method":"ping"}""",
+                """{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"orders_get","arguments":{"id":"7","id":"8","page":1}}}""",
+                """{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"orders_get","arguments":{"id":"\ud800","page":1}}}""",
+                """{"jsonrpc":"2.0","id":5,"method":"ping"}""")));
+
+            Assert.Equal(6, lines.Count);
+            Assert.All(lines[..5], static line => Assert.True(IsParseError(line), line));
+            Assert.Equal(5, IdOf(lines[5]));
+            Assert.Empty(host.Services.GetRequiredService<OriginLog>().Origins);
+        }
+        finally
+        {
+            await host.StopAsync();
+        }
+    }
+
+    [Theory]
+    [InlineData("0")]
+    [InlineData("-1")]
+    [InlineData("1.5")]
+    [InlineData("2147483648")]
+    [InlineData("many")]
+    public void MaxStdioLineBytes_ThatIsNotAPositiveInt32_FailsNamingTheConfigurationKey(string value)
+    {
+        var configuration = new ConfigurationBuilder().AddInMemoryCollection([new("XiHan:Protocols:Mcp:MaxStdioLineBytes", value)]).Build();
+
+        var thrown = Assert.Throws<ArgumentException>(() => McpProtocolOptions.FromConfiguration(configuration));
+
+        Assert.Contains("'XiHan:Protocols:Mcp:MaxStdioLineBytes'", thrown.Message, StringComparison.Ordinal);
+        Assert.Throws<ArgumentOutOfRangeException>(static () => new McpProtocolOptions { MaxStdioLineBytes = 0 });
+        Assert.Equal(McpProtocolOptions.DefaultMaxStdioLineBytes, McpProtocolOptions.FromConfiguration(new ConfigurationBuilder().Build()).MaxStdioLineBytes);
+        Assert.Equal(4 * 1024 * 1024, McpProtocolOptions.DefaultMaxStdioLineBytes);
+    }
+
+    /// <summary>
+    /// 一直交出空格、没有行尾的输入
+    /// </summary>
+    /// <remarks>
+    /// 读到第 <c>cancelAfterReads</c> 次时取消给定的令牌源，记下读的次数
+    /// </remarks>
+    /// <param name="cancelAfterReads">读到第几次时取消</param>
+    /// <param name="cancellation">要取消的令牌源</param>
+    private sealed class EndlessStream(int cancelAfterReads, CancellationTokenSource cancellation) : Stream
+    {
+        /// <summary>
+        /// 已读的次数
+        /// </summary>
+        public int Reads { get; private set; }
+
+        /// <inheritdoc />
+        public override bool CanRead => true;
+
+        /// <inheritdoc />
+        public override bool CanSeek => false;
+
+        /// <inheritdoc />
+        public override bool CanWrite => false;
+
+        /// <inheritdoc />
+        public override long Length => throw new NotSupportedException();
+
+        /// <inheritdoc />
+        public override long Position
+        {
+            get => throw new NotSupportedException();
+            set => throw new NotSupportedException();
+        }
+
+        /// <inheritdoc />
+        public override int Read(byte[] buffer, int offset, int count) => Read(buffer.AsSpan(offset, count));
+
+        /// <inheritdoc />
+        public override int Read(Span<byte> buffer)
+        {
+            Reads++;
+            if (Reads == cancelAfterReads)
+            {
+                cancellation.Cancel();
+            }
+
+            buffer.Fill((byte)' ');
+            return buffer.Length;
+        }
+
+        /// <inheritdoc />
+        public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default) => ValueTask.FromResult(Read(buffer.Span));
+
+        /// <inheritdoc />
+        public override void Flush()
+        {
+        }
+
+        /// <inheritdoc />
+        public override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException();
+
+        /// <inheritdoc />
+        public override void SetLength(long value) => throw new NotSupportedException();
+
+        /// <inheritdoc />
+        public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();
+    }
+
     [Fact]
     public async Task Transport_SkipsTheUtf8ByteOrderMark_AndNeverSwitchesEncodingOnAnotherMark()
     {

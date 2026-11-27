@@ -13,7 +13,7 @@ namespace XiHan.Framework.Protocols.Mcp.Transports;
 /// 命令行宿主的 <c>mcp</c> 命令：以 stdio 传输提供 MCP，直到 stdin 关闭或取消
 /// </summary>
 /// <remarks>
-/// 会话的上下文取自启动进程的命令行选项与环境变量，与 <c>invoke</c> 同一套映射（<c>--authorization</c> 或 <c>XIHAN_AUTHORIZATION</c>、<c>--tenant</c>、<c>--correlation</c>、<c>--locale</c>、<c>--timeout</c>），作用于每个 <c>tools/call</c>；选项不合法时不进入会话，按用法错误退出（<c>spec/protocol/mcp.md</c>）。标准输入的字节按行严格解码成 UTF-8（非法的 UTF-8 答复解析错误、接着读下一行，ADR-0320），与控制台代码页无关；答复只含 ASCII
+/// 会话的上下文取自启动进程的命令行选项与环境变量，与 <c>invoke</c> 同一套映射（<c>--authorization</c> 或 <c>XIHAN_AUTHORIZATION</c>、<c>--tenant</c>、<c>--correlation</c>、<c>--locale</c>、<c>--timeout</c>），作用于每个 <c>tools/call</c>；选项不合法时不进入会话，按用法错误退出（<c>spec/protocol/mcp.md</c>）。标准输入的字节按行严格解码成 UTF-8（非法的 UTF-8 答复解析错误、接着读下一行，ADR-0320），与控制台代码页无关；一行超过 <see cref="McpProtocolOptions.MaxStdioLineBytes"/> 同样答复解析错误、接着读下一行（ADR-0331）；答复只含 ASCII
 /// </remarks>
 internal sealed class McpStdioCommand : ICommand
 {

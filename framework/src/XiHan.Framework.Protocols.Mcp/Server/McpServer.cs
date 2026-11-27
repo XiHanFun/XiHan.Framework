@@ -5,6 +5,7 @@ using System.Buffers;
 using System.Text;
 using System.Text.Json;
 using Microsoft.Extensions.Primitives;
+using XiHan.Framework.Kernel.Json;
 using XiHan.Framework.Kernel.Operations;
 using XiHan.Framework.Kernel.Pipeline;
 using XiHan.Framework.Localization.Abstractions.Messages;
@@ -122,6 +123,14 @@ public sealed class McpServer
     public string ServerName { get; }
 
     /// <summary>
+    /// 选项
+    /// </summary>
+    /// <remarks>
+    /// 传输从这里取自己的上限（stdio 一行的字节数）
+    /// </remarks>
+    internal McpProtocolOptions Options => _options;
+
+    /// <summary>
     /// 发布的 tool，按名字排序
     /// </summary>
     /// <remarks>
@@ -151,7 +160,7 @@ public sealed class McpServer
     /// 消息不是 JSON 时的解析错误答复（<c>id</c> 为 <c>null</c>，JSON-RPC 码 -32700）
     /// </summary>
     /// <remarks>
-    /// stdio 传输交来的一行编码不成 UTF-8 时也用它：与不是 JSON 同一个答复（ADR-0312）
+    /// 没过 JSON 文本共同检查的消息（ADR-0331）、stdio 传输交来的一行编码不成 UTF-8（ADR-0312）或超过一行的上限（ADR-0331）时也用它：与不是 JSON 同一个答复
     /// </remarks>
     internal static McpReply NotJsonReply()
         => new(WriteError(default, JsonRpcErrorCodes.ParseError, McpErrors.InvalidMessage, McpMessages.MessageNotJson.L()), IsMalformed: true);
@@ -173,7 +182,7 @@ public sealed class McpServer
     /// 处理一条 JSON-RPC 消息
     /// </summary>
     /// <remarks>
-    /// 通知与客户端发来的响应不答复（无值）；请求得到响应对象
+    /// 通知与客户端发来的响应不答复（无值）；请求得到响应对象。消息先整条过 RFC-0001「JSON 文本」的共同检查（<see cref="JsonText.FindProblem"/>），没过与不是 JSON 同一个解析错误（<c>spec/protocol/mcp.md</c>「操作映射」，ADR-0331）
     /// </remarks>
     /// <param name="message">消息的 UTF-8 JSON</param>
     /// <param name="context">承载这条消息的调用上下文（区域、取消）</param>
@@ -182,6 +191,13 @@ public sealed class McpServer
     {
         ArgumentNullException.ThrowIfNull(context);
         ArgumentNullException.ThrowIfNull(createCallContext);
+
+        // 先过 JSON 文本的共同检查：System.Text.Json 对重复的成员取最后一个，字符串里非法的 UTF-8 与转义出的孤立代理项要到取字符串时才抛出，
+        // 在 HTTP 上成了 500、在 stdio 上打断整个会话；arguments 里的问题也在这里拒绝，整条消息就不是合法的 JSON 文本（protocol/mcp.md，ADR-0331）
+        if (JsonText.FindProblem(message.Span).HasValue)
+        {
+            return Maybe.Some(NotJsonReply());
+        }
 
         JsonDocument document;
         try

@@ -1800,6 +1800,14 @@
           "default": "4194304",
           "minimum": 1,
           "summary": "HTTP 入口的请求体上限（字节），超过即 413"
+        },
+        {
+          "key": "MaxStdioLineBytes",
+          "type": "integer",
+          "default": "4194304",
+          "minimum": 1,
+          "maximum": 2147483647,
+          "summary": "stdio 传输一行的上限（字节，不含行尾与开头的 BOM）；超过的一行读到行尾丢弃、答复解析错误（-32700），接着读下一行"
         }
       ]
     },

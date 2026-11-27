@@ -136,3 +136,7 @@ MCP 的 stdio：
   - 类型化请求里浮点成员是 NaN、或 64 层最里层有值时，Validate 阶段按未处理的异常结束；原始调用里同样内容的请求是 `KERNEL_VALIDATION_001` 或读得进（备选 13、15）。
   - stdio 一行的长度不设上限（备选 20）。
   - protobuf 的字符串字段（`Error.text`、`message_key`）仍由 Google.Protobuf 宽松编码，与 ADR-0312 已列的那一条相同。
+
+## 修订（2026-11-27）
+
+ADR-0331 改了备选 20：stdio 的一行设可配置的字节上限 `XiHan:Protocols:Mcp:MaxStdioLineBytes`（缺省 4 MiB，与 HTTP 入口的请求体缺省上限相同；行尾与开头的 BOM 不算），超过的一行读到行尾为止丢弃、不缓冲，答复与非法的 UTF-8 同一个解析错误（-32700），接着读下一行。另外两种传输交来的每条消息都先整条过 RFC-0001「JSON 文本」的共同检查，没过同样是这个解析错误。本 ADR 其余不变。

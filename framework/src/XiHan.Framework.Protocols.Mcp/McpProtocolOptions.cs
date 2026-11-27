@@ -13,7 +13,7 @@ namespace XiHan.Framework.Protocols.Mcp;
 /// MCP 协议适配器选项
 /// </summary>
 /// <remarks>
-/// 从配置节 <c>XiHan:Protocols:Mcp</c> 显式读取：<c>ServerName</c>、<c>ServerVersion</c>、<c>Instructions</c>，<c>Tools:&lt;操作 ID&gt;</c> = tool 名显式覆盖推导的名字，HTTP 入口的 <c>AllowedOrigins</c> 与 <c>MaxRequestBodyBytes</c>（ADR-0199）
+/// 从配置节 <c>XiHan:Protocols:Mcp</c> 显式读取：<c>ServerName</c>、<c>ServerVersion</c>、<c>Instructions</c>，<c>Tools:&lt;操作 ID&gt;</c> = tool 名显式覆盖推导的名字，HTTP 入口的 <c>AllowedOrigins</c> 与 <c>MaxRequestBodyBytes</c>（ADR-0199），stdio 传输的 <c>MaxStdioLineBytes</c>（ADR-0331）
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed record McpProtocolOptions
@@ -133,6 +133,26 @@ public sealed record McpProtocolOptions
     } = DefaultMaxRequestBodyBytes;
 
     /// <summary>
+    /// stdio 一行的缺省上限
+    /// </summary>
+    /// <remarks>
+    /// 4 MiB，与 HTTP 入口请求体的缺省上限 <see cref="DefaultMaxRequestBodyBytes"/> 相同：同一条消息经两种传输都收得下
+    /// </remarks>
+    public const int DefaultMaxStdioLineBytes = 4 * 1024 * 1024;
+
+    /// <summary>
+    /// stdio 传输一行的上限（字节）
+    /// </summary>
+    /// <remarks>
+    /// 缺省 <see cref="DefaultMaxStdioLineBytes"/>，行尾与输入开头的 UTF-8 BOM 不算。超过的一行读不进：已读到的部分不再保留，其余的字节读到行尾为止丢弃、不缓冲，与非法的 UTF-8 一样答复解析错误（-32700），接着读下一行（ADR-0331）
+    /// </remarks>
+    public int MaxStdioLineBytes
+    {
+        get => field;
+        init => field = value >= 1 ? value : throw new ArgumentOutOfRangeException(nameof(value), value, "The stdio line limit must be positive.");
+    } = DefaultMaxStdioLineBytes;
+
+    /// <summary>
     /// 请求的 <c>Origin</c> 是否允许
     /// </summary>
     /// <remarks>
@@ -167,7 +187,7 @@ public sealed record McpProtocolOptions
     /// 从配置读取
     /// </summary>
     /// <remarks>
-    /// <c>AllowedOrigins</c> 有不是源的项、<c>MaxRequestBodyBytes</c> 不是正整数时抛出 <see cref="ArgumentException"/>
+    /// <c>AllowedOrigins</c> 有不是源的项、<c>MaxRequestBodyBytes</c> 不是正整数、<c>MaxStdioLineBytes</c> 不是 32 位的正整数时抛出 <see cref="ArgumentException"/>
     /// </remarks>
     public static McpProtocolOptions FromConfiguration(IConfiguration configuration)
     {
@@ -190,6 +210,7 @@ public sealed record McpProtocolOptions
             Tools = tools,
             AllowedOrigins = section.GetSection("AllowedOrigins").GetChildren().Select(static child => child.Value ?? string.Empty).ToList(),
             MaxRequestBodyBytes = ConfigurationValues.ReadInt64(section, "MaxRequestBodyBytes", 1) ?? DefaultMaxRequestBodyBytes,
+            MaxStdioLineBytes = ConfigurationValues.ReadInt32(section, "MaxStdioLineBytes", 1) ?? DefaultMaxStdioLineBytes,
         };
     }
 

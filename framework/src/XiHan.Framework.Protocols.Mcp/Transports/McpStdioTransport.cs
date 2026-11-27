@@ -17,6 +17,8 @@ namespace XiHan.Framework.Protocols.Mcp.Transports;
 /// <remarks>
 /// stdin 每行一条 JSON-RPC 消息，答复每条一行写到 stdout（不含换行的紧凑 JSON），通知不答复；输入结束即返回。每条消息在自己的服务作用域里处理，<c>tools/call</c> 以该作用域的新上下文经完整管道执行。上下文由调用方给出的工厂构造（<c>mcp</c> 命令按命令行选项与环境变量带上凭据、租户、区域与时限，见 <c>spec/protocol/mcp.md</c>）；不给工厂时是没有凭据与 Baggage 的空上下文。日志必须走 stderr，由宿主保证。
 /// 输入按字节读：先分行（LF、CR 或 CR LF 结束一行，开头的 UTF-8 BOM 不算内容），再把每一行严格按 UTF-8 解码，非法的 UTF-8 与不是 JSON 同样答复解析错误（-32700）、接着读下一行，不换成 U+FFFD 再处理（RFC-0001「写出与转交」，ADR-0320）。
+/// 一行不超过 <see cref="McpProtocolOptions.MaxStdioLineBytes"/> 个字节（不含行尾与开头的 BOM）：超过的一行读到行尾为止丢弃、不缓冲，同样答复解析错误、接着读下一行；每读一块之前核对取消，取消时抛出 <see cref="OperationCanceledException"/>（ADR-0331）。
+/// 解码之后的每一行经服务端整条过 JSON 文本的共同检查（ADR-0331）。
 /// 与控制台代码页无关：<see cref="Console.In"/> 在 Windows 上按控制台输入代码页（936、437 等）解码重定向的标准输入，所以收的是字节流（如 <see cref="Console.OpenStandardInput()"/>）
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
@@ -55,10 +57,17 @@ public static class McpStdioTransport
         ArgumentNullException.ThrowIfNull(input);
         ArgumentNullException.ThrowIfNull(output);
         ArgumentNullException.ThrowIfNull(createContext);
-        var lines = new LineReader(input);
+        var lines = new LineReader(input, server.Options.MaxStdioLineBytes);
         while (!cancellationToken.IsCancellationRequested)
         {
-            var message = await lines.ReadLineAsync(cancellationToken).ConfigureAwait(false);
+            var (message, tooLong) = await lines.ReadLineAsync(cancellationToken).ConfigureAwait(false);
+            if (tooLong)
+            {
+                // 超过上限的一行已经读到行尾丢弃：与非法的 UTF-8 同一个答复，会话继续（protocol/mcp.md，ADR-0331）
+                await WriteAsync(output, McpServer.NotJsonReply(), cancellationToken).ConfigureAwait(false);
+                continue;
+            }
+
             if (message is null)
             {
                 // 输入关闭：客户端结束会话
@@ -127,11 +136,17 @@ public static class McpStdioTransport
     /// </summary>
     /// <remarks>
     /// LF、CR 或 CR LF 结束一行，行尾不算内容，最后一行可以没有行尾，与以前用的 <see cref="StreamReader.ReadLineAsync(CancellationToken)"/> 分行相同；整个输入开头的 UTF-8 BOM 去掉。
-    /// 一行的长度与以前一样不设上限：stdio 的对端是启动这个进程的本机客户端
+    /// 一行最多缓冲 <c>maxLineBytes</c> 个字节（第一行另加 BOM 的三个），超过即丢弃已缓冲的部分，其余的字节读到行尾为止不再缓冲（ADR-0331；以前不设上限）
     /// </remarks>
     /// <param name="input">输入的字节流</param>
-    private sealed class LineReader(Stream input)
+    /// <param name="maxLineBytes">一行的上限（字节），不含行尾与开头的 BOM</param>
+    private sealed class LineReader(Stream input, int maxLineBytes)
     {
+        /// <summary>
+        /// UTF-8 BOM 的字节数
+        /// </summary>
+        private const int ByteOrderMarkLength = 3;
+
         /// <summary>
         /// 一次读入的字节
         /// </summary>
@@ -165,20 +180,32 @@ public static class McpStdioTransport
         /// <summary>
         /// 读下一行
         /// </summary>
-        /// <returns>一行的字节，不含行尾；输入结束时为 <see langword="null"/></returns>
-        public async ValueTask<byte[]?> ReadLineAsync(CancellationToken cancellationToken)
+        /// <remarks>
+        /// 每读一块之前核对取消：丢弃超长的一行可能要读很多块，不认取消令牌的输入（如控制台的标准输入）也要停得下来
+        /// </remarks>
+        /// <returns>一行的字节，不含行尾，输入结束时为 <see langword="null"/>；这一行超过上限时字节为 <see langword="null"/>、<c>TooLong</c> 为真</returns>
+        public async ValueTask<(byte[]? Line, bool TooLong)> ReadLineAsync(CancellationToken cancellationToken)
         {
             _line.ResetWrittenCount();
+            var tooLong = false;
             while (true)
             {
                 if (_start == _end)
                 {
+                    cancellationToken.ThrowIfCancellationRequested();
                     _start = 0;
                     _end = await input.ReadAsync(_chunk, cancellationToken).ConfigureAwait(false);
                     if (_end == 0)
                     {
+                        // 输入在超长的一行里结束：这一行照样答复一次，下一次读到输入结束
+                        if (tooLong)
+                        {
+                            _first = false;
+                            return (null, true);
+                        }
+
                         // 输入结束：没有拼到字节就没有这一行，"a\n" 之后不多出一个空行
-                        return _line.WrittenCount == 0 ? null : Take();
+                        return _line.WrittenCount == 0 ? (null, false) : Take();
                     }
                 }
 
@@ -195,16 +222,37 @@ public static class McpStdioTransport
                 }
 
                 var index = available.IndexOfAny((byte)'\r', (byte)'\n');
+                var content = index < 0 ? available : available[..index];
+                if (!tooLong)
+                {
+                    // 写之前先比剩下的余量：一块最多 4 KiB，先写再比会多缓冲一块。第一行的 BOM 不算内容，多留它的三个字节，交出时再按去掉 BOM 之后的长度核对
+                    var limit = _first ? maxLineBytes + ByteOrderMarkLength : maxLineBytes;
+                    if (content.Length > limit - _line.WrittenCount)
+                    {
+                        // 超过上限：已缓冲的部分不再保留，余下的字节只找行尾、不再缓冲
+                        tooLong = true;
+                        _line.ResetWrittenCount();
+                    }
+                    else
+                    {
+                        _line.Write(content);
+                    }
+                }
+
                 if (index < 0)
                 {
-                    _line.Write(available);
                     _start = _end;
                     continue;
                 }
 
-                _line.Write(available[..index]);
                 _afterCr = available[index] == (byte)'\r';
                 _start += index + 1;
+                if (tooLong)
+                {
+                    _first = false;
+                    return (null, true);
+                }
+
                 return Take();
             }
         }
@@ -213,9 +261,9 @@ public static class McpStdioTransport
         /// 交出拼好的一行
         /// </summary>
         /// <remarks>
-        /// 复制一份：服务端处理这一行时读取器不会再写，但交出的字节不随下一行变
+        /// 复制一份：服务端处理这一行时读取器不会再写，但交出的字节不随下一行变。第一行去掉 BOM 之后仍超过上限的（缓冲时为 BOM 多留了三个字节）同样超长
         /// </remarks>
-        private byte[] Take()
+        private (byte[]? Line, bool TooLong) Take()
         {
             var line = _line.WrittenSpan;
             if (_first)
@@ -223,11 +271,11 @@ public static class McpStdioTransport
                 _first = false;
                 if (line.StartsWith((ReadOnlySpan<byte>)[0xEF, 0xBB, 0xBF]))
                 {
-                    line = line[3..];
+                    line = line[ByteOrderMarkLength..];
                 }
             }
 
-            return line.ToArray();
+            return line.Length > maxLineBytes ? (null, true) : (line.ToArray(), false);
         }
     }
 }

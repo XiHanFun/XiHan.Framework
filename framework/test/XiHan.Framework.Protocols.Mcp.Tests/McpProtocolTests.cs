@@ -192,6 +192,60 @@ public sealed class McpProtocolTests
         Assert.Equal(HttpStatusCode.OK, (await PostAsync(client, Rpc("ping"))).Status);
     }
 
+    /// <summary>
+    /// 没过 JSON 文本共同检查的请求体
+    /// </summary>
+    /// <remarks>
+    /// 名字与正文的字节：字符串里非法的 UTF-8、method / id / arguments 里转义出的孤立代理项、各层重复的成员、嵌套超过 64 层
+    /// </remarks>
+    public static TheoryData<string, byte[]> BodiesFailingTheJsonTextCheck => new()
+    {
+        { "invalid UTF-8 in arguments", [.. "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"tools/call\",\"params\":{\"name\":\"orders_get\",\"arguments\":{\"id\":\"7"u8, 0xED, 0xA0, 0x80, .. "\",\"page\":1}}}"u8] },
+        { "invalid UTF-8 in method", [.. "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"pi"u8, 0xFF, .. "ng\"}"u8] },
+        { "lone surrogate in method", """{"jsonrpc":"2.0","id":1,"method":"\ud800"}"""u8.ToArray() },
+        { "lone surrogate in id", """{"jsonrpc":"2.0","id":"\udc00","method":"ping"}"""u8.ToArray() },
+        { "lone surrogate in arguments", """{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"orders_get","arguments":{"id":"\ud800","page":1}}}"""u8.ToArray() },
+        { "duplicate id", """{"jsonrpc":"2.0","id":1,"id":2,"method":"ping"}"""u8.ToArray() },
+        { "duplicate tool name", """{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"orders_list","name":"orders_get","arguments":{"id":"7","page":1}}}"""u8.ToArray() },
+        { "duplicate argument", """{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"orders_get","arguments":{"id":"7","id":"8","page":1}}}"""u8.ToArray() },
+        { "65 levels", Encoding.UTF8.GetBytes("""{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"orders_get","arguments":{"id":"7","page":1,"x":""" + new string('[', 62) + new string(']', 62) + "}}}") },
+    };
+
+    [Theory]
+    [MemberData(nameof(BodiesFailingTheJsonTextCheck))]
+    public async Task HttpEntry_ABodyFailingTheJsonTextCheck_IsAParseError_AndRunsNoTool(string name, byte[] body)
+    {
+        // 正文整条过 RFC-0001「JSON 文本」的检查（protocol/mcp.md「操作映射」，ADR-0331）：修之前字符串里非法的 UTF-8 与 method / id 里的孤立代理项是 500 的 Problem Details，
+        // 重复的成员取最后一个照常执行，arguments 里的问题到 Validate 阶段才成为 isError 结果；超过 64 层本来就是解析错误
+        var (app, client) = await StartAsync();
+        await using var _ = app;
+        using var content = new ByteArrayContent(body);
+        content.Headers.ContentType = new("application/json");
+
+        var (status, text) = await SendAsync(client, content);
+
+        Assert.True(status == HttpStatusCode.BadRequest, $"{name}: {(int)status} {text}");
+        var root = Root(text);
+        Assert.Equal(-32700, root.GetProperty("error").GetProperty("code").GetInt32());
+        Assert.Equal(McpErrors.InvalidMessage, ErrorCodeOf(text));
+        Assert.Equal(JsonValueKind.Null, root.GetProperty("id").ValueKind);
+        Assert.Empty(app.Services.GetRequiredService<CallLog>().Calls);
+    }
+
+    [Fact]
+    public async Task HttpEntry_SixtyFourLevels_AndARealReplacementCharacter_PassTheJsonTextCheck()
+    {
+        // 64 层（消息对象是第 1 层）与本来就是 U+FFFD 的字符、代理对都是合法的 JSON 文本，照常执行
+        var (app, client) = await StartAsync();
+        await using var _ = app;
+
+        var deep = await ResultOf(client, """{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"orders_get","arguments":{"id":"7","page":1,"x":""" + new string('[', 61) + new string(']', 61) + "}}}");
+        var text = await ResultOf(client, Rpc("tools/call", """{"name":"orders_get","arguments":{"id":"�😀","page":1}}"""));
+
+        Assert.Equal("7", deep.GetProperty("structuredContent").GetProperty("id").GetString());
+        Assert.Equal("�😀", text.GetProperty("structuredContent").GetProperty("id").GetString());
+    }
+
     [Theory]
     [InlineData("https://console.example.com/path")]
     [InlineData("console.example.com")]

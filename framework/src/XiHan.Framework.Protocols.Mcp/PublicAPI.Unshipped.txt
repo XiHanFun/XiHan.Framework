@@ -16,6 +16,8 @@ XiHan.Framework.Protocols.Mcp.McpProtocolOptions.Instructions.init -> void
 XiHan.Framework.Protocols.Mcp.McpProtocolOptions.IsAllowedOrigin(string! origin) -> bool
 XiHan.Framework.Protocols.Mcp.McpProtocolOptions.MaxRequestBodyBytes.get -> long
 XiHan.Framework.Protocols.Mcp.McpProtocolOptions.MaxRequestBodyBytes.init -> void
+XiHan.Framework.Protocols.Mcp.McpProtocolOptions.MaxStdioLineBytes.get -> int
+XiHan.Framework.Protocols.Mcp.McpProtocolOptions.MaxStdioLineBytes.init -> void
 XiHan.Framework.Protocols.Mcp.McpProtocolOptions.McpProtocolOptions() -> void
 XiHan.Framework.Protocols.Mcp.McpProtocolOptions.ServerName.get -> string?
 XiHan.Framework.Protocols.Mcp.McpProtocolOptions.ServerName.init -> void
@@ -83,6 +85,7 @@ const XiHan.Framework.Protocols.Mcp.McpProtocolCapabilities.Mcp = "protocols.mcp
 const XiHan.Framework.Protocols.Mcp.McpProtocolCapabilities.Version = 1 -> int
 const XiHan.Framework.Protocols.Mcp.McpProtocolOptions.ConfigurationSection = "XiHan:Protocols:Mcp" -> string!
 const XiHan.Framework.Protocols.Mcp.McpProtocolOptions.DefaultMaxRequestBodyBytes = 4194304 -> long
+const XiHan.Framework.Protocols.Mcp.McpProtocolOptions.DefaultMaxStdioLineBytes = 4194304 -> int
 const XiHan.Framework.Protocols.Mcp.Server.McpServer.ProtocolVersion = "2025-06-18" -> string!
 const XiHan.Framework.Protocols.Mcp.Server.McpServer.ProtocolVersionHeader = "MCP-Protocol-Version" -> string!
 const XiHan.Framework.Protocols.Mcp.Tools.McpTool.DefaultInputSchema = "{\"type\":\"object\"}" -> string!
