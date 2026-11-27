@@ -194,9 +194,10 @@ PHP 的写法与差异：
 - **模板**：`MessageTemplate::format()` / `tryFormat()` 与 `MessageCatalog` 按区域取小数点与分组符（`MessageTemplate::numberSymbols()`），`describe` 按不变文化。
 - **插件运行时**：PHP 的时刻精确到微秒，`deadline` 更细的小数截断。运行时消息键的 10 种区域模板在 `PluginMessages::catalog()`，只供本地渲染，不随握手发送。
 - **回调的载荷**：`Host::invoke` 的 `$payload` 与信封的 `$data` 都是字节串，原样发出，由宿主核对；PHP 没有字符串与 UTF-8 之间的转换，`plugin/invocation.md` §1、§5 的严格编码（ADR-0312、ADR-0315）对 PHP 不用改。
+- **回调的元数据**：写进 `metadata.baggage` 的值（上下文里已登记的键，实际只有幂等键可能带这样的值）不是合法的 UTF-8 即不发请求：PHP 的字符串是字节串，孤立的代理项在这里就是编成 UTF-8 的代理项（如 `"\xED\xA0\x80"`），判定用 PCRE 的 UTF-8 校验（`preg_match('//u', …)`），过长编码、截断的序列与 U+10FFFF 以上的码位同样不通过。结果是 `PLUGINS_UNEXPECTED_001` + `plugins.process.failed`（`phase` 为操作 ID，`Host::publish` 里为 `publish`；`reason` 为 `baggage '<键>' has a lone surrogate and cannot be encoded as UTF-8`，只点名键、不带值，与宿主一侧逐字相同），`Host::publish` 的每一项都是这个错误；平面以外的字符是合法的四字节 UTF-8，照常发出，几个键都是这样时点名先遇到的一个。它排在回调端点、权限、租户、截止时间与取消之后，客户端已关闭时也报它。原先 protobuf 的 `setBaggage` 抛出 `Expect utf-8 encoding.`，从回调里漏出（`plugin/invocation.md` §5，ADR-0347）。
 - **回调客户端关闭之后**：`Host::close()`（运行时收尾时调用，可以调用多次）之后的回调不发请求、不重新连接，结果是 `PLUGINS_UNAVAILABLE_001` + `plugins.host.unavailable`（`reason` 为 `Unavailable: the host client is closed`），排在本地核对之后，`publish` 的每一项都是这个错误；进行中的回调被切断时按映射表的 `Cancelled` 一行。`GrpcClient` 的连接是惰性的，原先关闭之后的回调会重新连上、照常发出（`plugin/invocation.md` §5，ADR-0328）。
 - **写给宿主的错误细节**：插件交回或回调里写出的 `Error.details` 不是合法的 UTF-8 或超过 64 层时，这个错误不带细节、其余字段照写，内部错误的细节各自核对（`plugin/invocation.md` §3，ADR-0320）。
-- **写给宿主的错误文案**：自由文本错误的文案（含内部错误的）不是合法的 UTF-8 时，按 Unicode 的「最大子部分」换成 U+FFFD 写出：从不能解码的位置起，能成为合法 UTF-8 序列开头的最长前缀换一个、不能的一个字节换一个，如 `"\xF0\x9F\x98b"` 写成 U+FFFD 加 `b`，编成 UTF-8 的代理项 `"\xED\xA0\x80"` 换成三个，`"\xC0\xAF"` 换成两个。与设了 `mb_substitute_character(0xFFFD)` 的 `mb_scrub` 相同，SDK 自己实现、不要求 mbstring；原先 protobuf 的 `setText` 抛出，整个错误写不出（`plugin/invocation.md` §3「写出 `Error` 的文案」，ADR-0339）。
+- **写给宿主的错误文案**：自由文本错误的文案（含内部错误的）不是合法的 UTF-8 时，按 Unicode 的「最大子部分」换成 U+FFFD 写出：从不能解码的位置起，能成为合法 UTF-8 序列开头的最长前缀换一个、不能的一个字节换一个，如 `"\xF0\x9F\x98b"` 写成 U+FFFD 加 `b`，编成 UTF-8 的代理项 `"\xED\xA0\x80"` 换成三个，`"\xC0\xAF"` 换成两个。与设了 `mb_substitute_character(0xFFFD)` 的 `mb_scrub` 相同，SDK 自己实现、不要求 mbstring；原先 protobuf 的 `setText` 抛出，整个错误写不出（`plugin/invocation.md` §3「写出 `Error` 的文案」，ADR-0339）。这条替换由 `plugin/error-text-writing.json` 的 `bytes` 一组回放（ADR-0346）。
 
 ## 语言映射
 
@@ -231,6 +232,7 @@ PHP 的写法与差异：
 - 怎样验证：测试直接回放 `spec/conformance/vectors`；[`tests/VectorCoverageTest.php`](https://github.com/XiHanFun/framework-sdk-php/blob/main/tests/VectorCoverageTest.php) 按档表核对认领的档要求的每个向量要么被测试回放、要么列为缺口；`tests/Plugin/ConformanceTest.php` 用黑盒运行器对示例插件跑全部用例，要求全部通过、没有跳过。CI 在 ubuntu 与 windows 上都跑，并核对插件协议的生成代码与 `plugin.proto` 一致。
 - 信封的 `time`：回放 `plugin/sdk-envelope-times.json` 的微秒一列（ADR-0310）。写出的文本与 `text.microseconds` 逐字相同，读出的时刻与 `utc.microseconds` 相等（比微秒更细的小数截断），`unreadable` 的每一条投递都以 `InvalidArgument` 拒绝。`plugin/envelope-times.json` 现在同在 `plugin` 档。
 - Baggage 的值：`primitives/baggage-keys.json` 的 `values` 另有以码元写出的 `acceptableUtf16` 与 `unacceptableUtf16`，按 WTF-8 组成字节回放：前一组（成对的代理项合成平面以外的一个字符）照收，后一组（编成 UTF-8 的孤立代理项）`isAcceptableValue` 为假（ADR-0321）。
+- 错误文案：回放 `plugin/error-text-writing.json` 的 `bytes` 一组（ADR-0346）。每例的原始字节作为自由文本错误的文案经 `Protocol::toProtoError` 写出，编码成字节再解回来，`text` 等于期望值；`utf16` 与 `codePoints` 两组由以 UTF-16 与码点存放字符串的实现回放。
 
 ## 破坏性改动与迁移
 
@@ -253,3 +255,4 @@ PHP 的写法与差异：
 - 插件写给宿主的错误细节超过 64 层时这个错误不带细节、其余照写（ADR-0320）→ 不用改。
 - `Host::close()` 之后的回调不再懒连接照常发出，在本地核对之后以 `plugins.host.unavailable` 结束、不发请求（ADR-0328）→ 不用改。
 - 插件写给宿主的错误文案（含内部错误的）不是合法的 UTF-8 时按最大子部分换成 U+FFFD 写出，原先 protobuf 的 `setText` 抛出、整个错误写不出（ADR-0339）→ 不用改。
+- 上下文的幂等键不是合法的 UTF-8 时，`Host::invoke` 与 `Host::publish` 在本地以 `PLUGINS_UNEXPECTED_001` + `plugins.process.failed` 失败、不发请求，不再从回调里抛出 `Expect utf-8 encoding.`（ADR-0347）→ 不用改；设幂等键之前保证它是合法的 UTF-8。

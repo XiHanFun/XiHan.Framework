@@ -204,10 +204,11 @@ Python 的写法与差异：
 - **JSON 读取**：不用 `json.loads`（它接受 `NaN`、孤立的代理项、重复成员与很深的嵌套），由 SDK 自己按 RFC 8259 读；`str` 里的代理项码点按不合法的 Unicode 处理。
 - **调用器**：进入 Resilience 阶段的 `DeadlineMiddleware` 就是 `Context.run`；`ctx.run(call)` 把一个派生的上下文交给 `call`，它的信号在调用方取消或到达截止时间时触发。响应里有 NaN 或无穷，或者字符串（值、成员名与映射的键）里有代理项码点时，调用以未处理失败结束（`KERNEL_UNEXPECTED_001` + `kernel.invocation.unhandled_exception`，不带 `inner`），不写成 `null`、字符串或 `\ud800` 这样的转义；`str` 里成对的两个代理项码点也不是一个字符，同样写不出（ADR-0318）。写出的整段文本还要过 JSON 文本的共同检查（写完之后用读取一侧的检查核对）：嵌套超过 64 层（从响应的根算起）或任何一层有重复的成员名（如 `to_json_value` 交出 `items()` 带同名成员的映射）同样写不出，不带 `inner`。`int` 的子类按十进制值写出，不取它覆写的 `__str__` / `__repr__`（ADR-0319）。
 - **插件运行时**：调用与事件处理器在 `grpc.aio` 的同一个事件循环里执行。grpcio 按截止时间中止的回调报的就是 `DeadlineExceeded`，映射之外不另按时钟改写。
-- **回调的载荷**：`Host.invoke` 的载荷是 `bytes | str`：`bytes` 原样发出，由宿主核对；`str` 在发出之前严格编码成 UTF-8，里面的代理项码点（成对的两个也一样）编码不成，即不发请求，结果为 `KERNEL_VALIDATION_001` + `kernel.operation.invalid_payload`（`id` 为操作 ID，`reason` 为 `$`），与宿主读到不是 JSON 的载荷相同；这一项排在回调端点、权限、租户、截止时间与取消的核对之后（`plugin/invocation.md` §5，ADR-0312）。发布的信封 `data` 只收 `bytes`，处理器也没有以 `str` 交回应答的接口，§1 与 §5 的 `data` 一条（ADR-0315）对它们不适用。
+- **回调的载荷**：`Host.invoke` 的载荷是 `bytes | str`：`bytes` 原样发出，由宿主核对；`str` 在发出之前严格编码成 UTF-8，里面的代理项码点（成对的两个也一样）编码不成，即不发请求，结果为 `KERNEL_VALIDATION_001` + `kernel.operation.invalid_payload`（`id` 为操作 ID，`reason` 为 `$`），与宿主读到不是 JSON 的载荷相同；这一项排在回调端点、权限、租户、截止时间与取消以及元数据的核对之后（`plugin/invocation.md` §5，ADR-0312）。发布的信封 `data` 只收 `bytes`，处理器也没有以 `str` 交回应答的接口，§1 与 §5 的 `data` 一条（ADR-0315）对它们不适用。
+- **回调的元数据**：写进 `metadata.baggage` 的值（上下文里已登记的键，实际只有幂等键可能带这样的值）有代理项码点（U+D800–U+DFFF，成对出现的两个也算：`str` 里它们不是一个字符）即不发请求，结果是 `PLUGINS_UNEXPECTED_001` + `plugins.process.failed`（`phase` 为操作 ID，`Host.publish` 里为 `publish`；`reason` 为 `baggage '<键>' has a lone surrogate and cannot be encoded as UTF-8`，只点名键、不带值，与宿主一侧逐字相同），`Host.publish` 的每一项都是这个错误；平面以外的字符是一个码点，照常发出。它排在回调端点、权限、租户、截止时间与取消之后，`str` 载荷的编码之前，客户端已关闭时也报它。原先 upb 写元数据时抛出 `UnicodeEncodeError`，从回调里漏给作者（`plugin/invocation.md` §5，ADR-0347）。
 - **回调客户端关闭之后**：运行时收尾时关闭回调客户端（`Host.close()`，可以调用多次），之后的回调不发请求、不重新连接，结果是 `PLUGINS_UNAVAILABLE_001` + `plugins.host.unavailable`（`reason` 为 `Unavailable: the host client is closed`），`publish` 的每一项都是这个错误；它排在本地核对与载荷的编码之后，`str` 载荷编不成的照旧是 `kernel.operation.invalid_payload`。进行中的回调被关闭切断时按映射表的 `Cancelled` 一行。原先关闭之后的回调由 `grpc.aio` 抛 `UsageError` 给作者（`plugin/invocation.md` §5，ADR-0328）。
 - **写给宿主的错误细节**：插件交回或回调里写出的 `Error.details` 写不出（字符串里有代理项码点，或写出的文本超过 64 层）时，这个错误不带细节、其余字段照写，内部错误的细节各自核对（`plugin/invocation.md` §3，ADR-0320）。
-- **写给宿主的错误文案**：自由文本错误的文案（含内部错误的）里每个代理项码点（U+D800–U+DFFF，成对出现的两个也各算一个）换成一个 U+FFFD 写出；原先 protobuf 抛 `UnicodeEncodeError`，整个错误写不出（`plugin/invocation.md` §3「写出 `Error` 的文案」，ADR-0339）。
+- **写给宿主的错误文案**：自由文本错误的文案（含内部错误的）里每个代理项码点（U+D800–U+DFFF，成对出现的两个也各算一个）换成一个 U+FFFD 写出；原先 protobuf 抛 `UnicodeEncodeError`，整个错误写不出（`plugin/invocation.md` §3「写出 `Error` 的文案」，ADR-0339）。这条替换由 `plugin/error-text-writing.json` 的 `codePoints` 与 `utf16` 两组回放（ADR-0346）。
 
 ## 语言映射
 
@@ -240,6 +241,7 @@ Python 的写法与差异：
 - 怎样验证：单元测试直接读取 `spec/conformance/vectors/` 下的向量回放；`tests/test_vectors.py` 按档表核对认领的档要求的每个向量要么有测试回放、要么列为缺口；示例插件 echo 由规范的黑盒运行器跑全部用例。CI 在 Linux 与 Windows 上都跑。
 - 信封的 `time`：回放 `plugin/sdk-envelope-times.json` 的微秒一列（ADR-0310）。写出的文本与 `text.microseconds` 逐字相同，读出的时刻与 `utc.microseconds` 相等（比微秒更细的小数截断），`unreadable` 的每一条投递都以 `InvalidArgument` 拒绝。`plugin/envelope-times.json` 现在同在 `plugin` 档。
 - Baggage 的值：`primitives/baggage-keys.json` 的 `values` 另有以码元写出的 `acceptableUtf16` 与 `unacceptableUtf16`，按 RFC-0012「一致性」组成字符串回放（成对的代理项合成一个码点，孤立的留作代理项码点）：前一组照收，后一组 `is_baggage_value_acceptable` 为假（ADR-0321）。
+- 错误文案：回放 `plugin/error-text-writing.json` 的 `codePoints` 与 `utf16` 两组（ADR-0346）。`codePoints` 逐个码点组成 `str`（成对出现的两个代理项码点各算一个），`utf16` 按 RFC-0012「一致性」组成 `str`（成对的代理项合成一个码点），作为自由文本错误经 `to_proto_error` 写出，编码成字节再解回来，`text` 等于期望值；`bytes` 一组由以字节存放字符串的实现回放。
 
 ## 破坏性改动与迁移
 
@@ -267,3 +269,4 @@ Python 的写法与差异：
 - `Host.invoke` 的载荷也收 `str`，严格编码成 UTF-8，有代理项码点时不发请求、在本地以 `KERNEL_VALIDATION_001` 失败（ADR-0312）→ 不用改。
 - 回调客户端关闭之后，`Host.invoke` 与 `Host.publish` 在本地核对与载荷编码之后以 `plugins.host.unavailable` 结束、不发请求，原先 `grpc.aio` 抛 `UsageError`（ADR-0328）→ 接 `UsageError` 的地方改看结果。
 - 插件写给宿主的错误文案（含内部错误的）有代理项码点时各换成 U+FFFD 写出，原先 protobuf 抛 `UnicodeEncodeError`、整个错误写不出（ADR-0339）→ 不用改。
+- 上下文的幂等键有代理项码点时，`Host.invoke` 与 `Host.publish` 在本地以 `PLUGINS_UNEXPECTED_001` + `plugins.process.failed` 失败、不发请求，不再从回调里抛出 `UnicodeEncodeError`（ADR-0347）→ 接 `UnicodeEncodeError` 的地方改看结果；设幂等键之前去掉代理项码点。

@@ -148,6 +148,8 @@ Go 的写法与差异：
 - **清单**：`manifest.Read` / `ReadFile` 失败是 `*primitives.Error`（`KERNEL_CAPABILITY_006`），`Read` 不跳过 BOM、`ReadFile` 跳过；`Manifest.Validate` 的码是 `PRIMITIVES_VALIDATION_001`；`manifest.Write` 不做校验。可选的字符串 `Package`、`Entry` 与 `ConfigContribution.Schema` 是 `*string`（`nil` 是没写，指向空串是写了空串），用 `manifest.Text("…")` 赋值。`contributes.pipeline` 的规则由 `plugin.Serve` 核对，`manifest.Read` 不查。
 - **模板**：带区域的入口是 `FormatMessageIn`、`TryFormatMessageIn`、`FormatArgumentIn`，不带区域的 `FormatMessage` 等按不变文化。`Catalog.Resolve` 是严格解析（缺键或缺值即返回假），`FormatMessage` 是宽松的（缺值的占位符原样保留）。
 - **调用器**：`operation.NewInvoker` 在管道的副本里加上三个内置步骤 `ObserveMiddleware`、`DeadlineMiddleware`、`ValidationMiddleware`，管道里不能再登记同名的中间件，`Invoker.Pipeline()` 返回实际执行的管道。响应在管道结束之后才用 `encoding/json` 编码，中间件用 `operation.ResponseOf(ctx)` 看编码之前的对象；`operation.Current`、`RequestOf` 只在调用期间的上下文上可见。
+- **回调的本地核对**：`Host.Invoke` 与 `Host.Publish` 发出之前依次核对回调端点、权限、租户、截止时间与取消，接着核对写进 `metadata.baggage` 的值（上下文里已登记的键，实际只有幂等键可能带这样的值）是不是合法的 UTF-8：Go 的字符串以字节存放，孤立的代理项只能是编成 UTF-8 的代理项这类非法字节，`utf8.ValidString` 不通过即不发请求，结果是 `PLUGINS_UNEXPECTED_001` + `plugins.process.failed`（`phase` 为操作 ID，`Host.Publish` 里为 `publish`；`reason` 为 `baggage '<键>' has a lone surrogate and cannot be encoded as UTF-8`，只点名键、不带值，与宿主一侧逐字相同），`Publish` 的每一项都是这个错误；几个键都是这样时按键名排序取第一个。原先交给 protobuf-go 编码，它拒绝非法的 UTF-8，`reason` 是 grpc-go 的编码错误（`plugin/invocation.md` §5，ADR-0347）。载荷与信封的 `Data` 是字节，没有编码这一步。
+- **回调客户端关闭之后**：`Serve` 返回时运行时关闭 `Host`（`Host.Close` 可以调用多次，第二次起什么也不做、返回 nil），之后的回调不发请求、不重新连接，结果是 `PLUGINS_UNAVAILABLE_001` + `plugins.host.unavailable`（`reason` 为 `Unavailable: the host client is closed`，与 TypeScript、Java、Python、PHP SDK 相同）。它排在上面各项之后，元数据写不出的照旧是 `plugins.process.failed`。进行中的回调被关闭切断时同样是这个结果，截止时间已到或调用方已取消的照映射表相应的一行。原先不经核对交给 grpc-go，`reason` 是 `Cancelled: grpc: the client connection is closing`（`plugin/invocation.md` §5，ADR-0328、ADR-0349）。
 - **应答与发布的数据**：回调载荷与 `Envelope.Data` 是 `[]byte`，原样发出，由宿主核对（`plugin/invocation.md` §5，ADR-0312、ADR-0315）。操作的响应由 `encoding/json` 写出，写不成合法的 JSON 文本即写不出（RFC-0011 规则 10 的「编码」，ADR-0318）：要写出的字符串（成员名与值，含 map 的键、`MarshalText` 的结果与 `primitives.ID` / `Maybe` 里的值）不是合法的 UTF-8（含编成 UTF-8 的孤立代理项），`json.Marshaler` 交出的原文有非法字节、孤立代理项的转义或重复成员，或嵌套超过 64 层，都以 `KERNEL_UNEXPECTED_001` + `kernel.invocation.unhandled_exception` 结束，没有参数、不带 `inner`、没有载荷，原因与出错的路径写进调用器的日志。`encoding/json` 把非法的 UTF-8 换成 U+FFFD 照常写出，SDK 在它写成功之后照它的规则（导出字段、`json:"-"`、嵌入、`omitzero`、指针与值接收者的 `MarshalJSON` / `MarshalText`）把要写出的字符串再查一遍；`MarshalJSON` 自己换成 U+FFFD 的看不出来。ADR-0319 把写出之后过 JSON 文本的共同检查（64 层、重复成员）写进了规范，Go 写完之后本来就对整段文本做这道检查，行为不变。
 - **远程缓存 Provider**：`caching.RegisterOperations` 的九个操作都先在适配层校验键、选项与 base64，再调 `Store`；`Store` 返回的错误是（或用 `%w` 包着）`*primitives.Error` 时原样交给宿主，别的按后端不可用。
 
@@ -225,6 +227,7 @@ Go 自己的文本（日期、`Duration`、结构体）不跨语言：插件的�
 - 信封的 `time`：回放 `plugin/sdk-envelope-times.json` 的纳秒一列（ADR-0310）。作者给的时刻经 `ToProtoEnvelope` 写出的文本与 `text.nanoseconds` 逐字相同，宿主写来的文本经 `FromProtoEnvelope` 读出的时刻与 `utc.nanoseconds` 相等，`unreadable` 的每一条投递都以 `InvalidArgument` 拒绝。`time.Time` 是纳秒精度，不截断，没有跳过的用例。`plugin/envelope-times.json` 现在同在 `plugin` 档。
 - 缓存键：`caching/cache-keys.json` 里以 `utf16` 码元给出的键（孤立的代理项，ADR-0316）按 WTF-8 组成字节（一致性模块的 `Input()`），`IsKey` 与 `ValidateKey` 都拒收；它们写不进宿主的 JSON，按码元写成转义的请求在解码时以 `KERNEL_VALIDATION_001`（`reason` 为 `$`）被拒。
 - Baggage 的值：`primitives/baggage-keys.json` 的 `values` 另有以码元写出的 `acceptableUtf16` 与 `unacceptableUtf16`，按 WTF-8 组成字节回放（一致性模块的 `Input()`）：前一组（成对的代理项）照收，后一组（孤立的代理项）`IsBaggageEntryAcceptable` 拒收、`WithBaggage` 丢弃（ADR-0321）。
+- 错误文案：回放 `plugin/error-text-writing.json` 的 `bytes` 一组（ADR-0346）。每例的原始字节作为自由文本错误的文案经 `ToProtoError` 写出，顶层与内部错误的 `text` 都等于期望值；`utf16` 与 `codePoints` 两组由以 UTF-16 与码点存放字符串的实现回放，Go 不按 WTF-8 回放 `utf16`。
 
 ## 破坏性改动与迁移
 
@@ -250,3 +253,5 @@ Go 自己的文本（日期、`Duration`、结构体）不跨语言：插件的�
 - 插件写给宿主的错误细节写不出时这个错误不带细节、其余照写，原先写成 U+FFFD 或 `\ud800`（ADR-0320）→ 不用改；要宿主看到细节就保证细节里的字符串是合法的 UTF-8。
 - 已登记 Baggage 键的值不是合法的 UTF-8（含编成 UTF-8 的孤立代理项）时，外部输入丢弃这个成员、`Context.WithBaggage` panic，原先照收（ADR-0321）→ 从外部输入拼值之前先用 `utf8.ValidString` 核对。
 - 插件写给宿主的错误文案（含内部错误的）不是合法的 UTF-8 时按最大子部分换成 U+FFFD 写出，原先 protobuf-go 拒绝编码、整条应答写不出（ADR-0339）→ 不用改；要宿主看到原文就保证文案是合法的 UTF-8。
+- 回调上下文的幂等键不是合法的 UTF-8 时，`Host.Invoke` 与 `Host.Publish` 在本地以 `PLUGINS_UNEXPECTED_001` + `plugins.process.failed` 失败、不发请求，`reason` 点名那个键，原先是 grpc-go 的编码错误（ADR-0347）→ 设幂等键之前用 `utf8.ValidString` 核对；按 `reason` 文本判断的地方更新。
+- `Host` 关闭之后与被关闭切断的回调，`plugins.host.unavailable` 的 `reason` 由 `Cancelled: grpc: the client connection is closing` 改为与其他 SDK 相同的 `Unavailable: the host client is closed`；`Host.Close` 可以重复调用（ADR-0349）→ 按旧文本判断的地方更新。

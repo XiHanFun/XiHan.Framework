@@ -245,7 +245,7 @@ RFC-0010「模板」。模板参数与错误细节是 `serde_json::Value`：
 
 ### 文法
 
-规范里的正则都是手写的逐字节判定，整串匹配，结尾的换行不算匹配。RFC-0001「孤立的代理项」在 Rust 里遇不到：`&str` 总是合法的 UTF-8，组不出孤立的代理项，Baggage 的值（`is_baggage_value_acceptable`）不用另判（ADR-0321）。
+规范里的正则都是手写的逐字节判定，整串匹配，结尾的换行不算匹配。RFC-0001「孤立的代理项」在 Rust 里遇不到：`&str` 总是合法的 UTF-8，组不出孤立的代理项，Baggage 的值（`is_baggage_value_acceptable`）不用另判（ADR-0321）。回调宿主时写进 `metadata.baggage` 的值同样是 `String`、总是合法的 UTF-8，prost 原样写出：`plugin/invocation.md` §5 排在截止时间之后的元数据核对（ADR-0347）在 Rust 里没有这一步，本地核对仍是回调端点、权限、租户、截止时间与取消。
 
 ## 设计取舍
 
@@ -275,6 +275,7 @@ RFC-0010「模板」。模板参数与错误细节是 `serde_json::Value`：
 - 怎样验证：测试直接读取 `spec/conformance/vectors/`；[`tests/conformance_vectors.rs`](https://github.com/XiHanFun/framework-sdk-rust/blob/main/tests/conformance_vectors.rs) 按档表核对认领的档要求的每个向量要么被回放、要么列为缺口；[`tests/plugin_conformance.rs`](https://github.com/XiHanFun/framework-sdk-rust/blob/main/tests/plugin_conformance.rs) 构建示例 echo，用黑盒运行器跑全部用例。CI 在 ubuntu 与 windows 上跑这些测试，另以最低 Rust 版本编译库、测试与示例。
 - 信封的 `time`：回放 `plugin/sdk-envelope-times.json` 里本平台 `SystemTime` 精度的一列（ADR-0310）：Windows 取 `hundredNanoseconds`，其余平台取 `nanoseconds`。写出的文本与 `text` 逐字相同，读出的时刻与 `utc` 相等，`unreadable` 的每一条投递都以 `InvalidArgument` 拒绝。Windows 的 `SystemTime` 从 1601 年起，表示不了更早的时刻：换算成 UTC 早于 1601 年的两条写出用例（0001 年）跳过，读入里「最早的时刻之后 100 纳秒」按读不出核对，投递以 `InvalidArgument` 拒绝。`plugin/envelope-times.json` 现在同在 `plugin` 档。
 - Baggage 的值：`primitives/baggage-keys.json` 的 `values` 另有以码元写出的 `acceptableUtf16` 与 `unacceptableUtf16`：前一组（成对的代理项）组成字符串后 `is_baggage_value_acceptable` 照收，后一组组不成 Rust 的字符串，测试核对组字符串失败（ADR-0321）。
+- 错误文案：回放 `plugin/error-text-writing.json` 的 `bytes` 与 `utf16` 两组（ADR-0346）。替换发生在外来的字节或码元变成 `String` 的那一步：`bytes` 经 `String::from_utf8_lossy`、`utf16` 经 `String::from_utf16_lossy` 组成字符串（两者都按最大子部分换成 U+FFFD），再经 `to_proto_error` 原样写出，顶层与内部错误的 `text` 都等于期望值。`codePoints` 是 Python 的 `str` 的写法，Rust 的 `char` 放不进代理项码点，不回放。
 
 ## 破坏性改动与迁移
 
