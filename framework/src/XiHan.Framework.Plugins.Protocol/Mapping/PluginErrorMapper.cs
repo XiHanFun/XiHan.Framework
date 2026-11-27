@@ -26,13 +26,16 @@ internal static class PluginErrorMapper
     /// <summary>
     /// 错误 → 协议错误（含内部错误链）
     /// </summary>
+    /// <remarks>
+    /// 文案（<c>text</c>）里的孤立代理项换成 U+FFFD 写出，其余字段照写（<c>spec/plugin/invocation.md</c> §3「写出 <c>Error</c> 的文案」，ADR-0339）；细节写不出时不带细节（ADR-0320）
+    /// </remarks>
     public static ProtoError ToProto(Error error)
     {
         var proto = new ProtoError
         {
             Code = error.Code,
             MessageKey = error.MessageKey ?? string.Empty,
-            Text = error.Text ?? string.Empty,
+            Text = WellFormed(error.Text ?? string.Empty),
             Details = error.Details is { Count: > 0 } details ? PluginJson.SerializeDetails(details) : string.Empty,
         };
         if (error.Inner is { } inner)
@@ -41,6 +44,40 @@ internal static class PluginErrorMapper
         }
 
         return proto;
+    }
+
+    /// <summary>
+    /// 把文案里的每个孤立代理项换成一个 U+FFFD
+    /// </summary>
+    /// <remarks>
+    /// 文案是自由文本，不拿来查找、比较或散列：编不成 UTF-8 的部分换掉照写，不让整个应答、回调或钩子因它写不出（ADR-0339）。以前 gRPC 载体的 protobuf 编码同样换成 U+FFFD，Wasm 载体的 JSON 写出器抛出。高代理项紧跟低代理项是平面以外的一个字符，照常保留；替换之后长度不变，与 <see cref="System.Text.Encoding.UTF8"/> 的替换相同
+    /// </remarks>
+    private static string WellFormed(string text)
+    {
+        if (!UnicodeText.HasLoneSurrogate(text))
+        {
+            return text;
+        }
+
+        return string.Create(text.Length, text, static (target, source) =>
+        {
+            for (var index = 0; index < source.Length; index++)
+            {
+                var current = source[index];
+                if (char.IsHighSurrogate(current) && index + 1 < source.Length && char.IsLowSurrogate(source[index + 1]))
+                {
+                    // 成对的两个码元照抄
+                    target[index] = current;
+                    index++;
+                    target[index] = source[index];
+                }
+                else
+                {
+                    // 其余的代理项不论高低、在哪里，都是孤立的
+                    target[index] = char.IsSurrogate(current) ? '\uFFFD' : current;
+                }
+            }
+        });
     }
 
     /// <summary>
