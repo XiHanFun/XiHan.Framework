@@ -43,7 +43,7 @@ builder.AddXiHan(xihan => xihan
 此库提供的主要类型：
 
 * `OpenTelemetryObservabilityFeature`：能力包入口
-* `OpenTelemetryOptions`：服务名、采样比例、OTLP、控制台导出、追加订阅的源与仪表
+* `OpenTelemetryOptions`：服务名、采样比例、OTLP、控制台导出、追加订阅的源与仪表；服务名只有空白或有孤立的代理项时抛出 `ArgumentException`，装配失败（ADR-0334）
 * `OtlpProtocol`：`Grpc` 或 `HttpProtobuf`
 
 ## 更多文档

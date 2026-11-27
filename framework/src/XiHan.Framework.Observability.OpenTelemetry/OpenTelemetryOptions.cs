@@ -27,7 +27,7 @@ public sealed record OpenTelemetryOptions
     /// 资源属性 <c>service.name</c>
     /// </summary>
     /// <remarks>
-    /// 默认入口程序集名
+    /// 默认入口程序集名。不能为空白，也不能有孤立的代理项（ADR-0334）：服务名随每个信号编成 UTF-8 发给后端，宽松编码之后两个只差在孤立代理项上的服务在后端是同一个
     /// </remarks>
     public string ServiceName
     {
@@ -35,7 +35,7 @@ public sealed record OpenTelemetryOptions
         init
         {
             ArgumentException.ThrowIfNullOrWhiteSpace(value);
-            field = value;
+            field = !UnicodeText.HasLoneSurrogate(value) ? value : throw new ArgumentException("The service name must not contain lone surrogates.", nameof(value));
         }
     } = Assembly.GetEntryAssembly()?.GetName().Name ?? "xihan";
 

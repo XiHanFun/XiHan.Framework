@@ -155,6 +155,19 @@ public sealed class OpenTelemetryObservabilityTests
         Assert.Contains("System.Runtime", OpenTelemetryDefaults.Meters);
     }
 
+    [Fact]
+    public void ServiceName_WithALoneSurrogate_IsRejected_AndAPairIsKept()
+    {
+        // RFC-0023「导出」（ADR-0334）：服务名随每个信号编成 UTF-8 发给后端，宽松编码之后只差在孤立代理项上的两个服务是同一个；修之前只拒空白
+        foreach (var name in new[] { "orders\uD800", "\uDC00orders", "orders\uDE00\uD83D" })
+        {
+            Assert.Throws<ArgumentException>(() => new OpenTelemetryOptions { ServiceName = name });
+            Assert.Throws<ArgumentException>(() => OpenTelemetryOptions.FromConfiguration(Configuration(("ServiceName", name))));
+        }
+
+        Assert.Equal("orders-😀", OpenTelemetryOptions.FromConfiguration(Configuration(("ServiceName", "orders-😀"))).ServiceName);
+    }
+
     /// <summary>
     /// 组装 <c>XiHan:Observability:OpenTelemetry</c> 节下的配置
     /// </summary>
