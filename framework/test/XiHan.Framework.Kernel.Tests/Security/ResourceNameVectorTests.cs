@@ -12,7 +12,7 @@ namespace XiHan.Framework.Kernel.Tests.Security;
 /// 回放 <c>resource-names.json</c>：统一资源名的文法
 /// </summary>
 /// <remarks>
-/// RFC-0008「资源名」：ID 段不含 <c>/</c>、空白与孤立的代理项（ADR-0321，向量里以 UTF-16 码元写出）。合法的解析之后再写出与原文相同，不合法的 <see cref="ResourceName.TryParse"/> 为假、<see cref="ResourceName.Parse"/> 抛出
+/// RFC-0008「资源名」：ID 段不含 <c>/</c>、空白、控制字符（ADR-0330）与孤立的代理项（ADR-0321，向量里以 UTF-16 码元写出）。合法的解析之后再写出与原文相同，不合法的 <see cref="ResourceName.TryParse"/> 为假、<see cref="ResourceName.Parse"/> 抛出
 /// </remarks>
 public sealed class ResourceNameVectorTests
 {
@@ -63,6 +63,23 @@ public sealed class ResourceNameVectorTests
         // 成对的代理项以码元写出与转义写出是同一个资源名，照常合法
         var byUnits = Assert.Single(_vectors.Valid, static entry => entry.Utf16 is not null);
         Assert.Contains(_vectors.Valid, entry => entry.Text == byUnits.Input);
+    }
+
+    [Fact]
+    public void IdSegmentsWithControlCharacters_CannotBeConstructed()
+    {
+        // 不合法样例里 ID 段有控制字符的，直接拿来构造同样被拒，解析与构造是同一条文法（ADR-0330）；修之前空白之外的控制字符（U+0000、U+001B 等）照收
+        var controls = _vectors.Invalid
+            .Where(static entry => entry.Text is { } text && text.Contains('/', StringComparison.Ordinal))
+            .Select(static entry => (entry.Name, Id: entry.Input[(entry.Input.IndexOf('/', StringComparison.Ordinal) + 1)..]))
+            .Where(static entry => entry.Id.Any(char.IsControl) && !entry.Id.Any(char.IsWhiteSpace))
+            .ToList();
+        Assert.NotEmpty(controls);
+        Assert.All(controls, static entry => Assert.Throws<ArgumentException>(() => new ResourceName("a", "b", null, "c", entry.Id)));
+
+        // 控制字符之外紧挨着的字符照常合法
+        Assert.Equal("a~b", new ResourceName("a", "b", null, "c", "a~b").Id);
+        Assert.Equal("a\u00A1b", new ResourceName("a", "b", null, "c", "a\u00A1b").Id);
     }
 
     /// <summary>
