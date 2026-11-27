@@ -1,6 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <RootNamespace>XiHan.Framework.Plugins.OutOfProcess.Tests</RootNamespace>
+    <!-- 只为 Fixtures/FileHolders.cs 里 LibraryImport 的生成代码（Restart Manager），手写的源码不写 unsafe -->
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
 
   <ItemGroup>

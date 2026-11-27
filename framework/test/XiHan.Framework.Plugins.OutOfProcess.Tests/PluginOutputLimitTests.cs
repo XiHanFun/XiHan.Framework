@@ -5,6 +5,7 @@ using System.Text;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Time.Testing;
 using XiHan.Framework.Plugins.OutOfProcess.Processes;
+using XiHan.Framework.Plugins.OutOfProcess.Tests.Fixtures;
 using XiHan.Framework.Plugins.Protocol;
 using XiHan.Framework.Plugins.Protocol.Handshake;
 using XiHan.Framework.Testing;
@@ -52,6 +53,11 @@ public sealed class PluginOutputLimitTests : IAsyncDisposable
             catch (IOException) when (attempt < DeleteAttempts)
             {
                 await Task.Delay(100);
+            }
+            catch (IOException exception)
+            {
+                // 重试用尽：把此刻占着句柄的进程与还剩的条目写进失败信息，下次偶发能查根因（ADR-0338）；原来的异常放进 InnerException
+                throw new IOException($"Could not delete '{_directory.FullName}' after {DeleteAttempts} attempts; {FileHolders.Describe(_directory.FullName)}.", exception);
             }
         }
     }
