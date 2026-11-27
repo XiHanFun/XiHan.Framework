@@ -2,6 +2,7 @@
 // See the LICENSE file in the project root for full license text.
 
 using System.Runtime.CompilerServices;
+using System.Text.Encodings.Web;
 using System.Text.Json;
 using System.Text.Json.Serialization.Metadata;
 using XiHan.Framework.Kernel.Json;
@@ -19,12 +20,12 @@ namespace XiHan.Framework.Kernel.Operations;
 public abstract class OperationDescriptor
 {
     /// <summary>
-    /// 各序列化选项写出响应用的副本
+    /// 各序列化选项写出用的副本
     /// </summary>
     /// <remarks>
     /// 按原选项缓存：同一个序列化上下文的描述共用一份副本，副本里的元数据只建一次；原选项回收时副本随之回收
     /// </remarks>
-    private static readonly ConditionalWeakTable<JsonSerializerOptions, JsonSerializerOptions> _responseWriteOptions = new();
+    private static readonly ConditionalWeakTable<JsonSerializerOptions, JsonSerializerOptions> _writeOptions = new();
 
     /// <summary>
     /// 创建描述
@@ -156,15 +157,21 @@ public abstract class OperationDescriptor
     public override string ToString() => $"{Id} ({OperationType.Name}: {RequestType.Name} -> {ResponseType.Name})";
 
     /// <summary>
-    /// 写出响应用的序列化选项
+    /// 写出响应与为 Schema 校验编码请求用的序列化选项
     /// </summary>
     /// <remarks>
-    /// 原选项的副本，只把深度上限改成原上限与 64 取小再加 1：System.Text.Json 写到上限那一层的值就失败，读取却读得进同样层数的文本。
-    /// 多给的一层由写完之后的 JSON 文本检查卡住，层数从响应的根算起（RFC-0001「JSON 文本」，ADR-0319）；写出用的元数据要按副本向同一个解析器重新取，源生成的上下文也一样
+    /// 原选项的副本，把深度上限改成原上限与 64 取小再加 1：System.Text.Json 写到上限那一层的值就失败，读取却读得进同样层数的文本。
+    /// 多给的一层由写完之后的 JSON 文本检查卡住，层数从响应或请求的根算起（RFC-0001「JSON 文本」，ADR-0319、ADR-0329）；写出用的元数据要按副本向同一个解析器重新取，源生成的上下文也一样。
+    /// 原选项没有编码器时副本设成缺省的编码器，写出的字节不变：源生成的快速路径只在选项与生成时一致才用，它不按副本核对深度，里面再调序列化器时按原选项的上限，
+    /// 64 层、最里层是可空值的写不出，更深的由写出器抛出 <see cref="InvalidOperationException"/>；编码器不为空即走按元数据的写法，深度照副本的上限（ADR-0329）
     /// </remarks>
-    /// <param name="options">响应类型的序列化选项</param>
-    private protected static JsonSerializerOptions ResponseWriteOptions(JsonSerializerOptions options)
-        => _responseWriteOptions.GetValue(options, static o => new JsonSerializerOptions(o) { MaxDepth = Math.Min(o.MaxDepth == 0 ? JsonText.MaxDepth : o.MaxDepth, JsonText.MaxDepth) + 1 });
+    /// <param name="options">响应或请求类型的序列化选项</param>
+    internal static JsonSerializerOptions WriteOptions(JsonSerializerOptions options)
+        => _writeOptions.GetValue(options, static o => new JsonSerializerOptions(o)
+        {
+            MaxDepth = Math.Min(o.MaxDepth == 0 ? JsonText.MaxDepth : o.MaxDepth, JsonText.MaxDepth) + 1,
+            Encoder = o.Encoder ?? JavaScriptEncoder.Default,
+        });
 
     /// <summary>
     /// 这个操作的载荷不合法的错误

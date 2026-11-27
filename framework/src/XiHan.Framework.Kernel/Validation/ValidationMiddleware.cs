@@ -15,7 +15,7 @@ namespace XiHan.Framework.Kernel.Validation;
 /// Validate 阶段的内置中间件（RFC-0011）
 /// </summary>
 /// <remarks>
-/// 对带操作描述的调用，先按契约的请求 JSON Schema 校验载荷（<see cref="KernelErrors.SchemaViolation"/>；类型化调用为此把请求编成 JSON，字符串有孤立的代理项即 <see cref="KernelErrors.InvalidOperationPayload"/>，ADR-0320），再解码并对实现 <see cref="IValidatableObject"/> 的请求执行自校验（<see cref="KernelErrors.RequestInvalid"/>）；不通过即以 VALIDATION 结果结束调用，不进 Handle。解码好的请求记录在上下文，Handle 阶段直接执行。没有操作描述的调用原样透传
+/// 对带操作描述的调用，先按契约的请求 JSON Schema 校验载荷（<see cref="KernelErrors.SchemaViolation"/>；类型化调用为此把请求编成 JSON，编不成（字符串有孤立的代理项、浮点成员是 NaN 或无穷）即 <see cref="KernelErrors.InvalidOperationPayload"/>，ADR-0320、ADR-0329），再解码并对实现 <see cref="IValidatableObject"/> 的请求执行自校验（<see cref="KernelErrors.RequestInvalid"/>）；不通过即以 VALIDATION 结果结束调用，不进 Handle。解码好的请求记录在上下文，Handle 阶段直接执行。没有操作描述的调用原样透传
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class ValidationMiddleware : IPipelineMiddleware
@@ -62,15 +62,19 @@ public sealed class ValidationMiddleware : IPipelineMiddleware
         }
         else if (request is not null && descriptor.RequestInfo is { } info && descriptor.Schema is not null)
         {
-            var encoded = JsonSerializer.SerializeToUtf8Bytes(request, info);
-            // 写出器把孤立的代理项换成 U+FFFD 照写，校验的就是另一份请求：与原始调用里同样的请求一样按载荷不合法拒绝，路径是 $（RFC-0011「校验」，ADR-0320）
-            if (StrictJson.HasReplacedCharacter(request, info, encoded))
+            try
             {
+                // 与写出响应同一份深度上限放宽一层的选项：64 层、最里层有值的请求编得出，与原始调用里同样的 64 层读得进一致；
+                // 编出的文本不在这里过共同检查，超过 64 层与重复成员由下面 Schema 校验前的同一道检查报出路径
+                payload = StrictJson.Serialize(request, OperationDescriptor.WriteOptions(info.Options).GetTypeInfo(info.Type), checkText: false);
+            }
+            catch (ArgumentException)
+            {
+                // 编不成（浮点成员是 NaN 或无穷、字符串被写出器换成 U+FFFD、超过序列化上下文的深度上限）是调用方的输入，
+                // 与原始调用里同样的内容一样按载荷不合法拒绝，路径是 $（RFC-0011「校验」，ADR-0320、ADR-0329）
                 context.SetOutcome(descriptor.InvalidPayload(JsonPath.Root));
                 return;
             }
-
-            payload = encoded;
         }
 
         if (payload is { } bytes && descriptor.Schema is { } schema)

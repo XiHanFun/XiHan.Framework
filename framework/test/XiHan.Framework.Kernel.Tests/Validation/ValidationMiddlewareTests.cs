@@ -169,6 +169,60 @@ public sealed class ValidationMiddlewareTests
         await app.StopAsync(CancellationToken.None);
     }
 
+    [Theory]
+    [InlineData(double.NaN, "NaN")]
+    [InlineData(double.PositiveInfinity, "Infinity")]
+    [InlineData(double.NegativeInfinity, "-Infinity")]
+    public async Task Invoke_Typed_WithANonFiniteFloat_IsInvalidPayload_LikeTheSameRawPayload(double ratio, string literal)
+    {
+        // 浮点成员编不成（RFC-0011「校验」，ADR-0329）：修之前 System.Text.Json 抛出的异常让 Validate 阶段按未处理的异常结束（500）。
+        // 结果与原始调用里同样的内容相同：JSON 没有这样的数，载荷不合法，reason 是 $
+        var (provider, app) = Hosts.BuildApp(static b => b.UseFeature(new MeasureFeature()));
+        await app.StartAsync(CancellationToken.None);
+        await using var _ = provider;
+        await using var scope = provider.CreateAsyncScope();
+        var invoker = provider.GetRequiredService<IOperationInvoker>();
+
+        var typed = await invoker.InvokeAsync<MeasureRequest, MeasureRequest>(Hosts.Context(scope.ServiceProvider), MeasureOperation.Id, new MeasureRequest(ratio));
+        var raw = await invoker.InvokeAsync(Hosts.Context(scope.ServiceProvider), new OperationRequest(MeasureOperation.Id, Utf8($$"""{"ratio":{{literal}}}""")));
+
+        Assert.Equal((KernelErrors.InvalidOperationPayload, "$"), (raw.Error?.Code, raw.Error?.Details?["reason"]));
+        Assert.Equal((raw.Error?.Code, raw.Error?.Details?["reason"]), (typed.Error?.Code, typed.Error?.Details?["reason"]));
+        await app.StopAsync(CancellationToken.None);
+    }
+
+    [Theory]
+    [InlineData(64, true)]
+    [InlineData(65, false)]
+    public async Task Invoke_Typed_AtTheDepthLimit_IsEncoded_LikeTheSameRawPayloadIsRead(int levels, bool readable)
+    {
+        // 64 层、最里层有值（RFC-0011「校验」，ADR-0329）：原始调用读得进，修之前类型化调用编码时 System.Text.Json 在第 64 层写不出、按未处理的异常结束。
+        // 65 层两种调用都是载荷不合法，reason 是 $
+        var (provider, app) = Hosts.BuildApp(static b => b.UseFeature(new MeasureFeature()));
+        await app.StartAsync(CancellationToken.None);
+        await using var _ = provider;
+        await using var scope = provider.CreateAsyncScope();
+        var invoker = provider.GetRequiredService<IOperationInvoker>();
+
+        // 根是第 1 层，nest 起的对象链占其余各层
+        var typed = await invoker.InvokeAsync<MeasureRequest, MeasureRequest>(Hosts.Context(scope.ServiceProvider), MeasureOperation.Id, new MeasureRequest(2, DepthNode.Make(levels - 1)));
+        var text = """{"nest":""" + string.Concat(Enumerable.Repeat("""{"next":""", levels - 2)) + """{"value":1}""" + new string('}', levels - 1);
+        var raw = await invoker.InvokeAsync(Hosts.Context(scope.ServiceProvider), new OperationRequest(MeasureOperation.Id, Utf8(text)));
+
+        if (readable)
+        {
+            Assert.True(raw.IsSuccess, raw.Error?.ToString());
+            Assert.Equal(2, typed.ValueOrThrow().Ratio);
+        }
+        else
+        {
+            Assert.Equal((KernelErrors.InvalidOperationPayload, "$"), (raw.Error?.Code, raw.Error?.Details?["reason"]));
+            Assert.Equal((raw.Error?.Code, raw.Error?.Details?["reason"]), (typed.Error?.Code, typed.Error?.Details?["reason"]));
+        }
+
+        await app.StopAsync(CancellationToken.None);
+    }
+
     [Fact]
     public async Task Invoke_Typed_WithoutSchema_IsNotEncoded()
     {

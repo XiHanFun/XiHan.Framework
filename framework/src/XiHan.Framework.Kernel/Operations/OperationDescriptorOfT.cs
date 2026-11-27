@@ -41,7 +41,7 @@ public sealed class OperationDescriptor<TOperation, TRequest, TResponse> : Opera
     /// 写出响应用的序列化元数据
     /// </summary>
     /// <remarks>
-    /// 按 <see cref="OperationDescriptor.ResponseWriteOptions"/> 的选项向同一个解析器重新取得，第一次写出时才取；并发时可能取两次，结果相同
+    /// 按 <see cref="OperationDescriptor.WriteOptions"/> 的选项向同一个解析器重新取得，第一次写出时才取；并发时可能取两次，结果相同
     /// </remarks>
     private JsonTypeInfo<TResponse>? _writeInfo;
 
@@ -124,12 +124,14 @@ public sealed class OperationDescriptor<TOperation, TRequest, TResponse> : Opera
     /// 几处有意维持的边角（ADR-0318「修订」、ADR-0320）：
     /// 不经编码器原样写出的 <c>\uFFFD</c> 转义（转换器以 <c>WriteRawValue</c> 写的文本、预先编码的 <see cref="System.Text.Json.JsonEncodedText"/>、缺省编码器下名字里有 U+FFFD 的属性名）在核对的那一遍里仍是转义，被当成写不出；
     /// 序列化上下文的 <see cref="JsonSerializerOptions.MaxDepth"/> 比 64 小时写出照它，与按同一个上下文读请求的层数相同；
-    /// 写出用的元数据向序列化上下文的解析器为改了深度上限的选项副本重新取，只认原选项的自定义解析器给不出，第一次写出即失败
+    /// 写出用的元数据向序列化上下文的解析器为改了深度上限的选项副本重新取，只认原选项的自定义解析器给不出，第一次写出即失败；
+    /// 副本设了缺省的编码器、不走源生成的快速路径（64 层、最里层是可空值的照常写出，更深的也只抛 <see cref="ArgumentException"/>，2026-11-27 起，ADR-0329；以前快速路径写不出前者、对后者抛出 <see cref="InvalidOperationException"/>），
+    /// 只生成快速路径（<c>GenerationMode = Serialization</c>）的上下文给不出按元数据的写法，同样第一次写出即失败
     /// </remarks>
     public override ReadOnlyMemory<byte> EncodeResponse(object response)
     {
         ArgumentNullException.ThrowIfNull(response);
-        var info = _writeInfo ??= (JsonTypeInfo<TResponse>)ResponseWriteOptions(_responseInfo.Options).GetTypeInfo(typeof(TResponse));
+        var info = _writeInfo ??= (JsonTypeInfo<TResponse>)WriteOptions(_responseInfo.Options).GetTypeInfo(typeof(TResponse));
 
         // 整段文本过共同检查：转换器、原样嵌进去的文本、命名策略与扩展数据都可能写出超过 64 层、有重复成员或孤立代理项转义的文本，读的一方都会拒绝（ADR-0319）；
         // 被写出器换成 U+FFFD 的字符这道检查看不出，另外核对

@@ -1,6 +1,7 @@
 // Copyright (c) XiHanFun Contributors. Licensed under the MIT License.
 // See the LICENSE file in the project root for full license text.
 
+using System.Text;
 using System.Text.Json;
 using Microsoft.Extensions.DependencyInjection;
 using XiHan.Framework.Kernel.Json;
@@ -132,6 +133,35 @@ public sealed class ResponseTextCheckTests
 
         Assert.True(deeper.InnerException is null or JsonException, deeper.InnerException?.GetType().Name);
         Assert.IsType<JsonException>(deepest.InnerException);
+    }
+
+    [Fact]
+    public async Task InvokeAsync_OnTheSourceGeneratedFastPath_WritesSixtyFourLevelsWithANullableValueInside()
+    {
+        // 选项与生成时一致的上下文走源生成的快速路径（ADR-0329）：修之前它里面再调序列化器时按原选项的上限，原始调用读得进的 64 层回声回去写不出
+        var (provider, app) = Hosts.BuildApp(static b => b.UseFeature(new MeasureFeature()));
+        await app.StartAsync(CancellationToken.None);
+        await using var _ = provider;
+        await using var scope = provider.CreateAsyncScope();
+        var payload = """{"nest":""" + string.Concat(Enumerable.Repeat("""{"next":""", 62)) + """{"value":1}""" + new string('}', 63);
+
+        var response = await provider.GetRequiredService<IOperationInvoker>().InvokeAsync(Hosts.Context(scope.ServiceProvider), new OperationRequest(MeasureOperation.Id, Encoding.UTF8.GetBytes(payload)));
+
+        Assert.True(response.IsSuccess, response.Outcome.ToString());
+        Assert.Equal(payload, Encoding.UTF8.GetString(response.Payload.Span).Replace("\"ratio\":0,", string.Empty, StringComparison.Ordinal));
+        await app.StopAsync(CancellationToken.None);
+    }
+
+    [Fact]
+    public void EncodeResponse_OnTheSourceGeneratedFastPath_WritesTheSameBytes_AndThrowsOnlyArgumentException()
+    {
+        // 写出不走快速路径，字节与 System.Text.Json 按原选项写出的相同；修之前更深的由写出器抛出 InvalidOperationException（ADR-0329）
+        var descriptor = new OperationDescriptor<MeasureOperation, MeasureRequest, MeasureRequest>(new(MeasureOperation.Id), "xihan.test.measure", MeasureJsonContext.Default.MeasureRequest, MeasureJsonContext.Default.MeasureRequest);
+        var text = new MeasureRequest(1.5, DepthNode.Make(3), "<a href='x'>&+\" \u00E9\u2028\u0001\uD83D\uDE00\uFFFD</a>");
+
+        Assert.Equal(JsonSerializer.SerializeToUtf8Bytes(text, MeasureJsonContext.Default.MeasureRequest), descriptor.EncodeResponse(text).ToArray());
+        Assert.Throws<ArgumentException>(() => descriptor.EncodeResponse(new MeasureRequest(Nest: DepthNode.Make(64))));
+        Assert.IsType<JsonException>(Assert.Throws<ArgumentException>(() => descriptor.EncodeResponse(new MeasureRequest(Nest: DepthNode.Make(100)))).InnerException);
     }
 
     [Fact]
