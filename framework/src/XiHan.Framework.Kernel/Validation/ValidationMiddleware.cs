@@ -64,9 +64,9 @@ public sealed class ValidationMiddleware : IPipelineMiddleware
         {
             try
             {
-                // 与写出响应同一份深度上限放宽一层的选项：64 层、最里层有值的请求编得出，与原始调用里同样的 64 层读得进一致；
+                // 与写出响应同一种先快后慢的写法：64 层、最里层有值的请求编得出，与原始调用里同样的 64 层读得进一致（ADR-0329、ADR-0342）；
                 // 编出的文本不在这里过共同检查，超过 64 层与重复成员由下面 Schema 校验前的同一道检查报出路径
-                payload = StrictJson.Serialize(request, OperationDescriptor.WriteOptions(info.Options).GetTypeInfo(info.Type), checkText: false);
+                payload = OperationDescriptor.Write(request, info, checkText: false);
             }
             catch (ArgumentException)
             {

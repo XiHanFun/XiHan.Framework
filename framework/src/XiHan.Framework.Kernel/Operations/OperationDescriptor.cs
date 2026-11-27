@@ -157,13 +157,45 @@ public abstract class OperationDescriptor
     public override string ToString() => $"{Id} ({OperationType.Name}: {RequestType.Name} -> {ResponseType.Name})";
 
     /// <summary>
-    /// 写出响应与为 Schema 校验编码请求用的序列化选项
+    /// 严格写出响应或为 Schema 校验编码请求
+    /// </summary>
+    /// <remarks>
+    /// 先快后慢（ADR-0342）：先照原选项的元数据写，选项与生成时一致的源生成上下文走快速路径，只生成快速路径（<c>GenerationMode = Serialization</c>）的上下文也写得出。
+    /// 快速路径不按放宽一层的上限核对深度，只在它写不出的两种异常上照 <see cref="WriteOptions"/> 的副本按元数据再写一遍，结果以这一遍为准：
+    /// 里面再调序列化器时按原选项的上限抛出的 <see cref="JsonException"/>（64 层、最里层是可空值，<see cref="StrictJson.Serialize"/> 包成 <see cref="ArgumentException"/>），与写出器按原上限抛出的 <see cref="InvalidOperationException"/>（更深的）。
+    /// 字符串被换成 U+FFFD、文本没过检查、NaN 这类两遍结果相同的不再写一遍。原选项的深度上限大于 64 时直接按副本写：照原选项会写到它的上限才由文本检查拒绝，不再是 System.Text.Json 在第 65 层抛出的异常
+    /// </remarks>
+    /// <param name="value">响应或请求</param>
+    /// <param name="info">原选项下的序列化元数据</param>
+    /// <param name="checkText">是否核对整段文本，见 <see cref="StrictJson.Serialize"/></param>
+    /// <exception cref="ArgumentException">写不成合法的 JSON 文本</exception>
+    internal static byte[] Write(object? value, JsonTypeInfo info, bool checkText)
+    {
+        if (info.Options.MaxDepth > JsonText.MaxDepth)
+        {
+            return StrictJson.Serialize(value, WriteOptions(info.Options).GetTypeInfo(info.Type), checkText);
+        }
+
+        try
+        {
+            return StrictJson.Serialize(value, info, checkText);
+        }
+        catch (Exception exception) when (exception is InvalidOperationException or ArgumentException { InnerException: JsonException })
+        {
+            // 快速路径写不出不等于写不出：按元数据再写一遍，副本多给的一层让 64 层、最里层是可空值的照写，更深的同样只抛 ArgumentException；
+            // 转换器自己抛出的这两种异常在这一遍里照样抛出，结果不变
+            return StrictJson.Serialize(value, WriteOptions(info.Options).GetTypeInfo(info.Type), checkText);
+        }
+    }
+
+    /// <summary>
+    /// 按元数据写出用的序列化选项
     /// </summary>
     /// <remarks>
     /// 原选项的副本，把深度上限改成原上限与 64 取小再加 1：System.Text.Json 写到上限那一层的值就失败，读取却读得进同样层数的文本。
     /// 多给的一层由写完之后的 JSON 文本检查卡住，层数从响应或请求的根算起（RFC-0001「JSON 文本」，ADR-0319、ADR-0329）；写出用的元数据要按副本向同一个解析器重新取，源生成的上下文也一样。
-    /// 原选项没有编码器时副本设成缺省的编码器，写出的字节不变：源生成的快速路径只在选项与生成时一致才用，它不按副本核对深度，里面再调序列化器时按原选项的上限，
-    /// 64 层、最里层是可空值的写不出，更深的由写出器抛出 <see cref="InvalidOperationException"/>；编码器不为空即走按元数据的写法，深度照副本的上限（ADR-0329）
+    /// 原选项没有编码器时副本设成缺省的编码器，写出的字节不变：源生成的快速路径只在选项与生成时一致才用，它不按副本核对深度，编码器不为空即走按元数据的写法，深度照副本的上限（ADR-0329）。
+    /// 只在 <see cref="Write"/> 的第一遍写不出时才用（ADR-0342）
     /// </remarks>
     /// <param name="options">响应或请求类型的序列化选项</param>
     internal static JsonSerializerOptions WriteOptions(JsonSerializerOptions options)

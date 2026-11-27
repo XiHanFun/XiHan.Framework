@@ -224,6 +224,24 @@ public sealed class ValidationMiddlewareTests
     }
 
     [Fact]
+    public async Task Invoke_Typed_WithASerializationOnlyContext_IsEncodedForTheSchema()
+    {
+        // 只生成快速路径的上下文先照快速路径编码请求（ADR-0342）：修之前为 Schema 校验编码时向解析器为选项副本重新取元数据，给不出即按未处理的异常结束（500）
+        var (provider, app) = Hosts.BuildApp(static b => b.UseFeature(new MeasureFeature(SerializationOnlyJsonContext.Default.MeasureRequest)));
+        await app.StartAsync(CancellationToken.None);
+        await using var _ = provider;
+        await using var scope = provider.CreateAsyncScope();
+        var invoker = provider.GetRequiredService<IOperationInvoker>();
+
+        var typed = await invoker.InvokeAsync<MeasureRequest, MeasureRequest>(Hosts.Context(scope.ServiceProvider), MeasureOperation.Id, new MeasureRequest(2, DepthNode.Make(3), "x"));
+        var nan = await invoker.InvokeAsync<MeasureRequest, MeasureRequest>(Hosts.Context(scope.ServiceProvider), MeasureOperation.Id, new MeasureRequest(double.NaN));
+
+        Assert.Equal(2, typed.ValueOrThrow().Ratio);
+        Assert.Equal((KernelErrors.InvalidOperationPayload, "$"), (nan.Error?.Code, nan.Error?.Details?["reason"]));
+        await app.StopAsync(CancellationToken.None);
+    }
+
+    [Fact]
     public async Task Invoke_Typed_WithoutSchema_IsNotEncoded()
     {
         // 编码只为 Schema 校验：没有 Schema 的类型化调用不经 JSON，带孤立代理项的请求照常交给操作

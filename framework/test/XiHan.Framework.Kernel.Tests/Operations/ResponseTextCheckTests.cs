@@ -3,6 +3,7 @@
 
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using Microsoft.Extensions.DependencyInjection;
 using XiHan.Framework.Kernel.Json;
 using XiHan.Framework.Kernel.Operations;
@@ -172,5 +173,29 @@ public sealed class ResponseTextCheckTests
 
         Assert.False(Fails(descriptor, new CheckedResponse { Nest = DepthNode.Make(7) }));
         Assert.True(Fails(descriptor, new CheckedResponse { Nest = DepthNode.Make(8) }));
+
+        // 走快速路径的上下文同样照它：快速路径在第 8 层的可空值上写不出、第 9 层由写出器拒绝，按元数据再写一遍与上面相同（ADR-0342）
+        var fast = new OperationDescriptor<MeasureOperation, MeasureRequest, MeasureRequest>(new(MeasureOperation.Id), "xihan.test.measure", MeasureJsonContext.Default.MeasureRequest, new MeasureJsonContext(new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase, DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull, MaxDepth = 8 }).MeasureRequest);
+        Assert.Equal(JsonSerializer.SerializeToUtf8Bytes(new MeasureRequest(Nest: DepthNode.Make(7)), MeasureJsonContext.Default.MeasureRequest), fast.EncodeResponse(new MeasureRequest(Nest: DepthNode.Make(7))).ToArray());
+        Assert.IsType<JsonException>(Assert.Throws<ArgumentException>(() => fast.EncodeResponse(new MeasureRequest(Nest: DepthNode.Make(8)))).InnerException);
+    }
+
+    [Fact]
+    public void EncodeResponse_WithASerializationOnlyContext_WritesWhatTheFastPathWrites()
+    {
+        // 只生成快速路径的上下文先照快速路径写：修之前写出用的元数据向解析器为选项副本重新取，这样的上下文给不出，第一次写出即失败（ADR-0342）
+        var descriptor = new OperationDescriptor<MeasureOperation, MeasureRequest, MeasureRequest>(new(MeasureOperation.Id), "xihan.test.measure", MeasureJsonContext.Default.MeasureRequest, SerializationOnlyJsonContext.Default.MeasureRequest);
+        var text = new MeasureRequest(1.5, DepthNode.Make(3), "<a href='x'>&+\" \u00E9\u2028\u0001\uD83D\uDE00\uFFFD</a>");
+
+        Assert.Equal(JsonSerializer.SerializeToUtf8Bytes(text, SerializationOnlyJsonContext.Default.MeasureRequest), descriptor.EncodeResponse(text).ToArray());
+        Assert.Equal(JsonSerializer.SerializeToUtf8Bytes(text, MeasureJsonContext.Default.MeasureRequest), descriptor.EncodeResponse(text).ToArray());
+
+        // 写不出的照旧只抛 ArgumentException：孤立的代理项、NaN
+        Assert.Throws<ArgumentException>(() => descriptor.EncodeResponse(new MeasureRequest(Label: "a\uD800")));
+        Assert.Throws<ArgumentException>(() => descriptor.EncodeResponse(new MeasureRequest(double.NaN)));
+
+        // 要按元数据再写一遍的（64 层、最里层是可空值，或超过 64 层）给不出元数据：抛出解析器的 InvalidOperationException，XGI 入口照旧以 KERNEL_UNEXPECTED_001 结束
+        Assert.Throws<InvalidOperationException>(() => descriptor.EncodeResponse(new MeasureRequest(Nest: DepthNode.Make(63))));
+        Assert.Throws<InvalidOperationException>(() => descriptor.EncodeResponse(new MeasureRequest(Nest: DepthNode.Make(100))));
     }
 }
