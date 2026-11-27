@@ -340,3 +340,11 @@
 | [0338](0338-测试与工具的四处偶发.md) | 探测用例放宽就绪的单次超时、性能复测对照与当前交替、删目录失败时记下占用者、Oracle 夹具清池再试一次 | 已采纳 |
 | [0339](0339-写进插件协议的错误文案换成U+FFFD.md) | 写进插件协议的错误文案把编不成 UTF-8 的部分按最大子部分换成 U+FFFD | 已采纳 |
 | [0340](0340-SDK的严格写出入口、写出核对只写一遍与关闭后的reason.md) | TypeScript 新增 `Result.write` / `ErrorInfo.write`、Java 新增 `PrimitivesJson.write`（写不出抛 `IllegalArgumentException`），Rust 的 `json::to_vec` 写出后过共同检查、线上编码只写一遍，Python 响应类型的同名成员注册即报错，Java 关闭之后的 `reason` 与另三家一致，Go / TypeScript / Rust 删掉与向量重叠的手写时间用例 | 已采纳 |
+| [0341](0341-XGI入口写不出响应时Span与指标记失败.md) | XGI 入口在 Observe 阶段定结果之前编码响应，写不出时 Span 状态 Error、`xihan.outcome` 与两个指标照调用方拿到的 `KERNEL_UNEXPECTED_001` 记失败 | 已采纳 |
+| [0342](0342-响应写出先快后慢.md) | 响应与为 Schema 校验编码的请求先照原选项写（走源生成快速路径），只在快速路径抛出的 `InvalidOperationException` 与内层是 `JsonException` 的 `ArgumentException` 上按元数据再写一遍；只生成快速路径的上下文恢复能写 | 已采纳 |
+| [0343](0343-S3的元数据太大与会被改写的值返回校验错误并解原样的UTF-8字节.md) | S3 被服务以 `MetadataTooLarge` 拒收元数据时返回 `OBJECTSTORAGE_VALIDATION_008`，整个是 encoded-word 形状的 ASCII 值写入前以 `OBJECTSTORAGE_VALIDATION_009` 拒收，别的写入方原样写进头的 UTF-8 字节按 Latin-1 还原后严格按 UTF-8 解出 | 已采纳 |
+| [0344](0344-批量删除的错误项缺错误码时写固定的reason与套件的非ASCII元数据往返.md) | 批量删除的错误项缺错误码时只报那一项、`reason` 写固定文字，`BlobStoreConformance` 补用例 16（非 ASCII 元数据值往返） | 已采纳 |
+| [0345](0345-Wasm读入客体的消息过JSON文本的共同检查.md) | Wasm 宿主读客体写来的每条消息整条过 JSON 文本的共同检查（孤立代理项的转义、重复成员、64 层，未知字段里的也算），没过与有非法 UTF-8 的消息同一处置 | 已采纳 |
+| [0346](0346-错误文案替换的共同向量.md) | 写进插件协议的错误文案替换有了共同向量 `plugin/error-text-writing.json`（UTF-16、码点、字节三组，进 `plugin` 档，期望值由 .NET 算出） | 已采纳 |
+| [0347](0347-SDK回调宿主前核对写进元数据的Baggage.md) | SDK 回调宿主之前核对写进元数据的 Baggage，有孤立的代理项即本地以 `PLUGINS_UNEXPECTED_001` 结束、不发请求，`reason` 与宿主一侧相同 | 已采纳 |
+| [0348](0348-调度的租约持有者标识拒收孤立的代理项.md) | 调度的节点 ID 与 Kubernetes 的持有者标识拒收孤立的代理项，构造选项或从配置读取即启动失败 | 已采纳 |
