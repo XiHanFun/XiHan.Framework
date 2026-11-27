@@ -60,9 +60,13 @@ public sealed partial record KubernetesSchedulingOptions
     /// 持有者标识
     /// </summary>
     /// <remarks>
-    /// 为空时解析环境变量 <c>XIHAN_POD_NAME</c>、<c>HOSTNAME</c>，最后机器名
+    /// 为空时解析环境变量 <c>XIHAN_POD_NAME</c>、<c>HOSTNAME</c>，最后机器名。不能有孤立的代理项（ADR-0348）：它写进 Lease 的 <c>holderIdentity</c>，JSON 写出器把孤立的代理项换成 U+FFFD，Lease 上看到的就不是配置的持有者
     /// </remarks>
-    public string? Holder { get; init; }
+    public string? Holder
+    {
+        get => field;
+        init => field = value is null || !UnicodeText.HasLoneSurrogate(value) ? value : throw new ArgumentException("The holder identity must not contain lone surrogates.", nameof(value));
+    }
 
     /// <summary>
     /// API Server 地址

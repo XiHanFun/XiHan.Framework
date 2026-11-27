@@ -63,6 +63,16 @@ public sealed class DatabaseSchedulingTests
     }
 
     [Fact]
+    public async Task NodeId_WithALoneSurrogate_FailsStartup()
+    {
+        // RFC-0013「Provider」（ADR-0348）：修之前照收，SQLite 上节点行存成 U+FFFD，抢到的触发器的 AcquiredBy 读回来与节点 ID 不等，作业一次也不运行；只差在孤立代理项上的两个节点只剩一行
+        var thrown = await Assert.ThrowsAsync<ArgumentException>(static () => TestHost.StartAsync(
+            static b => b.UseFeature<InMemoryPersistenceFeature>().UseFeature<DatabaseSchedulingFeature>(),
+            [new($"{SchedulerOptions.ConfigurationSection}:NodeId", "node-\uD800")]));
+        Assert.Equal("The node ID must not contain lone surrogates. (Parameter 'value')", thrown.Message);
+    }
+
+    [Fact]
     public async Task Runs_AtTheSameScheduledTime_ComeBackNewestFirst()
     {
         await using var database = new SqliteDatabase();

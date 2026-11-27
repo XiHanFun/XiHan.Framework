@@ -210,6 +210,22 @@ public sealed class InMemorySchedulingTests
         Assert.Throws<ArgumentException>(static () => InMemorySchedulingOptions.FromConfiguration(new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?> { ["XiHan:Scheduling:InMemory:MaxRuns"] = "-1" }).Build()));
     }
 
+    [Fact]
+    public void NodeId_WithALoneSurrogate_IsRejected_AndAPairIsKept()
+    {
+        // RFC-0013「Provider」（ADR-0348）：节点 ID 是租约行、节点行、运行与抢占的触发器里的持有者，经数据库参数宽松编码之后存下的是另一段文本；修之前照收
+        foreach (var node in new[] { "node-7\uD800", "\uDC00node", "node\uDE00\uD83D" })
+        {
+            var thrown = Assert.Throws<ArgumentException>(() => new SchedulerOptions { NodeId = node });
+            Assert.Equal("The node ID must not contain lone surrogates. (Parameter 'value')", thrown.Message);
+            var configuration = new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?> { [$"{SchedulerOptions.ConfigurationSection}:NodeId"] = node }).Build();
+            Assert.Throws<ArgumentException>(() => SchedulerOptions.FromConfiguration(configuration));
+        }
+
+        Assert.Equal("node-😀", new SchedulerOptions { NodeId = "node-😀" }.NodeId);
+        Assert.Equal("node-😀", SchedulerOptions.FromConfiguration(new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?> { [$"{SchedulerOptions.ConfigurationSection}:NodeId"] = "node-😀" }).Build()).NodeId);
+    }
+
     /// <summary>
     /// 作业状态
     /// </summary>

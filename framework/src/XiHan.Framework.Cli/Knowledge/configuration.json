@@ -1839,7 +1839,7 @@
           "key": "NodeId",
           "type": "string",
           "sample": "node-1",
-          "summary": "本节点 ID；空白视为未配置，缺省为机器名:进程 ID:8 位随机十六进制"
+          "summary": "本节点 ID；空白视为未配置，缺省为机器名:进程 ID:8 位随机十六进制；有孤立的代理项即启动失败（ADR-0348）"
         },
         {
           "key": "MaxConcurrentRuns",
@@ -1947,7 +1947,7 @@
           "key": "Holder",
           "type": "string",
           "sample": "scheduler-0",
-          "summary": "持有者标识；未配置时依次取 XIHAN_POD_NAME、HOSTNAME，最后机器名"
+          "summary": "持有者标识；未配置时依次取 XIHAN_POD_NAME、HOSTNAME，最后机器名；有孤立的代理项即启动失败（ADR-0348）"
         },
         {
           "key": "ApiServer",

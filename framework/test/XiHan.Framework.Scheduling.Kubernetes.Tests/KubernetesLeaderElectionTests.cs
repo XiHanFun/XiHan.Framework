@@ -117,6 +117,27 @@ public sealed class KubernetesLeaderElectionTests
     }
 
     [Fact]
+    public async Task Holder_WithALoneSurrogate_IsRejected_AndAPairIsKept()
+    {
+        // RFC-0013「领导选举」（ADR-0348）：持有者标识写进 Lease 的 holderIdentity，JSON 写出器把孤立的代理项换成 U+FFFD，Lease 上看到的不是配置的持有者；修之前照收
+        foreach (var holder in new[] { "pod-7\uD800", "\uDC00pod", "pod\uDE00\uD83D" })
+        {
+            var thrown = Assert.Throws<ArgumentException>(() => new KubernetesSchedulingOptions { Holder = holder });
+            Assert.Equal("The holder identity must not contain lone surrogates. (Parameter 'value')", thrown.Message);
+            var configuration = new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?> { ["XiHan:Scheduling:Kubernetes:Holder"] = holder }).Build();
+            Assert.Throws<ArgumentException>(() => KubernetesSchedulingOptions.FromConfiguration(configuration));
+        }
+
+        // 成对的代理项照常写进 Lease；null（没有配置）照收
+        var api = new FakeLeaseApi();
+        var options = new KubernetesSchedulingOptions { Lease = "orders-scheduler", Namespace = "shop", Holder = "pod-😀", Token = FakeLeaseApi.Token, ApiServer = new Uri("https://api.test") };
+        var election = new KubernetesLeaderElection(new KubernetesLeaseClient(new HttpClient(api) { BaseAddress = options.ApiServer }, options), options, new FakeTimeProvider(DateTimeOffset.UtcNow), NullLoggerFactory.Instance);
+        Assert.True((await election.TryAcquireAsync(new JobName("scheduling.jobs"), TimeSpan.FromSeconds(30), CancellationToken.None)).IsSuccess);
+        Assert.Equal("pod-😀", api.Spec("orders-scheduler")!["holderIdentity"]!.GetValue<string>());
+        Assert.Null(new KubernetesSchedulingOptions { Holder = null }.Holder);
+    }
+
+    [Fact]
     public async Task Feature_ReplacesInMemoryElection_AndSchedulerBecomesLeaderThroughTheLease()
     {
         var api = new FakeLeaseApi();

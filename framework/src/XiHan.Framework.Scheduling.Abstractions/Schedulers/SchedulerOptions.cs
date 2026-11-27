@@ -41,12 +41,14 @@ public sealed record SchedulerOptions
     /// 节点 ID
     /// </summary>
     /// <remarks>
-    /// 默认机器名 + 进程 ID + 随机
+    /// 默认机器名 + 进程 ID + 随机。不能为空白，也不能有孤立的代理项（ADR-0348）：节点行、运行记录、抢占的触发器与租约行里记的都是它，经数据库参数宽松编码之后存下的是另一段文本，抢到的触发器读回来不属于本节点，只差在孤立代理项上的两个节点也分不开
     /// </remarks>
     public string NodeId
     {
         get => field;
-        init => field = !string.IsNullOrWhiteSpace(value) ? value : throw new ArgumentException("The node ID must not be empty.", nameof(value));
+        init => field = string.IsNullOrWhiteSpace(value)
+            ? throw new ArgumentException("The node ID must not be empty.", nameof(value))
+            : !UnicodeText.HasLoneSurrogate(value) ? value : throw new ArgumentException("The node ID must not contain lone surrogates.", nameof(value));
     } = _defaultNodeId;
 
     /// <summary>
@@ -144,6 +146,9 @@ public sealed record SchedulerOptions
     /// <summary>
     /// 从配置读取
     /// </summary>
+    /// <remarks>
+    /// 值不合法抛出 <see cref="ArgumentException"/>，不按缺省处理；<c>NodeId</c> 与 <c>LeaseResource</c> 空白视为未配置，<c>NodeId</c> 有孤立的代理项经属性抛出
+    /// </remarks>
     public static SchedulerOptions FromConfiguration(IConfiguration configuration)
     {
         ArgumentNullException.ThrowIfNull(configuration);

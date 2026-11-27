@@ -32,6 +32,8 @@ Lease 名缺省为 `xihan-scheduler`，可改：
 { "XiHan": { "Scheduling": { "Kubernetes": { "Lease": "orders-scheduler" } } } }
 ```
 
+持有者标识缺省取环境变量 `XIHAN_POD_NAME`、`HOSTNAME`，最后是机器名；`Holder` 可以显式配置，有孤立的代理项时读取选项抛出 `ArgumentException`、应用启动失败（ADR-0348）。
+
 Pod 的 ServiceAccount 需要 `coordination.k8s.io` 下 `leases` 的 `get`、`update`、`patch`、`create` 权限。
 
 ## 主要类型

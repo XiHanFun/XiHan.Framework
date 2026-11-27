@@ -34,7 +34,7 @@ builder.AddXiHan(xihan => xihan
     .UseFeature<DatabaseSchedulingFeature>());
 ```
 
-每个节点的 `XiHan:Scheduling:NodeId` 需要唯一；表结构由应用管理：
+每个节点的 `XiHan:Scheduling:NodeId` 需要唯一，空白视为没配，有孤立的代理项时读取选项抛出 `ArgumentException`、应用启动失败（ADR-0348）；表结构由应用管理：
 
 ```json
 { "XiHan": { "Bindings": { "db": "Host=localhost;Database=app;Username=app" }, "Scheduling": { "NodeId": "node-1" } } }
