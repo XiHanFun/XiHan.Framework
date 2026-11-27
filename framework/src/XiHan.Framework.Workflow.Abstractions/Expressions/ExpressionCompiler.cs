@@ -501,12 +501,14 @@ internal sealed class ExpressionCompiler
                     var needle = args[1](run);
                     if (haystack is JsonArray array)
                     {
-                        // 每个元素都与要找的值比一次：读数组一遍，再按元素个数读要找的值；量元素时取出的字符串就是比较用的那份，要找的字符串也只取出一次，每次比较都用这一份
-                        var items = run.ReadItems(array);
-                        var compared = run.ReadTimes(needle, array.Count);
+                        // 每个元素都与要找的值比一次：读数组一遍，再按元素个数读要找的值；量元素时取出的字符串就是比较用的那份，要找的字符串也只取出一次，每次比较都用这一份。
+                        // 元素与要找的值都是容器时，里面的字符串同样记在这一次的文本里，深比较不取第二遍（ADR-0336）
+                        var texts = new ComparedTexts();
+                        var items = run.ReadItems(array, texts);
+                        var compared = run.ReadTimes(needle, array.Count, texts);
                         foreach (var item in items)
                         {
-                            if (AreEqual(item, compared))
+                            if (AreEqual(item, compared, texts))
                             {
                                 return True;
                             }
@@ -808,7 +810,7 @@ internal sealed class ExpressionCompiler
     /// 相等：先按两侧的种类记读，再比较
     /// </summary>
     /// <remarks>
-    /// 两侧都是标量时读字符串与数字（可能当数字或文本比）；两侧都是容器时要逐层比，读两侧；有一侧是 null，或容器对标量，不必看内容，不读
+    /// 两侧都是标量时读字符串与数字（可能当数字或文本比）；两侧都是容器时要逐层比，读两侧，量规模时取出的字符串就是深比较用的那份（ADR-0336）；有一侧是 null，或容器对标量，不必看内容，不读
     /// </remarks>
     private static bool Equal(ExpressionRun run, JsonNode? left, JsonNode? right)
     {
@@ -818,11 +820,11 @@ internal sealed class ExpressionCompiler
         }
         else if (left is JsonArray or JsonObject && right is JsonArray or JsonObject)
         {
-            run.Read(left);
-            run.Read(right);
+            // 读取量照旧先左后右；深比较按结构走、可能半途就分出不等，所以文本在量的时候全部取出、记下，比较只查这一份
+            return DeepEqual(left, right, run.ReadContainers(left, right));
         }
 
-        return AreEqual(left, right);
+        return AreEqual(left, right, null);
     }
 
     /// <summary>
@@ -867,7 +869,10 @@ internal sealed class ExpressionCompiler
     /// <remarks>
     /// 都为 null 相等，只有一边是 null 不等；都是布尔按值；都是数字或数字文本按数值；其余的标量按文本的序数比较；有一边是数组或对象时按结构深比较，里面的标量不做转换
     /// </remarks>
-    private static bool AreEqual(JsonNode? left, JsonNode? right)
+    /// <param name="left">左侧的值</param>
+    /// <param name="right">右侧的值</param>
+    /// <param name="texts">读的时候取出的、容器里的字符串文本；没有读容器时为 <see langword="null"/></param>
+    private static bool AreEqual(JsonNode? left, JsonNode? right, ComparedTexts? texts)
     {
         if (left is null || right is null)
         {
@@ -889,7 +894,7 @@ internal sealed class ExpressionCompiler
             return string.Equals(WorkflowValues.AsString(l), WorkflowValues.AsString(r), StringComparison.Ordinal);
         }
 
-        return DeepEqual(left, right);
+        return DeepEqual(left, right, texts);
     }
 
     /// <summary>
@@ -898,7 +903,10 @@ internal sealed class ExpressionCompiler
     /// <remarks>
     /// 数组长度相同且逐项相等；对象成员名相同（按序数，不看顺序）且各成员相等；里面的标量不做宽松转换，类型相同才可能相等，数字按数值；容器与标量不相等。对象的成员经 <see cref="WorkflowValues.TryMember"/> 取，不区分大小写的 <see cref="JsonObject"/> 也按序数比较成员名
     /// </remarks>
-    private static bool DeepEqual(JsonNode? left, JsonNode? right)
+    /// <param name="left">左侧的值</param>
+    /// <param name="right">右侧的值</param>
+    /// <param name="texts">读的时候取出的字符串文本；为 <see langword="null"/> 时比较时现取</param>
+    private static bool DeepEqual(JsonNode? left, JsonNode? right, ComparedTexts? texts)
     {
         switch (left, right)
         {
@@ -912,7 +920,7 @@ internal sealed class ExpressionCompiler
 
                 for (var index = 0; index < a.Count; index++)
                 {
-                    if (!DeepEqual(a[index], b[index]))
+                    if (!DeepEqual(a[index], b[index], texts))
                     {
                         return false;
                     }
@@ -927,7 +935,7 @@ internal sealed class ExpressionCompiler
 
                 foreach (var (name, value) in a)
                 {
-                    if (!WorkflowValues.TryMember(b, name, out var other) || !DeepEqual(value, other))
+                    if (!WorkflowValues.TryMember(b, name, out var other) || !DeepEqual(value, other, texts))
                     {
                         return false;
                     }
@@ -935,7 +943,7 @@ internal sealed class ExpressionCompiler
 
                 return true;
             case (JsonValue a, JsonValue b):
-                return SameScalar(a, b);
+                return SameScalar(a, b, texts);
             default:
                 return false;
         }
@@ -945,9 +953,12 @@ internal sealed class ExpressionCompiler
     /// 容器里的两个标量是否相同
     /// </summary>
     /// <remarks>
-    /// 类型相同才可能相同：数字按放进数字之后的数值（写法不同、超出 28 位小数的照同一条规则舍入），字符串逐个码元，布尔按值。放不下的数字不在规定之内，交给平台按原文比
+    /// 类型相同才可能相同：数字按放进数字之后的数值（写法不同、超出 28 位小数的照同一条规则舍入），字符串逐个码元，布尔按值。放不下的数字不在规定之内，交给平台按原文比。字符串的文本取读的时候记下的那一份（ADR-0336）
     /// </remarks>
-    private static bool SameScalar(JsonValue left, JsonValue right)
+    /// <param name="left">左侧的标量</param>
+    /// <param name="right">右侧的标量</param>
+    /// <param name="texts">读的时候取出的字符串文本；为 <see langword="null"/> 时现取</param>
+    private static bool SameScalar(JsonValue left, JsonValue right, ComparedTexts? texts)
     {
         var kind = left.GetValueKind();
         if (kind != right.GetValueKind())
@@ -958,6 +969,7 @@ internal sealed class ExpressionCompiler
         return kind switch
         {
             JsonValueKind.True or JsonValueKind.False => true,
+            JsonValueKind.String when texts is not null => string.Equals(texts.Of(left), texts.Of(right), StringComparison.Ordinal),
             JsonValueKind.String => string.Equals(WorkflowValues.AsString(left), WorkflowValues.AsString(right), StringComparison.Ordinal),
             JsonValueKind.Number when WorkflowValues.TryDecimal(left, out var l) && WorkflowValues.TryDecimal(right, out var r) => l == r,
             _ => JsonNode.DeepEquals(left, right),

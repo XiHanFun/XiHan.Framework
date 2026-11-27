@@ -299,6 +299,62 @@ public sealed class ExpressionBudgetTests
         Assert.InRange(found, 0, once + (once / 2));
     }
 
+    [Fact]
+    public void ComparingContainers_TakesEachStringOnce_AndKeepsTheResults()
+    {
+        // 两个容器深比较、contains 的元素与要找的值都是容器：量规模时取出的文本就是比较用的那份（ADR-0336）；修之前各取两遍
+        (string Expression, bool Expected)[] cases =
+        [
+            ("left == right", true), ("left != right", false), ("left == other", false), ("left == left", true),
+            ("contains(items, needle)", true), ("contains(items, other)", false),
+        ];
+
+        foreach (var (expression, expected) in cases)
+        {
+            var texts = new[] { new CountingText("aé😀\n"), new CountingText("aé😀\n"), new CountingText("x"), new CountingText("x"), new CountingText("y"), new CountingText("aé😀\n"), new CountingText("aé😀\n") };
+            var scope = Scope(
+                ("left", new JsonArray(texts[0].ToValue(), 1, new JsonObject { ["k"] = texts[2].ToValue() })),
+                ("right", new JsonArray(texts[1].ToValue(), 1.0m, new JsonObject { ["k"] = texts[3].ToValue() })),
+                ("other", new JsonArray(texts[4].ToValue())),
+                ("items", new JsonArray(new JsonObject { ["a"] = texts[5].ToValue() }, true)),
+                ("needle", new JsonObject { ["a"] = texts[6].ToValue() }));
+
+            Assert.Equal((expression, expected), (expression, _evaluator.Evaluate(expression, scope, out _).ValueOrThrow().OrNull()?.GetValue<bool>()));
+            // 被量到的字符串各取一次：深比较里没比到的成员也量了，取文本的次数只与容器有关，与比到哪里无关
+            Assert.All(texts, text => Assert.InRange(text.Takes, 0, 1));
+        }
+    }
+
+    [Fact]
+    public void ComparingContainersReadFromJson_DecodesEachStringOnce_AndGivesTheSameResultsAndWork()
+    {
+        // 从 JSON 文本读来的字符串每取一次文本都要解码全文：两个各有一个百万码元字符串的数组比相等，只各解码一次
+        var huge = new string('a', 1_048_576);
+        var left = (JsonArray)JsonNode.Parse("[\"" + huge + "\"]")!;
+        var right = (JsonArray)JsonNode.Parse("[\"" + huge + "\"]")!;
+        var items = (JsonArray)JsonNode.Parse("[{\"k\":\"" + huge + "\"}]")!;
+        var needle = (JsonObject)JsonNode.Parse("{\"k\":\"" + huge + "\"}")!;
+        var scope = Scope(("left", left), ("right", right), ("items", items), ("needle", needle));
+        Assert.True(_evaluator.Evaluate("left == right", scope, out _).ValueOrThrow().OrNull()?.GetValue<bool>());
+
+        var once = Allocated(() => _ = left[0]!.GetValue<string>());
+        var equal = Allocated(() => _ = _evaluator.Evaluate("left == right", scope, out _));
+        var found = Allocated(() => _ = _evaluator.Evaluate("contains(items, needle)", scope, out _));
+
+        // 两侧各解码一次；多出的只是记下文本的表与几步的状态，远小于再解码一遍
+        Assert.InRange(equal, 0, (2 * once) + (once / 2));
+        Assert.InRange(found, 0, (2 * once) + (once / 2));
+
+        // 结果与工作量与进程内构造的同一份值相同
+        var constructed = Scope(("left", new JsonArray(huge)), ("right", new JsonArray(huge)), ("items", new JsonArray(new JsonObject { ["k"] = huge })), ("needle", new JsonObject { ["k"] = huge }));
+        foreach (var expression in new[] { "left == right", "left != right", "contains(items, needle)", "contains(items, left)" })
+        {
+            var fromJson = _evaluator.Evaluate(expression, scope, out var fromJsonWork).ValueOrThrow().OrNull()?.GetValue<bool>();
+            var inProcess = _evaluator.Evaluate(expression, constructed, out var inProcessWork).ValueOrThrow().OrNull()?.GetValue<bool>();
+            Assert.Equal((expression, inProcess, inProcessWork), (expression, fromJson, fromJsonWork));
+        }
+    }
+
     /// <summary>
     /// 进程内由各种 CLR 类型构造的数字
     /// </summary>

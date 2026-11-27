@@ -14,7 +14,7 @@ namespace XiHan.Framework.Workflow.Abstractions.Expressions;
 /// 一次求值或一次渲染的状态：作用域与累计的工作量
 /// </summary>
 /// <remarks>
-/// 工作量的规则来自 RFC-0021「表达式」的「长度与上限」（ADR-0296、ADR-0303、ADR-0309）：每开始求值一个节点记 <see cref="StepWork"/>；运算读到的字符串记它的长度（<c>isNullOrEmpty</c> 只读到能判定为止），读到的数字记它的写法的长度（从 JSON 文本读来的是原文，别的是写成 JSON 的文本），读到的数组与对象记它里面每个值 <see cref="StepWork"/>（它自己也算一个）加上全部字符串、数字与成员名的长度；累计超过 <see cref="MaxWork"/> 即以 <see cref="WorkflowMessages.ExpressionBudgetExceeded"/> 失败。工作量只取决于表达式、值与求值的次序，与平台和机器的快慢无关，所以能写进向量。读的方法交回运算接着用的值或文本（标量、作文本的数组与对象、<c>contains</c> 要比较的元素），一次运算里同一个字符串只取出一次。一次 <c>Render</c> 的全部占位共用一个实例
+/// 工作量的规则来自 RFC-0021「表达式」的「长度与上限」（ADR-0296、ADR-0303、ADR-0309）：每开始求值一个节点记 <see cref="StepWork"/>；运算读到的字符串记它的长度（<c>isNullOrEmpty</c> 只读到能判定为止），读到的数字记它的写法的长度（从 JSON 文本读来的是原文，别的是写成 JSON 的文本），读到的数组与对象记它里面每个值 <see cref="StepWork"/>（它自己也算一个）加上全部字符串、数字与成员名的长度；累计超过 <see cref="MaxWork"/> 即以 <see cref="WorkflowMessages.ExpressionBudgetExceeded"/> 失败。工作量只取决于表达式、值与求值的次序，与平台和机器的快慢无关，所以能写进向量。读的方法交回运算接着用的值或文本（标量、作文本的数组与对象、<c>contains</c> 要比较的元素，逐层比较的容器里的字符串文本），一次运算里同一个字符串只取出一次。一次 <c>Render</c> 的全部占位共用一个实例
 /// </remarks>
 internal sealed class ExpressionRun : IValueTextTally
 {
@@ -69,7 +69,25 @@ internal sealed class ExpressionRun : IValueTextTally
     /// <summary>
     /// 读一个值：字符串与数字记它的长度，容器记它的规模，别的不记
     /// </summary>
-    public void Read(JsonNode? node) => Add(Measure(node, MaxWork - Work));
+    public void Read(JsonNode? node) => Add(Measure(node, MaxWork - Work, null));
+
+    /// <summary>
+    /// 读两个要逐层比较的容器，交回比较时用的字符串文本
+    /// </summary>
+    /// <remarks>
+    /// 两个容器 <c>==</c> 时用（ADR-0336）：读取量与先后两次 <see cref="Read"/> 相同，量规模时取出的每个字符串记进返回的 <see cref="ComparedTexts"/>，深比较用同一份，不再取第二遍
+    /// </remarks>
+    /// <param name="left">左侧的容器</param>
+    /// <param name="right">右侧的容器</param>
+    /// <returns>比较时用的文本</returns>
+    public ComparedTexts ReadContainers(JsonNode left, JsonNode right)
+    {
+        var texts = new ComparedTexts();
+        // 两侧各记一笔、各自比较上限，与先读左再读右的两次 Read 一样在同一处撞上上限
+        Add(Measure(left, MaxWork - Work, texts));
+        Add(Measure(right, MaxWork - Work, texts));
+        return texts;
+    }
 
     /// <summary>
     /// 读一个值，只在它是字符串或数字时记它的长度
@@ -147,11 +165,12 @@ internal sealed class ExpressionRun : IValueTextTally
     /// 读一个数组，交回与要找的值比较时用的元素
     /// </summary>
     /// <remarks>
-    /// <c>contains</c> 在数组里找时用（ADR-0326）：读取量与 <see cref="Read"/> 相同。是字符串的元素量长度时取出全文，取出的这份文本经返回值交给比较（<see cref="Materialize"/>），比较不再取第二遍；别的元素照 <see cref="Read"/> 量，原样交回
+    /// <c>contains</c> 在数组里找时用（ADR-0326）：读取量与 <see cref="Read"/> 相同。是字符串的元素量长度时取出全文，取出的这份文本经返回值交给比较（<see cref="Materialize"/>），比较不再取第二遍；别的元素照 <see cref="Read"/> 量，原样交回，是容器的元素里的字符串记进 <paramref name="texts"/>，深比较用同一份（ADR-0336）
     /// </remarks>
     /// <param name="array">数组</param>
+    /// <param name="texts">比较时用的文本</param>
     /// <returns>与 <paramref name="array"/> 等长同序的元素</returns>
-    public JsonNode?[] ReadItems(JsonArray array)
+    public JsonNode?[] ReadItems(JsonArray array, ComparedTexts texts)
     {
         var items = new JsonNode?[array.Count];
         // 与 Measure 同一种量法：数组自己一步，每个元素一步加它的读取量；累计超过剩下的额度即停，记上即失败，没量到的元素不必再看
@@ -168,7 +187,7 @@ internal sealed class ExpressionRun : IValueTextTally
             }
             else
             {
-                MeasureContainer(item, 2, limit, ref total);
+                MeasureContainer(item, 2, limit, ref total, texts);
                 items[index] = item;
             }
         }
@@ -181,12 +200,13 @@ internal sealed class ExpressionRun : IValueTextTally
     /// 把一个值读 <paramref name="times"/> 次
     /// </summary>
     /// <remarks>
-    /// <c>contains</c> 在数组里找时，每个元素都与要找的值比一次：按元素个数乘以它的读取量记。次数为零不读，结果相同（零乘以任何数都是零）。要找的是字符串时只取出一次，经返回值交给每一次比较（<see cref="Materialize"/>）
+    /// <c>contains</c> 在数组里找时，每个元素都与要找的值比一次：按元素个数乘以它的读取量记。次数为零不读，结果相同（零乘以任何数都是零）。要找的是字符串时只取出一次，经返回值交给每一次比较（<see cref="Materialize"/>）；是容器时里面的字符串记进 <paramref name="texts"/>，每一次深比较都用这一份（ADR-0336）
     /// </remarks>
     /// <param name="node">值</param>
     /// <param name="times">次数</param>
+    /// <param name="texts">比较时用的文本</param>
     /// <returns>比较时用的值：从 JSON 文本读来的字符串换成已取出的文本，别的原样</returns>
-    public JsonNode? ReadTimes(JsonNode? node, int times)
+    public JsonNode? ReadTimes(JsonNode? node, int times, ComparedTexts texts)
     {
         if (times <= 0)
         {
@@ -205,7 +225,7 @@ internal sealed class ExpressionRun : IValueTextTally
         }
         else
         {
-            amount = Measure(node, share);
+            amount = Measure(node, share, texts);
         }
 
         if (amount > share)
@@ -240,7 +260,8 @@ internal sealed class ExpressionRun : IValueTextTally
     /// </remarks>
     /// <param name="node">值</param>
     /// <param name="limit">还剩的额度</param>
-    private static long Measure(JsonNode? node, long limit)
+    /// <param name="texts">容器里取出的字符串文本记在这里，接着要逐层比较时给；不比较时为 <see langword="null"/></param>
+    private static long Measure(JsonNode? node, long limit, ComparedTexts? texts)
     {
         switch (node)
         {
@@ -250,7 +271,7 @@ internal sealed class ExpressionRun : IValueTextTally
                 return MeasureScalar(value);
             default:
                 long total = 0;
-                MeasureContainer(node, 1, limit, ref total);
+                MeasureContainer(node, 1, limit, ref total, texts);
                 return total;
         }
     }
@@ -262,7 +283,8 @@ internal sealed class ExpressionRun : IValueTextTally
     /// <param name="depth">本值作为容器时所在的层数，最外层为 1</param>
     /// <param name="limit">还剩的额度</param>
     /// <param name="total">累计的规模</param>
-    private static void MeasureContainer(JsonNode? node, int depth, long limit, ref long total)
+    /// <param name="texts">取出的字符串文本记在这里；不比较时为 <see langword="null"/></param>
+    private static void MeasureContainer(JsonNode? node, int depth, long limit, ref long total, ComparedTexts? texts)
     {
         // 每个值一步，null、布尔、数字只有这一步
         total += StepWork;
@@ -273,13 +295,17 @@ internal sealed class ExpressionRun : IValueTextTally
 
         switch (node)
         {
+            case JsonValue value when texts is not null && value.GetValueKind() == JsonValueKind.String:
+                // 接着要逐层比较：量长度时取出的文本记下，比较时用同一份，不取第二遍（ADR-0336）；读取量与不记时相同
+                total += texts.Take(value).Length;
+                return;
             case JsonValue value:
                 total += MeasureScalar(value);
                 return;
             case JsonArray array when depth <= MaxDepth:
                 foreach (var item in array)
                 {
-                    MeasureContainer(item, depth + 1, limit, ref total);
+                    MeasureContainer(item, depth + 1, limit, ref total, texts);
                     if (total > limit)
                     {
                         return;
@@ -291,7 +317,7 @@ internal sealed class ExpressionRun : IValueTextTally
                 foreach (var (name, member) in obj)
                 {
                     total += name.Length;
-                    MeasureContainer(member, depth + 1, limit, ref total);
+                    MeasureContainer(member, depth + 1, limit, ref total, texts);
                     if (total > limit)
                     {
                         return;
