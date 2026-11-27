@@ -7,8 +7,9 @@
 ## 主要特性
 
 * 入站支持 binary、structured、batch 三种内容模式
-* binary 的 `ce-*` 头值按 CloudEvents 的百分号解码严格读：`%` 后不是两位十六进制数字、解出的字节不是合法的 UTF-8 时以 400 `MESSAGING_VALIDATION_002` 拒绝（`CloudEventsHttpBinding.DecodeHeaderValue` 返回 `Maybe<string>`，读不出时无值）
-* binary 的空 `ce-dataschema` 头与 structured 的 `"dataschema": ""` 一样不合法（400 `MESSAGING_VALIDATION_002`）；插件协议的 `data_schema` 空串仍表示没有
+* binary 的 `ce-*` 头值照 CloudEvents HTTP 绑定 1.0.2 §3.1.3.2 严格读：先解开双引号括起的部分（`"order 42"` 读成 `order 42`，`\"` 是引号本身），再做一轮百分号解码；引号不配对、引号里有控制字符、`%` 后不是两位十六进制数字、解出的字节不是合法的 UTF-8 时以 400 `MESSAGING_VALIDATION_002` 拒绝（`CloudEventsHttpBinding.DecodeHeaderValue` 返回 `Maybe<string>`，读不出时无值）
+* 出站 binary 的头值把空格、双引号、`%` 与可打印 ASCII 之外的字符都百分号编码（`EncodeHeaderValue`），写出的值不含空格与双引号
+* binary 的空 `ce-dataschema`、`ce-subject`、`ce-time` 头与 structured 的空串一样不合法（400 `MESSAGING_VALIDATION_002`）；插件协议的 `data_schema`、`subject`、`time` 空串仍表示没有
 * 入站可在请求内派发给处理器，也可发布到消息代理
 * 出站 Webhook 按主题配置地址，不外推租户、主体等内部标识
 * 出站写不出的信封在发出之前拒绝：信封的字符串属性有孤立的代理项时，binary（缺省）与 structured 一样抛出 `MESSAGING_VALIDATION_002`，不编成 U+FFFD 照发

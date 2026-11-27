@@ -21,7 +21,7 @@ namespace XiHan.Framework.Protocols.CloudEvents.Inbound;
 /// CloudEvents 1.0 的 HTTP 协议绑定
 /// </summary>
 /// <remarks>
-/// 读请求（binary / structured / batch）成信封，把信封写进出站请求（单条 binary / structured，多条 batch）。binary 模式的头值按规范百分号编码非可打印 ASCII 字符；structured 与 batch 复用 <see cref="CloudEventsFormat"/> 的结构化 JSON
+/// 读请求（binary / structured / batch）成信封，把信封写进出站请求（单条 binary / structured，多条 batch）。binary 模式的头值照 CloudEvents HTTP 绑定 1.0.2 §3.1.3.2 编解码：写出时百分号编码空格、双引号、<c>%</c> 与可打印 ASCII 之外的字符，读入时先解开双引号括起的部分再做一轮百分号解码（ADR-0332）；structured 与 batch 复用 <see cref="CloudEventsFormat"/> 的结构化 JSON
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public static class CloudEventsHttpBinding
@@ -221,7 +221,8 @@ public static class CloudEventsHttpBinding
     /// 按 CloudEvents HTTP 绑定编码头值
     /// </summary>
     /// <remarks>
-    /// 可打印 ASCII（<c>%</c> 除外）原样，其余按 UTF-8 字节百分号编码。孤立的代理项没有 UTF-8 字节，抛出 <see cref="ArgumentException"/>（ADR-0318，以前编成 U+FFFD 的 <c>%EF%BF%BD</c>）
+    /// CloudEvents HTTP 绑定 1.0.2 §3.1.3.2：空格（U+0020）、双引号（U+0022）、<c>%</c> 与可打印 ASCII（U+0021–U+007E）之外的字符按 UTF-8 字节写成 <c>%XX</c>（十六进制大写），其余原样；编出的值不含空格与双引号，不用引号括起（ADR-0332，以前空格与双引号原样写出）。
+    /// 孤立的代理项没有 UTF-8 字节，抛出 <see cref="ArgumentException"/>（ADR-0318，以前编成 U+FFFD 的 <c>%EF%BF%BD</c>）
     /// </remarks>
     public static string EncodeHeaderValue(string value)
     {
@@ -235,7 +236,8 @@ public static class CloudEventsHttpBinding
         Span<byte> utf8 = stackalloc byte[4];
         foreach (var rune in value.EnumerateRunes())
         {
-            if (rune.Value is >= 0x20 and <= 0x7E && rune.Value != '%')
+            // 空格与双引号也编码：接收方先解开双引号括起的部分，原样写出的引号会被当成 quoted-string（§3.1.3.2）
+            if (rune.Value is >= 0x21 and <= 0x7E and not '%' and not '"')
             {
                 builder.Append((char)rune.Value);
                 continue;
@@ -308,16 +310,24 @@ public static class CloudEventsHttpBinding
     }
 
     /// <summary>
-    /// 解码头值的百分号编码
+    /// 解码头值
     /// </summary>
     /// <remarks>
-    /// CloudEvents HTTP 协议绑定的百分号解码（<c>spec/protocol/cloudevents.md</c>「binary 的头值」，ADR-0323）：逐个字符换成字节，<c>%</c> 与紧跟的两位十六进制数字（大小写都收）是一个字节，其余字符是它的 UTF-8 编码，再按 UTF-8 严格解码；不必要的编码照收。
-    /// <c>%</c> 后不是两位十六进制数字、字节不是合法的 UTF-8、值里有孤立的代理项时无值（以前用 <see cref="Uri.UnescapeDataString(string)"/>，原样留成百分号文本，返回 <see langword="string"/>）
+    /// CloudEvents HTTP 绑定 1.0.2 §3.1.3.2 的解码（<c>spec/protocol/cloudevents.md</c>「binary 的头值」）：先按 RFC 7230 §3.2.6 解开双引号括起的部分（<see cref="UnquoteOf"/>，ADR-0332；以前引号读成值的一部分），再做一轮百分号解码（ADR-0323）——逐个字符换成字节，<c>%</c> 与紧跟的两位十六进制数字（大小写都收）是一个字节，其余字符是它的 UTF-8 编码，再按 UTF-8 严格解码；不必要的编码照收。
+    /// 坏的 quoted-string（引号不配对、有控制字符、反斜杠在末尾）、<c>%</c> 后不是两位十六进制数字、字节不是合法的 UTF-8、值里有孤立的代理项时无值（ADR-0323 以前用 <see cref="Uri.UnescapeDataString(string)"/>，原样留成百分号文本，返回 <see langword="string"/>）
     /// </remarks>
     /// <returns>解码出的值；读不出时无值</returns>
     public static Maybe<string> DecodeHeaderValue(string value)
     {
         ArgumentNullException.ThrowIfNull(value);
+
+        // 先解开引号再百分号解码，只做一轮：引号里的 %2541 读成 %41，不再读成 A
+        if (!UnquoteOf(value).TryGetValue(out var unquoted))
+        {
+            return default;
+        }
+
+        value = unquoted;
 
         // 没有 % 的值不用换字节：编得成 UTF-8（没有孤立的代理项）就是它本身
         if (!value.Contains('%'))
@@ -362,6 +372,71 @@ public static class CloudEventsHttpBinding
         {
             ArrayPool<byte>.Shared.Return(bytes);
         }
+    }
+
+    /// <summary>
+    /// 解开头值里双引号括起的部分
+    /// </summary>
+    /// <remarks>
+    /// RFC 7230 §3.2.6：从左到右，引号之外的字符照原样（反斜杠也是普通字符）；<c>"</c> 开始一个 quoted-string，到下一个没有转义的 <c>"</c> 为止，两个引号不算内容；里面 <c>\</c> 与紧跟的一个字符（quoted-pair）是这个字符本身。
+    /// qdtext 与 quoted-pair 收水平制表符、空格、可见的 ASCII 与 obs-text（U+0080 及以上都按它收，孤立的代理项留给百分号解码那一步拒绝）；引号不配对、里面有其余的控制字符（U+0000–U+001F、U+007F）、反斜杠在末尾时无值（ADR-0332）
+    /// </remarks>
+    /// <returns>解开之后的文本；quoted-string 是坏的时无值</returns>
+    private static Maybe<string> UnquoteOf(string value)
+    {
+        // 大多数头值没有引号：照原样，不另建字符串
+        if (!value.Contains('"'))
+        {
+            return value;
+        }
+
+        var builder = new StringBuilder(value.Length);
+        var quoted = false;
+        for (var index = 0; index < value.Length; index++)
+        {
+            var character = value[index];
+            if (!quoted)
+            {
+                if (character == '"')
+                {
+                    quoted = true;
+                }
+                else
+                {
+                    builder.Append(character);
+                }
+
+                continue;
+            }
+
+            if (character == '"')
+            {
+                quoted = false;
+                continue;
+            }
+
+            if (character == '\\')
+            {
+                // quoted-pair：反斜杠后面必须还有一个字符，它照原样进值里（含引号与反斜杠本身）
+                if (index + 1 == value.Length)
+                {
+                    return default;
+                }
+
+                character = value[++index];
+            }
+
+            // qdtext 与 quoted-pair 都不收水平制表符之外的控制字符
+            if (character is (< ' ' and not '\t') or '\u007F')
+            {
+                return default;
+            }
+
+            builder.Append(character);
+        }
+
+        // 走到末尾还在引号里：开始的引号没有结束的引号
+        return quoted ? default(Maybe<string>) : builder.ToString();
     }
 
     /// <summary>
@@ -415,7 +490,7 @@ public static class CloudEventsHttpBinding
     /// binary
     /// </summary>
     /// <remarks>
-    /// <c>ce-specversion</c>、<c>ce-id</c>、<c>ce-source</c>、<c>ce-type</c> 必填，<c>ce-time</c>（<see cref="TimestampText"/> 的文法，读出 UTC 时刻）、<c>ce-subject</c> 可选、值为空与没有这个头相同，<c>ce-dataschema</c>（ADR-0305）可选、值为空与结构化 JSON 的空串一样不合法（ADR-0323），其余 <c>ce-*</c> 是扩展属性（名字不能是保留名，<c>ce-data</c> 因此不合法，ADR-0298）；每个 <c>ce-*</c> 头的值经 <see cref="DecodeHeaderValue"/> 解码，读不出即 <see cref="CloudEventsMessages.HeaderInvalid"/>（ADR-0323）；数据内容类型取 <c>Content-Type</c>，数据取请求体，声明为 JSON 的数据过与 structured 相同的检查（<see cref="DataProblemOf"/>，ADR-0323）
+    /// <c>ce-specversion</c>、<c>ce-id</c>、<c>ce-source</c>、<c>ce-type</c> 必填，<c>ce-time</c>（<see cref="TimestampText"/> 的文法，读出 UTC 时刻）、<c>ce-subject</c>、<c>ce-dataschema</c>（ADR-0305）可选，三者的值为空都与结构化 JSON 的空串一样不合法（<c>ce-dataschema</c> ADR-0323，<c>ce-subject</c> 与 <c>ce-time</c> ADR-0332：以前与没有这个头相同），其余 <c>ce-*</c> 是扩展属性（名字不能是保留名，<c>ce-data</c> 因此不合法，ADR-0298）；每个 <c>ce-*</c> 头的值经 <see cref="DecodeHeaderValue"/> 解码，读不出即 <see cref="CloudEventsMessages.HeaderInvalid"/>（ADR-0323）；数据内容类型取 <c>Content-Type</c>，数据取请求体，声明为 JSON 的数据过与 structured 相同的检查（<see cref="DataProblemOf"/>，ADR-0323）
     /// </remarks>
     private static Result<IReadOnlyList<MessageEnvelope>> ReadBinary(HttpRequest request, byte[] body)
     {
@@ -452,9 +527,9 @@ public static class CloudEventsHttpBinding
             return Error.Validation(MessagingErrors.InvalidEnvelope, MessagingMessages.EnvelopeAttributesRequired);
         }
 
+        // 有这个头就按文法读：空值与结构化 JSON 的 "time": "" 一样读不出（ADR-0332；以前空头与没有这个头相同）
         DateTimeOffset? time = null;
-        var timeText = HeaderValue("time");
-        if (timeText.Length > 0)
+        if (core.TryGetValue("time", out var timeText))
         {
             // 与结构化 JSON 的 time 同一条文法（RFC-0009「信封」，ADR-0283）：不交给通用的日期解析，它把没有偏移的时间按本机时区读
             if (!TimestampText.TryParse(timeText, out var parsed))
@@ -465,7 +540,6 @@ public static class CloudEventsHttpBinding
             time = parsed;
         }
 
-        var subject = HeaderValue("subject");
         // 规范要求 binary 模式用 Content-Type 承载数据内容类型；给了 ce-datacontenttype 也接受
         var explicitContentType = HeaderValue("datacontenttype");
         var contentType = explicitContentType.Length > 0 ? explicitContentType : request.ContentType;
@@ -505,8 +579,9 @@ public static class CloudEventsHttpBinding
                 Source = source,
                 Type = type,
                 Time = time,
-                Subject = subject.Length > 0 ? subject : null,
-                // 有这个头就交给信封：空值与只有空白的由 init 拒绝，与结构化 JSON 的空串同一条路（ADR-0323；以前空头与没有这个头相同，ce-subject、ce-time 仍是那样）
+                // 有这个头就交给信封：空值由 init 拒绝，与结构化 JSON 的空串同一条路（ADR-0332；以前空头与没有这个头相同）
+                Subject = core.TryGetValue("subject", out var subject) ? subject : null,
+                // 有这个头就交给信封：空值与只有空白的由 init 拒绝，与结构化 JSON 的空串同一条路（ADR-0323；以前空头与没有这个头相同）
                 DataSchema = core.TryGetValue("dataschema", out var dataSchema) ? dataSchema : null,
                 Data = body,
                 Extensions = extensions,

@@ -65,7 +65,14 @@ public sealed record MessageEnvelope
     /// <summary>
     /// 主题标识（事件所涉对象）
     /// </summary>
-    public string? Subject { get; init; }
+    /// <remarks>
+    /// 可选，<see langword="null"/> 表示没有；给了就不能是空串，否则抛出 <see cref="ArgumentException"/>：CloudEvents 1.0 规定 <c>subject</c> 出现时必须是非空字符串，结构化 JSON 的 <c>"subject": ""</c> 与 binary 的空 <c>ce-subject</c> 头都不合法，构造时就拒，写出一侧不会写出读不回来的值（RFC-0009「信封」，ADR-0332；以前照收）。只有空白的照收
+    /// </remarks>
+    public string? Subject
+    {
+        get => field;
+        init => field = value is null || value.Length > 0 ? value : throw new ArgumentException("The subject must not be empty.", nameof(value));
+    }
 
     /// <summary>
     /// 数据遵循的模式（CloudEvents <c>dataschema</c>）

@@ -159,3 +159,12 @@ binary 的数据：
 - 入站不解开双引号括起的头值：CloudEvents 要求接收方先按 RFC 7230 §3.2.6 解开，.NET 把引号读成值的一部分。
 - `ce-subject`、`ce-time` 的空头仍与没有这个头相同；structured 的 `"subject": ""` 读成空串，`"time": ""` 不合法。
 - 数据模式只能在代码里登记，不能从配置读。
+
+## 修订（2026-11-27）
+
+ADR-0332 做了「没有解决的」四条，改了决定 17 与备选 23，其余不变：
+
+1. **出站编码空格与双引号**：`EncodeHeaderValue` 照 CloudEvents HTTP 绑定 1.0.2 §3.1.3.2 把 U+0020、U+0022 也百分号编码。
+2. **入站解开双引号**：`DecodeHeaderValue` 先按 RFC 7230 §3.2.6 解开 quoted-string，再做本 ADR 定的一轮百分号解码；坏的 quoted-string 与读不出的百分号序列同一条路（`header_invalid`）。
+3. **决定 17**：空的 `ce-subject` 头与 structured 的 `"subject": ""` 不再读成没有或空串，信封的 `init` 拒绝空的 `subject`，与决定 15 的 `ce-dataschema` 同一条路；空的 `ce-time` 头与 `"time": ""` 同一个错误（`messaging.envelope.invalid_time`）。插件协议的空串仍是没有（决定 16）。
+4. **备选 23**：数据模式另可从数组形式的配置节 `XiHan:Messaging:DataSchemas` 登记（`MessagingOptions.DataSchemas`），值的规则、重复与冲突照备选 24、25。

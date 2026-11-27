@@ -203,8 +203,8 @@ public sealed class CloudEventsHttpBindingTests
         Assert.Equal("/orders", binary.Headers.GetValues("ce-source").Single());
         Assert.Equal("orders.placed", binary.Headers.GetValues("ce-type").Single());
         Assert.Equal("2026-10-23T08:00:00.0000000+00:00", binary.Headers.GetValues("ce-time").Single());
-        Assert.Equal("order/%E4%B8%AD%E6%96%87 1", binary.Headers.GetValues("ce-subject").Single());
-        Assert.Equal("https://example.com/schemas/%E8%AE%A2%E5%8D%95 v1.json", binary.Headers.GetValues("ce-dataschema").Single());
+        Assert.Equal("order/%E4%B8%AD%E6%96%87%201", binary.Headers.GetValues("ce-subject").Single());
+        Assert.Equal("https://example.com/schemas/%E8%AE%A2%E5%8D%95%20v1.json", binary.Headers.GetValues("ce-dataschema").Single());
         Assert.Equal("acme", binary.Headers.GetValues("ce-xihantenant").Single());
         Assert.Equal("application/json", binary.Content!.Headers.ContentType!.MediaType);
         Assert.Equal("""{"id":1}""", await binary.Content.ReadAsStringAsync());
@@ -221,9 +221,69 @@ public sealed class CloudEventsHttpBindingTests
         CloudEventsHttpBinding.Write(_envelope with { DataSchema = null }, withoutSchema, CloudEventsContentMode.Binary);
         Assert.False(withoutSchema.Headers.Contains("ce-dataschema"));
 
-        // 可打印 ASCII 原样（含空格），% 与非 ASCII、控制字符按 UTF-8 百分号编码
-        Assert.Equal("a%25b x%C2%A0%C3%A9%0A", CloudEventsHttpBinding.EncodeHeaderValue("a%b x é\n"));
-        Assert.Equal("a%b x é\n", CloudEventsHttpBinding.DecodeHeaderValue("a%25b x%C2%A0%C3%A9%0A").ValueOrThrow());
+        // 空格、双引号、% 与可打印 ASCII 之外的字符（非 ASCII、控制字符）按 UTF-8 百分号编码，其余可打印 ASCII 原样（CloudEvents HTTP 绑定 1.0.2 §3.1.3.2，ADR-0332；
+        // 修之前空格原样写出），解码回来是原值
+        Assert.Equal("a%25b%20x%C2%A0%C3%A9%0A", CloudEventsHttpBinding.EncodeHeaderValue("a%b x é\n"));
+        Assert.Equal("a%b x é\n", CloudEventsHttpBinding.DecodeHeaderValue("a%25b%20x%C2%A0%C3%A9%0A").ValueOrThrow());
+    }
+
+    [Theory]
+    [InlineData("Euro € 😀", "Euro%20%E2%82%AC%20%F0%9F%98%80")]
+    [InlineData("say \"hi\"", "say%20%22hi%22")]
+    [InlineData(" ", "%20")]
+    [InlineData("\"", "%22")]
+    [InlineData("\u007F\t", "%7F%09")]
+    [InlineData("!#$&'()*+,-./:;<=>?@[\\]^_`{|}~", "!#$&'()*+,-./:;<=>?@[\\]^_`{|}~")]
+    public void EncodeHeaderValue_EncodesSpacesAndDoubleQuotes_AndLeavesTheOtherPrintableAscii(string value, string expected)
+    {
+        // CloudEvents HTTP 绑定 1.0.2 §3.1.3.2：空格（U+0020）、双引号（U+0022）、% 与 U+0021–U+007E 之外的字符必须编码，第一行是规范自己的例子（ADR-0332）；
+        // 编出的值不含空格与双引号，不需要再用引号括起；修之前空格与双引号原样写出
+        var encoded = CloudEventsHttpBinding.EncodeHeaderValue(value);
+
+        Assert.Equal(expected, encoded);
+        Assert.DoesNotContain(' ', encoded);
+        Assert.DoesNotContain('"', encoded);
+        Assert.Equal(value, CloudEventsHttpBinding.DecodeHeaderValue(encoded).ValueOrThrow());
+    }
+
+    [Fact]
+    public async Task Read_BinaryMode_AnEmptySubjectOrTimeHeader_IsInvalid_LikeTheEmptyStructuredMember()
+    {
+        // CloudEvents 1.0 规定 subject 出现时必须非空（RFC-0009「各传输上的 dataschema」，ADR-0332）：修之前空的 ce-subject 与 ce-time 头与没有这个头相同，
+        // structured 的 "subject": "" 读成空串；空的 ce-subject 与空的 ce-dataschema 同一条路，空的 ce-time 与 "time": "" 同一个错误
+        (string Header, string Member, string MessageKey)[] attributes = [("ce-subject", "subject", MessagingMessages.EnvelopeInvalid), ("ce-time", "time", MessagingMessages.EnvelopeInvalidTime)];
+        foreach (var (header, member, messageKey) in attributes)
+        {
+            var binary = Request("application/json", "{}", ("ce-specversion", "1.0"), ("ce-id", "1"), ("ce-source", "/s"), ("ce-type", "t"), (header, ""));
+            var structured = Request(CloudEventsHttpBinding.StructuredContentType, $$"""{"specversion":"1.0","id":"1","source":"/s","type":"t","{{member}}":""}""");
+
+            var expected = (await CloudEventsHttpBinding.ReadAsync(structured, _options, CancellationToken.None)).Error;
+            var actual = (await CloudEventsHttpBinding.ReadAsync(binary, _options, CancellationToken.None)).Error;
+
+            Assert.Equal((MessagingErrors.InvalidEnvelope, messageKey), (expected?.Code, expected?.MessageKey));
+            Assert.Equal((expected!.Code, expected.MessageKey), (actual?.Code, actual?.MessageKey));
+            Assert.Equal(expected.Details, actual!.Details);
+        }
+    }
+
+    [Fact]
+    public async Task Read_BinaryMode_ASubjectOfOnlySpaces_IsKept()
+    {
+        // 非空就合 CloudEvents 的规定：只有空白的 subject 照常读出（与 dataschema 不同，ADR-0332 只拒空串）
+        var envelope = Assert.Single((await CloudEventsHttpBinding.ReadAsync(Request("application/json", "{}", ("ce-specversion", "1.0"), ("ce-id", "1"), ("ce-source", "/s"), ("ce-type", "t"), ("ce-subject", "%20")), _options, CancellationToken.None)).ValueOrThrow());
+
+        Assert.Equal(" ", envelope.Subject);
+    }
+
+    [Fact]
+    public void Envelope_RefusesAnEmptySubject_SoItIsNeverWrittenAsOne()
+    {
+        // 构造时就拒：写出一侧不会写出读不回来的 "subject": ""（RFC-0009「信封」的写出，ADR-0332）；修之前照收，structured 写成空串、binary 写一个空头
+        var envelope = new MessageEnvelope { Id = "1", Source = "/o", Type = "t" };
+
+        Assert.Throws<ArgumentException>(() => envelope with { Subject = string.Empty });
+        Assert.Null(envelope.Subject);
+        Assert.Equal(" ", (envelope with { Subject = " " }).Subject);
     }
 
     [Fact]
@@ -266,7 +326,7 @@ public sealed class CloudEventsHttpBindingTests
 
         CloudEventsHttpBinding.Write(envelope, request, CloudEventsContentMode.Binary);
 
-        Assert.Equal("%E8%AE%A2%E5%8D%95 %F0%9F%98%80", request.Headers.GetValues("ce-subject").Single());
+        Assert.Equal("%E8%AE%A2%E5%8D%95%20%F0%9F%98%80", request.Headers.GetValues("ce-subject").Single());
         Assert.Equal("%EF%BF%BD", request.Headers.GetValues("ce-note").Single());
     }
 

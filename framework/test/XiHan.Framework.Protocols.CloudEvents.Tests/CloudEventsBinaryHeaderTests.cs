@@ -85,11 +85,63 @@ public sealed class CloudEventsBinaryHeaderTests
         Assert.Equal(expected, CloudEventsHttpBinding.DecodeHeaderValue(value).ValueOrThrow());
     }
 
+    [Theory]
+    [InlineData("\"hello world\"", "hello world")]
+    [InlineData("\"\"", "")]
+    [InlineData("\"a\\\"b\"", "a\"b")]
+    [InlineData("\"a\\\\b\"", "a\\b")]
+    [InlineData("\"a\\ b\"", "a b")]
+    [InlineData("a\"b c\"d", "ab cd")]
+    [InlineData("\"x\" \"y\"", "x y")]
+    [InlineData("a\\b", "a\\b")]
+    [InlineData("\"%41\"", "A")]
+    [InlineData("\"\\%41\"", "A")]
+    [InlineData("\"%2541\"", "%41")]
+    [InlineData("\"tab\there\"", "tab\there")]
+    [InlineData("\"é 😀\"", "é 😀")]
+    [InlineData("\"%E2%82%AC\"", "€")]
+    public void DecodeHeaderValue_FirstUnescapesQuotedStrings_ThenDecodesOneRoundOfPercentSequences(string value, string expected)
+    {
+        // CloudEvents HTTP 绑定 1.0.2 §3.1.3.2：先按 RFC 7230 §3.2.6 解开双引号括起的部分（quoted-pair 是后面那个字符本身），再做一轮百分号解码（ADR-0332）；
+        // 较早版本的发送方不编码空格与双引号，可能用引号括起整个值。修之前引号读成值的一部分
+        Assert.Equal(expected, CloudEventsHttpBinding.DecodeHeaderValue(value).ValueOrThrow());
+    }
+
+    [Theory]
+    [InlineData("a\"b")]
+    [InlineData("\"abc")]
+    [InlineData("\"a\\\"")]
+    [InlineData("\"a\\")]
+    [InlineData("\"a\u0001b\"")]
+    [InlineData("\"a\nb\"")]
+    [InlineData("\"a\u007Fb\"")]
+    [InlineData("\"a\\\u0001\"")]
+    [InlineData("\"%C3\"")]
+    public void DecodeHeaderValue_HasNoValue_ForABrokenQuotedString(string value)
+    {
+        // 引号不配对、quoted-string 里有 qdtext 不允许的控制字符（水平制表符除外）、反斜杠在末尾或后面是控制字符，都是读不出的头（ADR-0332）；
+        // 解开之后的百分号序列照旧严格解码
+        Assert.False(CloudEventsHttpBinding.DecodeHeaderValue(value).HasValue);
+    }
+
+    [Fact]
+    public async Task Read_BinaryMode_UnescapesAQuotedHeaderValue_AndABrokenOneIsAnInvalidEnvelope()
+    {
+        var envelope = Assert.Single((await CloudEventsHttpBinding.ReadAsync(Request(("ce-subject", "\"order 42\""), ("ce-note", "\"a \\\"b\\\"\"")), _options, CancellationToken.None)).ValueOrThrow());
+        var broken = (await CloudEventsHttpBinding.ReadAsync(Request(("ce-subject", "\"order 42")), _options, CancellationToken.None)).Error;
+
+        Assert.Equal("order 42", envelope.Subject);
+        Assert.Equal("a \"b\"", envelope.Extension("note").ValueOrThrow());
+        Assert.Equal((MessagingErrors.InvalidEnvelope, CloudEventsMessages.HeaderInvalid, "ce-subject"), (broken?.Code, broken?.MessageKey, broken?.Details!["header"]));
+    }
+
     [Fact]
     public void DecodeHeaderValue_HasNoValue_ForALoneSurrogate_WithOrWithoutPercentSequences()
     {
         Assert.False(CloudEventsHttpBinding.DecodeHeaderValue("n" + HighSurrogate).HasValue);
         Assert.False(CloudEventsHttpBinding.DecodeHeaderValue("%41" + HighSurrogate).HasValue);
+        // 引号括起的孤立代理项按 obs-text 解开，百分号解码那一步同样拒绝
+        Assert.False(CloudEventsHttpBinding.DecodeHeaderValue("\"n" + HighSurrogate + "\"").HasValue);
     }
 
     [Theory]
