@@ -339,3 +339,4 @@
 | [0337](0337-Wasm启动阶段的失败也按退避重建.md) | Wasm 宿主启动阶段的失败也按退避重建实例，与进程外一致，发现阶段的失败仍不重试 | 已采纳 |
 | [0338](0338-测试与工具的四处偶发.md) | 探测用例放宽就绪的单次超时、性能复测对照与当前交替、删目录失败时记下占用者、Oracle 夹具清池再试一次 | 已采纳 |
 | [0339](0339-写进插件协议的错误文案换成U+FFFD.md) | 写进插件协议的错误文案把编不成 UTF-8 的部分按最大子部分换成 U+FFFD | 已采纳 |
+| [0340](0340-SDK的严格写出入口、写出核对只写一遍与关闭后的reason.md) | TypeScript 新增 `Result.write` / `ErrorInfo.write`、Java 新增 `PrimitivesJson.write`（写不出抛 `IllegalArgumentException`），Rust 的 `json::to_vec` 写出后过共同检查、线上编码只写一遍，Python 响应类型的同名成员注册即报错，Java 关闭之后的 `reason` 与另三家一致，Go / TypeScript / Rust 删掉与向量重叠的手写时间用例 | 已采纳 |
