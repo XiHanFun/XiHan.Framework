@@ -191,7 +191,7 @@
   "workflow.instance_status.running": "実行中",
   "workflow.instance_status.suspended": "一時停止中",
   "workflow.instance_status.terminated": "強制終了",
-  "workflow.lock.timeout": "ワークフローインスタンス '{id}' のロック待ちがタイムアウトしました。",
+  "workflow.lock.timeout": "ワークフローのロック '{id}' の待機がタイムアウトしました。",
   "workflow.node.timed_out": "ノード '{node}' がタイムアウトしました。",
   "workflow.node_status.canceled": "キャンセル済み",
   "workflow.node_status.compensated": "補償済み",

@@ -209,10 +209,10 @@ public static class WorkflowMessages
 
 
     /// <summary>
-    /// 实例锁等待超时
+    /// 工作流的锁等待超时
     /// </summary>
     /// <remarks>
-    /// 参数：<c>id</c>
+    /// 参数：<c>id</c>，锁键：实例 ID、定义 ID（定时启动、目录改写定义）或重用策略查重的派生键，文案因此不说是实例（ADR-0336）
     /// </remarks>
     public const string LockTimeout = "workflow.lock.timeout";
 

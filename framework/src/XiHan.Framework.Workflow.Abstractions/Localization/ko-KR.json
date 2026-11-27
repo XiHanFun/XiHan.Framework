@@ -191,7 +191,7 @@
   "workflow.instance_status.running": "실행 중",
   "workflow.instance_status.suspended": "일시 중지됨",
   "workflow.instance_status.terminated": "종료됨",
-  "workflow.lock.timeout": "워크플로 인스턴스 '{id}'의 잠금 대기가 시간 초과되었습니다.",
+  "workflow.lock.timeout": "워크플로 잠금 '{id}'의 대기가 시간 초과되었습니다.",
   "workflow.node.timed_out": "노드 '{node}'의 시간이 초과되었습니다.",
   "workflow.node_status.canceled": "취소됨",
   "workflow.node_status.compensated": "보상됨",

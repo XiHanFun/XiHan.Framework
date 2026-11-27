@@ -191,7 +191,7 @@
   "workflow.instance_status.running": "Em execução",
   "workflow.instance_status.suspended": "Suspenso",
   "workflow.instance_status.terminated": "Encerrado",
-  "workflow.lock.timeout": "Tempo esgotado ao esperar o bloqueio da instância de fluxo de trabalho '{id}'.",
+  "workflow.lock.timeout": "Tempo esgotado ao esperar o bloqueio de fluxo de trabalho '{id}'.",
   "workflow.node.timed_out": "O nó '{node}' excedeu o tempo limite.",
   "workflow.node_status.canceled": "Cancelado",
   "workflow.node_status.compensated": "Compensado",

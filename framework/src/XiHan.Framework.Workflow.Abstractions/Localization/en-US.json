@@ -191,7 +191,7 @@
   "workflow.instance_status.running": "Running",
   "workflow.instance_status.suspended": "Suspended",
   "workflow.instance_status.terminated": "Terminated",
-  "workflow.lock.timeout": "Timed out waiting for the lock of workflow instance '{id}'.",
+  "workflow.lock.timeout": "Timed out waiting for the workflow lock '{id}'.",
   "workflow.node.timed_out": "Node '{node}' timed out.",
   "workflow.node_status.canceled": "Canceled",
   "workflow.node_status.compensated": "Compensated",

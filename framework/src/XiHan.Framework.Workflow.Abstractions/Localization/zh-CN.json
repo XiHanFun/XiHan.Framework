@@ -191,7 +191,7 @@
   "workflow.instance_status.running": "运行中",
   "workflow.instance_status.suspended": "已挂起",
   "workflow.instance_status.terminated": "已终止",
-  "workflow.lock.timeout": "等待工作流实例 '{id}' 的锁超时。",
+  "workflow.lock.timeout": "等待工作流的锁 '{id}' 超时。",
   "workflow.node.timed_out": "节点 '{node}' 超时。",
   "workflow.node_status.canceled": "已取消",
   "workflow.node_status.compensated": "已补偿",

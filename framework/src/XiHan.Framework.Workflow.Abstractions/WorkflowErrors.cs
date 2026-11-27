@@ -88,8 +88,11 @@ public static class WorkflowErrors
     public const string ExternalTaskDenied = "WORKFLOW_DENIED_002";
 
     /// <summary>
-    /// 实例锁等待超时
+    /// 工作流的锁等待超时
     /// </summary>
+    /// <remarks>
+    /// 锁键是实例 ID、定义 ID 或重用策略查重的派生键（RFC-0021「锁」）
+    /// </remarks>
     public const string LockTimeout = "WORKFLOW_TIMEOUT_001";
 
     /// <summary>

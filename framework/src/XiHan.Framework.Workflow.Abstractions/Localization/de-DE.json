@@ -191,7 +191,7 @@
   "workflow.instance_status.running": "Läuft",
   "workflow.instance_status.suspended": "Angehalten",
   "workflow.instance_status.terminated": "Beendet",
-  "workflow.lock.timeout": "Zeitüberschreitung beim Warten auf die Sperre der Workflow-Instanz '{id}'.",
+  "workflow.lock.timeout": "Zeitüberschreitung beim Warten auf die Workflow-Sperre '{id}'.",
   "workflow.node.timed_out": "Der Knoten '{node}' hat das Zeitlimit überschritten.",
   "workflow.node_status.canceled": "Abgebrochen",
   "workflow.node_status.compensated": "Kompensiert",

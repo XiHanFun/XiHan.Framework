@@ -191,7 +191,7 @@
   "workflow.instance_status.running": "Выполняется",
   "workflow.instance_status.suspended": "Приостановлен",
   "workflow.instance_status.terminated": "Прерван",
-  "workflow.lock.timeout": "Истекло время ожидания блокировки экземпляра рабочего процесса '{id}'.",
+  "workflow.lock.timeout": "Истекло время ожидания блокировки рабочего процесса '{id}'.",
   "workflow.node.timed_out": "Истекло время ожидания узла '{node}'.",
   "workflow.node_status.canceled": "Отменён",
   "workflow.node_status.compensated": "Компенсирован",

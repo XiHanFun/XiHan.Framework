@@ -10,6 +10,7 @@
 * `Http` 活动的请求体照 System.Text.Json 的缺省写出，应答正文按宽松的 UTF-8 解码：孤立的代理项与非法的字节换成 U+FFFD，不报错。这是写给与读自外部服务的文本，不在 RFC-0001「写出与转交」之内（ADR-0320）；定义、实例与变量的存储序列化同样照缺省
 * 流程实例随业务事务提交或回滚，数据按平台与租户分区隔离
 * 启动的关联 ID 与发起人、实例查询的关联 ID 集合与发起人不能有孤立的代理项，否则 `WORKFLOW_VALIDATION_002`，不进存储（ADR-0321、ADR-0334）
+* 等锁超时（`WORKFLOW_TIMEOUT_001`）的锁键是实例 ID、定义 ID 或重用策略查重的派生键，文案说的是「工作流的锁」（ADR-0336）
 * 用户任务支持会签、转办、加签、认领与催办
 * 存储、事务与实例锁是窄契约，由提供程序实现
 * 装配了消息能力时实例、节点与任务的变化发布成 CloudEvents（`WorkflowTopics`）；应用用 `AddMessageDataSchema(WorkflowTopics.InstanceCompleted, …)` 给某个主题登记了数据模式，引擎与 `PublishEvent` 活动发布的信封就带上 `dataschema`

@@ -191,7 +191,7 @@
   "workflow.instance_status.running": "En cours",
   "workflow.instance_status.suspended": "Suspendu",
   "workflow.instance_status.terminated": "Arrêté",
-  "workflow.lock.timeout": "Délai d'attente dépassé pour le verrou de l'instance de workflow '{id}'.",
+  "workflow.lock.timeout": "Délai d'attente dépassé pour le verrou de workflow '{id}'.",
   "workflow.node.timed_out": "Le nœud '{node}' a expiré.",
   "workflow.node_status.canceled": "Annulé",
   "workflow.node_status.compensated": "Compensé",
