@@ -307,4 +307,22 @@ public sealed class AuditMiddlewareTests
         context.AddAuditDetail("k😀", 4);
         Assert.Equal(4, context.FindAuditDetails().ValueOrThrow()["k😀"].GetInt32());
     }
+
+    [Fact]
+    public void ExplicitActionsWithAControlCharacterOrALoneSurrogate_AreRejected()
+    {
+        var context = App.CreateContext(new ServiceCollection().BuildServiceProvider(), CancellationToken.None);
+
+        // 改之前只拒空白：换行能在日志里伪造一行，只差在孤立代理项上的两个动作宽松编码之后分不开（ADR-0334）
+        foreach (var action in new[] { "orders.export\nforged", "orders.export\u0000", "orders.export\u007F", "orders.export\u0085", "orders.export\uD800", "\uDC00orders.export", "orders\uDE00\uD83D" })
+        {
+            Assert.Throws<ArgumentException>(() => context.SetAuditAction(action));
+        }
+
+        Assert.False(context.FindAuditAction().HasValue);
+
+        // 成对的代理项与别的非 ASCII 字符照常记下
+        context.SetAuditAction("订单.导出😀");
+        Assert.Equal("订单.导出😀", context.FindAuditAction().ValueOrThrow());
+    }
 }

@@ -38,12 +38,19 @@ public static class AuditInvocationExtensions
     /// 显式声明本次调用的审计动作（如 <c>orders.export</c>）
     /// </summary>
     /// <remarks>
-    /// 声明后无论选择规则如何都会记录
+    /// 声明后无论选择规则如何都会记录。动作只有空白、有控制字符（<see cref="char.IsControl(char)"/>）或孤立的代理项时抛出 <see cref="ArgumentException"/>（ADR-0334）
     /// </remarks>
     public static void SetAuditAction(this InvocationContext context, string action)
     {
         ArgumentNullException.ThrowIfNull(context);
         ArgumentException.ThrowIfNullOrWhiteSpace(action);
+
+        // 动作是程序给的，进审计记录、日志与按动作的查询：换行能在日志里伪造一行，宽松编码之后只差在孤立代理项上的两个动作分不开
+        if (action.Any(char.IsControl) || UnicodeText.HasLoneSurrogate(action))
+        {
+            throw new ArgumentException("The audit action must not contain control characters or lone surrogates.", nameof(action));
+        }
+
         context.Set(_actionKey, action);
     }
 
