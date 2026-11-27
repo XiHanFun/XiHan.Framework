@@ -247,6 +247,50 @@ public sealed class OutboxMaintenance(OutboxDeadLetters deadLetters)
 
 租户分库时，发件箱行与业务写入同一个事务，落在哪个库由持久化 Provider 决定：EF Core Provider 在带分片的调用里整个 `DbContext` 连到租户库，发件箱行也在租户库；SqlSugar Provider 把发件箱这类平台表留在默认库。投递循环每轮先投递默认库，再逐个投递分片库（按连接去重，每个库各自一个工作单元），分片库的清单从租户目录读出、每 `ShardRefreshIntervalSeconds` 重读一次；用 SqlSugar 时可以把 `IncludeShards` 设为 `false` 省去多余的查询。EF Core 下带分片的调用要发消息，租户库就要建发件箱表；没有建的库每轮投递失败、记日志，不影响别的库。
 
+## 升级前写进的空 subject
+
+信封不再收空的 `Subject`（ADR-0332）。升级之前由返回空串的 `subject` 选择器写进发件箱的行，`Payload` 里带着 `"subject":""`，升级后读不出：按「载荷无法解码」直接进死信，`LastError` 是 `MESSAGING_VALIDATION_002`，原因带 `The subject must not be empty.`。最稳妥的做法是先在旧版本上让选择器在没有对象时返回 `null`，等这类未投递的行投递完再升级。
+
+来不及的，升级后在数据库里把这个成员删掉。`Payload` 是二进制列，存的是 CloudEvents 结构化 JSON 的 UTF-8 字节；`subject` 是它的顶层成员，写在 `datacontenttype` 之前，事件数据 `data` 在 `datacontenttype` 之后。所以只处理未投递的行（`DispatchedAt IS NULL`，进了死信的也算），删掉 `datacontenttype` 之前第一处 `,"subject":""`（13 个字节），`data` 里同样的文字不受影响。表名以应用的模型为准：EF Core 取 `DbContext` 里给 `OutboxMessage` 配的表名，下面按缺省的 `OutboxMessage` 写。
+
+动手之前先数一下受影响的行，WHERE 与下面的 UPDATE 相同：
+
+```sql
+-- SQLite
+SELECT COUNT(*) FROM "OutboxMessage"
+WHERE "DispatchedAt" IS NULL
+  AND instr("Payload", CAST(',"subject":""' AS BLOB)) > 0
+  AND instr("Payload", CAST(',"subject":""' AS BLOB)) < instr("Payload", CAST(',"datacontenttype":' AS BLOB));
+
+-- PostgreSQL
+SELECT COUNT(*) FROM "OutboxMessage"
+WHERE "DispatchedAt" IS NULL
+  AND position(',"subject":""'::bytea in "Payload") > 0
+  AND position(',"subject":""'::bytea in "Payload") < position(',"datacontenttype":'::bytea in "Payload");
+```
+
+再删掉这一成员：
+
+```sql
+-- SQLite
+UPDATE "OutboxMessage"
+SET "Payload" = CAST(substr("Payload", 1, instr("Payload", CAST(',"subject":""' AS BLOB)) - 1) || substr("Payload", instr("Payload", CAST(',"subject":""' AS BLOB)) + 13) AS BLOB)
+WHERE "DispatchedAt" IS NULL
+  AND instr("Payload", CAST(',"subject":""' AS BLOB)) > 0
+  AND instr("Payload", CAST(',"subject":""' AS BLOB)) < instr("Payload", CAST(',"datacontenttype":' AS BLOB));
+
+-- PostgreSQL
+UPDATE "OutboxMessage"
+SET "Payload" = overlay("Payload" placing ''::bytea from position(',"subject":""'::bytea in "Payload") for 13)
+WHERE "DispatchedAt" IS NULL
+  AND position(',"subject":""'::bytea in "Payload") > 0
+  AND position(',"subject":""'::bytea in "Payload") < position(',"datacontenttype":'::bytea in "Payload");
+```
+
+其他数据库照同样的办法：在 `DispatchedAt IS NULL` 的行里删掉 `datacontenttype` 之前第一处 `,"subject":""`（13 个字节）。
+
+清理之后，还没进死信的行由投递循环照常发出；已经进了死信的行（`DeadLetteredAt` 不为空）用 `OutboxDeadLetters.RedriveManyAsync` 重投，见[积压、死信与重投](#积压、死信与重投)。RabbitMQ、Kafka、Redis 里升级前写进的这类消息见[队列与流](/messaging/streams#升级前写进的空-subject)。
+
 ## 管道外派发
 
 领域事件只由 Transaction 阶段的中间件派发。单例服务、后台循环这些不经管道的代码写入带事件的聚合时，要在提交前自己取出 `unitOfWork.DomainEvents.Pending()` 交给 `IDomainEventDispatcher.DispatchAsync`，否则事件留在聚合的缓冲里不会发出。代码与在管道外开工作单元（`UnitOfWorkScope`）的写法见[工作单元与事务](/persistence/unit-of-work#在管道外开工作单元)。

@@ -31,7 +31,7 @@
 | 项 | 解析顺序 |
 | --- | --- |
 | 命名空间 | 配置 `Namespace` → ServiceAccount 挂载的 `namespace` 文件 → 环境变量 `POD_NAMESPACE` → `default` |
-| 持有者 | 配置 `Holder` → 环境变量 `XIHAN_POD_NAME` → `HOSTNAME` → 机器名 |
+| 持有者 | 配置 `Holder` → 环境变量 `XIHAN_POD_NAME` → `HOSTNAME` → 机器名；配置的 `Holder` 有孤立的代理项时启动失败（ADR-0348），按 Pod 约定解析出的值不核对 |
 | API Server | 配置 `ApiServer` → `KUBERNETES_SERVICE_HOST` / `KUBERNETES_SERVICE_PORT` → `https://kubernetes.default.svc` |
 
 令牌每次请求都从挂载文件读取，跟得上投射令牌的轮换；CA 证书文件存在时作为唯一的信任根，不存在时用系统信任。
@@ -91,7 +91,7 @@ rules:
 | --- | --- | --- | --- |
 | `XiHan:Scheduling:Kubernetes:Lease` | DNS 标签 | `xihan-scheduler` | 调度器租约的 Lease 名 |
 | `XiHan:Scheduling:Kubernetes:Namespace` | 字符串 | 按 Pod 约定解析 | 命名空间 |
-| `XiHan:Scheduling:Kubernetes:Holder` | 字符串 | 按 Pod 约定解析 | 持有者标识 |
+| `XiHan:Scheduling:Kubernetes:Holder` | 字符串 | 按 Pod 约定解析 | 持有者标识，写进 Lease 的 `holderIdentity`；空白视为没配，有孤立的代理项时启动失败（`ArgumentException`，ADR-0348）；按 Pod 约定解析出的值不核对 |
 | `XiHan:Scheduling:Kubernetes:ApiServer` | 绝对 URI | 按 Pod 约定解析 | API Server 地址 |
 | `XiHan:Scheduling:Kubernetes:TokenPath` | 路径 | `/var/run/secrets/kubernetes.io/serviceaccount/token` | ServiceAccount 令牌文件 |
 | `XiHan:Scheduling:Kubernetes:CertificateAuthorityPath` | 路径 | `/var/run/secrets/kubernetes.io/serviceaccount/ca.crt` | CA 证书文件；存在时是 API Server 证书的唯一信任根，主机名与服务端认证用途照常校验（ADR-0201） |

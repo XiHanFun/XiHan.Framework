@@ -12,7 +12,7 @@ Wasm 插件是在宿主进程内、由 wasmtime 沙箱运行的 WebAssembly 模�
 
 ## ABI v1：核心模块、线性内存与 JSON
 
-插件是 WASI preview 1（`wasi_snapshot_preview1`）的 reactor 模块：导出线性内存 `memory`，可选导出 `_initialize`，导出 `_start` 的命令式模块不被接受。消息与进程外插件相同，按 proto3 JSON 映射编码为 UTF-8 文本（字段名 lowerCamelCase，`bytes` 为 base64，枚举为名字），经导出函数与线性内存传递。宿主按严格的 UTF-8 解码客体写来的消息：有非法字节序列的（含未知字段里的）与不是合法 JSON 的同样处理，不换成 U+FFFD 再读。导出函数的响应整条不合法才按崩溃处理；响应合法而成功应答的 `payload`（消息里的 `bytes` 字段）过不了 JSON 文本的检查时，只让这次调用失败，见下文「沙箱边界」的表：
+插件是 WASI preview 1（`wasi_snapshot_preview1`）的 reactor 模块：导出线性内存 `memory`，可选导出 `_initialize`，导出 `_start` 的命令式模块不被接受。消息与进程外插件相同，按 proto3 JSON 映射编码为 UTF-8 文本（字段名 lowerCamelCase，`bytes` 为 base64，枚举为名字），经导出函数与线性内存传递。宿主按严格的 UTF-8 解码客体写来的消息：有非法字节序列的（含未知字段里的）与不是合法 JSON 的同样处理，不换成 U+FFFD 再读。每条消息还整条过 JSON 文本的共同检查（孤立代理项的转义、任何一层的重复成员、不超过 64 层，未知字段里的也算），没过的同样是整条消息不合法，不挑出读得出的字段：以前重复的成员后一个覆盖前一个、照常读入（ADR-0345）。用 protobuf 库的 proto3 JSON 写出器写的消息没有重复成员，只有错误套了 62 层以上的内部错误时才会碰到层数的上限。导出函数的响应整条不合法才按崩溃处理；响应合法而成功应答的 `payload`（消息里的 `bytes` 字段）过不了 JSON 文本的检查时，只让这次调用失败，见下文「沙箱边界」的表：
 
 - 传入：宿主调用 `xihan_alloc(len)` 取得偏移，写入请求，再调用导出函数 `(ptr, len)`；写入的内存由插件处理完请求后自行回收。
 - 传出：导出函数返回 `i64`，`(ptr << 32) | len` 指向客体内存里的响应；宿主复制后调用 `xihan_free(ptr, len)`。返回 `0` 表示插件无法给出响应，宿主按崩溃处理。
@@ -187,10 +187,10 @@ Wasm 插件清单 `contributes.pipeline` 的每一项在对应阶段插入一个
 | 情形 | 结果 |
 | --- | --- |
 | 陷阱、导出返回 `0` | 插件 `Failed`（`PLUGINS_UNEXPECTED_002`，细节只写陷阱种类，原文进日志），按 1 秒起翻倍、上限 60 秒退避重建实例，重建后的握手声明必须与首次一致 |
-| 导出的响应不是合法的 JSON 消息（含非法的 UTF-8 字节序列） | 调用方得到 `PLUGINS_UNEXPECTED_001`（`reason` 为 `the response is not a valid JSON message`），实例按崩溃重建 |
+| 导出的响应不是合法的 JSON 消息（含非法的 UTF-8 字节序列），或没过 JSON 文本的共同检查（重复成员、超过 64 层、孤立代理项的转义） | 调用方得到 `PLUGINS_UNEXPECTED_001`（`reason` 为 `the response is not a valid JSON message`），实例按崩溃重建；中间件钩子的响应同此，失败即关闭这次调用（ADR-0345） |
 | 响应是合法的消息，成功应答的 `payload` 不为空却过不了 JSON 文本的共同检查（语法、64 层、合法的 UTF-8 与 Unicode、重复成员） | 这次调用 `PLUGINS_UNEXPECTED_001`（`reason` 为 `the response payload is not valid JSON text at '<路径>'`），载荷不交给调用方；实例不重建、仍是 `Ready`，与进程外插件同一处核对（ADR-0315）。`payload` 为空表示没有响应体，不做这道检查，开了幂等的调用照常记录、回放出同样的空载荷；只有空白的不为空，照样检查（ADR-0318） |
 | 插件一侧的类型化响应写不成合法的 JSON 文本（字符串有孤立的代理项，或在以字节存放字符串的语言里不是合法的 UTF-8，浮点成员是 NaN；写出的文本嵌套超过 64 层、任何一层有重复的成员名） | 插件一侧本地失败：`Status.error` 为 `KERNEL_UNEXPECTED_001` + `kernel.invocation.unhandled_exception`（没有参数、不带 `inner`），`payload` 为空，不写成 U+FFFD 或转义交给宿主；宿主照常读入这个错误，实例不变（`plugin/invocation.md` §1，ADR-0318、ADR-0319） |
-| 导入 `invoke`、`publish` 的请求不是合法的 JSON 消息（含非法的 UTF-8 字节序列） | 以 `PLUGINS_VALIDATION_005` 应答，实例不变 |
+| 导入 `invoke`、`publish` 的请求不是合法的 JSON 消息（含非法的 UTF-8 字节序列），或没过 JSON 文本的共同检查 | 以 `PLUGINS_VALIDATION_005` 应答（发布一条都不发），回调不陷阱，实例不变（ADR-0345） |
 | 调用超过截止时间 | 调用方得到 `KERNEL_TIMEOUT_001`，实例按崩溃重建 |
 | 内存超过上限 | `memory.grow` 失败或陷阱，按崩溃重建 |
 | 回调嵌套超过 8 层、客体内存分配失败 | `PLUGINS_UNAVAILABLE_002`，实例不变 |

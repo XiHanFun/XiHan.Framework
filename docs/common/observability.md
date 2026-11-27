@@ -17,7 +17,7 @@
 | 直方图 | `xihan.invocation.duration` | 单位 `ms`，调用耗时，标签同上 |
 | Span | `xihan.plugin.invoke` | `ActivityKind.Client`；宿主调用进程外或 Wasm 插件的操作、向插件投递事件各一条；管道里有 `xihan.invoke` 时是它的子 Span；标签 `xihan.plugin.id`（插件的清单 ID），操作调用另带 `xihan.operation`，投递不带；失败时状态为 Error，描述是错误码 |
 
-`xihan.outcome` 取 `success`、`failure` 或 `unset`；`unset` 表示管道走完也没有写入结果，用来发现漏写结果的处理器。成功、失败与取消都会记指标。调用期间的未处理异常由 `ObserveMiddleware` 以 Error 级记一条日志（`Unhandled exception during invocation '{TraceId}'.`），并转成 `KERNEL_UNEXPECTED_001` 结果；取消不在这里吞掉，由 Resilience 阶段区分超时与外部取消。
+`xihan.outcome` 取 `success`、`failure` 或 `unset`；`unset` 表示管道走完也没有写入结果，用来发现漏写结果的处理器。成功、失败与取消都会记指标。结果以调用方拿到的为准：经完整管道的 XGI 入口（gRPC、MCP、命令行 `invoke`、AI 工具、插件回调）在 Observe 阶段定结果之前把响应编码成载荷，写不出（NaN、孤立的代理项、超过 64 层、重复成员）时调用方拿到 `KERNEL_UNEXPECTED_001`，`xihan.invoke` 的状态同样是 Error、描述 `KERNEL_UNEXPECTED_001`，`xihan.outcome` 与两个指标记 `failure`；这类调用的 Span 与耗时包括编码响应（ADR-0341）。排在 Observe 内置中间件之后的审计与熔断看到的仍是编码之前的结果，见 [Kernel](/packages/kernel#行为与限制)。调用期间的未处理异常由 `ObserveMiddleware` 以 Error 级记一条日志（`Unhandled exception during invocation '{TraceId}'.`），并转成 `KERNEL_UNEXPECTED_001` 结果；取消不在这里吞掉，由 Resilience 阶段区分超时与外部取消。
 
 `xihan.operation` 是操作 ID，只取登记表里操作描述的 ID：未知的操作 ID 不进管道，也就没有 Span 与指标，维度的取值数不超过登记的操作数。不是操作调用时（消息处理器、作业、直接交给 `App.InvokeAsync` 的处理器、没有匹配到操作端点的请求）不带这个标签，不写占位值，主题、作业名与请求路径也不进标签。两个指标的时间序列因此按操作分开：先聚合再比较的查询（`sum(...)`、`sum by (xihan_outcome)(...)`）结果不变，直接按 `{xihan_outcome="failure"}` 取单条序列的查询要加 `sum`。操作很多、后端按序列计费时，在导出一侧用视图去掉这个维度，见下文「去掉操作维度」。
 

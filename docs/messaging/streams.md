@@ -172,6 +172,12 @@ Kafka 缺省开启 `auto.create.topics.enable`，主题由 broker 建出来。�
 
 三个 Provider 启动时都先连接代理再开始消费，连不上即启动失败（`MESSAGING_UNAVAILABLE_001`），不退回内存代理。
 
+## 升级前写进的空 subject
+
+信封不再收空的 `Subject`（ADR-0332）。RabbitMQ、Kafka、Redis 的消息体都是 CloudEvents 结构化 JSON，没有单独的 `subject` 头，升级之前写进代理的 `"subject":""` 消息升级后整条读不出，按无法解码的消息了结：竞争订阅原样转进死信（队列、主题或流名加 `DeadLetterSuffix`，缺省 `.dlq`），广播订阅确认丢弃并记 Warning。
+
+升级之前先把这类消息消费完，并让领域事件的 `subject` 选择器在没有对象时返回 `null`。已经进了死信的，框架没有重投工具：从死信里取出消息体，照[发件箱的做法](/messaging/domain-events#升级前写进的空-subject)删掉 `datacontenttype` 之前的那一处 `,"subject":""`，再自行发布回原主题。
+
 ## 常见问题
 
 ### RabbitMQ、Kafka 和 Redis 怎么选

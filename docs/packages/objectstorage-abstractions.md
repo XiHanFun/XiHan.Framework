@@ -144,6 +144,7 @@ public sealed class AzureBlobStoreConformanceTests : BlobStoreConformance
 
 - 写入：已存在且 `Overwrite = false` 的项返回 `OBJECTSTORAGE_CONFLICT_001`，不写入；不覆盖写入是原子的，多个写入方同时写同一个新键只有一个成功（一致性套件核对，ADR-0089）；配额或单对象大小超限返回 `OBJECTSTORAGE_UNAVAILABLE_002`，不写入。空列表返回空，重复的键按顺序各执行一次。
 - 内容类型原样存取：写入（含分片上传的发起）把 `ContentType` 原样交给存储，读取把存储里的值原样放进 `BlobMetadata.ContentType`，Provider 不去掉空参数、不改 `;` 两侧的空格与大小写，读出的元数据原样写回得到同一个内容类型。存储客户端写不出原值的，写入与分片上传的发起在发出任何请求之前返回 `OBJECTSTORAGE_VALIDATION_007`，不改写之后照写（一致性套件核对）。
+- 自定义元数据原样存取：读回的名与值就是写入的（非 ASCII 的值同样，一致性套件核对）。所用的存储会把某个值存成另一个值时，写入与分片上传的发起在发出任何请求之前返回 `OBJECTSTORAGE_VALIDATION_009`；存储按它自己的计法拒收合上限的元数据时返回 `OBJECTSTORAGE_VALIDATION_008`，Provider 不预先按编码之后的长度拒收。文件系统存储两类都不会遇到（ADR-0343）。
 - 删除：不存在的项成功并报告为不存在；同一批里重复的键第二次报告不存在。
 - 列举：键的序数顺序；续页标记不透明，原样带回。不符合键文法的对象（保留前缀 `.xihan` 下的框架对象，如 S3 的条件写入探测键；S3 的目录占位）跳过，所以一页可能少于 `PageSize` 条、甚至为空而仍带续页标记，取到续页标记为空为止（ADR-0090）。
 - 范围读取：长度为空读到末尾，超出末尾截断；起点不在对象内（含空对象）返回 `OBJECTSTORAGE_VALIDATION_001`；`BlobMetadata.Length` 仍是总长。
@@ -169,10 +170,12 @@ public sealed class AzureBlobStoreConformanceTests : BlobStoreConformance
 | `OBJECTSTORAGE_VALIDATION_005` | `PageSizeInvalid` | 列举的页大小不在 1 到 1000 之间（HTTP 400；不在构造时抛出，列举时以结果返回，不访问存储） |
 | `OBJECTSTORAGE_VALIDATION_006` | `ContentTypeInvalid` | 宿主直传端点：签名没有限定内容类型，请求的 `Content-Type` 去掉首尾的空格与制表符之后不合内容类型文法（HTTP 400，不写入） |
 | `OBJECTSTORAGE_VALIDATION_007` | `ContentTypeUnsupported` | 内容类型合文法，但 Provider 所用的存储客户端写不出原值（S3：AWS SDK 改写 `Content-Type`）：写入与分片上传的发起在发出任何请求之前返回，HTTP 400，参数 `contentType`，消息键 `objectstorage.blob.content_type_unsupported` |
+| `OBJECTSTORAGE_VALIDATION_008` | `MetadataTooLarge` | 自定义元数据合 2048 字节的上限（按原值计），存储却按它自己的计法拒收（S3：服务回 `MetadataTooLarge`，Amazon S3 按编码之后的请求头计）：写入与分片上传的发起以它失败，不当作存储故障，HTTP 400，没有参数，消息键 `objectstorage.blob.metadata_too_large`（ADR-0343） |
+| `OBJECTSTORAGE_VALIDATION_009` | `MetadataValueUnsupported` | 自定义元数据的值合文法，但所用的存储会把它存成另一个值（S3：整个是 encoded-word 形状、只有 ASCII 的值）：写入与分片上传的发起在发出任何请求之前返回，HTTP 400，参数 `name` 是元数据名、不带值，消息键 `objectstorage.blob.metadata_value_unsupported`（ADR-0343） |
 | `OBJECTSTORAGE_DENIED_001` | `SignatureInvalid` | 预签名地址无效或已过期 |
 | `OBJECTSTORAGE_DENIED_002` | `ProbeDenied` | 条件写入探测被存储拒绝（403；S3：凭据无效、只读或无权写探测键）：启动或建实例时即失败；启动时连不上、之后才被拒的，健康项 Failed、后台照常重试 |
 | `OBJECTSTORAGE_CONFLICT_001` | `BlobExists` | 对象已存在且不允许覆盖 |
-| `OBJECTSTORAGE_UNAVAILABLE_001` | `StoreUnavailable` | 对象存储不可达或 IO 失败，`reason` 只写异常类型的全名，完整异常进日志（ADR-0115）；服务的应答不合规同此（S3：应答成功却缺了必需的内容，或分页说截断了却不前进，整读的 `ETag` 不是十六进制，见 [ObjectStorage.S3](/packages/objectstorage-s3#行为与限制)） |
+| `OBJECTSTORAGE_UNAVAILABLE_001` | `StoreUnavailable` | 对象存储不可达或 IO 失败，`reason` 只写异常类型的全名，完整异常进日志（ADR-0115）；服务的应答不合规同此（S3：应答成功却缺了必需的内容，或分页说截断了却不前进，整读的 `ETag` 不是十六进制，自定义元数据解不成合法的值，见 [ObjectStorage.S3](/packages/objectstorage-s3#行为与限制)） |
 | `OBJECTSTORAGE_UNAVAILABLE_002` | `QuotaExceeded` | 配额或单对象大小超限 |
 | `OBJECTSTORAGE_UNAVAILABLE_003` | `ConditionalWriteUnavailable` | 不覆盖写入在本存储上无法保证：S3 兼容服务不认条件写入（启动时探明即启动失败或不建命名实例，之后探明的不覆盖写入一律返回它），或存储关闭了条件写入（`ConditionalWrites = false`） |
 | `OBJECTSTORAGE_UNAVAILABLE_004` | `ConditionalWriteUnconfirmed` | 不覆盖写入暂不可用：存储是否认条件写入尚未确认（启动时连不上，或之后的探测被拒绝、缺桶；HTTP 503，探测通过后自动恢复；S3 探测的发起累计 10 次缺上传标识之后不再探测，修好服务之后重启才恢复） |

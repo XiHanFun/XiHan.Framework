@@ -97,6 +97,8 @@ S3 上读取与 `Head` 的应答缺 `Content-Length`（或为负）、应答里�
 | 上传不存在或已结束 | `OBJECTSTORAGE_NOTFOUND_002` |
 | `Overwrite = false` 且对象已存在 | 发起与完成都返回 `OBJECTSTORAGE_CONFLICT_001` |
 | 发起时的内容类型存储写不出原值（S3：`text/plain;` 这类空参数、`text/plain;charset=utf-8` 这类 `;` 两侧的空格与 `; ` 不同的写法、`text/plain;  charset=utf-8` 这类多了连续空格的写法） | 发起返回 `OBJECTSTORAGE_VALIDATION_007`，不发请求；与单次写入相同，换成 `text/plain; charset=utf-8` 这种写法 |
+| 发起时的自定义元数据有值整个是 encoded-word 形状、只有 ASCII（S3：如 `=?UTF-8?B?5Lit?=`，Amazon S3 会存成另一个值） | 发起返回 `OBJECTSTORAGE_VALIDATION_009`（参数 `name`），排在内容类型的核对之后，不发请求；与单次写入相同，先解开再写或换一个值 |
+| 服务以 `MetadataTooLarge` 拒收发起时的自定义元数据（S3：Amazon S3 按编码之后的请求头计 2 KB） | 发起返回校验错误 `OBJECTSTORAGE_VALIDATION_008`，不按存储故障报告；与单次写入相同，缩小元数据再发起 |
 | 发起的应答成功却没有可用的上传标识（S3：兼容服务的缺陷或中间的代理改写了响应体） | 发起返回 `OBJECTSTORAGE_UNAVAILABLE_001`，不抛异常、不重发；服务端可能已经建出这个上传，由桶的生命周期规则清理 |
 | 上传分片的应答成功却没有可用的 `ETag`（S3：缺失、为空或去掉引号之后只有空白） | 这一片返回 `OBJECTSTORAGE_UNAVAILABLE_001`，不抛异常、不重发；可以重传同一编号（后一次覆盖） |
 | 列出的分片里有一片没有可用的编号（缺失或不在 1 到 10000）、没有可用的 `ETag` 或长度为负（S3） | 整个列出返回 `OBJECTSTORAGE_UNAVAILABLE_001`，不抛异常，不跳过那一片；长度缺失照旧当作 0 |

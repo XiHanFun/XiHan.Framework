@@ -66,7 +66,7 @@ public sealed class ArchiveJob : IJob
 | 键 | 类型 | 缺省 | 说明 |
 | --- | --- | --- | --- |
 | `XiHan:Scheduling:PollIntervalSeconds` | 正数 | 1 | 轮询周期 |
-| `XiHan:Scheduling:NodeId` | 字符串 | `机器名:进程 ID:8 位随机` | 节点身份（心跳与抢占者用它，数据库实现的租约持有者也是它），进程内固定；多节点部署时每个节点唯一 |
+| `XiHan:Scheduling:NodeId` | 字符串 | `机器名:进程 ID:8 位随机` | 节点身份（心跳与抢占者用它，数据库实现的租约持有者也是它），进程内固定；多节点部署时每个节点唯一；空白视为没配，有孤立的代理项时启动失败（`ArgumentException`，ADR-0348） |
 | `XiHan:Scheduling:MaxConcurrentRuns` | ≥ 1 | 32 | 本节点同时运行的上限 |
 | `XiHan:Scheduling:AcquireBatchSize` | ≥ 1 | 16 | 一个周期最多抢占的触发器数；每周期名额 = `min(AcquireBatchSize, MaxConcurrentRuns − 本节点运行中数量)` |
 | `XiHan:Scheduling:MisfireThresholdSeconds` | ≥ 0 | 60 | misfire 阈值 |

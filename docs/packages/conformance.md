@@ -32,7 +32,7 @@ dotnet add package XiHan.Framework.Caching.Conformance --prerelease
 | [Localization](#localization) | `MessageLocalizerConformance` | 8 |
 | [Messaging](#messaging) | `MessageBrokerConformance`、`MessageStreamConformance`、`OutboxConformance` | 17 + 2 + 5 |
 | [MultiTenancy](#multitenancy) | `TenantStoreConformance`、`TenantShardResolverConformance`、`TenantAdministrationConformance` | 5 + 3 + 5 |
-| [ObjectStorage](#objectstorage) | `BlobStoreConformance`、`BlobStoreProviderConformance` | 15 + 4 |
+| [ObjectStorage](#objectstorage) | `BlobStoreConformance`、`BlobStoreProviderConformance` | 16 + 4 |
 | [Persistence](#persistence) | `RepositoryConformance`、`IdGeneratorConformance<TKey>`、`DataSourceConformance`、`SchemaConformance` | 36 + 3 + 4 + 5 |
 | [Plugins](#plugins) | `PluginProtocolConformance`、`WasmPluginConformance` | 15 + 8 |
 | [Scheduling](#scheduling) | `JobSchedulerConformance`、`JobStoreConformance`、`LeaderElectionConformance` | 18 + 6 + 3 |
@@ -109,7 +109,7 @@ dotnet add package XiHan.Framework.Caching.Conformance --prerelease
 
 | 基类 | 实现 | 覆盖 |
 | --- | --- | --- |
-| `BlobStoreConformance` | `CreateStoreAsync()` 返回 `ValueTask<IBlobStore>`（被测存储初始化好再交出）；`PlantOutsideContractAsync(container, key, content)` 绕过契约直接写一个对象；可覆写 `Container`（缺省 `conformance`） | 读写往返与元数据、覆盖与不覆盖、并发的不覆盖写入只有一个成功、保留前缀 `.xihan` 下的键构造时拒绝且列举跳过存储里已有的这类对象、键区分大小写与嵌套段、批量写入逐项结果、批量删除逐项结果、按前缀分页列举、范围读取、分片上传（任意顺序上传、原子完成、非法分片列表、覆盖与中止，批量放弃的逐项结果、重复与已放弃的上传、空集合、`null` 与已取消）、非法标识提前拒绝、列举的页大小越界是校验错误（`OBJECTSTORAGE_VALIDATION_005`，边界照常）、内容类型原样存取（十种写法含空参数、`;` 两侧的空格、空格之后还有字符的 `text/plain ;` 与引号里的 `;`，写入、读出与写回都原样，或在写入之前以 `OBJECTSTORAGE_VALIDATION_007` 拒绝且对象不存在，分片上传的发起同此）、大对象流式读写 |
+| `BlobStoreConformance` | `CreateStoreAsync()` 返回 `ValueTask<IBlobStore>`（被测存储初始化好再交出）；`PlantOutsideContractAsync(container, key, content)` 绕过契约直接写一个对象；可覆写 `Container`（缺省 `conformance`） | 读写往返与元数据、覆盖与不覆盖、并发的不覆盖写入只有一个成功、保留前缀 `.xihan` 下的键构造时拒绝且列举跳过存储里已有的这类对象、键区分大小写与嵌套段、批量写入逐项结果、批量删除逐项结果、按前缀分页列举、范围读取、分片上传（任意顺序上传、原子完成、非法分片列表、覆盖与中止，批量放弃的逐项结果、重复与已放弃的上传、空集合、`null` 与已取消）、非法标识提前拒绝、列举的页大小越界是校验错误（`OBJECTSTORAGE_VALIDATION_005`，边界照常）、内容类型原样存取（十种写法含空参数、`;` 两侧的空格、空格之后还有字符的 `text/plain ;` 与引号里的 `;`，写入、读出与写回都原样，或在写入之前以 `OBJECTSTORAGE_VALIDATION_007` 拒绝且对象不存在，分片上传的发起同此）、非 ASCII 的自定义元数据值原样往返（用例 16：中文、平面以外的字符、带变音符号的拉丁字母与西里尔字母、超过 45 个 UTF-8 字节的长值、非 ASCII 的文字里夹着 encoded-word，写入结果、读取、`Head`、写回另一个键与分片上传的完成都不变，ADR-0344）、大对象流式读写 |
 | `BlobStoreProviderConformance` | `CreateProvider()` 返回 `IBlobStoreProvider`，`ValidSettings()` 与 `OtherValidSettings()` 给两组可用设置 | 按定义建出的实例可读写且探测通过、未知设置键以 `OBJECTSTORAGE_VALIDATION_003` 结果拒绝（不抛出）、经注册表同定义复用 / 定义变了替换 / 批量移除逐项报告、移除后不存在、定义错误翻译为 `OBJECTSTORAGE_VALIDATION_003` 且不影响已有实例 |
 
 `ObjectStorage.FileSystem` 与 `ObjectStorage.S3` 通过两套用例。
