@@ -348,3 +348,4 @@
 | [0346](0346-错误文案替换的共同向量.md) | 写进插件协议的错误文案替换有了共同向量 `plugin/error-text-writing.json`（UTF-16、码点、字节三组，进 `plugin` 档，期望值由 .NET 算出） | 已采纳 |
 | [0347](0347-SDK回调宿主前核对写进元数据的Baggage.md) | SDK 回调宿主之前核对写进元数据的 Baggage，有孤立的代理项即本地以 `PLUGINS_UNEXPECTED_001` 结束、不发请求，`reason` 与宿主一侧相同 | 已采纳 |
 | [0348](0348-调度的租约持有者标识拒收孤立的代理项.md) | 调度的节点 ID 与 Kubernetes 的持有者标识拒收孤立的代理项，构造选项或从配置读取即启动失败 | 已采纳 |
+| [0349](0349-六个SDK跟进错误文案向量与回调元数据核对及Go的已关闭状态.md) | 六个 SDK 回放 `plugin/error-text-writing.json`、回调宿主前核对写进元数据的 Baggage（Rust 不用核对），Go 记下自己已关闭、之后的回调 `reason` 与另四家相同 | 已采纳 |
