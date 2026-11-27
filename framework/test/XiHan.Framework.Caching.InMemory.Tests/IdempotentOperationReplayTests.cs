@@ -4,8 +4,10 @@
 using System.Text;
 using System.Text.Json;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using XiHan.Framework.Caching.Abstractions;
 using XiHan.Framework.Caching.Abstractions.Caches;
+using XiHan.Framework.Caching.Abstractions.Idempotency;
 using XiHan.Framework.Caching.Abstractions.Stores;
 using XiHan.Framework.Caching.InMemory.Tests.Fixtures;
 using XiHan.Framework.Kernel;
@@ -223,6 +225,25 @@ public sealed class IdempotentOperationReplayTests
         var other = await host.InvokeOperationAsync<TicketRequest, TicketReply>(TicketsFeature.Update, new TicketRequest("alice"), Key("unencodable-typed"));
         Assert.Equal(CachingErrors.IdempotentMismatch, other.Error?.Code);
         Assert.Equal(1, counter.Executions);
+    }
+
+    [Fact]
+    public async Task AResponseThatCannotBeRecorded_IsLoggedOnce_WithTheOperationAndCode()
+    {
+        // 写不出的异常在这里接住、不抛出管道，Observe 阶段不记日志：修之前只有 Span 与指标里看得到失败（ADR-0329）。
+        // 首次调用记一条，带操作 ID、调用与错误码，不带响应的内容；重试回放记下的错误、不再编码，不再记
+        using var logs = new LogCapture();
+        await using var host = await TestHost.StartAsync(static b => b.UseFeature<InMemoryCachingFeature>().UseFeature<TicketsFeature>(), services: s => s.AddSingleton<ILoggerFactory>(logs));
+
+        var first = await host.InvokeOperationAsync<TicketRequest, TicketReply>(TicketsFeature.Create, new TicketRequest(TicketsOperation.Unencodable), Key("unencodable-logged"));
+        var second = await host.InvokeOperationRawAsync(Request(TicketsFeature.Create, TicketsOperation.Unencodable), Key("unencodable-logged"));
+
+        AssertUnencodable(first.Error);
+        AssertUnencodable(second.Outcome.Error);
+        var entry = Assert.Single(logs.Entries, static e => e.Level == LogLevel.Error);
+        Assert.Equal(typeof(IdempotencyMiddleware).FullName, entry.Category);
+        Assert.Matches($"^The response of operation '{TicketsFeature.Create}' could not be written for the idempotency record; invocation '[0-9a-f]{{32}}' ends with '{KernelErrors.Unexpected}', and retries replay it\\.$", entry.Message);
+        Assert.IsType<ArgumentException>(entry.Exception);
     }
 
     /// <summary>

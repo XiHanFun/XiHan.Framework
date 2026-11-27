@@ -68,7 +68,7 @@ await prices.InvalidateAsync([tenantId], ct);
 * `ICacheSerializer`、`JsonCacheSerializer`、`CacheSerializerRegistration`、`CacheTypeInfoSource`：共享缓存的值序列化与组件类型的登记
 * `GenerationCache<T>`、`GenerationCacheKey`、`GenerationCacheEntry<T>`：按范围失效的缓存区
 * `InFlightLoadTable`、`InFlightLoad`：同键并发回源的在途表，自己实现 `ICache` 时用它得到同样的合并语义
-* `IdempotencyMiddleware`：按幂等键去重；操作调用成功时记下响应，响应是空载荷（插件代理的应答没有响应体）时记下没有响应体，回放出同样的空载荷；响应写不出（NaN、孤立的代理项、超过 64 层、重复成员）时记下写不出的错误 `KERNEL_UNEXPECTED_001` 并返回给首次调用，重试回放同一个错误、不再执行（ADR-0324）
+* `IdempotencyMiddleware`：按幂等键去重；操作调用成功时记下响应，响应是空载荷（插件代理的应答没有响应体）时记下没有响应体，回放出同样的空载荷；响应写不出（NaN、孤立的代理项、超过 64 层、重复成员）时记下写不出的错误 `KERNEL_UNEXPECTED_001` 并返回给首次调用，重试回放同一个错误、不再执行（ADR-0324）；这时经调用作用域里的 `ILoggerFactory` 记一条 Error 日志（类别是 `IdempotencyMiddleware`，带操作 ID、调用的 Trace ID 与错误码，不带响应的内容；容器里没有日志工厂时不记，ADR-0329）
 
 ## 更多文档
 

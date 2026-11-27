@@ -2,6 +2,7 @@
 // See the LICENSE file in the project root for full license text.
 
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using XiHan.Framework.Kernel.Hosting;
 using XiHan.Framework.Kernel.Pipeline;
 using XiHan.Framework.Primitives;
@@ -12,9 +13,10 @@ namespace XiHan.Framework.Kernel.Operations;
 /// <see cref="IOperationInvoker"/> 的内核实现
 /// </summary>
 /// <remarks>
-/// 按登记表找到描述，经 <see cref="App.InvokeAsync"/> 走完整管道，或在当前调用里直接执行；成功的响应先经 <see cref="IOperationResponseFilter"/> 过滤再写进上下文（ADR-0061）
+/// 按登记表找到描述，经 <see cref="App.InvokeAsync"/> 走完整管道，或在当前调用里直接执行；成功的响应先经 <see cref="IOperationResponseFilter"/> 过滤再写进上下文（ADR-0061）。
+/// XGI 入口写不出响应时记一条错误日志（ADR-0329）
 /// </remarks>
-internal sealed class OperationInvoker : IOperationInvoker
+internal sealed partial class OperationInvoker : IOperationInvoker
 {
     /// <summary>
     /// 应用
@@ -38,14 +40,20 @@ internal sealed class OperationInvoker : IOperationInvoker
     private readonly bool _filtered;
 
     /// <summary>
+    /// 调用器的日志器
+    /// </summary>
+    private readonly ILogger _logger;
+
+    /// <summary>
     /// 创建调用器
     /// </summary>
-    public OperationInvoker(App app, OperationRegistry registry, IServiceProvider services)
+    public OperationInvoker(App app, OperationRegistry registry, IServiceProvider services, ILoggerFactory loggerFactory)
     {
         ArgumentNullException.ThrowIfNull(services);
         _app = app ?? throw new ArgumentNullException(nameof(app));
         _registry = registry ?? throw new ArgumentNullException(nameof(registry));
         _filtered = services.GetService<IServiceProviderIsService>()?.IsService(typeof(IOperationResponseFilter)) ?? true;
+        _logger = (loggerFactory ?? throw new ArgumentNullException(nameof(loggerFactory))).CreateLogger<OperationInvoker>();
     }
 
     /// <inheritdoc />
@@ -210,7 +218,7 @@ internal sealed class OperationInvoker : IOperationInvoker
     /// <summary>
     /// 把调用结果与上下文里的响应对象组装成 XGI 响应
     /// </summary>
-    private static OperationResponse ToResponse(InvocationContext context, OperationDescriptor descriptor, Result outcome)
+    private OperationResponse ToResponse(InvocationContext context, OperationDescriptor descriptor, Result outcome)
     {
         // 管道可能在到达 Handle 之前就以失败结束（鉴权、校验、超时），此时没有响应对象
         if (outcome.IsFailure || !context.FindOperationResponse().TryGetValue(out var response))
@@ -227,6 +235,8 @@ internal sealed class OperationInvoker : IOperationInvoker
         {
             // 响应写不出（如浮点成员是 NaN）与处理器抛出异常一样按未处理的异常结束，不抛给调用方（RFC-0011 规则 5，ADR-0236）；编码在管道之后，中间件看到的仍是成功
             var failure = Error.Unexpected(KernelErrors.Unexpected, KernelMessages.UnhandledException, null, exception is FrameworkException framework ? framework.ToError() : null);
+            // 异常没有抛出管道，Observe 阶段不会为它记日志：这里记一条，只带操作 ID、调用与错误码，不带响应的内容（ADR-0329）
+            LogUnwritableResponse(_logger, exception, descriptor.Id, context.TraceId, failure.Code);
             context.SetOutcome(failure);
             return OperationResponse.Failure(failure);
         }
@@ -248,6 +258,12 @@ internal sealed class OperationInvoker : IOperationInvoker
             ? Result.Success(typed)
             : Result.Failure<TResponse>(Error.Unexpected(KernelErrors.Unexpected, KernelMessages.OperationNoResponse, details: MessageArguments.Of(("id", descriptor.Id))));
     }
+
+    /// <summary>
+    /// 记录 XGI 入口写不出的响应
+    /// </summary>
+    [LoggerMessage(Level = LogLevel.Error, Message = "The response of operation '{Operation}' could not be written; invocation '{TraceId}' ends with '{Code}'.")]
+    private static partial void LogUnwritableResponse(ILogger logger, Exception exception, string operation, string traceId, string code);
 
     /// <summary>
     /// 未登记操作的错误

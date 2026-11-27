@@ -5,6 +5,7 @@ using System.Text;
 using System.Globalization;
 using System.Text.Json;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using XiHan.Framework.Caching.Abstractions.Caches;
 using XiHan.Framework.Caching.Abstractions.Stores;
 using XiHan.Framework.Kernel;
@@ -19,10 +20,10 @@ namespace XiHan.Framework.Caching.Abstractions.Idempotency;
 /// Idempotency 阶段的中间件
 /// </summary>
 /// <remarks>
-/// Baggage 里有 <see cref="BaggageKeys.IdempotencyKey"/> 时，按（租户、主体、键）在 <see cref="ISharedCache"/> 的存储里去重。首次调用写入"处理中"标记并执行，完成后用调用结果替换标记（操作调用另记操作 ID 与成功的响应）；处理中的重复调用返回 <see cref="CachingErrors.IdempotentInProgress"/>；已完成的重复调用直接回放结果、不执行处理器，操作调用同时还原响应对象，记录属于另一个调用时返回 <see cref="CachingErrors.IdempotentMismatch"/>。处理器抛出异常时清除标记，允许重试；处理器成功而响应写不出时，用写不出的错误（与 XGI 入口相同的 <see cref="KernelErrors.Unexpected"/>）替换标记并作为本次调用的结果，重试回放同一个错误（RFC-0006 幂等第 2 条，ADR-0324）
+/// Baggage 里有 <see cref="BaggageKeys.IdempotencyKey"/> 时，按（租户、主体、键）在 <see cref="ISharedCache"/> 的存储里去重。首次调用写入"处理中"标记并执行，完成后用调用结果替换标记（操作调用另记操作 ID 与成功的响应）；处理中的重复调用返回 <see cref="CachingErrors.IdempotentInProgress"/>；已完成的重复调用直接回放结果、不执行处理器，操作调用同时还原响应对象，记录属于另一个调用时返回 <see cref="CachingErrors.IdempotentMismatch"/>。处理器抛出异常时清除标记，允许重试；处理器成功而响应写不出时，用写不出的错误（与 XGI 入口相同的 <see cref="KernelErrors.Unexpected"/>）替换标记并作为本次调用的结果，重试回放同一个错误（RFC-0006 幂等第 2 条，ADR-0324），并经调用作用域里的 <see cref="ILoggerFactory"/> 记一条错误日志（ADR-0329）
 /// </remarks>
 [ApiLevel(Stability.Stable, "5.0")]
-public sealed class IdempotencyMiddleware(IdempotencyOptions options) : IPipelineMiddleware
+public sealed partial class IdempotencyMiddleware(IdempotencyOptions options) : IPipelineMiddleware
 {
     /// <summary>
     /// 上下文项键：标记本次调用的结果来自回放
@@ -151,6 +152,13 @@ public sealed class IdempotencyMiddleware(IdempotencyOptions options) : IPipelin
             // 也不让异常把「处理中」的标记留到过期；与 XGI 入口写不出时同一个错误（RFC-0011 规则 10「编码」），作本次调用的结果并记下，
             // 重试回放它、不再执行（RFC-0006 幂等第 2 条，ADR-0324）
             var failure = Error.Unexpected(KernelErrors.Unexpected, KernelMessages.UnhandledException, null, exception is FrameworkException framework ? framework.ToError() : null);
+            // 异常没有抛出管道，Observe 阶段不会为它记日志：这里记一条，只带操作 ID、调用与错误码，不带响应的内容（ADR-0329）；
+            // 日志器在这条少见的路径上才取；手工装配、没有日志工厂的容器不记
+            if (context.Services.GetService<ILoggerFactory>() is { } loggerFactory)
+            {
+                LogUnrecordableResponse(loggerFactory.CreateLogger<IdempotencyMiddleware>(), exception, operation.Id, context.TraceId, failure.Code);
+            }
+
             context.SetOutcome(failure);
             return IdempotencyRecord.From(failure) with { Operation = operation.Id };
         }
@@ -210,6 +218,12 @@ public sealed class IdempotencyMiddleware(IdempotencyOptions options) : IPipelin
     /// </summary>
     private static Error Unavailable(string operation, string reason)
         => Error.Conflict(CachingErrors.IdempotentMismatch, CachingMessages.IdempotentResponseUnavailable, MessageArguments.Of(("operation", operation), ("reason", reason)));
+
+    /// <summary>
+    /// 记录幂等记录写不出的响应
+    /// </summary>
+    [LoggerMessage(Level = LogLevel.Error, Message = "The response of operation '{Operation}' could not be written for the idempotency record; invocation '{TraceId}' ends with '{Code}', and retries replay it.")]
+    private static partial void LogUnrecordableResponse(ILogger logger, Exception exception, string operation, string traceId, string code);
 
     /// <summary>
     /// 用源生成上下文把记录序列化为 UTF-8 JSON 字节

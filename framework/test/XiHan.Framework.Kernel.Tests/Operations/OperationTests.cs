@@ -4,11 +4,14 @@
 using System.Text;
 using System.Text.Json;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+using XiHan.Framework.Kernel.Diagnostics;
 using XiHan.Framework.Kernel.Hosting;
 using XiHan.Framework.Kernel.Operations;
 using XiHan.Framework.Kernel.Security;
 using XiHan.Framework.Kernel.Tests.Fixtures;
 using XiHan.Framework.Primitives;
+using XiHan.Framework.Testing;
 
 namespace XiHan.Framework.Kernel.Tests.Operations;
 
@@ -111,6 +114,32 @@ public sealed class OperationTests
         Assert.Equal(KernelErrors.Unexpected, response.Outcome.Error!.Code);
         Assert.Equal(KernelMessages.UnhandledException, response.Outcome.Error.MessageKey);
         Assert.True(response.Payload.IsEmpty);
+    }
+
+    [Fact]
+    public async Task InvokeAsync_ResponseThatCannotBeEncoded_IsLoggedWithTheOperationAndCode()
+    {
+        // 异常没有抛出管道，Observe 阶段不记日志：修之前只有 Span 与指标里看得到失败（ADR-0329）。日志带操作 ID、调用与错误码，不带响应的内容
+        using var logs = new LogCapture();
+        var (provider, app) = Hosts.BuildApp(b =>
+        {
+            b.Services.AddSingleton<ILoggerFactory>(logs);
+            b.UseFeature(new RatioFeature());
+        });
+        await app.StartAsync(CancellationToken.None);
+        await using var owned = provider;
+        await using var scope = provider.CreateAsyncScope();
+        var context = Hosts.Context(scope.ServiceProvider);
+
+        var response = await provider.GetRequiredService<IOperationInvoker>().InvokeAsync(context, new OperationRequest(RatioOperation.Id, Encoding.UTF8.GetBytes("""{"text":"x"}""")));
+
+        Assert.Equal(KernelErrors.Unexpected, response.Outcome.Error?.Code);
+        var entry = Assert.Single(logs.Entries, static e => e.Category == "XiHan.Framework.Kernel.Operations.OperationInvoker");
+        Assert.Equal(LogLevel.Error, entry.Level);
+        Assert.Equal($"The response of operation '{RatioOperation.Id}' could not be written; invocation '{context.TraceId}' ends with '{KernelErrors.Unexpected}'.", entry.Message);
+        Assert.NotNull(entry.Exception);
+        Assert.DoesNotContain(logs.Entries, static e => e.Category == typeof(ObserveMiddleware).FullName);
+        await app.StopAsync(CancellationToken.None);
     }
 
     [Fact]
