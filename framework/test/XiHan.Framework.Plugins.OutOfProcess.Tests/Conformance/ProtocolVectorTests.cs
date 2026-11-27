@@ -9,6 +9,7 @@ using Google.Protobuf;
 using Google.Protobuf.Collections;
 using Grpc.Core;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using XiHan.Framework.Kernel;
@@ -337,6 +338,23 @@ public sealed class ProtocolVectorTests
         var unmapped = PluginErrorMapper.FromRpc(new RpcException(new Grpc.Core.Status(StatusCode.DataLoss, "boom")), "xihan.samples.echo", "echoes.create", LifecycleState.Ready);
         Assert.Contains("{status}: {message}", reasons);
         Assert.Equal("DataLoss: boom", unmapped.Details!["reason"]);
+    }
+
+    [Fact]
+    public void PluginMessages_TheBaggageReason_IsWhatTheHostWrites()
+    {
+        using var document = JsonDocument.Parse(File.ReadAllText(SpecVectors.PathOf("plugin", "plugin-messages.json")));
+        var reasons = document.RootElement.GetProperty("reasons").EnumerateArray().Select(static r => r.GetProperty("reason").GetString()!).ToHashSet(StringComparer.Ordinal);
+        const string Template = "baggage '{key}' has a lone surrogate and cannot be encoded as UTF-8";
+
+        // 宿主写给插件的元数据里幂等键有孤立的代理项（invocation.md §2，ADR-0334）；SDK 回调宿主之前写同一段文字（§5，ADR-0347）
+        using var services = new ServiceCollection().BuildServiceProvider();
+        var context = App.CreateContext(services, new InvocationContextOptions { Baggage = new Dictionary<string, string> { [BaggageKeys.IdempotencyKey] = "k\uD800" } }, CancellationToken.None);
+        var refused = PluginMetadata.Check(context, "xihan.samples.echo", "echoes.create").Error!;
+
+        Assert.Contains(Template, reasons);
+        Assert.Equal(Template.Replace("{key}", BaggageKeys.IdempotencyKey, StringComparison.Ordinal), refused.Details!["reason"]);
+        Assert.Equal(("xihan.samples.echo", "echoes.create"), (refused.Details["id"], refused.Details["phase"]));
     }
 
     [Fact]
