@@ -126,8 +126,9 @@ public readonly record struct BlobKey
     public static bool IsValidPrefix([NotNullWhen(true)] string? value)
     {
         // 每个码元至少编成一个字节：码元数已经超过上限的不必再数字节。
-        // 孤立的代理项编不成 UTF-8：宽松编码把它换成 U+FFFD，不同的键撞成同一个对象，签出的地址也对上另一个对象（ADR-0316）
-        if (value is null || value.Length > MaxBytes || HasLoneSurrogate(value))
+        // 孤立的代理项编不成 UTF-8：宽松编码把它换成 U+FFFD，不同的键撞成同一个对象，签出的地址也对上另一个对象（ADR-0316）。
+        // 判定用原语的那一份（RFC-0001「孤立的代理项」，ADR-0334），对象键、查询前缀、保存的文件名、上传标识与元数据的值都用它
+        if (value is null || value.Length > MaxBytes || UnicodeText.HasLoneSurrogate(value))
         {
             return false;
         }
@@ -161,34 +162,6 @@ public readonly record struct BlobKey
         return IsValid(value)
             ? value
             : throw new ArgumentException($"Blob key '{value}' is invalid: it must be 1 to {MaxBytes} bytes long in UTF-8, made of non-empty '/'-separated segments other than '.' and '..', without whitespace, control characters, backslashes or lone surrogates.", nameof(value));
-    }
-
-    /// <summary>
-    /// 文本里是否有孤立的代理项
-    /// </summary>
-    /// <remarks>
-    /// 孤立的代理项是不在一对之中的 U+D800–U+DFFF 码元：单独的高代理项、单独的低代理项、颠倒的一对、末尾的高代理项。高代理项紧跟低代理项是平面以外的一个字符，不算（RFC-0012「标识」）。对象键、查询前缀、保存的文件名与上传标识共用这一条
-    /// </remarks>
-    internal static bool HasLoneSurrogate(ReadOnlySpan<char> text)
-    {
-        for (var index = 0; index < text.Length; index++)
-        {
-            if (!char.IsSurrogate(text[index]))
-            {
-                continue;
-            }
-
-            // 成对的跳过这一对；其余的代理项，不论高低、在哪里，都是孤立的
-            if (char.IsHighSurrogate(text[index]) && index + 1 < text.Length && char.IsLowSurrogate(text[index + 1]))
-            {
-                index++;
-                continue;
-            }
-
-            return true;
-        }
-
-        return false;
     }
 
     /// <inheritdoc />

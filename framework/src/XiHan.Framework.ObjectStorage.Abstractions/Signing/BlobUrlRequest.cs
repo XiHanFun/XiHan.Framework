@@ -3,7 +3,6 @@
 
 using System.Text;
 using XiHan.Framework.ObjectStorage.Abstractions.Blobs;
-using XiHan.Framework.ObjectStorage.Abstractions.Keys;
 using XiHan.Framework.ObjectStorage.Abstractions.Multipart;
 using XiHan.Framework.Primitives;
 
@@ -200,7 +199,7 @@ public sealed record BlobUrlRequest
         }
 
         // 每个码元至少编成一个字节：码元数已经超过上限的不必再数字节
-        return !string.IsNullOrWhiteSpace(fileName) && fileName.Length <= MaxDownloadFileNameBytes && !fileName.Any(char.IsControl) && !BlobKey.HasLoneSurrogate(fileName) && Encoding.UTF8.GetByteCount(fileName) <= MaxDownloadFileNameBytes
+        return !string.IsNullOrWhiteSpace(fileName) && fileName.Length <= MaxDownloadFileNameBytes && !fileName.Any(char.IsControl) && !UnicodeText.HasLoneSurrogate(fileName) && Encoding.UTF8.GetByteCount(fileName) <= MaxDownloadFileNameBytes
             ? fileName
             : throw new ArgumentException($"The download file name must not be blank, must be at most {MaxDownloadFileNameBytes} bytes long in UTF-8 and must not contain control characters or lone surrogates.", nameof(fileName));
     }

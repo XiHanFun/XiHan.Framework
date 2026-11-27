@@ -28,7 +28,7 @@ public sealed record BlobMultipartUpload
     {
         ArgumentNullException.ThrowIfNull(uploadId);
         // 上传标识进宿主代签地址的查询串与签名的规范串：孤立的代理项经宽松编码会签成另一个标识（ADR-0316）
-        if (uploadId.Length is 0 or > 1024 || uploadId.Any(static ch => char.IsWhiteSpace(ch) || char.IsControl(ch)) || BlobKey.HasLoneSurrogate(uploadId))
+        if (uploadId.Length is 0 or > 1024 || uploadId.Any(static ch => char.IsWhiteSpace(ch) || char.IsControl(ch)) || UnicodeText.HasLoneSurrogate(uploadId))
         {
             throw new ArgumentException("The upload ID must be 1 to 1024 visible characters without lone surrogates.", nameof(uploadId));
         }

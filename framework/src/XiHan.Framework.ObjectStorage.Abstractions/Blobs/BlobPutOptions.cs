@@ -4,7 +4,6 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Text;
 using System.Text.RegularExpressions;
-using XiHan.Framework.ObjectStorage.Abstractions.Keys;
 using XiHan.Framework.Primitives;
 
 namespace XiHan.Framework.ObjectStorage.Abstractions.Blobs;
@@ -81,7 +80,7 @@ public sealed partial record BlobPutOptions
                 }
 
                 // 值要编成 UTF-8 才进得了 S3 的请求头与文件系统的元数据文件：孤立的代理项被宽松的编码换成 U+FFFD，读回的不是写入的值（ADR-0322）
-                if (BlobKey.HasLoneSurrogate(text))
+                if (UnicodeText.HasLoneSurrogate(text))
                 {
                     throw new ArgumentException($"Metadata '{name}' contains lone surrogates.", nameof(value));
                 }
