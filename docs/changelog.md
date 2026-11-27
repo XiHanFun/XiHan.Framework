@@ -90,14 +90,15 @@
 - 定义目录的 `UpdateAsync`、`PublishAsync`、`DisableAsync`、`ArchiveAsync`、`DeleteAsync` 改写已有定义时取定义 ID 的锁、持有到调用结束：同时改同一份定义的调用，后到的那一项等 `XiHan:Workflow:LockTimeoutSeconds` 后以 `WORKFLOW_TIMEOUT_001` 失败，按等锁超时处理或重试（ADR-0326）
 - `Plugins.Conformance` 的 `SampleRequests` 有孤立的代理项时用例以 `InvalidOperationException` 失败，以前照发 U+FFFD：改正样例（ADR-0327）
 - `DataSourceRegistry.DisposeAsync` 等进行中的后台探测结束才释放数据源并返回：Provider 的探测不响应取消时，释放随之变慢（ADR-0327）
-- 只生成快速路径（`GenerationMode = Serialization`）的序列化上下文用作响应或带 Schema 的请求时写不出、按未处理的异常结束：去掉这个设置，用缺省的生成模式（ADR-0329）
 - `ResourceName` 的 ID 段有控制字符（U+0000–U+001F、U+007F–U+009F）时构造抛 `ArgumentException`、`TryParse` 为假：从外部输入拼 ID 段的代码先去掉或编码这些字符（ADR-0330）
 - `mcp` 命令的 stdin 一行超过 4 MiB 时答复解析错误（-32700）、这一行不执行：要收更长的消息，配大 `XiHan:Protocols:Mcp:MaxStdioLineBytes`（ADR-0331）
 - MCP 消息里任何一层的重复成员、`arguments` 里的孤立代理项或重复成员答复解析错误（-32700，HTTP 400），以前取最后一个照常执行或成为 `isError` 结果：客户端发合法的 JSON（ADR-0331）
 - CloudEvents Webhook 以 binary（缺省）发布时，头值里的空格与双引号写成 `%20` / `%22`：不按 CloudEvents 解码头值的接收方改成解码（ADR-0332）
 - CloudEvents 入站 binary 先解开双引号括起的头值，引号不配对、引号里有控制字符或反斜杠在末尾的头值回 400 `MESSAGING_VALIDATION_002`：发送方改正头值（ADR-0332）
 - binary 的空 `ce-subject` / `ce-time` 头与 structured / batch 的 `"subject": ""` 回 400 `MESSAGING_VALIDATION_002`：发送方不带空头，没有 `subject` 就省略（ADR-0332）
-- `MessageEnvelope { Subject = "" }` 抛 `ArgumentException`：领域事件的 `subject` 选择器改为返回 `null`；代理与发件箱里旧的 `"subject": ""` 消息读不出、按无法解码的消息了结，升级前先排空（ADR-0332）
+- `MessageEnvelope { Subject = "" }` 抛 `ArgumentException`：领域事件的 `subject` 选择器改为返回 `null`（ADR-0332）
+- 升级前写进发件箱的 `"subject": ""` 行升级后直接进死信（`LastError` 是 `MESSAGING_VALIDATION_002`，原因带 `The subject must not be empty.`）：先在旧版本上改掉产生空 `subject` 的代码，等 `OutboxMessage` 里这类未投递的行投递完再升级；来不及的按[领域事件与发件箱](/messaging/domain-events#升级前写进的空-subject)的语句删掉 `Payload` 里顶层的 `,"subject":""`，再用 `OutboxDeadLetters.RedriveManyAsync` 重投（ADR-0332）
+- RabbitMQ、Kafka、Redis 里升级前写进的 `"subject": ""` 消息升级后读不出（消息体是结构化 JSON，没有单独的 `subject` 头）：竞争订阅原样转进死信（队列、主题或流名加 `DeadLetterSuffix`，缺省 `.dlq`），广播订阅确认丢弃；升级前先把这类消息消费完，已进死信的照发件箱的做法删掉这一成员后自行重新发布（ADR-0332）
 - 别的客户端以 UTF-8 以外的字符集写进 RFC 2047 encoded-word 的 S3 元数据，经 S3 Provider 读取与 `Head` 返回 `OBJECTSTORAGE_UNAVAILABLE_001`（列举与删除不受影响）：把这类对象的元数据改用 UTF-8 重写（ADR-0333）
 - S3 整读的流没读到末尾就释放时不再抛 `FrameworkException`、只记 Warning：要拿到「内容对不上 `ETag`」的报告就读到读返回 0（`ReadToEnd`、`CopyTo`）（ADR-0333）
 - 上下文的幂等键有孤立的代理项时，调用进程外与 Wasm 插件、投递给插件与经过 Wasm 中间件以 `PLUGINS_UNEXPECTED_001` 结束，以前 gRPC 写成 U+FFFD 照常调用：拼幂等键的代码先用 `UnicodeText.HasLoneSurrogate` 判断（ADR-0334）
@@ -105,6 +106,10 @@
 - `XiHan:Workflow:Database:HolderId`、`XiHan:Observability:OpenTelemetry:ServiceName` 有孤立的代理项时启动失败，`SetAuditAction` 的动作有控制字符或孤立的代理项时抛 `ArgumentException`：去掉这些字符（ADR-0334）
 - 代码登记的作业说明或数据有孤立的代理项、触发器名重复时 `AddJob` 抛 `ArgumentException`，触发器引用的日历没登记时调度特性启动失败：按消息里的作业名改定义，或补 `AddJobCalendar`（ADR-0335）
 - Wasm 插件启动阶段失败后按退避重建实例，退避期间的调用是 `PLUGINS_UNAVAILABLE_001`，以前是下一次调用按需再试：改正配置之后等下一次退避结束即恢复，不靠调用带起来（ADR-0337）
+- 按 `xihan.outcome` 算成功率的看板与告警，会把写不出响应的 XGI 调用（gRPC、MCP、命令行 `invoke`、AI 工具、插件回调）算作失败；这类调用的 Span 与耗时包括编码响应（ADR-0341）
+- S3 的写入与分片上传的发起遇到整个是 RFC 2047 encoded-word 形状的 ASCII 元数据值（如 `=?UTF-8?B?5Lit?=`）时返回 `OBJECTSTORAGE_VALIDATION_009`（参数 `name`），不发请求：把这类值先解开再写，或换一个值；文件系统存储不受影响（ADR-0343）
+- Wasm 插件写来的消息有重复成员或嵌套超过 64 层时按读不出的消息处理，应答是 `PLUGINS_UNEXPECTED_001` 并重建实例，回调与发布以 `PLUGINS_VALIDATION_005` 应答，以前后一个覆盖前一个、照常读入：自己拼消息的插件改正输出（ADR-0345）
+- `XiHan:Scheduling:NodeId` 与 `XiHan:Scheduling:Kubernetes:Holder` 有孤立的代理项时启动失败（以前节点 ID 照收，数据库实现上作业一次也不运行；Kubernetes 的持有者写成 U+FFFD）：去掉这些字符（ADR-0348）
 :::
 
 ### 版本与兼容
@@ -144,6 +149,8 @@
 - **修复** 序列化上下文走源生成快速路径时，64 层、最里层是可空值的响应照常写出；更深的 `EncodeResponse` 只抛 `ArgumentException`，不再抛 `InvalidOperationException`（ADR-0329）
 - **新增** XGI 入口写不出响应时记一条 Error 日志（类别 `OperationInvoker`，带操作 ID、Trace ID 与错误码，不带响应内容）（ADR-0329）
 - **调整** 内核的清单读取不再经源生成反序列化，内核程序集小约 43 KB，读出的清单不变（ADR-0329）
+- **修复** 只生成快速路径（`GenerationMode = Serialization`）的序列化上下文用作响应或带 Schema 的请求时恢复能写，不用再去掉这个设置；64 层、最里层是可空值或更深的仍写不出（ADR-0342）
+- **优化** 响应与带 Schema 的请求先走源生成快速路径写出，只在 64 层、最里层是可空值或更深时按元数据再写一遍，写出的字节与写不出时的异常不变，正常的响应少分配（基准里每次少 312 B，ADR-0342）
 
 ### 宿主、协议与插件
 
@@ -198,6 +205,9 @@
 - **调整** 宿主写给插件的元数据里已登记 Baggage 的值有孤立的代理项时，这一次调用、投递或 Wasm 中间件钩子不交给插件，以 `PLUGINS_UNEXPECTED_001` 结束，插件照常服务（ADR-0334）
 - **调整** Wasm 插件启动阶段失败（组装 `Configure` 请求、`xihan_configure`、`xihan_start`）后按退避重建实例、计入重启次数，退避期间的调用是 `PLUGINS_UNAVAILABLE_001`，与进程外插件一致（ADR-0337）
 - **修复** 宿主写给 Wasm 插件的错误文案有孤立代理项时换成 U+FFFD 照写，回调的插件不再陷阱，中间件 `after` 阶段的调用不再以 `KERNEL_UNEXPECTED_001` 结束（ADR-0339）
+- **调整** Wasm 宿主读客体写来的每条消息整条过 JSON 文本的共同检查（孤立代理项的转义、任何一层的重复成员、64 层，未知字段里的也算），没过与有非法 UTF-8 的消息同一处置（ADR-0345）
+- **新增** 规范的 `plugin` 档新增向量 `plugin/error-text-writing.json`（写进插件协议的 `Error` 文案按最大子部分换成 U+FFFD，UTF-16、码点、字节三组输入），.NET 回放，行为不变（ADR-0346）
+- **调整** 规范写明 SDK 回调宿主之前核对写进元数据的 Baggage，有孤立的代理项即本地以 `PLUGINS_UNEXPECTED_001` 结束、不发请求，`reason` 与宿主一侧相同；.NET 宿主不变，各语言 SDK 跟进（ADR-0347）
 
 ### 配置
 
@@ -282,6 +292,7 @@
 - **修复** 跟在 cron 以外的计划后面的 `tz=` 读成不合法，不再悄悄丢掉（ADR-0297）
 - **调整** 作业与触发器的说明与数据有孤立的代理项是 `SCHEDULING_VALIDATION_001`（ADR-0321）
 - **调整** 代码登记的作业不合法即失败：孤立的代理项、触发器名重复在 `AddJob` 时抛 `ArgumentException`，日历未登记在调度器启动时以 `SCHEDULING_VALIDATION_001` 失败，不再每个周期记日志重试、挡住排在后面的代码作业（ADR-0335）
+- **调整** 节点 ID（`XiHan:Scheduling:NodeId`）与 Kubernetes 配置的持有者（`XiHan:Scheduling:Kubernetes:Holder`）拒收孤立的代理项，构造选项或从配置读取即抛 `ArgumentException`、启动失败；按 Pod 约定解析出的持有者不核对（ADR-0348）
 
 ### 工作流
 
@@ -354,6 +365,11 @@
 - **修复** S3 批量删除在 SDK 抛 `DeleteObjectsException` 时逐项报告，只有出错的那几项失败，不再整批报存储故障（ADR-0333）
 - **修复** S3 应答体不是良构的 XML、放弃分片上传与建桶的应答解析不了、列出分片交出不比起点大的编号时返回 `OBJECTSTORAGE_UNAVAILABLE_001`；发起分片上传时建桶失败不再抛出 SDK 的异常（ADR-0333）
 - **调整** S3 整读的流没读到末尾就释放时不再抛 `FrameworkException`，只记 Warning；读到末尾的那次读照旧抛出（ADR-0333）
+- **新增** 错误码 `OBJECTSTORAGE_VALIDATION_008`（存储按自己的计法拒收合上限的自定义元数据）与 `OBJECTSTORAGE_VALIDATION_009`（存储会把元数据的值存成另一个值，参数 `name`）（ADR-0343）
+- **调整** S3 被服务以 `MetadataTooLarge` 拒收元数据时，返回校验错误 `OBJECTSTORAGE_VALIDATION_008`，不再按存储故障返回 `OBJECTSTORAGE_UNAVAILABLE_001`（ADR-0343）
+- **调整** S3 的写入与分片上传的发起遇到整个是 encoded-word 形状的只有 ASCII 的元数据值时返回 `OBJECTSTORAGE_VALIDATION_009`、不发请求，以 `=?` 开头且以 `?=` 结尾的其余值照旧编码写出（ADR-0343）
+- **修复** S3 读回别的写入方原样写进头的 UTF-8 元数据，交出原值而不是 Latin-1 乱码；解不出的返回 `OBJECTSTORAGE_UNAVAILABLE_001`（ADR-0343）
+- **修复** S3 批量删除的错误项没有错误码时，那一项的 `reason` 是固定文字，不再为空（ADR-0344）
 
 ### 可观测
 
@@ -361,6 +377,7 @@
 - **调整** 操作调用的 `xihan.invoke`、`xihan.invocations`、`xihan.invocation.duration` 新增标签 `xihan.operation`（操作 ID），两个指标的序列按操作分开；不是操作调用时不带这个标签（ADR-0269）
 - **修复** Linux 上的系统运行时长按十进制读，不再差一个计时单位；带符号、指数的 `/proc/uptime` 读成空（ADR-0286）
 - **调整** `OpenTelemetryOptions.ServiceName` 有孤立的代理项时装配失败（ADR-0334）
+- **修复** 经完整管道的 XGI 入口（gRPC、MCP、命令行 `invoke`、AI 工具、插件回调）写不出响应时，`xihan.invoke` 状态为 Error，`xihan.outcome` 与 `xihan.invocations`、`xihan.invocation.duration` 记 `failure`，以前记 `success`（ADR-0341）
 
 ### 测试
 
@@ -374,6 +391,7 @@
 - **新增** 一致性套件的用例：`BlobStoreConformance` 的批量放弃、`OutboxConformance` 的死信重投、`CacheStoreConformance` 的恰好 512 字节的多字节键（给键加前缀的夹具覆写 `KeyPrefixBytes`）（ADR-0266、ADR-0272、ADR-0274）
 - **新增** `Workflow.Conformance` 引擎套件用例 43：目录改写定义时持有定义 ID 的锁到调用结束、回滚后释放（ADR-0326）
 - **新增** `Plugins.Conformance` 的 `EnvelopeOperation` 与用例 `HandleEvent_HandsTheDataSchemaToTheHandler`；`unsubscribed` 另核对读不出的信封 `time` 以 `InvalidArgument` 拒绝；`SampleRequests` 严格编码成 UTF-8（ADR-0327）
+- **新增** `BlobStoreConformance` 用例 16：非 ASCII 的自定义元数据值往返，自写的 Provider 要能原样存取这类值（ADR-0344）
 
 ## v5.0.0-rc.7（2026-11-23）
 
