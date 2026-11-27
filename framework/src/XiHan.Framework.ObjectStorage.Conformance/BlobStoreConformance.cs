@@ -583,6 +583,65 @@ public abstract class BlobStoreConformance
     }
 
     /// <summary>
+    /// 用例 16：非 ASCII 的自定义元数据值原样往返
+    /// </summary>
+    /// <remarks>
+    /// 中文、平面以外的字符、带变音符号的拉丁字母与西里尔字母、超过 45 个 UTF-8 字节的长值，以及非 ASCII 的文字里夹着 encoded-word 的值：写入结果、读取、<c>Head</c> 与把读出的元数据写回都不变；实现了分片上传的再走一遍发起与完成（RFC-0012「一致性」，ADR-0344）。S3 照 RFC 2047 编解码这些值（ADR-0333），以前套件里的值只有 ASCII
+    /// </remarks>
+    [Fact]
+    public async Task Metadata_WithNonAsciiValues_RoundTrips()
+    {
+        var store = await CreateStoreAsync().ConfigureAwait(false);
+        var metadata = new Dictionary<string, string>(StringComparer.Ordinal)
+        {
+            ["title"] = "2026 年度报告",
+            ["emoji"] = "\U0001F600 smile",
+            ["latin"] = "café Ünïcödé",
+            ["cyrillic"] = "Привет",
+            ["long"] = string.Concat(Enumerable.Repeat("中", 100)),
+            ["mixed"] = "说明 =?UTF-8?B?5Lit?=",
+        };
+        var key = Key("metadata/non-ascii.txt");
+
+        var written = (await store.PutAsync(Container, key, Bytes("x"), new BlobPutOptions { Metadata = metadata }, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow();
+        Assert.Equal(metadata, written.Metadata);
+        var got = (await store.GetAsync(Container, key, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow();
+        await using (got)
+        {
+            Assert.Equal(metadata, got.Metadata.Metadata);
+        }
+
+        var head = (await store.HeadAsync(Container, key, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow();
+        Assert.Equal(metadata, head.Metadata);
+
+        // 读出的元数据原样写回（复制对象之类）得到同一组值
+        var copy = Key("metadata/non-ascii-copy.txt");
+        var copied = await store.PutAsync(Container, copy, Bytes("x"), new BlobPutOptions { Metadata = head.Metadata }, CancellationToken.None).ConfigureAwait(false);
+        Assert.True(copied.IsSuccess, copied.Error?.ToString());
+        Assert.Equal(metadata, (await store.HeadAsync(Container, copy, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().Metadata);
+
+        if (store is not IBlobMultipartStore multipart)
+        {
+            return;
+        }
+
+        // 分片上传的元数据来自发起时，完成之后的对象同样是这组值
+        var parted = Key("metadata/non-ascii.bin");
+        var upload = (await multipart.StartAsync(Container, parted, new BlobPutOptions { Metadata = metadata }, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow();
+        try
+        {
+            var part = (await multipart.UploadPartAsync(upload, 1, Bytes("x"), CancellationToken.None).ConfigureAwait(false)).ValueOrThrow();
+            var completed = (await multipart.CompleteAsync(upload, [part], CancellationToken.None).ConfigureAwait(false)).ValueOrThrow();
+            Assert.Equal(metadata, completed.Metadata);
+            Assert.Equal(metadata, (await store.HeadAsync(Container, parted, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().Metadata);
+        }
+        finally
+        {
+            await multipart.AbortAsync([upload], CancellationToken.None).ConfigureAwait(false);
+        }
+    }
+
+    /// <summary>
     /// 被测存储与其分片上传
     /// </summary>
     /// <remarks>

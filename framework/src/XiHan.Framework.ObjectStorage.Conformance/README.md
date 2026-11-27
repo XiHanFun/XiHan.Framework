@@ -6,7 +6,7 @@
 
 ## 主要特性
 
-* `BlobStoreConformance`：读写往返、覆盖与不覆盖、并发写入、分页列举、范围读取、分片上传与批量放弃、内容类型原样存取（写不出原值的在写入之前以 `OBJECTSTORAGE_VALIDATION_007` 拒绝）
+* `BlobStoreConformance`：读写往返、覆盖与不覆盖、并发写入、分页列举、范围读取、分片上传与批量放弃、内容类型原样存取（写不出原值的在写入之前以 `OBJECTSTORAGE_VALIDATION_007` 拒绝）、非 ASCII 的自定义元数据值往返（写入、读取、`Head`、写回与分片上传）
 * `BlobStoreProviderConformance`：命名实例的建出、复用、替换与移除
 
 ## 如何使用

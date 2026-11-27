@@ -4,6 +4,7 @@
 using System.Diagnostics;
 using System.Net;
 using System.Reflection;
+using System.Text;
 using Amazon.Runtime;
 using Amazon.S3;
 using Amazon.S3.Model;
@@ -14,7 +15,7 @@ namespace XiHan.Framework.ObjectStorage.S3.Tests;
 /// 内存里的 S3 替身，只认存储与条件写入探测用到的请求
 /// </summary>
 /// <remarks>
-/// 认的是条件写入探测、启动、健康项、写入、批量删除与分片上传用到的请求。经 <see cref="DispatchProxy"/> 实现 <see cref="IAmazonS3"/>（代理类型由运行时从本类派生，所以本类公开且不密封）：对象只记键，按开关决定是否认 <c>If-None-Match: *</c>，可按请求名注入故障、让请求挂起直到取消，或把请求拦住直到放行；未模拟的请求抛出，用例里出现即说明发出了不该发的请求。线程安全，供并发探测的用例使用
+/// 认的是条件写入探测、启动、健康项、写入、整读、批量删除与分片上传用到的请求。经 <see cref="DispatchProxy"/> 实现 <see cref="IAmazonS3"/>（代理类型由运行时从本类派生，所以本类公开且不密封）：对象记下键，单次写入另记内容、内容类型与 SDK 请求里的自定义元数据（分片上传记发起时的内容类型与元数据，不拼接分片的内容），HEAD 与整读原样交回（ADR-0344：S3 跑一致性用例 16），按开关决定是否认 <c>If-None-Match: *</c>，可按请求名注入故障、让请求挂起直到取消，或把请求拦住直到放行；未模拟的请求抛出，用例里出现即说明发出了不该发的请求。线程安全，供并发探测的用例使用
 /// </remarks>
 public class FakeS3Client : DispatchProxy
 {
@@ -34,9 +35,22 @@ public class FakeS3Client : DispatchProxy
     private readonly HashSet<string> _objects = new(StringComparer.Ordinal);
 
     /// <summary>
+    /// 写下的对象（桶/键 → 内容、内容类型与元数据）
+    /// </summary>
+    /// <remarks>
+    /// 元数据是 SDK 请求里的头值，即 Provider 编码之后的文本，HEAD 与整读原样交回；不在这里的已存在对象（分片上传完成之外的写法）按空内容交出
+    /// </remarks>
+    private readonly Dictionary<string, StoredObject> _stored = new(StringComparer.Ordinal);
+
+    /// <summary>
     /// 未结束的分片上传标识
     /// </summary>
     private readonly HashSet<string> _uploads = new(StringComparer.Ordinal);
+
+    /// <summary>
+    /// 每个未结束的上传发起时的内容类型与元数据（上传标识 → 对象）
+    /// </summary>
+    private readonly Dictionary<string, StoredObject> _pending = new(StringComparer.Ordinal);
 
     /// <summary>
     /// 每个未结束的上传里已上传的分片（上传标识 → 编号 → 分片）
@@ -256,6 +270,7 @@ public class FakeS3Client : DispatchProxy
             nameof(IAmazonS3.PutBucketAsync) => Run(request, () => PutBucket((PutBucketRequest)args[0]!), cancellationToken),
             nameof(IAmazonS3.HeadBucketAsync) => Run(request, () => HeadBucket((HeadBucketRequest)args[0]!), cancellationToken),
             nameof(IAmazonS3.GetObjectMetadataAsync) when args[0] is GetObjectMetadataRequest head => Run(request, () => HeadObject(head), cancellationToken),
+            nameof(IAmazonS3.GetObjectAsync) when args[0] is GetObjectRequest get => Run(request, () => GetObject(get), cancellationToken),
             nameof(IAmazonS3.DeleteObjectsAsync) when args[0] is DeleteObjectsRequest delete => Run(request, () => DeleteObjects(delete), cancellationToken),
             nameof(IAmazonS3.ListBucketsAsync) => Run(request, static () => new ListBucketsResponse(), cancellationToken),
             nameof(IAmazonS3.InitiateMultipartUploadAsync) => Run(request, () => Initiate((InitiateMultipartUploadRequest)args[0]!), cancellationToken),
@@ -319,6 +334,19 @@ public class FakeS3Client : DispatchProxy
         }
 
         _objects.Add(request.BucketName + "/" + request.Key);
+        byte[] content;
+        if (request.InputStream is { } input)
+        {
+            using var copy = new MemoryStream();
+            input.CopyTo(copy);
+            content = copy.ToArray();
+        }
+        else
+        {
+            content = Encoding.UTF8.GetBytes(request.ContentBody ?? string.Empty);
+        }
+
+        _stored[request.BucketName + "/" + request.Key] = new StoredObject(content, request.ContentType, Headers(request.Metadata));
         return new PutObjectResponse { ETag = "\"etag\"", HttpStatusCode = HttpStatusCode.OK };
     }
 
@@ -326,15 +354,68 @@ public class FakeS3Client : DispatchProxy
     /// 对象的元数据（HEAD）
     /// </summary>
     /// <remarks>
-    /// 应答带 ETag、修改时间与 <c>Content-Length</c>（同 Amazon S3；替身不存内容，长度记为 0），经 <see cref="HeadAnswer"/> 换成要模拟的应答
+    /// 应答带 ETag、修改时间与 <c>Content-Length</c>（同 Amazon S3），以及写下时的内容类型与元数据（没记下内容的长度为 0），经 <see cref="HeadAnswer"/> 换成要模拟的应答
     /// </remarks>
     private GetObjectMetadataResponse HeadObject(GetObjectMetadataRequest request)
     {
         RequireBucket(request.BucketName);
-        return _objects.Contains(request.BucketName + "/" + request.Key)
-            ? HeadAnswer(new GetObjectMetadataResponse { ETag = "\"etag\"", LastModified = new DateTime(2026, 11, 26, 0, 0, 0, DateTimeKind.Utc), HttpStatusCode = HttpStatusCode.OK, Headers = { ContentLength = 0 } })
-            : throw ServiceError(HttpStatusCode.NotFound, "NotFound");
+        var id = request.BucketName + "/" + request.Key;
+        if (!_objects.Contains(id))
+        {
+            throw ServiceError(HttpStatusCode.NotFound, "NotFound");
+        }
+
+        var stored = _stored.GetValueOrDefault(id) ?? StoredObject.Empty;
+        var response = new GetObjectMetadataResponse { ETag = "\"etag\"", LastModified = new DateTime(2026, 11, 26, 0, 0, 0, DateTimeKind.Utc), HttpStatusCode = HttpStatusCode.OK, Headers = { ContentLength = stored.Content.Length, ContentType = stored.ContentType } };
+        foreach (var (name, value) in stored.Metadata)
+        {
+            response.Metadata[name] = value;
+        }
+
+        return HeadAnswer(response);
     }
+
+    /// <summary>
+    /// 整读
+    /// </summary>
+    /// <remarks>
+    /// 交回写下的内容、内容类型与元数据，应答头同 HEAD（不经 <see cref="HeadAnswer"/>）；不认范围读取，收到即抛出
+    /// </remarks>
+    private GetObjectResponse GetObject(GetObjectRequest request)
+    {
+        RequireBucket(request.BucketName);
+        if (request.ByteRange is not null)
+        {
+            throw new NotSupportedException("The fake S3 client does not simulate ranged GetObject requests.");
+        }
+
+        var id = request.BucketName + "/" + request.Key;
+        if (!_objects.Contains(id))
+        {
+            throw ServiceError(HttpStatusCode.NotFound, "NoSuchKey");
+        }
+
+        var stored = _stored.GetValueOrDefault(id) ?? StoredObject.Empty;
+        var response = new GetObjectResponse
+        {
+            ResponseStream = new MemoryStream(stored.Content, writable: false),
+            ETag = "\"etag\"",
+            LastModified = new DateTime(2026, 11, 26, 0, 0, 0, DateTimeKind.Utc),
+            HttpStatusCode = HttpStatusCode.OK,
+            Headers = { ContentLength = stored.Content.Length, ContentType = stored.ContentType },
+        };
+        foreach (var (name, value) in stored.Metadata)
+        {
+            response.Metadata[name] = value;
+        }
+
+        return response;
+    }
+
+    /// <summary>
+    /// SDK 请求里的自定义元数据（带 <c>x-amz-meta-</c> 前缀的头名与头值）
+    /// </summary>
+    private static KeyValuePair<string, string>[] Headers(MetadataCollection metadata) => [.. metadata.Keys.Select(name => KeyValuePair.Create(name, metadata[name]))];
 
     /// <summary>
     /// 批量删除
@@ -351,6 +432,7 @@ public class FakeS3Client : DispatchProxy
         foreach (var key in keys.Where(key => !kept.Contains(key)))
         {
             _objects.Remove(request.BucketName + "/" + key);
+            _stored.Remove(request.BucketName + "/" + key);
         }
 
         var response = new DeleteObjectsResponse { DeleteErrors = [.. errors], HttpStatusCode = HttpStatusCode.OK };
@@ -385,6 +467,7 @@ public class FakeS3Client : DispatchProxy
         if (!string.IsNullOrEmpty(id))
         {
             _uploads.Add(id);
+            _pending[id] = new StoredObject([], request.ContentType, Headers(request.Metadata));
         }
 
         return new InitiateMultipartUploadResponse { UploadId = id, HttpStatusCode = HttpStatusCode.OK };
@@ -455,6 +538,8 @@ public class FakeS3Client : DispatchProxy
         _uploads.Remove(request.UploadId);
         _parts.Remove(request.UploadId);
         _objects.Add(request.BucketName + "/" + request.Key);
+        // 内容类型与元数据来自发起时（同 S3）；不拼接分片的内容
+        _stored[request.BucketName + "/" + request.Key] = _pending.Remove(request.UploadId, out var started) ? started : StoredObject.Empty;
         return new CompleteMultipartUploadResponse { ETag = "\"complete\"", HttpStatusCode = HttpStatusCode.OK };
     }
 
@@ -469,6 +554,21 @@ public class FakeS3Client : DispatchProxy
         }
 
         _parts.Remove(request.UploadId);
+        _pending.Remove(request.UploadId);
         return new AbortMultipartUploadResponse { HttpStatusCode = HttpStatusCode.NoContent };
+    }
+
+    /// <summary>
+    /// 写下的一个对象
+    /// </summary>
+    /// <param name="Content">内容</param>
+    /// <param name="ContentType">内容类型（请求里没有时为 <see langword="null"/>）</param>
+    /// <param name="Metadata">SDK 请求里的自定义元数据：带前缀的头名与头值</param>
+    private sealed record StoredObject(byte[] Content, string? ContentType, KeyValuePair<string, string>[] Metadata)
+    {
+        /// <summary>
+        /// 没记下内容的对象
+        /// </summary>
+        public static StoredObject Empty { get; } = new([], null, []);
     }
 }

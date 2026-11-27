@@ -164,6 +164,14 @@ public sealed partial class S3BlobStore : IBlobStore, IBlobMultipartStore, IBlob
     private const string DeleteErrorKeyMissingReason = "DeleteObjects returned an error without a usable Key";
 
     /// <summary>
+    /// 批量删除的错误项认得出键却没有错误码时 <c>reason</c> 的文本
+    /// </summary>
+    /// <remarks>
+    /// <c>&lt;Code&gt;</c> 缺失、为空或只有空白：照样只报那一项失败，<c>reason</c> 不为空（ADR-0344）
+    /// </remarks>
+    private const string DeleteErrorCodeMissingReason = "DeleteObjects returned an error without a usable Code";
+
+    /// <summary>
     /// 整读的 ETag 不是十六进制时 <c>reason</c> 的文本
     /// </summary>
     /// <remarks>
@@ -468,7 +476,7 @@ public sealed partial class S3BlobStore : IBlobStore, IBlobMultipartStore, IBlob
     /// 记下一批删除的应答里的错误项
     /// </summary>
     /// <remarks>
-    /// 静默模式的应答只列错误项：都认得出是这一批里的哪个键时只记那几项，各报 S3 的错误码；有一项认不出（没有键，或键不在这一批里），这一批里哪些删成了就说不清，同这一批的请求整个失败，各项报同一个错误，不以空键写进结果（ADR-0313）
+    /// 静默模式的应答只列错误项：都认得出是这一批里的哪个键时只记那几项，各报 S3 的错误码，错误项没有错误码时报固定文字、这一批记一条 Warning（ADR-0344）；有一项认不出（没有键，或键不在这一批里），这一批里哪些删成了就说不清，同这一批的请求整个失败，各项报同一个错误，不以空键写进结果（ADR-0313）
     /// </remarks>
     private void RecordDeleteErrors(ContainerName container, string[] batch, List<DeleteError>? errors, Dictionary<string, Error> failed)
     {
@@ -489,10 +497,16 @@ public sealed partial class S3BlobStore : IBlobStore, IBlobMultipartStore, IBlob
             return;
         }
 
+        // 认得出键却没有错误码的错误项照样只报那一项：reason 写固定文字而不是空，这一批只记一条 Warning（ADR-0344）
+        if (errors.Any(static error => string.IsNullOrWhiteSpace(error.Code)))
+        {
+            LogAnswerUnusable(_logger, "DeleteObjects", container.Value, DeleteErrorCodeMissingReason);
+        }
+
         foreach (var error in errors)
         {
             // 服务端给的文字不进错误，错误码足够区分
-            failed[error.Key] = Unavailable(error.Code);
+            failed[error.Key] = Unavailable(string.IsNullOrWhiteSpace(error.Code) ? DeleteErrorCodeMissingReason : error.Code);
         }
     }
 

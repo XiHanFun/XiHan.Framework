@@ -13,10 +13,10 @@ using XiHan.Framework.Testing;
 namespace XiHan.Framework.ObjectStorage.S3.Tests;
 
 /// <summary>
-/// 批量删除的应答里的错误项（ADR-0313、ADR-0333）
+/// 批量删除的应答里的错误项（ADR-0313、ADR-0333、ADR-0344）
 /// </summary>
 /// <remarks>
-/// <c>DeleteObjects</c> 的错误项带着这一批里的键时只有那一项失败；错误项没有 <c>Key</c>，或带的键不在这一批里，认不出是哪一项失败：这一批里本次负责删除的项各报 <see cref="ObjectStorageErrors.StoreUnavailable"/>（同这一批的请求整个失败），不抛出；不存在的项、别的批照旧。AWS SDK for .NET 4.0 遇到有错误项的应答抛出带着应答的 <see cref="DeleteObjectsException"/>（静默模式也是）：以前 Provider 把它当作存储故障、整批报错，逐项报告只有替身走得到（ADR-0333）。用内存替身 <see cref="FakeS3Client"/>（同 SDK 抛出），以及走真实 SDK 与套接字、对端是回环上 <see cref="RecordingHttpListener"/> 的线上用例，不连 S3 服务
+/// <c>DeleteObjects</c> 的错误项带着这一批里的键时只有那一项失败，没有错误码的 <c>reason</c> 是固定文字（ADR-0344）；错误项没有 <c>Key</c>，或带的键不在这一批里，认不出是哪一项失败：这一批里本次负责删除的项各报 <see cref="ObjectStorageErrors.StoreUnavailable"/>（同这一批的请求整个失败），不抛出；不存在的项、别的批照旧。AWS SDK for .NET 4.0 遇到有错误项的应答抛出带着应答的 <see cref="DeleteObjectsException"/>（静默模式也是）：以前 Provider 把它当作存储故障、整批报错，逐项报告只有替身走得到（ADR-0333）。用内存替身 <see cref="FakeS3Client"/>（同 SDK 抛出），以及走真实 SDK 与套接字、对端是回环上 <see cref="RecordingHttpListener"/> 的线上用例，不连 S3 服务
 /// </remarks>
 public sealed class S3DeleteResponseTests
 {
@@ -44,6 +44,14 @@ public sealed class S3DeleteResponseTests
     /// HEAD 应答里的修改时间头
     /// </summary>
     private const string LastModifiedHeader = "Last-Modified: Thu, 26 Nov 2026 08:00:00 GMT";
+
+    /// <summary>
+    /// 错误项没有错误码时逐项结果的 <c>reason</c>
+    /// </summary>
+    /// <remarks>
+    /// 固定文字（ADR-0344）
+    /// </remarks>
+    private const string CodeMissingReason = "DeleteObjects returned an error without a usable Code";
 
     /// <summary>
     /// 批量删除的应答：对 <c>b.txt</c> 报 <c>AccessDenied</c>
@@ -98,6 +106,51 @@ public sealed class S3DeleteResponseTests
         Assert.Equal((ObjectStorageErrors.StoreUnavailable, "AccessDenied"), (deleted[1].Error?.Code, deleted[1].Error?.Details?["reason"]?.ToString()));
         Assert.False(fake.Contains(Bucket, "a.txt"));
         Assert.True(fake.Contains(Bucket, "b.txt"));
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("  ")]
+    public async Task AnErrorItemWithoutACode_FailsOnlyThatItem_WithAFixedReason(string? code)
+    {
+        // 认得出键却没有错误码：照样只报那一项，reason 是固定文字。以前 reason 为空（ADR-0344）
+        var fake = FakeS3Client.Create(Bucket);
+        var logs = new LogCapture();
+        var store = Store(fake, logs);
+        await PutAsync(store, "a.txt", "b.txt", "c.txt");
+        fake.DeleteErrors = _ => [new DeleteError { Key = "b.txt", Code = code, Message = "Nope" }, new DeleteError { Key = "c.txt", Code = "AccessDenied" }];
+
+        var deleted = await store.DeleteAsync(new ContainerName(Bucket), [new BlobKey("a.txt"), new BlobKey("b.txt"), new BlobKey("c.txt")], CancellationToken.None);
+
+        Assert.True(deleted[0].ValueOrThrow());
+        Assert.Equal((ObjectStorageErrors.StoreUnavailable, CodeMissingReason), (deleted[1].Error?.Code, deleted[1].Error?.Details?["reason"]?.ToString()));
+        Assert.Equal((ObjectStorageErrors.StoreUnavailable, "AccessDenied"), (deleted[2].Error?.Code, deleted[2].Error?.Details?["reason"]?.ToString()));
+        var warning = Assert.Single(logs.Entries, static entry => entry.Level == LogLevel.Warning);
+        Assert.Contains(Bucket, warning.Message, StringComparison.Ordinal);
+        Assert.Contains(CodeMissingReason, warning.Message, StringComparison.Ordinal);
+        Assert.DoesNotContain("Nope", warning.Message, StringComparison.Ordinal);
+    }
+
+    [Theory]
+    [InlineData("<Error><Key>b.txt</Key><Message>Nope</Message></Error>")]
+    [InlineData("<Error><Key>b.txt</Key><Code></Code><Message>Nope</Message></Error>")]
+    public async Task OnTheWire_AnErrorItemWithoutACode_FailsOnlyThatItem_WithAFixedReason(string error)
+    {
+        // 真实的 SDK 解出的错误项缺 <Code> 时 Code 为 null、<Code></Code> 时为空串（ADR-0344 实测）：两种都只报那一项，reason 不为空
+        await using var endpoint = RecordingHttpListener.AnsweringInTurn(
+            new RecordingHttpListener.Reply("200 OK", string.Empty, [ETagHeader, LastModifiedHeader]),
+            new RecordingHttpListener.Reply("200 OK", string.Empty, [ETagHeader, LastModifiedHeader]),
+            new RecordingHttpListener.Reply("200 OK", $"""<?xml version="1.0" encoding="UTF-8"?><DeleteResult xmlns="http://s3.amazonaws.com/doc/2006-03-01/">{error}</DeleteResult>""", ["Content-Type: application/xml"]));
+        var logs = new LogCapture();
+        using var store = WireStore(endpoint, logs);
+
+        var deleted = await store.DeleteAsync(new ContainerName(Bucket), [new BlobKey("a.txt"), new BlobKey("b.txt")], CancellationToken.None);
+
+        Assert.True(deleted[0].ValueOrThrow());
+        Assert.Equal((ObjectStorageErrors.StoreUnavailable, CodeMissingReason), (deleted[1].Error?.Code, deleted[1].Error?.Details?["reason"]?.ToString()));
+        Assert.Single(logs.Entries, static entry => entry.Level == LogLevel.Warning);
+        Assert.Equal(3, endpoint.Requests.Count);
     }
 
     [Fact]
