@@ -65,7 +65,7 @@ switch (outcome.Disposition)
 
 此库提供的主要类型：
 
-* `MessageEnvelope`：CloudEvents 信封，`DataSchema` 承载可选的 `dataschema`（非空字符串，不核对 URI 语法），四个代理都原样收发；`Subject` 给了就不能是空串（CloudEvents 规定出现时必须非空）
+* `MessageEnvelope`：CloudEvents 信封，`DataSchema` 承载可选的 `dataschema`（非空字符串，不核对 URI 语法），四个代理都原样收发；`Subject` 给了就不能是空串（CloudEvents 规定出现时必须非空）；升级之前写进发件箱与代理的 `"subject": ""` 消息怎么处理，见[更新日志](https://framework.docs.xihanfun.com/changelog)的升级须知（ADR-0332）
 * `CloudEventsFormat`：信封的结构化 JSON 编码。读取先过 JSON 文本的共同检查（重复的成员不合法），`time` 只认带 `T`、秒与偏移的 RFC 3339 时刻并读成 UTC，`data` 与 `data_base64` 不能同时出现，扩展属性的值是字符串、数字或布尔；写不出读得回来的文档时 `Encode` 抛出，规范属性与扩展属性的字符串里有孤立的代理项、JSON 数据的字符串里有不合法的 UTF-8 字节也一样（不写成 U+FFFD）
 * `MessageDataSchemas`：按 `type` 登记的数据模式，由 `services.AddMessageDataSchema(type, dataSchema)` 与配置节 `XiHan:Messaging:DataSchemas`（`MessagingOptions.DataSchemas`，消息 Provider 装配时登记；环境变量写成 `XiHan__Messaging__DataSchemas__0__Type`）填充；取值照 `MessageEnvelope.DataSchema`，另拒孤立的代理项，同一个 `type` 登记另一个值抛出（配置与代码之间也一样，不论谁先登记），配置项缺 `Type` 或 `DataSchema` 时启动失败，最多 10000 个 `type`；只作用于框架构造的信封
 * `IMessagePublisher`：发布入口，支持批量
