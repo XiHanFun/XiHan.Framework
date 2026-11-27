@@ -232,7 +232,7 @@ PHP 的写法与差异：
 - 怎样验证：测试直接回放 `spec/conformance/vectors`；[`tests/VectorCoverageTest.php`](https://github.com/XiHanFun/framework-sdk-php/blob/main/tests/VectorCoverageTest.php) 按档表核对认领的档要求的每个向量要么被测试回放、要么列为缺口；`tests/Plugin/ConformanceTest.php` 用黑盒运行器对示例插件跑全部用例，要求全部通过、没有跳过。CI 在 ubuntu 与 windows 上都跑，并核对插件协议的生成代码与 `plugin.proto` 一致。
 - 信封的 `time`：回放 `plugin/sdk-envelope-times.json` 的微秒一列（ADR-0310）。写出的文本与 `text.microseconds` 逐字相同，读出的时刻与 `utc.microseconds` 相等（比微秒更细的小数截断），`unreadable` 的每一条投递都以 `InvalidArgument` 拒绝。`plugin/envelope-times.json` 现在同在 `plugin` 档。
 - Baggage 的值：`primitives/baggage-keys.json` 的 `values` 另有以码元写出的 `acceptableUtf16` 与 `unacceptableUtf16`，按 WTF-8 组成字节回放：前一组（成对的代理项合成平面以外的一个字符）照收，后一组（编成 UTF-8 的孤立代理项）`isAcceptableValue` 为假（ADR-0321）。
-- 错误文案：回放 `plugin/error-text-writing.json` 的 `bytes` 一组（ADR-0346）。每例的原始字节作为自由文本错误的文案经 `Protocol::toProtoError` 写出，编码成字节再解回来，`text` 等于期望值；`utf16` 与 `codePoints` 两组由以 UTF-16 与码点存放字符串的实现回放。
+- 错误文案：回放 `plugin/error-text-writing.json` 的 `bytes` 一组（ADR-0346）。每例的原始字节作为自由文本错误的文案经 `Protocol::toProtoError` 写出，编码成字节再解回来，顶层与内部错误的 `text` 都等于期望值；`utf16` 与 `codePoints` 两组由以 UTF-16 与码点存放字符串的实现回放。
 
 ## 破坏性改动与迁移
 

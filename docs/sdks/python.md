@@ -241,7 +241,7 @@ Python 的写法与差异：
 - 怎样验证：单元测试直接读取 `spec/conformance/vectors/` 下的向量回放；`tests/test_vectors.py` 按档表核对认领的档要求的每个向量要么有测试回放、要么列为缺口；示例插件 echo 由规范的黑盒运行器跑全部用例。CI 在 Linux 与 Windows 上都跑。
 - 信封的 `time`：回放 `plugin/sdk-envelope-times.json` 的微秒一列（ADR-0310）。写出的文本与 `text.microseconds` 逐字相同，读出的时刻与 `utc.microseconds` 相等（比微秒更细的小数截断），`unreadable` 的每一条投递都以 `InvalidArgument` 拒绝。`plugin/envelope-times.json` 现在同在 `plugin` 档。
 - Baggage 的值：`primitives/baggage-keys.json` 的 `values` 另有以码元写出的 `acceptableUtf16` 与 `unacceptableUtf16`，按 RFC-0012「一致性」组成字符串回放（成对的代理项合成一个码点，孤立的留作代理项码点）：前一组照收，后一组 `is_baggage_value_acceptable` 为假（ADR-0321）。
-- 错误文案：回放 `plugin/error-text-writing.json` 的 `codePoints` 与 `utf16` 两组（ADR-0346）。`codePoints` 逐个码点组成 `str`（成对出现的两个代理项码点各算一个），`utf16` 按 RFC-0012「一致性」组成 `str`（成对的代理项合成一个码点），作为自由文本错误经 `to_proto_error` 写出，编码成字节再解回来，`text` 等于期望值；`bytes` 一组由以字节存放字符串的实现回放。
+- 错误文案：回放 `plugin/error-text-writing.json` 的 `codePoints` 与 `utf16` 两组（ADR-0346）。`codePoints` 逐个码点组成 `str`（成对出现的两个代理项码点各算一个），`utf16` 按 RFC-0012「一致性」组成 `str`（成对的代理项合成一个码点），作为自由文本错误经 `to_proto_error` 写出，编码成字节再解回来，顶层与内部错误的 `text` 都等于期望值；`bytes` 一组由以字节存放字符串的实现回放。
 
 ## 破坏性改动与迁移
 
