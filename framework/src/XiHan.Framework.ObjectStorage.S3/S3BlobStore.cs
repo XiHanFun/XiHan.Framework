@@ -4,6 +4,7 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Net;
+using System.Xml;
 using Amazon.Runtime;
 using Amazon.S3;
 using Amazon.S3.Model;
@@ -22,7 +23,7 @@ namespace XiHan.Framework.ObjectStorage.S3;
 /// S3 对象存储
 /// </summary>
 /// <remarks>
-/// 容器即桶，键即对象键。不覆盖写入用条件请求（<c>If-None-Match: *</c>）保证原子，已存在返回 <see cref="ObjectStorageErrors.BlobExists"/>；服务是否认条件写入要先探明（ADR-0089、ADR-0090）：特性启动或命名实例建出时探一次，没探明就在后台重试，这期间不覆盖的写入与分片上传返回 <see cref="ObjectStorageErrors.ConditionalWriteUnconfirmed"/>，探明不认或选项关闭条件写入时一律返回 <see cref="ObjectStorageErrors.ConditionalWriteUnavailable"/>；批量删除先逐键 HEAD 得知是否存在，再一次 <c>DeleteObjects</c>；列举经 <c>ListObjectsV2</c>，条目只有键、长度、ETag 与修改时间（内容类型为默认值、自定义元数据为空，需要时再 HEAD）。范围读取经 <c>Range</c> 请求头；分片上传直接映射 S3 的 multipart（不覆盖的完成带 <c>If-None-Match: *</c>）；预签名地址由 SDK 本地签出（签名 V4），客户端直连存储。不存在的键与桶映射为 <see cref="ObjectStorageErrors.BlobNotFound"/>，其余服务端与网络错误映射为 <see cref="ObjectStorageErrors.StoreUnavailable"/>，服务应答成功却缺了必需的内容同此（发起分片上传的应答没有可用的上传标识，ADR-0302；上传分片的应答没有可用的 ETag、列出的分片没有可用的编号或 ETag 或长度为负，ADR-0308；读取、HEAD 与写入的应答没有可用的 ETag，读取与 HEAD 的应答没有修改时间，列举截断却没有能前进的续页标记、列出的对象缺 ETag 或修改时间，列出分片的分页不前进或超过 10000 片，批量删除的错误项认不出是哪一项，ADR-0313；整读的 ETag 不是十六进制、SDK 当作 MD5 解码不了，ADR-0317；读取与 HEAD 的应答没有可用的 Content-Length，列出的对象没有可用的长度，任一步的应答 SDK 解析不了，列出的分片里同一编号出现两次，ADR-0322）。整读的内容对不上应答声明的 ETag 或校验和时 SDK 读到末尾才发现，读内容的流抛出携带 <see cref="ObjectStorageErrors.StoreUnavailable"/> 的 <see cref="FrameworkException"/>（ADR-0322）。写入结果的修改时间是本机时钟：PutObject 的应答本来就不带修改时间，要服务端记下的时刻就在写入之后再 <see cref="HeadAsync"/>（ADR-0313、ADR-0322）。内容类型原样存取：SDK 写不出原值的（<see cref="S3ContentTypeHeader"/>）写入与分片上传的发起返回 <see cref="ObjectStorageErrors.ContentTypeUnsupported"/>，不发请求；读取时 SDK 按 .NET 的写法交出它解析得了的值（ADR-0295）。没有公开构造（ADR-0266，公开面不出现 SDK 的类型）：缺省实例由 <see cref="S3ObjectStorageFeature"/> 建出，客户端归容器所有，释放实例什么都不做；命名实例由 <see cref="S3BlobStoreProvider"/> 按定义建出（经 <c>BlobStores</c>，或直接调它的 <c>CreateAsync</c>），自己建客户端并在后台重试探测，释放实例即停止重试、释放客户端
+/// 容器即桶，键即对象键。不覆盖写入用条件请求（<c>If-None-Match: *</c>）保证原子，已存在返回 <see cref="ObjectStorageErrors.BlobExists"/>；服务是否认条件写入要先探明（ADR-0089、ADR-0090）：特性启动或命名实例建出时探一次，没探明就在后台重试，这期间不覆盖的写入与分片上传返回 <see cref="ObjectStorageErrors.ConditionalWriteUnconfirmed"/>，探明不认或选项关闭条件写入时一律返回 <see cref="ObjectStorageErrors.ConditionalWriteUnavailable"/>；批量删除先逐键 HEAD 得知是否存在，再一次 <c>DeleteObjects</c>，SDK 对有错误项的应答抛出 <see cref="DeleteObjectsException"/> 时从它带的应答逐项报告（ADR-0333）；列举经 <c>ListObjectsV2</c>，条目只有键、长度、ETag 与修改时间（内容类型为默认值、自定义元数据为空，需要时再 HEAD）。范围读取经 <c>Range</c> 请求头；分片上传直接映射 S3 的 multipart（不覆盖的完成带 <c>If-None-Match: *</c>）；预签名地址由 SDK 本地签出（签名 V4），客户端直连存储。不存在的键与桶映射为 <see cref="ObjectStorageErrors.BlobNotFound"/>，其余服务端与网络错误映射为 <see cref="ObjectStorageErrors.StoreUnavailable"/>，服务应答成功却缺了必需的内容同此（发起分片上传的应答没有可用的上传标识，ADR-0302；上传分片的应答没有可用的 ETag、列出的分片没有可用的编号或 ETag 或长度为负，ADR-0308；读取、HEAD 与写入的应答没有可用的 ETag，读取与 HEAD 的应答没有修改时间，列举截断却没有能前进的续页标记、列出的对象缺 ETag 或修改时间，列出分片的分页不前进或超过 10000 片，批量删除的错误项认不出是哪一项，ADR-0313；整读的 ETag 不是十六进制、SDK 当作 MD5 解码不了，ADR-0317；读取与 HEAD 的应答没有可用的 Content-Length，列出的对象没有可用的长度，任一步的应答 SDK 解析不了，列出的分片里同一编号出现两次，ADR-0322；响应体不是良构的 XML，放弃分片上传与建桶的应答解析不了，列出的分片编号不比这一页的起点大，自定义元数据里有解不了的 RFC 2047 encoded-word，ADR-0333）。整读的内容对不上应答声明的 ETag 或校验和时 SDK 读到末尾才发现，读内容的流抛出携带 <see cref="ObjectStorageErrors.StoreUnavailable"/> 的 <see cref="FrameworkException"/>（ADR-0322）；没读到末尾就释放时不抛出，只记 Warning（ADR-0333）。自定义元数据的值头写不出原样时照 RFC 2047 编码写入、读回时解码（<see cref="S3MetadataHeader"/>，ADR-0333）。写入结果的修改时间是本机时钟：PutObject 的应答本来就不带修改时间，要服务端记下的时刻就在写入之后再 <see cref="HeadAsync"/>（ADR-0313、ADR-0322）。内容类型原样存取：SDK 写不出原值的（<see cref="S3ContentTypeHeader"/>）写入与分片上传的发起返回 <see cref="ObjectStorageErrors.ContentTypeUnsupported"/>，不发请求；读取时 SDK 按 .NET 的写法交出它解析得了的值（ADR-0295）。没有公开构造（ADR-0266，公开面不出现 SDK 的类型）：缺省实例由 <see cref="S3ObjectStorageFeature"/> 建出，客户端归容器所有，释放实例什么都不做；命名实例由 <see cref="S3BlobStoreProvider"/> 按定义建出（经 <c>BlobStores</c>，或直接调它的 <c>CreateAsync</c>），自己建客户端并在后台重试探测，释放实例即停止重试、释放客户端
 /// </remarks>
 [ApiLevel(Stability.Stable, "5.0")]
 public sealed partial class S3BlobStore : IBlobStore, IBlobMultipartStore, IBlobUrlSigner, IDisposable, IAsyncDisposable
@@ -107,6 +108,14 @@ public sealed partial class S3BlobStore : IBlobStore, IBlobMultipartStore, IBlob
     private const string ListedPartNumberRepeatedReason = "ListParts returned the same PartNumber twice";
 
     /// <summary>
+    /// 列出的分片编号不比这一页的起点大时 <c>reason</c> 的文本
+    /// </summary>
+    /// <remarks>
+    /// S3 的 <c>ListParts</c> 只交出编号大于 <c>PartNumberMarker</c> 的分片；重复的编号先按重复报告（ADR-0333）
+    /// </remarks>
+    private const string ListedPartNumberBehindMarkerReason = "ListParts returned a PartNumber not greater than the PartNumberMarker of the page";
+
+    /// <summary>
     /// 列举的应答截断了却没有能前进的续页标记时 <c>reason</c> 的文本
     /// </summary>
     /// <remarks>
@@ -189,12 +198,12 @@ public sealed partial class S3BlobStore : IBlobStore, IBlobMultipartStore, IBlob
     /// <summary>
     /// 读取的应答
     /// </summary>
-    private static readonly ObjectAnswer _getObjectAnswer = new("GetObject", "GetObject returned no usable ETag", "GetObject returned no Last-Modified", "GetObject returned no usable Content-Length");
+    private static readonly ObjectAnswer _getObjectAnswer = new("GetObject", "GetObject returned no usable ETag", "GetObject returned no Last-Modified", "GetObject returned no usable Content-Length", "GetObject returned user metadata with an RFC 2047 encoded-word that does not decode to a valid value");
 
     /// <summary>
     /// HEAD 的应答
     /// </summary>
-    private static readonly ObjectAnswer _headObjectAnswer = new("HeadObject", "HeadObject returned no usable ETag", "HeadObject returned no Last-Modified", "HeadObject returned no usable Content-Length");
+    private static readonly ObjectAnswer _headObjectAnswer = new("HeadObject", "HeadObject returned no usable ETag", "HeadObject returned no Last-Modified", "HeadObject returned no usable Content-Length", "HeadObject returned user metadata with an RFC 2047 encoded-word that does not decode to a valid value");
 
     /// <summary>
     /// S3 客户端
@@ -328,7 +337,7 @@ public sealed partial class S3BlobStore : IBlobStore, IBlobMultipartStore, IBlob
                 return described.Error!;
             }
 
-            var content = new BlobContent(metadata, new S3ObjectStream(response, exception => ContentRejected(container, exception)));
+            var content = new BlobContent(metadata, new S3ObjectStream(response, exception => ContentRejected(container, exception), _ => ContentDiscarded(container)));
             response = null;
             return Result.Success(content);
         }
@@ -345,7 +354,7 @@ public sealed partial class S3BlobStore : IBlobStore, IBlobMultipartStore, IBlob
         catch (Exception exception) when (IsUnparsableAnswer(exception))
         {
             // 整读的 FormatException 可能来自解组时读头，也可能来自 ETag 含十六进制数字之外的字符：两者同是不合规的应答，原因同时点名（ADR-0322）
-            return UnusableAnswer(container, "GetObject", exception is FormatException ? WholeReadUnparsableReason : UnparsableReason("GetObject"));
+            return UnusableAnswer(container, "GetObject", exception is FormatException ? WholeReadUnparsableReason : UnparsableReason("GetObject", exception));
         }
         catch (Exception exception) when (IsStoreFailure(exception, cancellationToken))
         {
@@ -411,31 +420,19 @@ public sealed partial class S3BlobStore : IBlobStore, IBlobMultipartStore, IBlob
                     Objects = [.. batch.Select(static key => new KeyVersion { Key = key })],
                     Quiet = true,
                 }, cancellationToken).ConfigureAwait(false);
-                var errors = response.DeleteErrors ?? [];
-                var members = new HashSet<string>(batch, StringComparer.Ordinal);
-                // 静默模式的应答只列错误项：有一项认不出是哪个键（没有键，或键不在这一批里），这一批里哪些删成了就说不清，
-                // 同这一批的请求整个失败，各项报同一个错误，不以空键写进结果（ADR-0313）
-                if (errors.Any(error => string.IsNullOrEmpty(error.Key) || !members.Contains(error.Key)))
-                {
-                    var unusable = UnusableAnswer(container, "DeleteObjects", DeleteErrorKeyMissingReason);
-                    foreach (var key in batch)
-                    {
-                        failed[key] = unusable;
-                    }
-
-                    continue;
-                }
-
-                foreach (var error in errors)
-                {
-                    // 服务端给的文字不进错误，错误码足够区分
-                    failed[error.Key] = Unavailable(error.Code);
-                }
+                // AWS SDK for .NET 4.0 有错误项时抛出、不走到这里；以后的 SDK 若在应答里交出错误项，同样逐项报告，不当作全部删成
+                RecordDeleteErrors(container, batch, response.DeleteErrors, failed);
+            }
+            catch (DeleteObjectsException exception) when (exception.Response is { } answered)
+            {
+                // SDK 遇到有错误项的应答（静默模式也是）抛出这个异常、带着解出的应答：照错误项逐项报告，
+                // 不当作存储故障整批报错（ADR-0333；以前逐项报告只有测试替身走得到）
+                RecordDeleteErrors(container, batch, answered.DeleteErrors, failed);
             }
             catch (Exception exception) when (IsUnparsableAnswer(exception))
             {
                 // 应答解析不了，这一批里哪些删成了就说不清：同这一批的请求整个失败（ADR-0322）
-                var unparsable = UnusableAnswer(container, "DeleteObjects", UnparsableReason("DeleteObjects"));
+                var unparsable = UnusableAnswer(container, "DeleteObjects", UnparsableReason("DeleteObjects", exception));
                 foreach (var key in batch)
                 {
                     failed[key] = unparsable;
@@ -465,6 +462,38 @@ public sealed partial class S3BlobStore : IBlobStore, IBlobMultipartStore, IBlob
         }
 
         return results;
+    }
+
+    /// <summary>
+    /// 记下一批删除的应答里的错误项
+    /// </summary>
+    /// <remarks>
+    /// 静默模式的应答只列错误项：都认得出是这一批里的哪个键时只记那几项，各报 S3 的错误码；有一项认不出（没有键，或键不在这一批里），这一批里哪些删成了就说不清，同这一批的请求整个失败，各项报同一个错误，不以空键写进结果（ADR-0313）
+    /// </remarks>
+    private void RecordDeleteErrors(ContainerName container, string[] batch, List<DeleteError>? errors, Dictionary<string, Error> failed)
+    {
+        if (errors is not { Count: > 0 })
+        {
+            return;
+        }
+
+        var members = new HashSet<string>(batch, StringComparer.Ordinal);
+        if (errors.Any(error => string.IsNullOrEmpty(error.Key) || !members.Contains(error.Key)))
+        {
+            var unusable = UnusableAnswer(container, "DeleteObjects", DeleteErrorKeyMissingReason);
+            foreach (var key in batch)
+            {
+                failed[key] = unusable;
+            }
+
+            return;
+        }
+
+        foreach (var error in errors)
+        {
+            // 服务端给的文字不进错误，错误码足够区分
+            failed[error.Key] = Unavailable(error.Code);
+        }
     }
 
     /// <inheritdoc />
@@ -546,7 +575,7 @@ public sealed partial class S3BlobStore : IBlobStore, IBlobMultipartStore, IBlob
         }
         catch (Exception exception) when (IsUnparsableAnswer(exception))
         {
-            return UnusableAnswer(container, "ListObjectsV2", UnparsableReason("ListObjectsV2"));
+            return UnusableAnswer(container, "ListObjectsV2", UnparsableReason("ListObjectsV2", exception));
         }
         catch (Exception exception) when (IsStoreFailure(exception, cancellationToken))
         {
@@ -577,7 +606,7 @@ public sealed partial class S3BlobStore : IBlobStore, IBlobMultipartStore, IBlob
             }
 
             // 范围读取的流同样换掉读时 SDK 的核对异常：SDK 不核对范围读取的内容，实际遇不到，换法与整读一致（ADR-0322）
-            var content = new BlobContent(metadata, new S3ObjectStream(response, exception => ContentRejected(container, exception)), resolved);
+            var content = new BlobContent(metadata, new S3ObjectStream(response, exception => ContentRejected(container, exception), _ => ContentDiscarded(container)), resolved);
             response = null;
             return Result.Success(content);
         }
@@ -601,7 +630,7 @@ public sealed partial class S3BlobStore : IBlobStore, IBlobMultipartStore, IBlob
         }
         catch (Exception exception) when (IsUnparsableAnswer(exception))
         {
-            return UnusableAnswer(container, "GetObject", UnparsableReason("GetObject"));
+            return UnusableAnswer(container, "GetObject", UnparsableReason("GetObject", exception));
         }
         catch (Exception exception) when (IsStoreFailure(exception, cancellationToken))
         {
@@ -651,7 +680,8 @@ public sealed partial class S3BlobStore : IBlobStore, IBlobMultipartStore, IBlob
                 var request = new InitiateMultipartUploadRequest { BucketName = container.Value, Key = key.Value, ContentType = options.ContentType };
                 foreach (var (name, value) in options.Metadata)
                 {
-                    request.Metadata[name] = value;
+                    // 头写不出原样的值照 RFC 2047 编码（ADR-0333）
+                    request.Metadata[name] = S3MetadataHeader.Encode(value);
                 }
 
                 var response = await _client.InitiateMultipartUploadAsync(request, cancellationToken).ConfigureAwait(false);
@@ -667,13 +697,17 @@ public sealed partial class S3BlobStore : IBlobStore, IBlobMultipartStore, IBlob
             }
             catch (AmazonS3Exception exception) when (!ensured && _options.EnsureBuckets && IsNoSuchBucket(exception))
             {
+                // 以前建桶失败时 SDK 的异常从这个 catch 里原样抛给调用方（ADR-0333）
                 ensured = true;
-                await _client.PutBucketAsync(new PutBucketRequest { BucketName = container.Value }, cancellationToken).ConfigureAwait(false);
+                if (await CreateBucketAsync(container, cancellationToken).ConfigureAwait(false) is { } failed)
+                {
+                    return failed;
+                }
             }
             catch (Exception exception) when (IsUnparsableAnswer(exception))
             {
-                // 建桶的应答没有 SDK 按类型读的值，解析不了的只能是发起的应答；不重发，同缺上传标识（ADR-0302、ADR-0322）
-                return UnusableAnswer(container, "InitiateMultipartUpload", UnparsableReason("InitiateMultipartUpload"));
+                // 建桶在上一个 catch 里自己转成错误，解析不了的只能是发起的应答；不重发，同缺上传标识（ADR-0302、ADR-0322）
+                return UnusableAnswer(container, "InitiateMultipartUpload", UnparsableReason("InitiateMultipartUpload", exception));
             }
             catch (Exception exception) when (IsStoreFailure(exception, cancellationToken))
             {
@@ -728,7 +762,7 @@ public sealed partial class S3BlobStore : IBlobStore, IBlobMultipartStore, IBlob
         }
         catch (Exception exception) when (IsUnparsableAnswer(exception))
         {
-            return UnusableAnswer(upload.Container, "UploadPart", UnparsableReason("UploadPart"));
+            return UnusableAnswer(upload.Container, "UploadPart", UnparsableReason("UploadPart", exception));
         }
         catch (Exception exception) when (IsStoreFailure(exception, cancellationToken))
         {
@@ -791,6 +825,13 @@ public sealed partial class S3BlobStore : IBlobStore, IBlobMultipartStore, IBlob
                         return UnusableAnswer(upload.Container, "ListParts", ListedPartNumberRepeatedReason);
                     }
 
+                    // S3 只交出编号大于这一页起点的分片：不大的混进清单，是起点之前的分片又交了一遍或分页错了位，
+                    // 没重复也不照收；重复的先按重复报告（ADR-0333）
+                    if (number <= marker)
+                    {
+                        return UnusableAnswer(upload.Container, "ListParts", ListedPartNumberBehindMarkerReason);
+                    }
+
                     // 长度只用于说明、完成时不核对：缺失照旧当作 0
                     parts.Add(new BlobPart(number, etag, part.Size ?? 0));
                 }
@@ -818,7 +859,7 @@ public sealed partial class S3BlobStore : IBlobStore, IBlobMultipartStore, IBlob
         }
         catch (Exception exception) when (IsUnparsableAnswer(exception))
         {
-            return UnusableAnswer(upload.Container, "ListParts", UnparsableReason("ListParts"));
+            return UnusableAnswer(upload.Container, "ListParts", UnparsableReason("ListParts", exception));
         }
         catch (Exception exception) when (IsStoreFailure(exception, cancellationToken))
         {
@@ -887,7 +928,7 @@ public sealed partial class S3BlobStore : IBlobStore, IBlobMultipartStore, IBlob
         catch (Exception exception) when (IsUnparsableAnswer(exception))
         {
             // 对象可能已经拼成：不重发，同完成之后的 HEAD 缺内容（ADR-0313、ADR-0322）
-            return UnusableAnswer(upload.Container, "CompleteMultipartUpload", UnparsableReason("CompleteMultipartUpload"));
+            return UnusableAnswer(upload.Container, "CompleteMultipartUpload", UnparsableReason("CompleteMultipartUpload", exception));
         }
         catch (Exception exception) when (IsStoreFailure(exception, cancellationToken))
         {
@@ -1011,13 +1052,13 @@ public sealed partial class S3BlobStore : IBlobStore, IBlobMultipartStore, IBlob
     internal static bool IsUndecodableETag(Exception exception) => exception is ArgumentOutOfRangeException { ParamName: "hex" };
 
     /// <summary>
-    /// 异常是 SDK 解析应答里按类型读的值失败
+    /// 异常是 SDK 解析应答失败
     /// </summary>
     /// <remarks>
-    /// AWS SDK for .NET 4.0 的异步解组不包装异常：<c>Last-Modified</c> 不是日期、<c>Content-Length</c> 或 <c>x-amz-mp-parts-count</c> 不是数或越界、布尔值的头不是 <c>true</c> / <c>false</c>、XML 里的数不是数，都原样抛出 <see cref="FormatException"/> 或 <see cref="OverflowException"/>（ADR-0317 实测）。只认这两类：<see cref="UriFormatException"/> 来自端点而不是应答，除外；本类发出的请求里的值都已按各自的文法核对过（内容类型见 <see cref="S3ContentTypeHeader"/>），SDK 在请求一侧不会因它们抛出这两类异常（ADR-0322）
+    /// AWS SDK for .NET 4.0 的异步解组不包装异常：<c>Last-Modified</c> 不是日期、<c>Content-Length</c> 或 <c>x-amz-mp-parts-count</c> 不是数或越界、布尔值的头不是 <c>true</c> / <c>false</c>、XML 里的数不是数，都原样抛出 <see cref="FormatException"/> 或 <see cref="OverflowException"/>（ADR-0317 实测）；响应体不是良构的 XML 时原样抛出 <see cref="XmlException"/>（ADR-0322 实测，ADR-0333 起接住）。只认这三类：<see cref="UriFormatException"/> 来自端点而不是应答，除外；本类发出的请求里的值都已按各自的文法核对过（内容类型见 <see cref="S3ContentTypeHeader"/>），SDK 在请求一侧不会因它们抛出这几类异常（ADR-0322）。SDK 解析出错的应答（4xx、5xx）时自己兜住，抛的是 <see cref="AmazonS3Exception"/>，不经这里
     /// </remarks>
     internal static bool IsUnparsableAnswer(Exception exception)
-        => exception is OverflowException || (exception is FormatException && exception is not UriFormatException);
+        => exception is OverflowException or XmlException || (exception is FormatException && exception is not UriFormatException);
 
     /// <summary>
     /// 去掉两端的引号
@@ -1039,9 +1080,12 @@ public sealed partial class S3BlobStore : IBlobStore, IBlobMultipartStore, IBlob
     /// SDK 解析不了某一步的应答时 <c>reason</c> 的文本
     /// </summary>
     /// <remarks>
-    /// 固定文本，只带请求名，不带应答里的值与异常的消息（消息里有那个写错的值，ADR-0322）
+    /// 固定文本，只带请求名，不带应答里的值与异常的消息（消息里有那个写错的值，ADR-0322）；写坏的 XML 另写明是响应体（ADR-0333）
     /// </remarks>
-    private static string UnparsableReason(string operation) => operation + " returned a header or element the SDK could not parse";
+    private static string UnparsableReason(string operation, Exception exception)
+        => exception is XmlException
+            ? operation + " returned a body the SDK could not parse as XML"
+            : operation + " returned a header or element the SDK could not parse";
 
     /// <summary>
     /// 读内容时 SDK 发现内容对不上应答声明的 ETag 或校验和
@@ -1054,6 +1098,14 @@ public sealed partial class S3BlobStore : IBlobStore, IBlobMultipartStore, IBlob
         LogAnswerUnusable(_logger, "GetObject", container.Value, ContentMismatchReason);
         return new FrameworkException(ObjectStorageErrors.StoreUnavailable, ContentMismatchMessage, exception);
     }
+
+    /// <summary>
+    /// 调用方没读到末尾就释放读内容的流时，SDK 在释放时核对出内容对不上
+    /// </summary>
+    /// <remarks>
+    /// 释放不抛出（ADR-0333）：只记一条 Warning（桶名与固定原因），这是唯一留下的痕迹。SDK 在已读的字节数等于应答声明的长度时才在释放时核对，所以走到这里的是读够了长度、没读到返回 0 的调用方
+    /// </remarks>
+    private void ContentDiscarded(ContainerName container) => LogContentDiscarded(_logger, container.Value);
 
     /// <summary>
     /// 服务应答成功却缺了必需的内容
@@ -1146,7 +1198,8 @@ public sealed partial class S3BlobStore : IBlobStore, IBlobMultipartStore, IBlob
 
                     foreach (var (name, value) in upload.Options.Metadata)
                     {
-                        request.Metadata[name] = value;
+                        // 头写不出原样的值照 RFC 2047 编码，写入结果里仍是原值（ADR-0333）
+                        request.Metadata[name] = S3MetadataHeader.Encode(value);
                     }
 
                     var response = await _client.PutObjectAsync(request, cancellationToken).ConfigureAwait(false);
@@ -1176,15 +1229,19 @@ public sealed partial class S3BlobStore : IBlobStore, IBlobMultipartStore, IBlob
                 catch (AmazonS3Exception exception) when (!ensured && _options.EnsureBuckets && IsNoSuchBucket(exception))
                 {
                     ensured = true;
-                    await _client.PutBucketAsync(new PutBucketRequest { BucketName = container.Value }, cancellationToken).ConfigureAwait(false);
+                    if (await CreateBucketAsync(container, cancellationToken).ConfigureAwait(false) is { } failed)
+                    {
+                        return failed;
+                    }
+
                     content.Position = content.Length - length;
                 }
             }
         }
         catch (Exception exception) when (IsUnparsableAnswer(exception))
         {
-            // 对象可能已经写进去了：不重发、不回滚，同写入缺 ETag；建桶的应答没有 SDK 按类型读的值（ADR-0313、ADR-0322）
-            return UnusableAnswer(container, "PutObject", UnparsableReason("PutObject"));
+            // 对象可能已经写进去了：不重发、不回滚，同写入缺 ETag；建桶自己转成错误，到不了这里（ADR-0313、ADR-0322、ADR-0333）
+            return UnusableAnswer(container, "PutObject", UnparsableReason("PutObject", exception));
         }
         catch (Exception exception) when (IsStoreFailure(exception, cancellationToken))
         {
@@ -1234,6 +1291,11 @@ public sealed partial class S3BlobStore : IBlobStore, IBlobMultipartStore, IBlob
         {
             return Result.Success();
         }
+        catch (Exception exception) when (IsUnparsableAnswer(exception))
+        {
+            // 成功应答现在没有 SDK 按类型读的值：SDK 以后加了，解析异常同其余各步按不合规的应答返回，不漏给调用方（ADR-0333）
+            return UnusableAnswer(upload.Container, "AbortMultipartUpload", UnparsableReason("AbortMultipartUpload", exception));
+        }
         catch (Exception exception) when (IsStoreFailure(exception, cancellationToken))
         {
             return Unavailable(exception);
@@ -1241,15 +1303,46 @@ public sealed partial class S3BlobStore : IBlobStore, IBlobMultipartStore, IBlob
     }
 
     /// <summary>
-    /// 响应里的自定义元数据（去掉 <c>x-amz-meta-</c> 前缀）
+    /// 建桶（<see cref="S3ObjectStorageOptions.EnsureBuckets"/>）
     /// </summary>
-    private static Dictionary<string, string> ReadMetadata(MetadataCollection metadata)
+    /// <remarks>
+    /// 成功为 <see langword="null"/>；服务端与网络错误为 <see cref="ObjectStorageErrors.StoreUnavailable"/>，应答解析不了同此、<c>reason</c> 点名 <c>PutBucket</c>（成功应答现在没有 SDK 按类型读的值，ADR-0333）；调用方的取消照常抛出。写入与发起分片上传在接住「桶不存在」的 catch 里调它：那里抛出的异常同一个 try 的其余 catch 接不住，所以在这里就转成错误
+    /// </remarks>
+    private async ValueTask<Error?> CreateBucketAsync(ContainerName container, CancellationToken cancellationToken)
+    {
+        try
+        {
+            await _client.PutBucketAsync(new PutBucketRequest { BucketName = container.Value }, cancellationToken).ConfigureAwait(false);
+            return null;
+        }
+        catch (Exception exception) when (IsUnparsableAnswer(exception))
+        {
+            return UnusableAnswer(container, "PutBucket", UnparsableReason("PutBucket", exception));
+        }
+        catch (Exception exception) when (IsStoreFailure(exception, cancellationToken))
+        {
+            return Unavailable(exception);
+        }
+    }
+
+    /// <summary>
+    /// 响应里的自定义元数据（去掉 <c>x-amz-meta-</c> 前缀，解开 RFC 2047 的 encoded-word）
+    /// </summary>
+    /// <remarks>
+    /// 有一个值解不了时为 <see langword="null"/>：调用方按不合规的应答返回，不原样交出编码的文本（ADR-0333）
+    /// </remarks>
+    private static Dictionary<string, string>? ReadMetadata(MetadataCollection metadata)
     {
         var result = new Dictionary<string, string>(StringComparer.Ordinal);
         foreach (var key in metadata.Keys)
         {
             var name = key.StartsWith(MetadataPrefix, StringComparison.OrdinalIgnoreCase) ? key[MetadataPrefix.Length..] : key;
-            result[name] = metadata[key];
+            if (!S3MetadataHeader.TryDecode(metadata[key], out var value))
+            {
+                return null;
+            }
+
+            result[name] = value;
         }
 
         return result;
@@ -1287,6 +1380,12 @@ public sealed partial class S3BlobStore : IBlobStore, IBlobMultipartStore, IBlob
             return UnusableAnswer(container, answer.Operation, answer.ContentLengthMissingReason);
         }
 
+        // 解不了的 encoded-word 同缺内容：原样交出是编码的文本，替换掉又是乱码，都不是存进去的值（ADR-0333）
+        if (ReadMetadata(metadata) is not { } values)
+        {
+            return UnusableAnswer(container, answer.Operation, answer.MetadataUndecodableReason);
+        }
+
         return Result.Success(new BlobMetadata
         {
             Key = key,
@@ -1294,7 +1393,7 @@ public sealed partial class S3BlobStore : IBlobStore, IBlobMultipartStore, IBlob
             ContentType = contentType ?? BlobPutOptions.DefaultContentType,
             ETag = tag,
             LastModified = ToTimestamp(modified),
-            Metadata = ReadMetadata(metadata),
+            Metadata = values,
         });
     }
 
@@ -1316,7 +1415,7 @@ public sealed partial class S3BlobStore : IBlobStore, IBlobMultipartStore, IBlob
         }
         catch (Exception exception) when (IsUnparsableAnswer(exception))
         {
-            return UnusableAnswer(container, "HeadObject", UnparsableReason("HeadObject"));
+            return UnusableAnswer(container, "HeadObject", UnparsableReason("HeadObject", exception));
         }
         catch (Exception exception) when (IsStoreFailure(exception, cancellationToken))
         {
@@ -1427,6 +1526,15 @@ public sealed partial class S3BlobStore : IBlobStore, IBlobMultipartStore, IBlob
     private static partial void LogAnswerUnusable(ILogger logger, string operation, string bucket, string reason);
 
     /// <summary>
+    /// 调用方没读到末尾就释放读内容的流，SDK 在释放时核对出内容对不上
+    /// </summary>
+    /// <remarks>
+    /// 释放不抛出（ADR-0333），这条日志是唯一留下的痕迹；不带应答里的值
+    /// </remarks>
+    [LoggerMessage(Level = LogLevel.Warning, Message = "The S3 service answered GetObject for bucket '{Bucket}' with content that does not match its ETag or checksum; the caller released the stream before reading to its end, so the release did not throw.")]
+    private static partial void LogContentDiscarded(ILogger logger, string bucket);
+
+    /// <summary>
     /// 一种对象应答（读取或 HEAD）的请求名与缺内容时 <c>reason</c> 的文本
     /// </summary>
     /// <remarks>
@@ -1436,5 +1544,6 @@ public sealed partial class S3BlobStore : IBlobStore, IBlobMultipartStore, IBlob
     /// <param name="ETagMissingReason">没有可用的 ETag 时的文本</param>
     /// <param name="LastModifiedMissingReason">没有修改时间时的文本</param>
     /// <param name="ContentLengthMissingReason">没有可用的长度时的文本（ADR-0322）</param>
-    private sealed record ObjectAnswer(string Operation, string ETagMissingReason, string LastModifiedMissingReason, string ContentLengthMissingReason);
+    /// <param name="MetadataUndecodableReason">自定义元数据里有解不了的 RFC 2047 encoded-word 时的文本（ADR-0333）</param>
+    private sealed record ObjectAnswer(string Operation, string ETagMissingReason, string LastModifiedMissingReason, string ContentLengthMissingReason, string MetadataUndecodableReason);
 }

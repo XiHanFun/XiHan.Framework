@@ -204,19 +204,61 @@ public sealed class S3WholeReadETagTests
     }
 
     [Fact]
-    public async Task OnTheWire_AWholeReadWhoseContentDoesNotMatchItsETag_ThrowsAnObjectStorageError_WhenReleasedAfterTheLastByte()
+    public async Task OnTheWire_AWholeReadWhoseContentDoesNotMatchItsETag_DoesNotThrow_WhenReleasedBeforeTheEnd()
     {
-        // 读够了声明的长度、没读到流的末尾就释放：SDK 在释放时才核对，同样换成对象存储的异常（ADR-0322）
+        // 读够了声明的长度、没读到返回 0 就释放：SDK 在释放时才核对。以前释放也抛出（ADR-0322），现在不抛、只记一条 Warning（ADR-0333）
         await using var endpoint = RecordingHttpListener.AnsweringWithBody("200 OK", Content, "ETag: \"00000000000000000000000000000000\"", LastModifiedHeader);
+        var logs = new LogCapture();
         using var client = S3ObjectStorageFeature.CreateClient(Options(endpoint.Port));
-        var store = new S3BlobStore(client, Options(endpoint.Port), TimeProvider.System, new LogCapture());
+        var store = new S3BlobStore(client, Options(endpoint.Port), TimeProvider.System, logs);
 
         var got = (await store.GetAsync(new ContainerName(Bucket), new BlobKey(Key), CancellationToken.None)).ValueOrThrow();
         var buffer = new byte[Content.Length];
         await got.Content.ReadExactlyAsync(buffer);
+        got.Content.Dispose();
+        await got.DisposeAsync();
 
         Assert.Equal(Content, Encoding.UTF8.GetString(buffer));
-        Assert.Equal(ObjectStorageErrors.StoreUnavailable, Assert.Throws<FrameworkException>(got.Content.Dispose).Code);
+        var warning = Assert.Single(logs.Entries, static entry => entry.Level == LogLevel.Warning);
+        Assert.Contains(Bucket, warning.Message, StringComparison.Ordinal);
+        Assert.Contains("released the stream before reading to its end", warning.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task OnTheWire_AWholeReadReleasedPartWay_NeitherThrowsNorChecks()
+    {
+        // 只读了一部分：SDK 不核对（已读的字节数不等于声明的长度），释放不抛、不记日志
+        await using var endpoint = RecordingHttpListener.AnsweringWithBody("200 OK", Content, "ETag: \"00000000000000000000000000000000\"", LastModifiedHeader);
+        var logs = new LogCapture();
+        using var client = S3ObjectStorageFeature.CreateClient(Options(endpoint.Port));
+        var store = new S3BlobStore(client, Options(endpoint.Port), TimeProvider.System, logs);
+
+        var got = (await store.GetAsync(new ContainerName(Bucket), new BlobKey(Key), CancellationToken.None)).ValueOrThrow();
+        var buffer = new byte[1];
+        await got.Content.ReadExactlyAsync(buffer);
+        await got.DisposeAsync();
+
+        Assert.Equal((byte)'a', buffer[0]);
+        Assert.DoesNotContain(logs.Entries, static entry => entry.Level == LogLevel.Warning);
+    }
+
+    [Fact]
+    public async Task OnTheWire_AWholeReadThatReachedTheEnd_ThrowsOnceWhileReading_AndNotAgainOnRelease()
+    {
+        // 读到末尾的那次读抛出；SDK 核对过不再核对，之后的释放不再抛出、不再记日志
+        await using var endpoint = RecordingHttpListener.AnsweringWithBody("200 OK", Content, "ETag: \"00000000000000000000000000000000\"", LastModifiedHeader);
+        var logs = new LogCapture();
+        using var client = S3ObjectStorageFeature.CreateClient(Options(endpoint.Port));
+        var store = new S3BlobStore(client, Options(endpoint.Port), TimeProvider.System, logs);
+
+        var got = (await store.GetAsync(new ContainerName(Bucket), new BlobKey(Key), CancellationToken.None)).ValueOrThrow();
+        var buffer = new byte[Content.Length];
+        await got.Content.ReadExactlyAsync(buffer);
+        var thrown = await Assert.ThrowsAsync<FrameworkException>(async () => await got.Content.ReadAtLeastAsync(new byte[1], 1, throwOnEndOfStream: false));
+        got.Content.Dispose();
+
+        Assert.Equal(ObjectStorageErrors.StoreUnavailable, thrown.Code);
+        Assert.Contains("does not match", Assert.Single(logs.Entries, static entry => entry.Level == LogLevel.Warning).Message, StringComparison.Ordinal);
     }
 
     [Fact]

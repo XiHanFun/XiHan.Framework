@@ -280,6 +280,52 @@ public sealed class S3MultipartPartResponseTests
         Assert.Contains("twice", listed.Error!.Details?["reason"]?.ToString(), StringComparison.Ordinal);
     }
 
+    [Theory]
+    [InlineData(3, 2)]
+    [InlineData(3, 3)]
+    [InlineData(5, 4)]
+    public async Task APartNumberNotAboveThePageMarker_FailsTheListing(int marker, int number)
+    {
+        // 第一页只有分片 1、续页标记前进到 marker，第二页交出的编号不比 marker 大却也没重复：S3 只交出编号大于 PartNumberMarker 的分片，
+        // 以前照收，清单里混进了起点之前的分片（ADR-0333）
+        var fake = FakeS3Client.Create(Bucket);
+        var markers = new List<string?>();
+        fake.PartPages = (request, _) =>
+        {
+            markers.Add(request.PartNumberMarker);
+            return request.PartNumberMarker is null ? Page(true, marker, 1) : Page(false, null, number);
+        };
+        var store = Store(fake);
+        var upload = (await store.StartAsync(new ContainerName(Bucket), new BlobKey(Key), BlobPutOptions.Default, CancellationToken.None)).ValueOrThrow();
+
+        var listed = await store.ListPartsAsync(upload, CancellationToken.None);
+
+        Assert.Equal(ObjectStorageErrors.StoreUnavailable, listed.Error?.Code);
+        var reason = listed.Error!.Details?["reason"]?.ToString() ?? string.Empty;
+        Assert.Contains("not greater than", reason, StringComparison.Ordinal);
+        Assert.Contains("PartNumberMarker", reason, StringComparison.Ordinal);
+        Assert.Equal([null, marker.ToString(CultureInfo.InvariantCulture)], markers);
+    }
+
+    [Fact]
+    public async Task OnTheWire_APageWithAPartNumberNotAboveItsMarker_ReturnsStoreUnavailable()
+    {
+        const string first = """<?xml version="1.0" encoding="UTF-8"?><ListPartsResult xmlns="http://s3.amazonaws.com/doc/2006-03-01/"><Bucket>uploads</Bucket><Key>video.mp4</Key><UploadId>upload-1</UploadId><PartNumberMarker>0</PartNumberMarker><NextPartNumberMarker>3</NextPartNumberMarker><IsTruncated>true</IsTruncated><Part><PartNumber>3</PartNumber><ETag>"c"</ETag><Size>5</Size></Part></ListPartsResult>""";
+        const string second = """<?xml version="1.0" encoding="UTF-8"?><ListPartsResult xmlns="http://s3.amazonaws.com/doc/2006-03-01/"><Bucket>uploads</Bucket><Key>video.mp4</Key><UploadId>upload-1</UploadId><PartNumberMarker>3</PartNumberMarker><IsTruncated>false</IsTruncated><Part><PartNumber>2</PartNumber><ETag>"b"</ETag><Size>5</Size></Part></ListPartsResult>""";
+        await using var endpoint = RecordingHttpListener.AnsweringInTurn(
+            new RecordingHttpListener.Reply("200 OK", first, ["Content-Type: application/xml"]),
+            new RecordingHttpListener.Reply("200 OK", second, ["Content-Type: application/xml"]));
+        using var client = S3ObjectStorageFeature.CreateClient(Options(endpoint.Port));
+        var store = new S3BlobStore(client, Options(endpoint.Port), TimeProvider.System, new LogCapture());
+
+        var listed = await store.ListPartsAsync(Upload(), CancellationToken.None);
+
+        Assert.Equal(ObjectStorageErrors.StoreUnavailable, listed.Error?.Code);
+        Assert.Contains("not greater than", listed.Error!.Details?["reason"]?.ToString(), StringComparison.Ordinal);
+        Assert.Equal(2, endpoint.Requests.Count);
+        Assert.Contains("part-number-marker=3", endpoint.Requests[1], StringComparison.Ordinal);
+    }
+
     [Fact]
     public async Task OnTheWire_AListingThatRepeatsAPartNumber_ReturnsStoreUnavailable()
     {

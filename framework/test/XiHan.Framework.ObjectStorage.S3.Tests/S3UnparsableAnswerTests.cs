@@ -16,10 +16,10 @@ using XiHan.Framework.Testing;
 namespace XiHan.Framework.ObjectStorage.S3.Tests;
 
 /// <summary>
-/// SDK 解析不了的应答按不合规的应答返回错误（ADR-0322）
+/// SDK 解析不了的应答按不合规的应答返回错误（ADR-0322、ADR-0333）
 /// </summary>
 /// <remarks>
-/// AWS SDK for .NET 4.0 的异步解组不包装异常：应答头或响应体里按类型读的值写错了（<c>Last-Modified</c> 不是日期，<c>Content-Length</c>、<c>x-amz-mp-parts-count</c> 不是数或越界，布尔值的头不是 <c>true</c> / <c>false</c>，XML 里的数不是数），它原样抛出 <see cref="FormatException"/> 或 <see cref="OverflowException"/>。以前这两类异常原样抛给调用方；现在每一步都返回 <see cref="ObjectStorageErrors.StoreUnavailable"/>，<c>reason</c> 只写请求名，不带写错的值。走真实的 SDK 与套接字，对端是回环上的 <see cref="RecordingHttpListener"/>，不连 S3 服务
+/// AWS SDK for .NET 4.0 的异步解组不包装异常：应答头或响应体里按类型读的值写错了（<c>Last-Modified</c> 不是日期，<c>Content-Length</c>、<c>x-amz-mp-parts-count</c> 不是数或越界，布尔值的头不是 <c>true</c> / <c>false</c>，XML 里的数不是数），它原样抛出 <see cref="FormatException"/> 或 <see cref="OverflowException"/>。响应体不是良构的 XML 时它原样抛出 <see cref="XmlException"/>（ADR-0333）。以前这三类异常原样抛给调用方；现在每一步都返回 <see cref="ObjectStorageErrors.StoreUnavailable"/>，<c>reason</c> 只写请求名，不带写错的值。走真实的 SDK 与套接字，对端是回环上的 <see cref="RecordingHttpListener"/>，不连 S3 服务
 /// </remarks>
 public sealed class S3UnparsableAnswerTests
 {
@@ -212,16 +212,92 @@ public sealed class S3UnparsableAnswerTests
         Assert.StartsWith("HEAD ", Assert.Single(endpoint.Requests), StringComparison.Ordinal);
     }
 
+    /// <summary>
+    /// 不是良构 XML 的响应体，与 reason 里不该出现的片段
+    /// </summary>
+    /// <remarks>
+    /// 截断在元素中间、标签不配对、根元素之后还有内容
+    /// </remarks>
+    public static TheoryData<string, string> MalformedListings => new()
+    {
+        { """<?xml version="1.0" encoding="UTF-8"?><ListBucketResult xmlns="http://s3.amazonaws.com/doc/2006-03-01/"><Name>uploads</Name><KeyCount>1""", "KeyCount" },
+        { """<?xml version="1.0" encoding="UTF-8"?><ListBucketResult xmlns="http://s3.amazonaws.com/doc/2006-03-01/"><Name>uploads</Nmae></ListBucketResult>""", "Nmae" },
+        { """<?xml version="1.0" encoding="UTF-8"?><ListBucketResult xmlns="http://s3.amazonaws.com/doc/2006-03-01/"><Name>uploads</Name><IsTruncated>false</IsTruncated></ListBucketResult><extra/>""", "extra" },
+    };
+
+    [Theory]
+    [MemberData(nameof(MalformedListings))]
+    public async Task OnTheWire_AListingThatIsNotWellFormedXml_FailsTheWholePage(string body, string fragment)
+    {
+        // 以前 SDK 的 XmlException 原样抛给调用方（ADR-0333）
+        await using var endpoint = RecordingHttpListener.AnsweringWithBody("200 OK", body, "Content-Type: application/xml");
+        var logs = new LogCapture();
+        using var store = Store(endpoint, logs);
+
+        var listed = await store.ListAsync(new ContainerName(Bucket), new BlobQuery(), CancellationToken.None);
+
+        AssertUnparsable(listed.Error, "ListObjectsV2", fragment);
+        Assert.Contains("XML", listed.Error!.Details!["reason"]?.ToString(), StringComparison.Ordinal);
+        Assert.Contains("ListObjectsV2", Assert.Single(logs.Entries, static entry => entry.Level == LogLevel.Warning).Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task OnTheWire_MultipartAnswersThatAreNotWellFormedXml_ReturnStoreUnavailable_NamingTheStep()
+    {
+        var upload = new BlobMultipartUpload(new ContainerName(Bucket), new BlobKey(Key), "upload-1") { Overwrite = true };
+
+        // 发起：不重发，服务端可能已经建了上传
+        await using (var endpoint = RecordingHttpListener.AnsweringWithBody("200 OK", """<?xml version="1.0" encoding="UTF-8"?><InitiateMultipartUploadResult><Bucket>uploads</Bucket><UploadId>upload-1""", "Content-Type: application/xml"))
+        {
+            using var store = Store(endpoint, new LogCapture());
+            var started = await store.StartAsync(new ContainerName(Bucket), new BlobKey(Key), BlobPutOptions.Default, CancellationToken.None);
+            AssertUnparsable(started.Error, "InitiateMultipartUpload", "upload-1");
+            Assert.Single(endpoint.Requests);
+        }
+
+        // 列出分片
+        await using (var endpoint = RecordingHttpListener.AnsweringWithBody("200 OK", """<?xml version="1.0" encoding="UTF-8"?><ListPartsResult xmlns="http://s3.amazonaws.com/doc/2006-03-01/"><Part><PartNumber>1</PartNumber></Prat></ListPartsResult>""", "Content-Type: application/xml"))
+        {
+            using var store = Store(endpoint, new LogCapture());
+            var listed = await store.ListPartsAsync(upload, CancellationToken.None);
+            AssertUnparsable(listed.Error, "ListParts", "Prat");
+        }
+
+        // 完成：对象可能已经拼成，不重发
+        await using (var endpoint = RecordingHttpListener.AnsweringWithBody("200 OK", """<?xml version="1.0" encoding="UTF-8"?><CompleteMultipartUploadResult><Bucket>uploads</Bucket><ETag>"c-1"</ETag>""", "Content-Type: application/xml"))
+        {
+            using var store = Store(endpoint, new LogCapture());
+            var completed = await store.CompleteAsync(upload, [new BlobPart(1, "p", 3)], CancellationToken.None);
+            AssertUnparsable(completed.Error, "CompleteMultipartUpload", "c-1");
+            Assert.Single(endpoint.Requests);
+        }
+    }
+
+    [Fact]
+    public async Task OnTheWire_ADeleteAnswerThatIsNotWellFormedXml_FailsEveryKeyOfThatBatch()
+    {
+        // 这一批里哪些删成了说不清，同这一批的请求整个失败
+        await using var endpoint = RecordingHttpListener.AnsweringInTurn(
+            new RecordingHttpListener.Reply("200 OK", string.Empty, [ETagHeader, LastModifiedHeader]),
+            new RecordingHttpListener.Reply("200 OK", """<?xml version="1.0" encoding="UTF-8"?><DeleteResult xmlns="http://s3.amazonaws.com/doc/2006-03-01/"><Error><Key>a.txt""", ["Content-Type: application/xml"]));
+        using var store = Store(endpoint, new LogCapture());
+
+        var result = Assert.Single(await store.DeleteAsync(new ContainerName(Bucket), [new BlobKey(Key)], CancellationToken.None));
+
+        AssertUnparsable(result.Error, "DeleteObjects", "<Error>");
+        Assert.Equal(2, endpoint.Requests.Count);
+    }
+
     [Fact]
     public void OnlyTheSdkParseFailures_AreTakenForAnUnusableAnswer()
     {
-        // 只接解组时的这两类：端点写错的 UriFormatException、编程错误与写坏的 XML 都不算，照旧抛出
+        // 只接解组时的这三类（写坏的 XML 自 ADR-0333 起也算）：端点写错的 UriFormatException 与编程错误都不算，照旧抛出
         Assert.True(S3BlobStore.IsUnparsableAnswer(new FormatException()));
         Assert.True(S3BlobStore.IsUnparsableAnswer(new OverflowException()));
+        Assert.True(S3BlobStore.IsUnparsableAnswer(new XmlException()));
         Assert.False(S3BlobStore.IsUnparsableAnswer(new UriFormatException()));
         Assert.False(S3BlobStore.IsUnparsableAnswer(new ArgumentException("x", "value")));
         Assert.False(S3BlobStore.IsUnparsableAnswer(new InvalidOperationException()));
-        Assert.False(S3BlobStore.IsUnparsableAnswer(new XmlException()));
     }
 
     /// <summary>

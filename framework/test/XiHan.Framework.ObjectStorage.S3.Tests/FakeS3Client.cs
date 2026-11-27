@@ -120,9 +120,17 @@ public class FakeS3Client : DispatchProxy
     /// 批量删除时应答里的错误项
     /// </summary>
     /// <remarks>
-    /// 收到这一批的键，缺省没有错误项；换掉它模拟逐项失败或不合规的应答（错误项不带键、带了不在这一批里的键）。带了这一批里的键的错误项，那个键不删除，其余照删
+    /// 收到这一批的键，缺省没有错误项；换掉它模拟逐项失败或不合规的应答（错误项不带键、带了不在这一批里的键）。带了这一批里的键的错误项，那个键不删除，其余照删。有错误项时同 AWS SDK for .NET 4.0 抛出带着应答的 <see cref="DeleteObjectsException"/>，<see cref="DeleteErrorsAnswered"/> 为真时改为在应答里交出（ADR-0333）
     /// </remarks>
     public Func<IReadOnlyList<string>, IReadOnlyList<DeleteError>> DeleteErrors { get; set; } = static _ => [];
+
+    /// <summary>
+    /// 批量删除的错误项是否在应答里交出、不抛出
+    /// </summary>
+    /// <remarks>
+    /// 缺省为假：同 AWS SDK for .NET 4.0，有错误项就抛 <see cref="DeleteObjectsException"/>（ADR-0333）；为真时模拟交出带错误项的应答的 SDK
+    /// </remarks>
+    public bool DeleteErrorsAnswered { get; set; }
 
     /// <summary>
     /// 挂起直到取消的请求名
@@ -332,7 +340,7 @@ public class FakeS3Client : DispatchProxy
     /// 批量删除
     /// </summary>
     /// <remarks>
-    /// 静默模式（同 Amazon S3）：应答只列错误项，取 <see cref="DeleteErrors"/>；错误项带着这一批里的键时那个键不删除
+    /// 静默模式（同 Amazon S3）：应答只列错误项，取 <see cref="DeleteErrors"/>；错误项带着这一批里的键时那个键不删除。有错误项时同 SDK 抛出带着这个应答的 <see cref="DeleteObjectsException"/>，除非 <see cref="DeleteErrorsAnswered"/>
     /// </remarks>
     private DeleteObjectsResponse DeleteObjects(DeleteObjectsRequest request)
     {
@@ -345,7 +353,8 @@ public class FakeS3Client : DispatchProxy
             _objects.Remove(request.BucketName + "/" + key);
         }
 
-        return new DeleteObjectsResponse { DeleteErrors = [.. errors], HttpStatusCode = HttpStatusCode.OK };
+        var response = new DeleteObjectsResponse { DeleteErrors = [.. errors], HttpStatusCode = HttpStatusCode.OK };
+        return errors.Count > 0 && !DeleteErrorsAnswered ? throw new DeleteObjectsException(response) : response;
     }
 
     /// <summary>
