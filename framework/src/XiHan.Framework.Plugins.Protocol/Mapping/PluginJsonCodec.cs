@@ -3,6 +3,7 @@
 
 using System.Text;
 using Google.Protobuf;
+using XiHan.Framework.Kernel.Json;
 
 namespace XiHan.Framework.Plugins.Protocol.Mapping;
 
@@ -10,7 +11,7 @@ namespace XiHan.Framework.Plugins.Protocol.Mapping;
 /// 协议消息的 proto3 JSON 映射（Wasm 载体的编码，<c>spec/plugin/wasm.md</c> §2）
 /// </summary>
 /// <remarks>
-/// 字段名 lowerCamelCase、枚举为名字、缺省值省略、未知字段忽略。字符串与 UTF-8 字节之间按严格的 UTF-8 转换，不把不合法的输入换成 U+FFFD（RFC-0001「JSON 文本」，ADR-0312）
+/// 字段名 lowerCamelCase、枚举为名字、缺省值省略、未知字段忽略。字符串与 UTF-8 字节之间按严格的 UTF-8 转换，不把不合法的输入换成 U+FFFD（RFC-0001「JSON 文本」，ADR-0312）；读入的文本先过 JSON 文本的共同检查（ADR-0345）
 /// </remarks>
 internal static class PluginJsonCodec
 {
@@ -44,14 +45,21 @@ internal static class PluginJsonCodec
     /// UTF-8 JSON → 消息
     /// </summary>
     /// <remarks>
-    /// 不是合法 JSON、与消息不符或有非法的 UTF-8 字节序列返回空
+    /// 不是合法 JSON、与消息不符、有非法的 UTF-8 字节序列或没过 <see cref="JsonText.FindProblem"/>（孤立代理项的转义、任何一层的重复成员、嵌套超过 64 层，未知字段里的也算）返回空
     /// </remarks>
     public static TMessage? Decode<TMessage>(ReadOnlySpan<byte> utf8)
         where TMessage : IMessage<TMessage>, new()
     {
+        // 先过共同检查（wasm.md §2，ADR-0345）：proto3 JSON 的解析器对重复的成员后一个覆盖前一个、未知字段里的不看，
+        // 也不按 64 层限深，照收的消息在不同的读者那里可能读成不同的字段；非法的 UTF-8 在这里同样没过
+        if (JsonText.FindProblem(utf8).HasValue)
+        {
+            return default;
+        }
+
         try
         {
-            // 先严格解码：非法的字节序列与不是 JSON 一样不是一条消息，不换成 U+FFFD 再解析（wasm.md §2）
+            // 严格解码：非法的字节序列与不是 JSON 一样不是一条消息，不换成 U+FFFD 再解析（wasm.md §2）
             return _parser.Parse<TMessage>(_strictUtf8.GetString(utf8));
         }
         catch (DecoderFallbackException)

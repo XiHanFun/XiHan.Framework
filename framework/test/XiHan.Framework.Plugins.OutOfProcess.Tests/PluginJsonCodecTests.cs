@@ -51,6 +51,41 @@ public sealed class PluginJsonCodecTests
         Assert.Equal("k😀", PluginJsonCodec.Decode<MiddlewareResponse>("{\"baggage\":{\"xihan.idempotency-key\":\"k\\ud83d\\ude00\"}}"u8)!.Baggage["xihan.idempotency-key"]);
     }
 
+    [Theory]
+    [InlineData("{\"operation\":\"pings.\\ud800create\"}")]
+    [InlineData("{\"operation\":\"pings.create\",\"extra\":\"\\udc00\"}")]
+    [InlineData("{\"operation\":\"pings.create\",\"\\ud800extra\":1}")]
+    [InlineData("{\"operation\":\"pings.create\",\"extra\":[{\"a\":\"\\ude00\\ud83d\"}]}")]
+    [InlineData("{\"operation\":\"pings.create\",\"metadata\":{\"baggage\":{\"xihan.\\ud800\":\"v\"}}}")]
+    public void Decode_WithAnEscapedLoneSurrogateAnywhere_IsNotAMessage(string json)
+    {
+        // RFC-0001「JSON 文本」的共同检查（wasm.md §2，ADR-0345）：已知字段、未知字段的值与成员名、映射的键都算
+        Assert.Null(PluginJsonCodec.Decode<InvokeRequest>(Encoding.UTF8.GetBytes(json)));
+    }
+
+    [Theory]
+    [InlineData("{\"operation\":\"pings.create\",\"operation\":\"wat.call\"}")]
+    [InlineData("{\"operation\":\"pings.create\",\"extra\":1,\"extra\":2}")]
+    [InlineData("{\"operation\":\"pings.create\",\"metadata\":{\"baggage\":{\"xihan.tenant\":\"a\",\"xihan.tenant\":\"b\"}}}")]
+    [InlineData("{\"operation\":\"pings.create\",\"extra\":{\"a\":1,\"\\u0061\":2}}")]
+    public void Decode_WithADuplicateMember_IsNotAMessage(string json)
+    {
+        // 修之前 proto3 JSON 的解析器后一个覆盖前一个（映射同此），未知字段里的不看：同一条消息两个读的一方可能读出不同的字段
+        Assert.Null(PluginJsonCodec.Decode<InvokeRequest>(Encoding.UTF8.GetBytes(json)));
+    }
+
+    [Fact]
+    public void Decode_NestedDeeperThan64Levels_IsNotAMessage()
+    {
+        // 最外层的对象是第 1 层：未知字段里 63 层数组到第 64 层为止读得出，64 层即第 65 层
+        Assert.NotNull(PluginJsonCodec.Decode<InvokeRequest>(Encoding.UTF8.GetBytes("{\"operation\":\"pings.create\",\"extra\":" + new string('[', 63) + new string(']', 63) + "}")));
+        Assert.Null(PluginJsonCodec.Decode<InvokeRequest>(Encoding.UTF8.GetBytes("{\"operation\":\"pings.create\",\"extra\":" + new string('[', 64) + new string(']', 64) + "}")));
+
+        // 已知字段同样：内部错误一层套一层，status 是第 2 层、error 是第 3 层，61 层内部错误到第 64 层，62 层即第 65 层
+        Assert.NotNull(PluginJsonCodec.Decode<InvokeResponse>(NestedErrors(61)));
+        Assert.Null(PluginJsonCodec.Decode<InvokeResponse>(NestedErrors(62)));
+    }
+
     [Fact]
     public void Decode_WithMultiByteText_ReadsItAsBefore()
     {
@@ -66,5 +101,20 @@ public sealed class PluginJsonCodecTests
         var paired = PluginJsonCodec.Encode(new InvokeRequest { Operation = "订单.😀" });
         Assert.True(Utf8.IsValid(paired));
         Assert.Equal("订单.😀", PluginJsonCodec.Decode<InvokeRequest>(paired)!.Operation);
+    }
+
+    /// <summary>
+    /// 一条失败的应答，错误带着 <paramref name="inners"/> 层内部错误
+    /// </summary>
+    private static byte[] NestedErrors(int inners)
+    {
+        var error = new StringBuilder("{\"code\":\"ORDERS_UNEXPECTED_001\"");
+        for (var i = 0; i < inners; i++)
+        {
+            error.Append(",\"inner\":{\"code\":\"ORDERS_UNEXPECTED_001\"");
+        }
+
+        error.Append('}', inners + 1);
+        return Encoding.UTF8.GetBytes("{\"status\":{\"ok\":false,\"error\":" + error + "}}");
     }
 }

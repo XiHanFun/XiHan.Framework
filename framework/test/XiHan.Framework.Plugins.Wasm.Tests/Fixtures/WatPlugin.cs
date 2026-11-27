@@ -115,6 +115,15 @@ internal sealed class WatPlugin : IDisposable
         => Create("invoke", new JsonObject { ["operation"] = "pings.create", ["payload"] = Convert.ToBase64String("{}"u8) }, [], pipeline, middlewareBaggage: baggage);
 
     /// <summary>
+    /// 生成一个贡献中间件、<c>xihan_middleware</c> 两个阶段都原样回给定文本的插件
+    /// </summary>
+    /// <remarks>
+    /// <paramref name="response"/> 是 <c>MiddlewareResponse</c> 的 JSON 原文（ASCII），可以带 JSON 写出器写不出的写法（重复成员、孤立代理项的转义），用来核对宿主读钩子的应答（ADR-0345）；<c>xihan_invoke</c> 回成功
+    /// </remarks>
+    public static WatPlugin WithMiddlewareAnswering(JsonArray pipeline, string response)
+        => Create("invoke", new JsonObject { ["operation"] = "pings.create", ["payload"] = Convert.ToBase64String("{}"u8) }, [], pipeline, customBody: "{ok}", middlewareResponse: response);
+
+    /// <summary>
     /// 生成一个经 <c>xihan.publish</c> 发布一条消息的插件
     /// </summary>
     public static WatPlugin Publishing(string topic, IReadOnlyList<string> permissions)
@@ -188,8 +197,9 @@ internal sealed class WatPlugin : IDisposable
     /// <param name="body"><c>xihan_invoke</c> 的函数体</param>
     /// <param name="pages">线性内存页数</param>
     /// <param name="fields">额外的模块字段（表等）</param>
-    public static WatPlugin Custom(string imports, string body, int pages = Pages, string fields = "")
-        => Create("invoke", new JsonObject { ["operation"] = "pings.create", ["payload"] = Convert.ToBase64String("{}"u8) }, [], null, customImports: imports, customBody: body, pages: pages, fields: fields);
+    /// <param name="permissions">清单声明的权限；为空时不声明</param>
+    public static WatPlugin Custom(string imports, string body, int pages = Pages, string fields = "", IReadOnlyList<string>? permissions = null)
+        => Create("invoke", new JsonObject { ["operation"] = "pings.create", ["payload"] = Convert.ToBase64String("{}"u8) }, permissions ?? [], null, customImports: imports, customBody: body, pages: pages, fields: fields);
 
     /// <summary>
     /// 生成一个声明了一个绑定、并在 <c>xihan_configure</c> 里核对它的插件
@@ -247,7 +257,8 @@ internal sealed class WatPlugin : IDisposable
         string fields = "",
         IReadOnlyDictionary<string, string>? middlewareBaggage = null,
         JsonArray? bindings = null,
-        string? configureExpects = null)
+        string? configureExpects = null,
+        string? middlewareResponse = null)
     {
         var contributes = new JsonObject { ["operations"] = new JsonArray(operation) };
         if (pipeline is not null)
@@ -315,7 +326,8 @@ internal sealed class WatPlugin : IDisposable
             continueJson["baggage"] = entries;
         }
 
-        var continueData = Place(continueJson.ToJsonString());
+        // 用例给了钩子的应答原文时原样写进数据段，不经 JSON 写出器
+        var continueData = Place(middlewareResponse ?? continueJson.ToJsonString());
         var failedData = Place("""{"status":{"ok":false}}""");
         var expectedData = Place(configureExpects ?? string.Empty);
         if (offset >= HeapStart)
