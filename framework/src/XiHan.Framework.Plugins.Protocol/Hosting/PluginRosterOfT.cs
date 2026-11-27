@@ -8,6 +8,7 @@ using XiHan.Framework.Kernel.Operations;
 using XiHan.Framework.Kernel.Plugins;
 using XiHan.Framework.Localization.Abstractions.Messages;
 using XiHan.Framework.Messaging.Abstractions.Handlers;
+using XiHan.Framework.Plugins.Protocol.Handshake;
 using XiHan.Framework.Plugins.Protocol.Proxies;
 using XiHan.Framework.Primitives;
 
@@ -274,6 +275,13 @@ internal sealed class PluginRoster<TRuntime> : IDisposable
             if (!IsSubscribed(runtime, delivery) || !IsCurrent(runtime))
             {
                 continue;
+            }
+
+            // 元数据写不出即不投（invocation.md §2，ADR-0334）：派发不写幂等键，其余已登记的值进上下文时已核对过，照样先核对，不让载体写出时抛出
+            var writable = PluginMetadata.Check(context, runtime.Manifest.Id, "event");
+            if (writable.IsFailure)
+            {
+                return writable;
             }
 
             // 每个插件的投递各记一条 xihan.plugin.invoke Span（invocation.md §6，ADR-0269）

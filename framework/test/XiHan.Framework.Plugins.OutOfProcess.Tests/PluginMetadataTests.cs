@@ -5,9 +5,12 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Time.Testing;
 using XiHan.Framework.Kernel.Diagnostics;
+using XiHan.Framework.Kernel.Hosting;
 using XiHan.Framework.Kernel.Pipeline;
+using XiHan.Framework.Plugins.Protocol;
 using XiHan.Framework.Plugins.Protocol.Handshake;
 using XiHan.Framework.Plugins.Protocol.V1;
+using XiHan.Framework.Primitives;
 using XiHan.Framework.Testing;
 
 namespace XiHan.Framework.Plugins.OutOfProcess.Tests;
@@ -66,6 +69,27 @@ public sealed class PluginMetadataTests
         Assert.Equal($"The deadline in the callback metadata of plugin 'xihan.samples.echo' ({Unreadable.Length} characters) could not be read and is ignored; the callback continues without it. Similar warnings suppressed since the previous one: 0.", entries[0].Message);
         Assert.Equal("The deadline in the callback metadata of plugin 'xihan.samples.cache' (8 characters) could not be read and is ignored; the callback continues without it. Similar warnings suppressed since the previous one: 1.", entries[1].Message);
         Assert.DoesNotContain(entries, static entry => entry.Message.Contains("forged-log-line", StringComparison.Ordinal) || entry.Message.Contains("tomorrow", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void Check_RefusesARegisteredValueWithALoneSurrogate_AndFromContextDoesNotWriteIt()
+    {
+        // invocation.md §2（ADR-0334）：上下文里只有幂等键能带着孤立的代理项进来；修之前 protobuf 把它写成 U+FFFD
+        var services = new ServiceCollection().BuildServiceProvider();
+        var lone = App.CreateContext(services, new InvocationContextOptions { Baggage = new Dictionary<string, string> { [BaggageKeys.IdempotencyKey] = "k\uDBFF" } }, CancellationToken.None);
+
+        var error = PluginMetadata.Check(lone, "xihan.samples.echo", "echoes.create").Error;
+        Assert.Equal((PluginErrors.Unexpected, PluginMessages.ProcessFailed), (error?.Code, error?.MessageKey));
+        Assert.Equal(("xihan.samples.echo", "echoes.create", "baggage 'xihan.idempotency-key' has a lone surrogate and cannot be encoded as UTF-8"), (error!.Details!["id"], error.Details["phase"], error.Details["reason"]));
+        // 写出的一侧最后一道：没先核对就写是编程错误，不交给载体宽松地编码
+        Assert.Throws<ArgumentException>(() => PluginMetadata.FromContext(lone));
+
+        // 未登记的键不出进程，不核对；成对的代理项照常写出
+        var unregistered = App.CreateContext(services, new InvocationContextOptions { Baggage = new Dictionary<string, string> { ["xihan.local-note"] = "x\uD800", [BaggageKeys.IdempotencyKey] = "k😀" } }, CancellationToken.None);
+        Assert.True(PluginMetadata.Check(unregistered, "xihan.samples.echo", "echoes.create").IsSuccess);
+        var written = PluginMetadata.FromContext(unregistered);
+        Assert.Equal("k😀", written.Baggage[BaggageKeys.IdempotencyKey]);
+        Assert.False(written.Baggage.ContainsKey("xihan.local-note"));
     }
 
     [Fact]

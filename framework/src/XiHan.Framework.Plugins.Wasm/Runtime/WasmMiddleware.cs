@@ -3,6 +3,7 @@
 
 using XiHan.Framework.Kernel;
 using XiHan.Framework.Kernel.Pipeline;
+using XiHan.Framework.Plugins.Protocol.Handshake;
 using XiHan.Framework.Plugins.Protocol.Mapping;
 using XiHan.Framework.Plugins.Protocol.V1;
 using XiHan.Framework.Primitives;
@@ -23,6 +24,15 @@ internal sealed class WasmMiddleware(WasmPluginRuntime runtime, string name, Pip
     {
         ArgumentNullException.ThrowIfNull(context);
         ArgumentNullException.ThrowIfNull(nextStep);
+
+        // 钩子可能排在 Idempotency 阶段之前，是幂等键交给插件的第一处：元数据写不出即失败关闭，不取实例（invocation.md §2，ADR-0334）。
+        // before 改写的 Baggage 来自插件的 proto3 JSON，读入时已拒收孤立的代理项，after 不必再核对
+        var writable = PluginMetadata.Check(context, runtime.Manifest.Id, name);
+        if (writable.IsFailure)
+        {
+            context.SetOutcome(writable);
+            return;
+        }
 
         var before = await runtime.MiddlewareAsync(name, stage, "before", context, null, context.CancellationToken).ConfigureAwait(false);
         if (!before.TryGetValue(out var decision))

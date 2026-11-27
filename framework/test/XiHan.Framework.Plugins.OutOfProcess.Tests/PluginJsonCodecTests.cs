@@ -1,6 +1,7 @@
 // Copyright (c) XiHanFun Contributors. Licensed under the MIT License.
 // See the LICENSE file in the project root for full license text.
 
+using System.Text;
 using System.Text.Unicode;
 using XiHan.Framework.Plugins.Protocol.Mapping;
 using XiHan.Framework.Plugins.Protocol.V1;
@@ -35,6 +36,19 @@ public sealed class PluginJsonCodecTests
         // 未知字段照旧忽略，但整条文本先要是合法的 UTF-8
         Assert.Null(PluginJsonCodec.Decode<InvokeRequest>([.. "{\"operation\":\"pings.create\",\"extra\":\""u8, 0xC3, .. "\"}"u8]));
         Assert.Equal("pings.create", PluginJsonCodec.Decode<InvokeRequest>("{\"operation\":\"pings.create\",\"extra\":\"x\"}"u8)!.Operation);
+    }
+
+    [Theory]
+    [InlineData("k\\ud800")]
+    [InlineData("\\udc00k")]
+    [InlineData("k\\ude00\\ud83d")]
+    public void Decode_WithAnEscapedLoneSurrogate_IsNotAMessage(string escaped)
+    {
+        // 中间件的 before 改写的 Baggage 由此读入（ADR-0334）：转义写出的孤立代理项同样读不出，进不了上下文
+        var json = "{\"action\":\"MIDDLEWARE_ACTION_CONTINUE\",\"baggage\":{\"xihan.idempotency-key\":\"" + escaped + "\"}}";
+
+        Assert.Null(PluginJsonCodec.Decode<MiddlewareResponse>(Encoding.UTF8.GetBytes(json)));
+        Assert.Equal("k😀", PluginJsonCodec.Decode<MiddlewareResponse>("{\"baggage\":{\"xihan.idempotency-key\":\"k\\ud83d\\ude00\"}}"u8)!.Baggage["xihan.idempotency-key"]);
     }
 
     [Fact]

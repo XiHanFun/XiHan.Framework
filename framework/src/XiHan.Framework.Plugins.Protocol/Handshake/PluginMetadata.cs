@@ -10,6 +10,7 @@ using XiHan.Framework.Kernel.Pipeline;
 using XiHan.Framework.Kernel.Security;
 using XiHan.Framework.Plugins.Protocol.V1;
 using XiHan.Framework.Primitives;
+using Error = XiHan.Framework.Primitives.Error;
 
 namespace XiHan.Framework.Plugins.Protocol.Handshake;
 
@@ -22,11 +23,40 @@ namespace XiHan.Framework.Plugins.Protocol.Handshake;
 internal static class PluginMetadata
 {
     /// <summary>
+    /// 核对这次调用的元数据能不能写给插件
+    /// </summary>
+    /// <remarks>
+    /// 已登记键的值有孤立的代理项时写不出，这一次不交给插件（<c>invocation.md</c> §2，ADR-0334）：gRPC 载体的 protobuf 编码会把它换成 U+FFFD，两个不同的幂等键到了插件是同一个；Wasm 载体的 JSON 写出器会抛出。
+    /// 上下文里只有幂等键可能带着这样的值（其余已登记的键进上下文时已核对过），没有 Idempotency 阶段的宿主与排在它之前的 Wasm 中间件都不核对它。代理操作的调用与 Wasm 中间件的钩子在交给载体之前调这里，失败时不启动进程、不取实例
+    /// </remarks>
+    /// <param name="context">调用上下文</param>
+    /// <param name="pluginId">插件的清单 ID，写进失败的 <c>id</c></param>
+    /// <param name="phase">宿主在做的事：操作 ID 或中间件名，写进失败的 <c>phase</c></param>
+    /// <returns>成功；写不出时为 <see cref="PluginErrors.Unexpected"/> + <see cref="PluginMessages.ProcessFailed"/></returns>
+    public static Result Check(InvocationContext context, string pluginId, string phase)
+    {
+        ArgumentNullException.ThrowIfNull(context);
+
+        // 不丢掉这个成员：丢了插件就没有幂等，是静默兜底（与 HTTP 载体写 baggage 头相同，ADR-0321）。租户另取安全上下文里的，租户 ID 的文法只有 ASCII
+        foreach (var (key, value) in context.Baggage)
+        {
+            if (BaggageKeys.IsRegistered(key) && UnicodeText.HasLoneSurrogate(value))
+            {
+                return Error.Unexpected(PluginErrors.Unexpected, PluginMessages.ProcessFailed, MessageArguments.Of(("id", pluginId), ("phase", phase), ("reason", $"baggage '{key}' has a lone surrogate and cannot be encoded as UTF-8")));
+            }
+        }
+
+        return Result.Success();
+    }
+
+    /// <summary>
     /// 上下文 → 元数据：traceparent、绝对截止时间与已登记的 Baggage
     /// </summary>
     /// <remarks>
-    /// traceparent 与消息信封同一取法（<see cref="InvocationContextExtensions.OutgoingTraceParent"/>）：以前标志写死为 <c>01</c>，上游「不采样」传不到插件（ADR-0235）
+    /// traceparent 与消息信封同一取法（<see cref="InvocationContextExtensions.OutgoingTraceParent"/>）：以前标志写死为 <c>01</c>，上游「不采样」传不到插件（ADR-0235）。
+    /// 已登记键的值有孤立的代理项时抛出 <see cref="ArgumentException"/>，不交给载体宽松地写成 U+FFFD（ADR-0334）：调用方先经 <see cref="Check"/> 以结果返回，走到这里是编程错误
     /// </remarks>
+    /// <exception cref="ArgumentException">已登记键的值有孤立的代理项</exception>
     public static InvocationMetadata FromContext(InvocationContext context)
     {
         var metadata = new InvocationMetadata { TraceParent = context.OutgoingTraceParent().ToString() };
@@ -53,6 +83,15 @@ internal static class PluginMetadata
         else
         {
             metadata.Baggage.Remove(BaggageKeys.Tenant);
+        }
+
+        // 写出的一侧最后一道：协议的字符串要编成 UTF-8，孤立的代理项编不成，宽松的编码换成 U+FFFD 之后两个不同的值到了插件是同一个
+        foreach (var (key, value) in metadata.Baggage)
+        {
+            if (UnicodeText.HasLoneSurrogate(value))
+            {
+                throw new ArgumentException($"The value of Baggage key '{key}' has a lone surrogate and cannot be encoded as UTF-8.", nameof(context));
+            }
         }
 
         return metadata;

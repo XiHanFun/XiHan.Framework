@@ -4,6 +4,7 @@
 using XiHan.Framework.Kernel;
 using XiHan.Framework.Kernel.Json;
 using XiHan.Framework.Kernel.Operations;
+using XiHan.Framework.Plugins.Protocol.Handshake;
 using XiHan.Framework.Plugins.Protocol.Hosting;
 using XiHan.Framework.Plugins.Protocol.Mapping;
 using XiHan.Framework.Primitives;
@@ -66,10 +67,11 @@ internal sealed class ProxyOperationDescriptor(OperationContract contract, strin
         => !payload.IsEmpty && JsonText.FindProblem(payload.Span).TryGetValue(out var problem) ? problem.Path : null;
 
     /// <summary>
-    /// 在载体的运行时外面核对插件交回的应答
+    /// 在载体的运行时外面核对交给插件的元数据与插件交回的应答
     /// </summary>
     /// <remarks>
-    /// 没过检查是插件写来的内容不合规，与错误码不合文法同一类处置（<c>invocation.md</c> §1、§3）：这次调用失败，进程与实例照常服务，不按崩溃处理
+    /// 元数据写不出（幂等键有孤立的代理项，<c>invocation.md</c> §2，ADR-0334）时不交给载体：不启动进程、不取实例。
+    /// 应答没过检查是插件写来的内容不合规，与错误码不合文法同一类处置（<c>invocation.md</c> §1、§3）：这次调用失败，进程与实例照常服务，不按崩溃处理
     /// </remarks>
     /// <param name="inner">载体的运行时</param>
     /// <param name="pluginId">插件的清单 ID</param>
@@ -78,6 +80,13 @@ internal sealed class ProxyOperationDescriptor(OperationContract contract, strin
         /// <inheritdoc />
         public async ValueTask<Result<object>> InvokeAsync(string operation, ReadOnlyMemory<byte> payload, InvocationContext context)
         {
+            // 两种载体都经这里：没有 Idempotency 阶段的宿主不核对幂等键，gRPC 载体会把孤立的代理项宽松地写成 U+FFFD，Wasm 载体的写出器会抛出
+            var writable = PluginMetadata.Check(context, pluginId, operation);
+            if (writable.IsFailure)
+            {
+                return writable.Error!;
+            }
+
             var result = await inner.InvokeAsync(operation, payload, context).ConfigureAwait(false);
 
             // 载荷不交给协议适配器：之后 MCP 与命令行宽松地解码、gRPC 载体把转义出的孤立代理项写进 protobuf、幂等记录应答时解析抛出，调用方拿不到插件写坏的那份文本
