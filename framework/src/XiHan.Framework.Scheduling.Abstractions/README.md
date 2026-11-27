@@ -34,6 +34,8 @@ public sealed class CleanupJob : IJob
 }
 ```
 
+代码登记的作业不合法即失败，不等到写入存储：说明与数据有孤立的代理项、触发器名重复时 `AddJob` 抛出 `ArgumentException`；触发器引用的日历没有登记时，调度器随实现包启动时抛出 `FrameworkException`（`SCHEDULING_VALIDATION_001`），应用启动失败。
+
 ## 主要类型
 
 此库提供的主要类型：

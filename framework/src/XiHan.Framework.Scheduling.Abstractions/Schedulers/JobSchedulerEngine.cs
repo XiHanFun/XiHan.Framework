@@ -259,13 +259,24 @@ public sealed partial class JobSchedulerEngine : IJobScheduler, IDisposable
     /// 开始轮询
     /// </summary>
     /// <remarks>
-    /// 幂等
+    /// 幂等。先核对代码登记的作业：不合法（日历未登记，以及登记之后才改坏的说明与数据）即抛出 <see cref="FrameworkException"/>（<see cref="SchedulingErrors.DefinitionInvalid"/>，消息写明作业名与原因），宿主启动失败，不再在每个周期同步时记日志重试（ADR-0335）
     /// </remarks>
+    /// <exception cref="FrameworkException">代码登记的作业不合法</exception>
     public Task StartAsync(CancellationToken cancellationToken)
     {
         if (_loop is not null)
         {
             return Task.CompletedTask;
+        }
+
+        // 日历可以在作业之后登记，登记 AddJob 的那一刻判定不了，到这里日历都登记完了；与运行时 ScheduleAsync 同一份规则。
+        // 以前同步每个周期以校验错误失败、记一条日志，按名字排在它后面的代码作业也一直写不进存储
+        foreach (var definition in _codeJobs.Jobs)
+        {
+            if (JobDefinitionRules.FindProblem(definition, _calendars).TryGetValue(out var problem))
+            {
+                throw new FrameworkException(SchedulingErrors.DefinitionInvalid, $"Code-defined job '{definition.Name}' is invalid: {problem}.");
+            }
         }
 
         _startedAt = _clock.GetUtcNow();
@@ -808,7 +819,7 @@ public sealed partial class JobSchedulerEngine : IJobScheduler, IDisposable
     /// 首次把代码登记的作业写入存储
     /// </summary>
     /// <remarks>
-    /// 失败时记日志并在下个周期重试
+    /// 失败时记日志并在下个周期重试。定义本身不合法的在登记（<c>AddJob</c>）与启动（<see cref="StartAsync"/>）时就已失败（ADR-0335），这里剩下的是存储写不进去
     /// </remarks>
     private async ValueTask<bool> EnsureSyncedAsync(CancellationToken cancellationToken)
     {
@@ -1716,26 +1727,13 @@ public sealed partial class JobSchedulerEngine : IJobScheduler, IDisposable
             return Error.NotFound(SchedulingErrors.JobTypeNotRegistered, SchedulingMessages.JobTypeNotRegistered, MessageArguments.Of(("type", definition.JobType.FullName ?? definition.JobType.Name)));
         }
 
-        // 说明与数据进代码作业的指纹（宽松的 UTF-8，数据先经 JSON 写出器）与存储：孤立的代理项都换成 U+FFFD，
-        // 只差在它上面的两份定义指纹相同，运行时的修改在代码改了之后照样保留；名字的文法只有 ASCII，不用另判（ADR-0321）
-        if (HasLoneSurrogate(definition))
+        // 孤立的代理项、触发器名重复、日历未登记：运行时与代码登记同一份规则；代码作业在登记与启动时已核对过（ADR-0335）
+        if (JobDefinitionRules.FindProblem(definition, _calendars).TryGetValue(out var problem))
         {
-            return DefinitionInvalid(definition.Name, "the definition has a lone surrogate in a description or the data");
+            return DefinitionInvalid(definition.Name, problem);
         }
 
-        var names = new HashSet<string>(StringComparer.Ordinal);
-        foreach (var trigger in definition.Triggers)
-        {
-            if (!names.Add(trigger.Name))
-            {
-                return DefinitionInvalid(definition.Name, $"trigger '{trigger.Name}' is defined more than once");
-            }
-
-            if (trigger.Schedule.Calendar is { } calendar && !_calendars.Find(calendar).HasValue)
-            {
-                return DefinitionInvalid(definition.Name, $"calendar '{calendar}' is not registered");
-            }
-        }
+        var names = definition.Triggers.Select(static trigger => trigger.Name).ToHashSet(StringComparer.Ordinal);
 
         var existing = await _store.FindJobAsync(definition.Name, cancellationToken).ConfigureAwait(false);
         if (!existing.TryGetValue(out var existingMaybe))
@@ -2335,27 +2333,6 @@ public sealed partial class JobSchedulerEngine : IJobScheduler, IDisposable
     /// 定义不合法
     /// </summary>
     private static Error DefinitionInvalid(JobName name, string reason) => Error.Validation(SchedulingErrors.DefinitionInvalid, SchedulingMessages.DefinitionInvalid, MessageArguments.Of(("name", name.Value), ("reason", reason)));
-
-    /// <summary>
-    /// 作业或触发器的说明与数据里有没有孤立的代理项
-    /// </summary>
-    /// <remarks>
-    /// 数据查每个成员名与字符串值，逐层往下（RFC-0013「调度器 <c>IJobScheduler</c>」，ADR-0321）
-    /// </remarks>
-    private static bool HasLoneSurrogate(JobDefinition definition)
-        => UnicodeText.HasLoneSurrogate(definition.Description) || HasLoneSurrogate(definition.Data)
-            || definition.Triggers.Any(static trigger => UnicodeText.HasLoneSurrogate(trigger.Description) || HasLoneSurrogate(trigger.Data));
-
-    /// <summary>
-    /// JSON 节点的成员名与字符串值里有没有孤立的代理项
-    /// </summary>
-    private static bool HasLoneSurrogate(JsonNode? node) => node switch
-    {
-        JsonObject members => members.Any(static member => UnicodeText.HasLoneSurrogate(member.Key) || HasLoneSurrogate(member.Value)),
-        JsonArray items => items.Any(HasLoneSurrogate),
-        JsonValue value => value.TryGetValue<string>(out var text) && UnicodeText.HasLoneSurrogate(text),
-        _ => false,
-    };
 
     /// <summary>
     /// 代码定义变了，运行时的修改被覆盖

@@ -54,8 +54,9 @@ public static class SchedulingServiceCollectionExtensions
     /// 登记一个代码定义的作业
     /// </summary>
     /// <remarks>
-    /// 作业是作用域服务。同名重复登记是编程错误
+    /// 作业是作用域服务。同名重复登记是编程错误；说明与数据有孤立的代理项、触发器名重复同样在这里抛出 <see cref="ArgumentException"/>，触发器引用的日历没有登记的在调度器启动时以 <see cref="FrameworkException"/> 失败（ADR-0335）
     /// </remarks>
+    /// <exception cref="ArgumentException">同名重复登记，或定义不合法</exception>
     public static IServiceCollection AddJob<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] TJob>(this IServiceCollection services, JobDefinition definition)
         where TJob : class, IJob
     {
