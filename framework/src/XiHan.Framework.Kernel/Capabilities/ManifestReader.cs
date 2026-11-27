@@ -14,7 +14,7 @@ namespace XiHan.Framework.Kernel.Capabilities;
 /// <c>xihan.manifest.json</c> 与 <see cref="Manifest"/> 的互转
 /// </summary>
 /// <remarks>
-/// JSON 形态由 <c>spec/manifest/manifest.schema.json</c> 定义，读取的检查顺序与写出的排版由 RFC-0002 规定（ADR-0236），各语言逐字一致；序列化经源生成，不用反射
+/// JSON 形态由 <c>spec/manifest/manifest.schema.json</c> 定义，读取的检查顺序与写出的排版由 RFC-0002 规定（ADR-0236），各语言逐字一致；读取在形状核对之后按成员名直接取值，写出手写排版，都不用反射
 /// </remarks>
 [ApiLevel(Stability.Stable, "5.0")]
 public static class ManifestReader
@@ -189,9 +189,8 @@ public static class ManifestReader
             return new Error(KernelErrors.InvalidManifest, KernelMessages.ManifestInvalid, MessageArguments.Of(("reason", path)));
         }
 
-        // 形状已核对：反序列化与原语的格式校验不会再失败，失败即两处规则不一致，按缺陷抛出
-        var document = root.Deserialize(ManifestJsonContext.Default.ManifestDocument)!;
-        var manifest = Convert(document);
+        // 形状已核对：按成员取值与原语的格式校验不会再失败，失败即两处规则不一致，按缺陷抛出
+        var manifest = Convert(root);
         var validation = manifest.Validate();
         return validation.IsSuccess ? manifest : validation.Error!.WithCode(KernelErrors.InvalidManifest);
     }
@@ -203,44 +202,76 @@ public static class ManifestReader
         => new(KernelErrors.InvalidManifest, KernelMessages.ManifestInvalidJson, MessageArguments.Of(("reason", path)));
 
     /// <summary>
-    /// 把已核对形状的 JSON 形态转换为 <see cref="Manifest"/>
+    /// 把已核对形状的 JSON 根对象转换为 <see cref="Manifest"/>
     /// </summary>
-    private static Manifest Convert(ManifestDocument document)
+    /// <remarks>
+    /// 形状检查已保证没有未知成员、没有 <c>null</c>、类型与取值都对（成员名区分大小写），这里按成员名直接取值，缺少的可选成员按 Schema 的缺省值
+    /// </remarks>
+    private static Manifest Convert(JsonElement root)
     {
-        var contributes = document.Contributes;
+        var hasContributes = root.TryGetProperty("contributes", out var contributes);
         return new Manifest
         {
-            Id = document.Id!,
-            Package = document.Package,
-            Version = document.Version!,
-            Primitives = int.Parse(document.Primitives!, NumberStyles.None, CultureInfo.InvariantCulture),
-            Stability = ParseEnum<Stability>(document.Stability!),
-            Kind = ParseEnum<ManifestKind>(document.Kind!),
-            Role = document.Role is null ? ManifestRole.Provider : ParseEnum<ManifestRole>(document.Role),
-            Isolation = document.Isolation switch
+            Id = Text(root, "id")!,
+            Package = Text(root, "package"),
+            Version = Text(root, "version")!,
+            Primitives = ParsePositive(Text(root, "primitives")!),
+            Stability = ParseEnum<Stability>(Text(root, "stability")!),
+            Kind = ParseEnum<ManifestKind>(Text(root, "kind")!),
+            Role = Text(root, "role") is { } role ? ParseEnum<ManifestRole>(role) : ManifestRole.Provider,
+            Isolation = Text(root, "isolation") switch
             {
                 null => null,
                 "in-process" => PluginIsolation.InProcess,
                 "out-of-process" => PluginIsolation.OutOfProcess,
                 _ => PluginIsolation.Wasm,
             },
-            Provides = (document.Provides ?? []).Select(static p => new CapabilityDeclaration(p.Id!, int.Parse(p.Version!, NumberStyles.None, CultureInfo.InvariantCulture))).ToList(),
-            Requires = (document.Requires ?? []).Select(static r => new CapabilityRequirement(r.Id!, int.Parse(r.Version!.TrimStart('^'), NumberStyles.None, CultureInfo.InvariantCulture)) { Optional = r.Optional ?? false }).ToList(),
-            Bindings = (document.Bindings ?? []).Select(static b => new Binding(b.Name!, b.Type!) { Required = b.Required ?? true }).ToList(),
-            Contributes = contributes is null ? Contributions.Empty : new Contributions
+            Provides = Objects(root, "provides", static p => new CapabilityDeclaration(Text(p, "id")!, ParsePositive(Text(p, "version")!))),
+            Requires = Objects(root, "requires", static r => new CapabilityRequirement(Text(r, "id")!, ParsePositive(Text(r, "version")!.TrimStart('^'))) { Optional = Flag(r, "optional") ?? false }),
+            Bindings = Objects(root, "bindings", static b => new Binding(Text(b, "name")!, Text(b, "type")!) { Required = Flag(b, "required") ?? true }),
+            Contributes = !hasContributes ? Contributions.Empty : new Contributions
             {
-                Pipeline = (contributes.Pipeline ?? []).Select(static p => new PipelineContribution(p.Middleware!, PipelineStageExtensions.TryParse(p.Stage, out var stage) ? stage : default) { Before = p.Before ?? [], After = p.After ?? [] }).ToList(),
-                Operations = contributes.Operations ?? [],
-                Config = contributes.Config is null ? null : new ConfigContribution(contributes.Config.Section!) { Schema = contributes.Config.Schema },
-                Permissions = contributes.Permissions ?? [],
-                Health = contributes.Health ?? [],
+                Pipeline = Objects(contributes, "pipeline", static p => new PipelineContribution(Text(p, "middleware")!, PipelineStageExtensions.TryParse(Text(p, "stage"), out var stage) ? stage : default) { Before = Strings(p, "before") ?? [], After = Strings(p, "after") ?? [] }),
+                Operations = Strings(contributes, "operations") ?? [],
+                Config = contributes.TryGetProperty("config", out var config) ? new ConfigContribution(Text(config, "section")!) { Schema = Text(config, "schema") } : null,
+                Permissions = Strings(contributes, "permissions") ?? [],
+                Health = Strings(contributes, "health") ?? [],
             },
             // 缺省为 onStartup；写了就至少一项（形状检查已拒绝空数组）
-            Activation = document.Activation ?? ["onStartup"],
-            Permissions = document.Permissions ?? [],
-            Entry = document.Entry,
+            Activation = Strings(root, "activation") ?? ["onStartup"],
+            Permissions = Strings(root, "permissions") ?? [],
+            Entry = Text(root, "entry"),
         };
     }
+
+    /// <summary>
+    /// 取字符串成员，没有时为 <see langword="null"/>
+    /// </summary>
+    private static string? Text(JsonElement element, string name)
+        => element.TryGetProperty(name, out var value) ? value.GetString() : null;
+
+    /// <summary>
+    /// 取布尔成员，没有时为 <see langword="null"/>
+    /// </summary>
+    private static bool? Flag(JsonElement element, string name)
+        => element.TryGetProperty(name, out var value) ? value.GetBoolean() : null;
+
+    /// <summary>
+    /// 取字符串数组成员，没有时为 <see langword="null"/>
+    /// </summary>
+    private static List<string>? Strings(JsonElement element, string name)
+        => element.TryGetProperty(name, out var value) ? [.. value.EnumerateArray().Select(static item => item.GetString()!)] : null;
+
+    /// <summary>
+    /// 取对象数组成员并逐项转换，没有时为空列表
+    /// </summary>
+    private static List<T> Objects<T>(JsonElement element, string name, Func<JsonElement, T> convert)
+        => element.TryGetProperty(name, out var value) ? [.. value.EnumerateArray().Select(convert)] : [];
+
+    /// <summary>
+    /// 解析已核对过的正整数文本
+    /// </summary>
+    private static int ParsePositive(string text) => int.Parse(text, NumberStyles.None, CultureInfo.InvariantCulture);
 
     /// <summary>
     /// 把小写名解析为枚举

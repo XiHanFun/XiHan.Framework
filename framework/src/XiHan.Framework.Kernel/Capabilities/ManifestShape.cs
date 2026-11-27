@@ -51,7 +51,7 @@ internal static partial class ManifestShape
             }
         }
 
-        // 缺少的成员在对象的成员都查完之后才查，与反序列化在对象结束时才发现缺少成员一致
+        // 缺少的成员在对象的成员都查完之后才查，与按对象反序列化的实现在对象结束时才发现缺少成员一致（各语言同一顺序）
         foreach (var required in shape.Required)
         {
             if (!element.TryGetProperty(required, out _))
