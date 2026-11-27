@@ -75,8 +75,9 @@ public readonly record struct CacheKey
     public static bool IsValid(string? value)
     {
         // 每个码元至少编成一个字节：码元数已经超过上限的不必再数字节。
-        // 孤立的代理项编不成 UTF-8：宽松编码（Redis 的键、System.Text.Json 写出的远程请求）把它换成 U+FFFD，两个不同的键撞成同一个条目（ADR-0316）
-        if (string.IsNullOrEmpty(value) || value.Length > MaxBytes || HasLoneSurrogate(value))
+        // 孤立的代理项编不成 UTF-8：宽松编码（Redis 的键、System.Text.Json 写出的远程请求）把它换成 U+FFFD，两个不同的键撞成同一个条目（ADR-0316）。
+        // 判定用原语的那一份（RFC-0001「孤立的代理项」，ADR-0334）
+        if (string.IsNullOrEmpty(value) || value.Length > MaxBytes || UnicodeText.HasLoneSurrogate(value))
         {
             return false;
         }
@@ -114,34 +115,6 @@ public readonly record struct CacheKey
         return IsValid(value)
             ? value
             : throw new ArgumentException($"Cache key '{value}' is invalid: it must be non-empty, contain no whitespace, control characters or lone surrogates, and be at most {MaxBytes} bytes long in UTF-8.", nameof(value));
-    }
-
-    /// <summary>
-    /// 文本里是否有孤立的代理项
-    /// </summary>
-    /// <remarks>
-    /// 孤立的代理项是不在一对之中的 U+D800–U+DFFF 码元：单独的高代理项、单独的低代理项、颠倒的一对、末尾的高代理项。高代理项紧跟低代理项是平面以外的一个字符，不算（RFC-0006「存储契约」）
-    /// </remarks>
-    private static bool HasLoneSurrogate(string text)
-    {
-        for (var index = 0; index < text.Length; index++)
-        {
-            if (!char.IsSurrogate(text[index]))
-            {
-                continue;
-            }
-
-            // 成对的跳过这一对；其余的代理项，不论高低、在哪里，都是孤立的
-            if (char.IsHighSurrogate(text[index]) && index + 1 < text.Length && char.IsLowSurrogate(text[index + 1]))
-            {
-                index++;
-                continue;
-            }
-
-            return true;
-        }
-
-        return false;
     }
 
     /// <inheritdoc />
