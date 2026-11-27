@@ -31,6 +31,14 @@ public sealed class SqlSugarConnectivityProbeTests : IDisposable
     private static readonly TimeSpan _bound = TimeSpan.FromSeconds(60);
 
     /// <summary>
+    /// 要等一条新连接就绪的用例的单次探测超时（秒）
+    /// </summary>
+    /// <remarks>
+    /// 第一条连接要走一遍驱动与 SqlSugar 的冷启动，负载高的运行器上超过缺省给用例的 1 秒；仍远小于 <see cref="_bound"/>
+    /// </remarks>
+    private const int ReadyProbeSeconds = 10;
+
+    /// <summary>
     /// 应用自己的库
     /// </summary>
     private readonly SqliteDatabase _application = new();
@@ -167,8 +175,11 @@ public sealed class SqlSugarConnectivityProbeTests : IDisposable
     [Fact]
     public async Task DataSourceItem_GoesDegraded_WhenPostgresIsGone_DespiteAnIdlePooledConnection()
     {
+        // 「先就绪」一步是这个数据源的第一条连接（登记时立即开始的后台探测与下面这次同时在连），CI 的 database 分片负载高时偶尔超过 1 秒，
+        // 后台那次按超时把健康项写成 Degraded（ADR-0338）：单次超时放宽到 10 秒。它与探测间隔是注册表的同一个选项，断开之后的那次探测
+        // 撞上转发器已经关掉的连接立即失败，不靠超时，断言不变；间隔也随之变长，用例期间不会有定时的那一轮插进来
         await using var forwarder = Forward(out var connectionString);
-        await using var host = await StartDataSourcesAsync();
+        await using var host = await StartDataSourcesAsync(intervalSeconds: ReadyProbeSeconds);
         var registry = host.Services.GetRequiredService<DataSourceRegistry>();
         (await registry.GetOrAddAsync(new DataSourceDefinition("pg", DatabaseTypes.PostgreSql, connectionString), TestContext.Current.CancellationToken)).ValueOrThrow();
         await registry.ProbeAsync(TestContext.Current.CancellationToken);
