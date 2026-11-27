@@ -143,6 +143,33 @@ public sealed class OperationTests
     }
 
     [Fact]
+    public async Task InvokeAsync_WithoutTheBuiltInMiddleware_EncodesAfterThePipeline()
+    {
+        // 没有 Observe 阶段的内置中间件时没有 Span 与指标，响应在管道之后编码：照常写出，写不出同样以 KERNEL_UNEXPECTED_001 结束、只记一条日志（ADR-0341）
+        using var logs = new LogCapture();
+        var (provider, app) = Hosts.BuildApp(b =>
+        {
+            b.Services.AddSingleton<ILoggerFactory>(logs);
+            b.UseOptions(new KernelOptions { UseBuiltInMiddleware = false });
+            b.UseFeature(new TextsFeature());
+        });
+        await app.StartAsync(CancellationToken.None);
+        await using var owned = provider;
+        await using var scope = provider.CreateAsyncScope();
+        var invoker = provider.GetRequiredService<IOperationInvoker>();
+
+        var written = await invoker.InvokeAsync(Hosts.Context(scope.ServiceProvider), new OperationRequest(TextsOperation.Id, Encoding.UTF8.GetBytes("""{"text":"valid"}""")));
+        var unwritable = await invoker.InvokeAsync(Hosts.Context(scope.ServiceProvider), new OperationRequest(TextsOperation.Id, Encoding.UTF8.GetBytes("""{"text":"value-high"}""")));
+
+        Assert.True(written.IsSuccess, written.Outcome.ToString());
+        Assert.Equal(JsonSerializer.SerializeToUtf8Bytes(TextsOperation.Render("valid"), TextsJsonContext.Default.TextsResponse), written.Payload.ToArray());
+        Assert.Equal(KernelErrors.Unexpected, unwritable.Outcome.Error?.Code);
+        Assert.True(unwritable.Payload.IsEmpty);
+        Assert.Single(logs.Entries, static e => e.Category == "XiHan.Framework.Kernel.Operations.OperationInvoker");
+        await app.StopAsync(CancellationToken.None);
+    }
+
+    [Fact]
     public void Registry_AddRange_WithPermissions_RegistersTheGroupAllOrNothing()
     {
         var permissions = new PermissionRegistry();

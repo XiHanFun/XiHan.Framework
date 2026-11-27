@@ -14,7 +14,7 @@ namespace XiHan.Framework.Kernel.Operations;
 /// </summary>
 /// <remarks>
 /// 按登记表找到描述，经 <see cref="App.InvokeAsync"/> 走完整管道，或在当前调用里直接执行；成功的响应先经 <see cref="IOperationResponseFilter"/> 过滤再写进上下文（ADR-0061）。
-/// XGI 入口写不出响应时记一条错误日志（ADR-0329）
+/// XGI 入口写不出响应时记一条错误日志（ADR-0329）；经完整管道时在 Observe 阶段定结果之前编码，写不出时 Span 与指标记失败（<see cref="OperationCall"/>，ADR-0341）
 /// </remarks>
 internal sealed partial class OperationInvoker : IOperationInvoker
 {
@@ -69,8 +69,11 @@ internal sealed partial class OperationInvoker : IOperationInvoker
         // 描述与载荷在管道开始前进入上下文：Authorize 阶段按契约判定，Validate 阶段按 Schema 校验载荷并解码
         context.SetOperation(descriptor);
         context.SetOperationPayload(request.Payload);
-        var outcome = await _app.InvokeAsync(context, ctx => DispatchAsync(ctx, descriptor, request.Payload)).ConfigureAwait(false);
-        return ToResponse(context, descriptor, outcome);
+
+        // 处理器是这次调用的 HandleAsync：Observe 阶段的内置中间件据此在定结果之前编码响应（ADR-0341）
+        var call = new OperationCall(this, descriptor, request);
+        var outcome = await _app.InvokeAsync(context, call.HandleAsync).ConfigureAwait(false);
+        return call.Complete(context, outcome);
     }
 
     /// <inheritdoc />
@@ -129,7 +132,7 @@ internal sealed partial class OperationInvoker : IOperationInvoker
     /// <remarks>
     /// Validate 阶段已解码的请求直接执行，否则（没有内置中间件或直接 ExecuteAsync）在这里解码；把结果与响应对象写进上下文
     /// </remarks>
-    private async ValueTask DispatchAsync(InvocationContext context, OperationDescriptor descriptor, ReadOnlyMemory<byte> payload)
+    internal async ValueTask DispatchAsync(InvocationContext context, OperationDescriptor descriptor, ReadOnlyMemory<byte> payload)
     {
         if (!context.FindOperationRequest().TryGetValue(out var request))
         {
@@ -218,7 +221,10 @@ internal sealed partial class OperationInvoker : IOperationInvoker
     /// <summary>
     /// 把调用结果与上下文里的响应对象组装成 XGI 响应
     /// </summary>
-    private OperationResponse ToResponse(InvocationContext context, OperationDescriptor descriptor, Result outcome)
+    /// <remarks>
+    /// 结果是成功且有响应对象时编码；写不出时记一条日志，把上下文里的结果换成 <see cref="KernelErrors.Unexpected"/> 并交出它
+    /// </remarks>
+    internal OperationResponse ToResponse(InvocationContext context, OperationDescriptor descriptor, Result outcome)
     {
         // 管道可能在到达 Handle 之前就以失败结束（鉴权、校验、超时），此时没有响应对象
         if (outcome.IsFailure || !context.FindOperationResponse().TryGetValue(out var response))
@@ -233,9 +239,10 @@ internal sealed partial class OperationInvoker : IOperationInvoker
         }
         catch (Exception exception) when (exception is not OperationCanceledException)
         {
-            // 响应写不出（如浮点成员是 NaN）与处理器抛出异常一样按未处理的异常结束，不抛给调用方（RFC-0011 规则 5，ADR-0236）；编码在管道之后，中间件看到的仍是成功
+            // 响应写不出（如浮点成员是 NaN）与处理器抛出异常一样按未处理的异常结束，不抛给调用方（RFC-0011 规则 5，ADR-0236）；
+            // 编码在其余中间件之后，它们看到的仍是成功，Observe 阶段随后照换过的结果记 Span 与指标（ADR-0341）
             var failure = Error.Unexpected(KernelErrors.Unexpected, KernelMessages.UnhandledException, null, exception is FrameworkException framework ? framework.ToError() : null);
-            // 异常没有抛出管道，Observe 阶段不会为它记日志：这里记一条，只带操作 ID、调用与错误码，不带响应的内容（ADR-0329）
+            // 异常不经 Observe 阶段的异常翻译，它不会为此记日志：这里记一条，只带操作 ID、调用与错误码，不带响应的内容（ADR-0329）
             LogUnwritableResponse(_logger, exception, descriptor.Id, context.TraceId, failure.Code);
             context.SetOutcome(failure);
             return OperationResponse.Failure(failure);

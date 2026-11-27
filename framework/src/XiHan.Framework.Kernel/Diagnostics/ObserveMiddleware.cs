@@ -13,7 +13,7 @@ namespace XiHan.Framework.Kernel.Diagnostics;
 /// Observe 阶段的内置中间件
 /// </summary>
 /// <remarks>
-/// 为每次调用开启 Activity <c>xihan.invoke</c>、记录计数与耗时，并把未处理异常转为 <see cref="KernelErrors.Unexpected"/> 结果。Activity 的父级与采样按 RFC-0003 规则 7（<see cref="FrameworkDiagnostics.StartActivity"/>）。Span 与两个指标都带 <c>xihan.outcome</c>；操作调用另带 <c>xihan.operation</c>（操作 ID），不是操作调用时没有这个标签（ADR-0269）
+/// 为每次调用开启 Activity <c>xihan.invoke</c>、记录计数与耗时，并把未处理异常转为 <see cref="KernelErrors.Unexpected"/> 结果。XGI 入口经完整管道的调用在这里、排在后面的中间件都结束之后编码响应，再定结果，写不出时 Span 与指标照调用方拿到的记失败（ADR-0341）。Activity 的父级与采样按 RFC-0003 规则 7（<see cref="FrameworkDiagnostics.StartActivity"/>）。Span 与两个指标都带 <c>xihan.outcome</c>；操作调用另带 <c>xihan.operation</c>（操作 ID），不是操作调用时没有这个标签（ADR-0269）
 /// </remarks>
 /// <param name="loggerFactory">日志工厂</param>
 [ApiLevel(Stability.Stable, "5.0")]
@@ -38,11 +38,17 @@ public sealed partial class ObserveMiddleware(ILoggerFactory loggerFactory) : IP
         // 操作 ID 在进入时取：调用器与宿主在管道开始前把描述放进上下文；处理器若在同一个上下文上再发起调用会换掉它，结束时再读就成了里层的操作
         // 取的是登记过的描述的 ID，不是请求里的文本；不是操作调用时为空，Span 与指标都不带这个标签
         var operation = context.FindOperation().TryGetValue(out var descriptor) ? descriptor.Id : null;
+
+        // XGI 入口的调用同样在进入时认出：处理器在同一个上下文上再发起的调用会换掉上下文里的处理器；只有操作调用才会是它
+        var call = operation is null ? null : OperationCall.Find(context);
         using var activity = StartActivity(context, operation);
         var started = Stopwatch.GetTimestamp();
         try
         {
             await nextStep(context).ConfigureAwait(false);
+
+            // 响应在排在后面的中间件都结束之后、定结果之前编码：写不出时下面照换过的结果记失败，与调用方拿到的一致（RFC-0023「内核的遥测」，ADR-0341）
+            call?.Encode(context);
         }
         catch (Exception exception) when (exception is not OperationCanceledException)
         {

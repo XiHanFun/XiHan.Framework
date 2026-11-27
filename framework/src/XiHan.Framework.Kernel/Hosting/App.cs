@@ -24,7 +24,7 @@ public sealed partial class App : IDisposable
     /// 调用处理器在 <see cref="InvocationContext.Items"/> 中的键
     /// </summary>
     /// <remarks>
-    /// <see cref="InvokeAsync"/> 写入，<see cref="Terminal"/> 读取
+    /// <see cref="InvokeAsync"/> 写入，<see cref="Terminal"/> 与 <see cref="FindHandler"/> 读取
     /// </remarks>
     private static readonly ContextItemKey<PipelineStep> _handlerKey = new("xihan.handler");
 
@@ -449,6 +449,16 @@ public sealed partial class App : IDisposable
     /// 由容器在应用停止后调用
     /// </remarks>
     public void Dispose() => _lifecycleLock.Dispose();
+
+    /// <summary>
+    /// 找出 <see cref="InvokeAsync"/> 放进上下文的处理器
+    /// </summary>
+    /// <remarks>
+    /// Observe 阶段的内置中间件在进入时据此认出 XGI 入口的调用（<see cref="Operations.OperationCall"/>）；不经 <see cref="InvokeAsync"/> 的管道为 <see langword="null"/>
+    /// </remarks>
+    /// <param name="context">调用上下文</param>
+    internal static PipelineStep? FindHandler(InvocationContext context)
+        => context.Find(_handlerKey).TryGetValue(out var handler) ? handler : null;
 
     /// <summary>
     /// 管道终点

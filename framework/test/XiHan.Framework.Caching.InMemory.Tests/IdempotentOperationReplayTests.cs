@@ -1,6 +1,7 @@
 // Copyright (c) XiHanFun Contributors. Licensed under the MIT License.
 // See the LICENSE file in the project root for full license text.
 
+using System.Diagnostics;
 using System.Text;
 using System.Text.Json;
 using Microsoft.Extensions.DependencyInjection;
@@ -11,6 +12,8 @@ using XiHan.Framework.Caching.Abstractions.Idempotency;
 using XiHan.Framework.Caching.Abstractions.Stores;
 using XiHan.Framework.Caching.InMemory.Tests.Fixtures;
 using XiHan.Framework.Kernel;
+using XiHan.Framework.Kernel.Diagnostics;
+using XiHan.Framework.Kernel.Hosting;
 using XiHan.Framework.Kernel.Operations;
 using XiHan.Framework.Primitives;
 using XiHan.Framework.Testing;
@@ -244,6 +247,46 @@ public sealed class IdempotentOperationReplayTests
         Assert.Equal(typeof(IdempotencyMiddleware).FullName, entry.Category);
         Assert.Matches($"^The response of operation '{TicketsFeature.Create}' could not be written for the idempotency record; invocation '[0-9a-f]{{32}}' ends with '{KernelErrors.Unexpected}', and retries replay it\\.$", entry.Message);
         Assert.IsType<ArgumentException>(entry.Exception);
+    }
+
+    [Fact]
+    public async Task AResponseThatCannotBeRecorded_MarksTheSpanAsError_OnTheFirstCallAndTheReplay()
+    {
+        // 幂等记录写不出时 Idempotency 阶段在管道里把结果换成写不出的错误，XGI 入口不再编码：Span 与指标照调用方拿到的记失败；
+        // 重试回放同一个错误，同样记失败（ADR-0324、ADR-0341）
+        await using var host = await StartAsync();
+        using var spans = new SpanCapture([FrameworkDiagnostics.SourceName]);
+        using var metrics = new MetricCapture([FrameworkDiagnostics.SourceName]);
+        metrics.RestrictToCurrentFlow();
+
+        var first = await InvokeSampledAsync(host, Request(TicketsFeature.Create, TicketsOperation.Unencodable), "unencodable-traced");
+        var second = await InvokeSampledAsync(host, Request(TicketsFeature.Create, TicketsOperation.Unencodable), "unencodable-traced");
+
+        foreach (var (response, traceId) in new[] { first, second })
+        {
+            AssertUnencodable(response.Outcome.Error);
+            Assert.True(response.Payload.IsEmpty);
+            var span = Assert.Single(spans.Spans(traceId));
+            Assert.Equal((ActivityStatusCode.Error, KernelErrors.Unexpected), (span.Status, span.StatusDescription));
+            Assert.Equal((TicketsFeature.Create, "failure"), (span.GetTagItem("xihan.operation"), span.GetTagItem("xihan.outcome")));
+        }
+
+        var counted = metrics.Entries.Where(static m => m.Instrument == "xihan.invocations").ToList();
+        Assert.Equal(2, counted.Count);
+        Assert.All(counted, static m => Assert.Equal(new Dictionary<string, object?> { ["xihan.operation"] = TicketsFeature.Create, ["xihan.outcome"] = "failure" }, m.Tags));
+    }
+
+    /// <summary>
+    /// 带幂等键、上游已采样的 XGI 调用
+    /// </summary>
+    /// <remarks>
+    /// 每次调用一个作用域、一个新的 trace-id；交回响应与 trace-id，按它找这次调用的 Span
+    /// </remarks>
+    private static async Task<(OperationResponse Response, string TraceId)> InvokeSampledAsync(TestHost host, OperationRequest request, string key)
+    {
+        await using var scope = host.Services.CreateAsyncScope();
+        var context = App.CreateContext(scope.ServiceProvider, new InvocationContextOptions { TraceId = ActivityTraceId.CreateRandom().ToHexString(), SpanId = ActivitySpanId.CreateRandom().ToHexString(), TraceFlags = ActivityTraceFlags.Recorded, Baggage = Key(key) }, CancellationToken.None);
+        return (await scope.ServiceProvider.GetRequiredService<IOperationInvoker>().InvokeAsync(context, request), context.TraceId);
     }
 
     /// <summary>

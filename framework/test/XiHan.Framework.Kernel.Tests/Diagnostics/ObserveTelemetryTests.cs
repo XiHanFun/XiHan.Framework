@@ -17,7 +17,7 @@ namespace XiHan.Framework.Kernel.Tests.Diagnostics;
 /// Observe 阶段的 Span <c>xihan.invoke</c> 与两个指标上的操作维度（RFC-0023，ADR-0269）
 /// </summary>
 /// <remarks>
-/// 操作调用带 <c>xihan.operation</c>（登记表里的操作 ID），不是操作调用时没有这个标签；请求里的文本不进标签。每个用例登记自己的操作 ID、用自己的 trace-id，指标只看本用例的异步流里记下的
+/// 操作调用带 <c>xihan.operation</c>（登记表里的操作 ID），不是操作调用时没有这个标签；请求里的文本不进标签。XGI 入口写不出响应时照调用方拿到的结果记失败（ADR-0341）。每个用例登记自己的操作 ID、用自己的 trace-id，指标只看本用例的异步流里记下的
 /// </remarks>
 [Collection(nameof(TelemetryGroup))]
 public sealed class ObserveTelemetryTests
@@ -96,6 +96,35 @@ public sealed class ObserveTelemetryTests
         Assert.All(metrics.Entries, m => Assert.Equal(expected, m.Tags));
         Assert.Equal(2, metrics.Entries.Count(static m => m.Instrument == Invocations));
         Assert.Equal(2, metrics.Entries.Count(static m => m.Instrument == Duration));
+    }
+
+    [Theory]
+    [InlineData(TextsOperation.Id, "value-high")]
+    [InlineData(CheckedOperation.Id, "depth-65")]
+    [InlineData(CheckedOperation.Id, "raw-duplicate")]
+    public async Task UnwritableResponse_MarksTheSpanAsError_AndCountsAsFailure_LikeTheCallerSees(string operationId, string shape)
+    {
+        // 响应有孤立的代理项、超过 64 层或有重复成员：XGI 入口写不出，调用方拿到 KERNEL_UNEXPECTED_001。
+        // Span 与两个指标照调用方拿到的结果记失败，标签与错误码与其余失败相同；修之前编码在 Span 结束之后，记成 success、状态 Unset（ADR-0341）
+        var (provider, app) = Hosts.BuildApp(static b => b.UseFeature(new TextsFeature()));
+        await app.StartAsync(CancellationToken.None);
+        using var disposing = provider;
+        using var spans = new SpanCapture([FrameworkDiagnostics.SourceName]);
+        using var metrics = new MetricCapture([FrameworkDiagnostics.SourceName]);
+        metrics.RestrictToCurrentFlow();
+        await using var scope = provider.CreateAsyncScope();
+        var context = Sampled(scope.ServiceProvider);
+
+        var response = await Invoker(provider).InvokeAsync(context, Request(operationId, $$"""{"text":"{{shape}}"}"""));
+
+        Assert.Equal(KernelErrors.Unexpected, response.Outcome.Error?.Code);
+        Assert.True(response.Payload.IsEmpty);
+        var span = Assert.Single(spans.Spans(context.TraceId));
+        Assert.Equal((ActivityStatusCode.Error, KernelErrors.Unexpected), (span.Status, span.StatusDescription));
+        Assert.Equal((operationId, "failure"), (span.GetTagItem("xihan.operation"), span.GetTagItem("xihan.outcome")));
+        var expected = new Dictionary<string, object?> { ["xihan.operation"] = operationId, ["xihan.outcome"] = "failure" };
+        Assert.Equal(expected, Assert.Single(metrics.Entries, static m => m.Instrument == Invocations).Tags);
+        Assert.Equal(expected, Assert.Single(metrics.Entries, static m => m.Instrument == Duration).Tags);
     }
 
     [Fact]
