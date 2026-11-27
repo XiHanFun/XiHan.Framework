@@ -8,13 +8,16 @@
        列出的程序集合计不超过 assemblies.maxBytes；全新进程里装配空应用并启动（ResidentMemoryProbe，7 次取中位数），
        JIT 下的冷启动不超过 coldStart.jitMaxMilliseconds，框架额外常驻内存（装配之后减去运行时自己）不超过
        residentMemory.overheadMaxBytes。超线时再测一轮，仍超线才失败（ADR-0227）。
-    2. 相对回退（给了 -Base 时）：同一台机器上先测对照提交、再测当前提交。
+    2. 相对回退（给了 -Base 时）：同一台机器上先测当前提交、再测对照提交。
        - 耗时：逐个基准比较每次操作的耗时，慢了超过 regressionThreshold 且单侧 Mann-Whitney 检验的 p 值小于 significance 才算回退；
-         有回退时两边各重测一次这几个基准，复测仍回退才失败——共享运行器的噪声会偶发一次，很难连续两次同向。
+         有回退时复测一次这几个基准，复测仍回退才失败。复测时对照与当前交替运行，按 对照、当前、当前、对照 各跑两轮，
+         每边两轮的样本合起来再比，阈值与显著性同首测（ADR-0338）：共享运行器的速度会随时间漂移，两边先后各跑一轮时
+         漂移全落在后跑的一边，可能连着两次同向；对称交替让两边的平均时刻相同，线性的漂移相互抵消。
        - 分配：每次操作分配的字节数增加超过 regressionThreshold 即失败；分配在同一台机器上是确定的，不复测。
          不在仓库里记绝对字节数：启动路径里有随操作系统变化的分配，Windows 上量的数到 Linux 上对不上。
        - 冷启动与常驻内存：全新进程里装配空应用并启动（ResidentMemoryProbe），各跑 7 次取中位数；
          冷启动耗时、框架额外常驻内存（装配之后减去运行时自己）增加超过 regressionThreshold 时复测一次，仍超过才失败。
+         复测同样交替：两边逐次轮流各跑 7 次（单数次先对照、双数次先当前），再各取中位数。
     有意的回退（新增能力本来就要多分配、多花时间）用 -AcceptRegression 放行：相对回退记为「已接受」不阻断，绝对预算照常；
     CI 在最后一个提交的说明带 [perf-accepted] 或 PR 带 perf-accepted 标签时传它。对照提交随每次推送前移，接受只管这一次。
     Native AOT 下的冷启动（-AotProbe 给出按 AOT 发布的 XiHan.Framework.StartupProbe）对照 coldStart.aotTargetMilliseconds 只报告不阻断（ADR-0227）。
@@ -158,27 +161,85 @@ function Compare-Runs($headResults, $baseResults, [string]$label, [bool]$checkAl
     $regressed
 }
 
-# 全新进程里的冷启动与常驻内存，跑 $probeRuns 次取中位数；探针不存在（对照提交还没有它）时返回 $null
+# 全新进程里跑一次探针，返回这一次的常驻内存与冷启动；探针不存在（对照提交还没有它）或没给出结果时返回 $null
 # $fileName 与 $prefix 是启动探针的程序与它前面的参数：JIT 口径是 dotnet 加基准程序，AOT 口径是发布出来的可执行文件
-function Measure-Probe([string]$name, [string]$fileName, [string[]]$prefix) {
-    $samples = [System.Collections.Generic.List[object]]::new()
-    foreach ($run in 1..$probeRuns) {
-        $file = Join-Path $Artifacts "$name-probe-$run.json"
-        $exitCode = Invoke-Program $fileName (@($prefix) + @('--resident-memory', $file)) -Quiet
-        if ($exitCode -ne 0 -or -not (Test-Path $file)) { return $null }
-        $probe = Get-Content $file -Raw | ConvertFrom-Json
-        if ($null -eq $probe.coldStartMilliseconds) { return $null }
-        $samples.Add([pscustomobject]@{
-                Resident  = [double]$probe.residentBytes
-                Overhead  = [double]$probe.residentBytes - [double]$probe.runtimeBytes
-                ColdStart = [double]$probe.coldStartMilliseconds
-            })
+function Measure-ProbeRun([string]$name, [int]$run, [string]$fileName, [string[]]$prefix) {
+    $file = Join-Path $Artifacts "$name-probe-$run.json"
+    $exitCode = Invoke-Program $fileName (@($prefix) + @('--resident-memory', $file)) -Quiet
+    if ($exitCode -ne 0 -or -not (Test-Path $file)) { return $null }
+    $probe = Get-Content $file -Raw | ConvertFrom-Json
+    if ($null -eq $probe.coldStartMilliseconds) { return $null }
+    [pscustomobject]@{
+        Resident  = [double]$probe.residentBytes
+        Overhead  = [double]$probe.residentBytes - [double]$probe.runtimeBytes
+        ColdStart = [double]$probe.coldStartMilliseconds
     }
+}
+
+# 各次探针结果的中位数
+function Get-ProbeMedians($samples) {
     [pscustomobject]@{
         Resident  = Get-Median @($samples.Resident)
         Overhead  = Get-Median @($samples.Overhead)
         ColdStart = Get-Median @($samples.ColdStart)
     }
+}
+
+# 全新进程里的冷启动与常驻内存，跑 $probeRuns 次取中位数；任何一次没有结果时返回 $null
+function Measure-Probe([string]$name, [string]$fileName, [string[]]$prefix) {
+    $samples = [System.Collections.Generic.List[object]]::new()
+    foreach ($run in 1..$probeRuns) {
+        $sample = Measure-ProbeRun $name $run $fileName $prefix
+        if ($null -eq $sample) { return $null }
+        $samples.Add($sample)
+    }
+    Get-ProbeMedians $samples
+}
+
+# 对照与当前交替跑探针，各 $probeRuns 次取中位数：单数次先对照、双数次先当前，两边的平均时刻相同（ADR-0338）
+# 返回 Base 与 Head 两份中位数；任何一次没有结果时返回 $null
+function Measure-ProbePair([string]$name, [string[]]$basePrefix, [string[]]$headPrefix) {
+    $baseSamples = [System.Collections.Generic.List[object]]::new()
+    $headSamples = [System.Collections.Generic.List[object]]::new()
+    foreach ($run in 1..$probeRuns) {
+        $order = if ($run % 2 -eq 1) { @('base', 'head') } else { @('head', 'base') }
+        foreach ($side in $order) {
+            $sample = if ($side -eq 'base') { Measure-ProbeRun "base-$name" $run 'dotnet' $basePrefix } else { Measure-ProbeRun "head-$name" $run 'dotnet' $headPrefix }
+            if ($null -eq $sample) { return $null }
+            if ($side -eq 'base') { $baseSamples.Add($sample) } else { $headSamples.Add($sample) }
+        }
+    }
+    [pscustomobject]@{ Base = Get-ProbeMedians $baseSamples; Head = Get-ProbeMedians $headSamples }
+}
+
+# 两轮基准结果按全名合并：正式测量的样本接在一起，其余取第一轮的；只留两轮都有的基准
+function Join-Runs($first, $second) {
+    $joined = @{}
+    foreach ($name in $first.Keys) {
+        if (-not $second.ContainsKey($name)) { continue }
+        $joined[$name] = [pscustomobject]@{
+            FullName     = $name
+            Measurements = @($first[$name].Measurements) + @($second[$name].Measurements)
+            Memory       = $first[$name].Memory
+            Statistics   = $first[$name].Statistics
+        }
+    }
+    $joined
+}
+
+# 复测首测回退的基准，返回复测仍回退的全名
+# 只重跑这几个基准，对照与当前按 对照、当前、当前、对照 交替各跑两轮，每边两轮的样本合起来与首测同一个阈值和显著性比较（ADR-0338）：
+# 先后各跑一轮时运行器的漂移全落在后跑的一边，可能连着两次同向；对称交替让两边的平均时刻相同，线性的漂移相互抵消
+function Confirm-Regressions([string[]]$regressed) {
+    $filters = @($regressed | ForEach-Object { $_ -replace '\(.*$', '' } | Sort-Object -Unique)
+    $baseFirst = Invoke-Benchmarks $Base 'base-confirm-1' $filters
+    $headFirst = Invoke-Benchmarks $Head 'head-confirm-1' $filters
+    $headSecond = Invoke-Benchmarks $Head 'head-confirm-2' $filters
+    $baseSecond = Invoke-Benchmarks $Base 'base-confirm-2' $filters
+    $baseAgain = Join-Runs $baseFirst $baseSecond
+    $headAgain = Join-Runs $headFirst $headSecond
+    $retest = @{}; foreach ($name in $regressed) { if ($headAgain.ContainsKey($name)) { $retest[$name] = $headAgain[$name] } }
+    Compare-Runs $retest $baseAgain '复测（交替两轮）' $false
 }
 
 # 冷启动与额外常驻内存相对对照提交的变化
@@ -241,12 +302,7 @@ if ($Base) {
     $baseResults = Invoke-Benchmarks $Base 'base' @('*')
     $regressed = Compare-Runs $headResults $baseResults '首测' $true
     if ($regressed.Count -gt 0) {
-        # 复测：两边只重跑回退的基准；先跑对照再跑当前，与首测同序
-        $filters = @($regressed | ForEach-Object { $_ -replace '\(.*$', '' } | Sort-Object -Unique)
-        $baseAgain = Invoke-Benchmarks $Base 'base-confirm' $filters
-        $headAgain = Invoke-Benchmarks $Head 'head-confirm' $filters
-        $retest = @{}; foreach ($name in $regressed) { if ($headAgain.ContainsKey($name)) { $retest[$name] = $headAgain[$name] } }
-        foreach ($name in (Compare-Runs $retest $baseAgain '复测' $false)) {
+        foreach ($name in (Confirm-Regressions @($regressed))) {
             $regressions.Add("Benchmark '$name' is slower than the base commit by more than $($threshold * 100)% in two runs.")
         }
     }
@@ -260,9 +316,11 @@ if ($Base) {
         $change = Compare-Probes $headProbe $baseProbe
         $report.Add(('冷启动相对对照提交 {0:+0.0%;-0.0%;0.0%}，框架额外常驻内存 {1:+0.0%;-0.0%;0.0%}。' -f $change.ColdStart, $change.Overhead))
         if ($change.ColdStart -gt $threshold -or $change.Overhead -gt $threshold) {
-            $baseProbe = Measure-Probe 'base-confirm' 'dotnet' @((Join-Path $Base $program)); $headProbe = Measure-Probe 'head-confirm' 'dotnet' $jitProbe
-            $change = Compare-Probes $headProbe $baseProbe
-            $report.Add(('复测：冷启动 {0:+0.0%;-0.0%;0.0%}，框架额外常驻内存 {1:+0.0%;-0.0%;0.0%}。' -f $change.ColdStart, $change.Overhead))
+            # 复测时两边逐次交替，不再先测完一边再测另一边
+            $pair = Measure-ProbePair 'confirm' @((Join-Path $Base $program)) $jitProbe
+            if ($null -eq $pair) { throw 'The resident memory probe produced no result on the retest.' }
+            $change = Compare-Probes $pair.Head $pair.Base
+            $report.Add(('复测（交替）：冷启动 {0:+0.0%;-0.0%;0.0%}，框架额外常驻内存 {1:+0.0%;-0.0%;0.0%}。' -f $change.ColdStart, $change.Overhead))
             if ($change.ColdStart -gt $threshold) { $regressions.Add("Cold start is slower than the base commit by $([math]::Round($change.ColdStart * 100, 1))% in two runs.") }
             if ($change.Overhead -gt $threshold) { $regressions.Add("Framework resident memory grew by $([math]::Round($change.Overhead * 100, 1))% over the base commit in two runs.") }
         }
