@@ -7,7 +7,7 @@ using XiHan.Framework.Kernel.Hosting;
 namespace XiHan.Framework.Persistence.SqlSugar.Tests;
 
 /// <summary>
-/// 测试独占的一个 Oracle 用户（由 <see cref="OracleTestServer.CreateSchema"/> 建出），释放时连同它的表删除
+/// 测试独占的一个 Oracle 用户（由 <see cref="OracleTestServer.CreateSchema()"/> 建出），释放时连同它的表删除
 /// </summary>
 internal sealed class OracleSchema(string admin, string user, string connectionString) : IDisposable
 {
