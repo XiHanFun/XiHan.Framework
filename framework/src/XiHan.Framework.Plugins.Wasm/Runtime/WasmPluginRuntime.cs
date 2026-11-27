@@ -26,7 +26,7 @@ namespace XiHan.Framework.Plugins.Wasm.Runtime;
 /// 一个 Wasm 插件的运行时
 /// </summary>
 /// <remarks>
-/// 模块编译、实例化与握手、配置与启动、串行调用、健康轮询、陷阱后的退避重建与停止（<c>spec/plugin/wasm.md</c> §5），以及经它的操作调用、事件投递与中间件钩子
+/// 模块编译、实例化与握手、配置与启动、串行调用、健康轮询、启动阶段失败与陷阱之后的退避重建、停止（<c>spec/plugin/wasm.md</c> §5），以及经它的操作调用、事件投递与中间件钩子
 /// </remarks>
 internal sealed partial class WasmPluginRuntime : IPluginRuntime, IPluginCarrier, IDisposable
 {
@@ -239,6 +239,21 @@ internal sealed partial class WasmPluginRuntime : IPluginRuntime, IPluginCarrier
         IsRejected = true;
         _stopping = true;
         _lifecycle.Fail(error);
+    }
+
+    /// <summary>
+    /// 启动阶段失败后按重启策略在后台重建
+    /// </summary>
+    /// <remarks>
+    /// 组装 <c>Configure</c> 请求、<c>xihan_configure</c>、<c>xihan_start</c> 失败与崩溃一样按退避重建实例并计入次数上限，退避期间的调用按不可用失败（<c>spec/plugin/wasm.md</c> §5，ADR-0337）。发现时被拒、已显式停止或已有重建在退避中时什么都不做
+    /// </remarks>
+    public void ScheduleRestart()
+    {
+        // 不带调用方的异步流：与崩溃之后的重建一样，回调流的标记与调用方的上下文不能漏进后台的重建
+        using (ExecutionContext.SuppressFlow())
+        {
+            _lifecycle.ScheduleRestart();
+        }
     }
 
     /// <summary>
@@ -561,7 +576,7 @@ internal sealed partial class WasmPluginRuntime : IPluginRuntime, IPluginCarrier
             }
 
             var instance = _instance!;
-            // 请求在调用之前组装：绑定读不出来（挂载的目录读失败）与配置这一步失败同样处理，丢弃实例、记为 Failed，下一次调用或退避重建时再试
+            // 请求在调用之前组装：绑定读不出来（挂载的目录读失败）与配置这一步失败同样处理，丢弃实例、记为 Failed，由宿主排的退避重建再试（懒激活的首次调用是下一次调用再试）
             var request = BuildConfigure();
             if (!request.TryGetValue(out var configure))
             {
@@ -830,7 +845,7 @@ internal sealed partial class WasmPluginRuntime : IPluginRuntime, IPluginCarrier
     /// 运行期崩溃
     /// </summary>
     /// <remarks>
-    /// 若该实例仍是当前实例则丢弃、记为 Failed 并按退避重建；生命周期阶段的失败由各自的路径处理，这里不重复
+    /// 若该实例仍是当前实例则丢弃、记为 Failed 并按退避重建；启动阶段的失败由各自的路径记下、由宿主排退避重建（<see cref="ScheduleRestart"/>），这里不重复
     /// </remarks>
     private async Task HandleCrashAsync(WasmInstance instance, Error error)
     {

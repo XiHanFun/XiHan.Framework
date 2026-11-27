@@ -195,7 +195,7 @@ public sealed partial class WasmPluginHost : IPluginHost, IHealthContributor, IA
 
     /// <inheritdoc />
     /// <remarks>
-    /// 消息目录、代理操作、声明的权限码与贡献的中间件一次登记、全进或全不进（ADR-0085、ADR-0088、ADR-0252）：中间件在 <see cref="PipelineBuilder.UseOwned"/> 里成组登记并立即核对，约束目标未登记、有歧义、跨阶段（<c>KERNEL_PIPELINE_003</c>）或成环（<c>KERNEL_PIPELINE_001</c>）时整个插件登记失败、已登记的目录、操作与权限码撤回、管道不变。登记成功之后开始的调用经过插件的中间件
+    /// 消息目录、代理操作、声明的权限码与贡献的中间件一次登记、全进或全不进（ADR-0085、ADR-0088、ADR-0252）：中间件在 <see cref="PipelineBuilder.UseOwned"/> 里成组登记并立即核对，约束目标未登记、有歧义、跨阶段（<c>KERNEL_PIPELINE_003</c>）或成环（<c>KERNEL_PIPELINE_001</c>）时整个插件登记失败、已登记的目录、操作与权限码撤回、管道不变。登记成功之后开始的调用经过插件的中间件。登记之后启动失败（组装 <c>Configure</c> 请求、<c>xihan_configure</c>、<c>xihan_start</c>）返回给调用方，插件保持 Failed 并按退避重建，直到卸载；退避期间的调用是 <c>PLUGINS_UNAVAILABLE_001</c>（<c>spec/plugin/wasm.md</c> §5，ADR-0337）。实例化与握手失败（发现阶段）不重试
     /// </remarks>
     public async Task<Result<PluginStatus>> LoadAsync(PluginSource source, CancellationToken cancellationToken)
     {
@@ -222,7 +222,14 @@ public sealed partial class WasmPluginHost : IPluginHost, IHealthContributor, IA
         }
 
         var started = await runtime.StartAsync(cancellationToken).ConfigureAwait(false);
-        return started.IsSuccess ? runtime.Status : started.Error!;
+        if (started.IsFailure)
+        {
+            // 失败返回给调用方，插件保持 Failed 并按重启策略重建，直到卸载（wasm.md §5、lifecycle.md §6）
+            runtime.ScheduleRestart();
+            return started.Error!;
+        }
+
+        return runtime.Status;
     }
 
     /// <inheritdoc />
@@ -251,7 +258,7 @@ public sealed partial class WasmPluginHost : IPluginHost, IHealthContributor, IA
     /// 附着到已构建的宿主容器
     /// </summary>
     /// <remarks>
-    /// 换用宿主日志与时钟、开放回调、记录发现阶段失败的插件、启动 <c>onStartup</c> 的插件（失败只记日志）
+    /// 换用宿主日志与时钟、开放回调、记录发现阶段失败的插件、启动 <c>onStartup</c> 的插件。启动失败的记日志并按重启策略在后台重建（<c>spec/plugin/wasm.md</c> §5，ADR-0337），发现阶段失败的（被拒、实例化或握手失败）不重试
     /// </remarks>
     internal async Task AttachAsync(IServiceProvider services, CancellationToken cancellationToken)
     {
@@ -291,6 +298,7 @@ public sealed partial class WasmPluginHost : IPluginHost, IHealthContributor, IA
             if (started.IsFailure)
             {
                 LogStartFailed(_logger, runtime.Manifest.Id, started.Error!.Code, started.Error.Message);
+                runtime.ScheduleRestart();
             }
         }
     }

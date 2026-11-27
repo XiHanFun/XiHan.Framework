@@ -2,6 +2,7 @@
 // See the LICENSE file in the project root for full license text.
 
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Time.Testing;
 using XiHan.Framework.Kernel.Plugins;
 using XiHan.Framework.Plugins.Protocol;
@@ -86,7 +87,8 @@ public sealed class WasmPluginBindingTests : IDisposable
         Mount("db", [("uri", "mounted-db-7f3a"), .. Enumerable.Range(0, 64).Select(static i => ($"p{i:D2}", "mounted-pw-3c1e"))]);
         using var plugin = WatPlugin.ExpectingBinding("db", "connection:relational", "mounted-db-7f3a");
 
-        await using var host = await StartAsync(plugin, ["binding:db"]);
+        // 启动失败之后宿主按退避重建（ADR-0337）：时钟不推进，读状态时不会碰上进行中的重建
+        await using var host = await StartAsync(plugin, ["binding:db"], new FakeTimeProvider(DateTimeOffset.UtcNow));
 
         var status = EchoWasmPluginHost.PluginHost(host).FindStatus(WatPlugin.PluginId).ValueOrThrow().Status;
         Assert.Equal(LifecycleState.Failed, status.State);
@@ -103,7 +105,8 @@ public sealed class WasmPluginBindingTests : IDisposable
         Mount("cache", ("uri", "mounted-db-7f3a"));
         using var plugin = WatPlugin.ExpectingBinding("db", "connection:relational", "mounted-db-7f3a");
 
-        await using var host = await StartAsync(plugin, ["binding:db"]);
+        // 启动失败之后宿主按退避重建（ADR-0337）：时钟不推进，读状态时不会碰上进行中的重建
+        await using var host = await StartAsync(plugin, ["binding:db"], new FakeTimeProvider(DateTimeOffset.UtcNow));
 
         var status = EchoWasmPluginHost.PluginHost(host).FindStatus(WatPlugin.PluginId).ValueOrThrow().Status;
         Assert.Equal(LifecycleState.Failed, status.State);
@@ -118,7 +121,8 @@ public sealed class WasmPluginBindingTests : IDisposable
         Mount("db", ("type", "connection:document"), ("uri", "mounted-db-7f3a"));
         using var plugin = WatPlugin.ExpectingBinding("db", "connection:relational", "mounted-db-7f3a");
 
-        await using var host = await StartAsync(plugin, ["binding:db"]);
+        // 启动失败之后宿主按退避重建（ADR-0337）：时钟不推进，读状态时不会碰上进行中的重建
+        await using var host = await StartAsync(plugin, ["binding:db"], new FakeTimeProvider(DateTimeOffset.UtcNow));
 
         var status = EchoWasmPluginHost.PluginHost(host).FindStatus(WatPlugin.PluginId).ValueOrThrow().Status;
         Assert.Equal(LifecycleState.Failed, status.State);
@@ -129,13 +133,15 @@ public sealed class WasmPluginBindingTests : IDisposable
     [Theory]
     [InlineData("XiHan:Bindings:db:value", "s3<high>cret", "fixed-db-2b7d")]
     [InlineData("XiHan:Bindings:db:password", "s3<low>cret", "fixed-pw-6e09")]
-    public async Task Binding_WithALoneSurrogate_FailsTheConfigureStep_AndTheNextCallTriesAgain(string key, string value, string fixedValue)
+    public async Task Binding_WithALoneSurrogate_FailsTheConfigureStep_AndIsRetriedWithBackoff(string key, string value, string fixedValue)
     {
         // 主值或属性值有孤立的代理项：组装配置请求即失败，与进程外插件走同一处（PluginConfigureRequests，ADR-0321），不调 xihan_configure；
-        // 插件停在 Failed、原因只带绑定名，宿主降级运行。启动阶段的失败 Wasm 宿主不在后台重试，下一次调用按需再试（ADR-0260、ADR-0325）。
+        // 插件停在 Failed、原因只带绑定名，宿主降级运行。启动阶段的失败与崩溃一样按 lifecycle.md §6 退避重建（wasm.md §5，ADR-0337；以前不在后台重试、下一次调用按需再试）。
         // 用例数据里只写占位：孤立的代理项不进测试用例的名字
+        var clock = new FakeTimeProvider(DateTimeOffset.UtcNow);
+        using var logs = new LogCapture();
         using var plugin = WatPlugin.ExpectingBinding("db", "connection:relational", fixedValue);
-        await using var host = await StartAsync(plugin, ["binding:db"], Bindings(key, WithLoneSurrogates(value)));
+        await using var host = await StartAsync(plugin, ["binding:db"], clock, logs, Bindings(key, WithLoneSurrogates(value)));
         var plugins = EchoWasmPluginHost.PluginHost(host);
 
         var failed = plugins.FindStatus(WatPlugin.PluginId).ValueOrThrow();
@@ -143,15 +149,64 @@ public sealed class WasmPluginBindingTests : IDisposable
         Assert.Equal(0, failed.Restarts);
         Assert.Equal(LifecycleState.Degraded, host.App.State);
 
-        // 下一次调用重建实例、再组装一次请求：照样失败，调用方拿到的是配置这一步的错误，不是插件不可用
-        var call = await EchoWasmPluginHost.InvokeAsync(host, WatPlugin.Operation, "{}");
-        AssertLoneSurrogateRejected(call.Outcome.Error, plugins.FindStatus(WatPlugin.PluginId).ValueOrThrow().Status.State);
+        // 退避期间的调用是不可用，不按需抢在退避之前重建（修之前这一次调用就重建实例、再组装一次请求）
+        Assert.Equal(PluginErrors.Unavailable, (await EchoWasmPluginHost.InvokeAsync(host, WatPlugin.Operation, "{}")).Outcome.Error?.Code);
 
-        // 改正绑定之后的那次调用照常配置并启动：插件拿到的是改正的值
+        // 推过第一次退避（1 秒）：重建时再组装一次请求，原因相同，计一次重启，排上第二次退避
+        Assert.True(await RetriesAfterBackoffAsync(plugins, clock, TimeSpan.FromSeconds(10)), "The rebuild must start after the backoff.");
+        Assert.True(await RebuildScheduledAsync(logs, 2, TimeSpan.FromSeconds(10)), "The failed rebuild must schedule the next backoff.");
+        var retried = plugins.FindStatus(WatPlugin.PluginId).ValueOrThrow();
+        AssertLoneSurrogateRejected(retried.Status.Error, retried.Status.State);
+        Assert.Equal(1, retried.Restarts);
+        Assert.Equal(PluginErrors.Unavailable, (await EchoWasmPluginHost.InvokeAsync(host, WatPlugin.Operation, "{}")).Outcome.Error?.Code);
+        Assert.Equal(1, plugins.FindStatus(WatPlugin.PluginId).ValueOrThrow().Restarts);
+
+        // 改正绑定之后，下一次退避（2 秒）的重建照常配置并启动：插件拿到的是改正的值
         host.Configuration[key] = fixedValue;
-        await EchoWasmPluginHost.InvokeAsync(host, WatPlugin.Operation, "{}");
-        var status = plugins.FindStatus(WatPlugin.PluginId).ValueOrThrow().Status;
-        Assert.True(status.State == LifecycleState.Ready, $"The plugin must be configured with the corrected binding, but it is {status.State}: {status.Error}");
+        Assert.True(await RetriesAfterBackoffAsync(plugins, clock, TimeSpan.FromSeconds(10)), "The rebuild must be retried after the next backoff.");
+        Assert.True(await EchoWasmPluginHost.WaitUntilAsync(() => plugins.FindStatus(WatPlugin.PluginId).ValueOrThrow().Status.State == LifecycleState.Ready, TimeSpan.FromSeconds(10)));
+        Assert.Equal(2, plugins.FindStatus(WatPlugin.PluginId).ValueOrThrow().Restarts);
+        Assert.Equal(LifecycleState.Ready, host.App.State);
+    }
+
+    [Fact]
+    public async Task Binding_FixedBeforeTheBackoffEnds_IsPickedUpByTheRebuild_NotByACall()
+    {
+        // 启动时配置失败、退避结束之前改正并调用：仍是不可用，改正的值由退避结束时的重建取走（ADR-0337）
+        var clock = new FakeTimeProvider(DateTimeOffset.UtcNow);
+        using var plugin = WatPlugin.ExpectingBinding("db", "connection:relational", "fixed-db-2b7d");
+        await using var host = await StartAsync(plugin, ["binding:db"], clock, ("XiHan:Bindings:db:value", WithLoneSurrogates("s3<high>cret")));
+        var plugins = EchoWasmPluginHost.PluginHost(host);
+        host.Configuration["XiHan:Bindings:db:value"] = "fixed-db-2b7d";
+
+        Assert.Equal(PluginErrors.Unavailable, (await EchoWasmPluginHost.InvokeAsync(host, WatPlugin.Operation, "{}")).Outcome.Error?.Code);
+        Assert.Equal(LifecycleState.Failed, plugins.FindStatus(WatPlugin.PluginId).ValueOrThrow().Status.State);
+
+        Assert.True(await RetriesAfterBackoffAsync(plugins, clock, TimeSpan.FromSeconds(10)), "The rebuild must start after the backoff.");
+        Assert.True(await EchoWasmPluginHost.WaitUntilAsync(() => plugins.FindStatus(WatPlugin.PluginId).ValueOrThrow().Status.State == LifecycleState.Ready, TimeSpan.FromSeconds(10)));
+        Assert.Equal(1, plugins.FindStatus(WatPlugin.PluginId).ValueOrThrow().Restarts);
+    }
+
+    [Fact]
+    public async Task Binding_WithALoneSurrogate_InAPluginLoadedAtRuntime_ReturnsTheFailure_AndIsRetriedWithBackoff()
+    {
+        // 运行期加载：启动失败返回给调用方，插件留在宿主里以 Failed 按退避重建，直到卸载（wasm.md §5，与进程外的 LoadAsync 相同）
+        var clock = new FakeTimeProvider(DateTimeOffset.UtcNow);
+        using var plugin = WatPlugin.ExpectingBinding("db", "connection:relational", "fixed-db-2b7d");
+        await using var host = await TestHost.StartAsync(
+            b => b.UseServiceBindingRoot(_root).UseFeature<WasmPluginsFeature>(),
+            [new("XiHan:Plugins:Wasm:EpochIntervalMilliseconds", "5"), new("XiHan:Bindings:db:value", WithLoneSurrogates("s3<high>cret"))],
+            s => s.AddSingleton<TimeProvider>(clock));
+        var plugins = EchoWasmPluginHost.PluginHost(host);
+
+        var loaded = await host.Services.GetRequiredService<IPluginHost>().LoadAsync(new PluginSource(plugin.Directory, new PluginPermissions(["binding:db"])), CancellationToken.None);
+        AssertLoneSurrogateRejected(loaded.Error, plugins.FindStatus(WatPlugin.PluginId).ValueOrThrow().Status.State);
+        Assert.Equal(PluginErrors.Unavailable, (await EchoWasmPluginHost.InvokeAsync(host, WatPlugin.Operation, "{}")).Outcome.Error?.Code);
+
+        host.Configuration["XiHan:Bindings:db:value"] = "fixed-db-2b7d";
+        Assert.True(await RetriesAfterBackoffAsync(plugins, clock, TimeSpan.FromSeconds(10)), "The rebuild must start after the backoff.");
+        Assert.True(await EchoWasmPluginHost.WaitUntilAsync(() => plugins.FindStatus(WatPlugin.PluginId).ValueOrThrow().Status.State == LifecycleState.Ready, TimeSpan.FromSeconds(10)));
+        Assert.Equal(1, plugins.FindStatus(WatPlugin.PluginId).ValueOrThrow().Restarts);
     }
 
     [Fact]
@@ -228,6 +283,15 @@ public sealed class WasmPluginBindingTests : IDisposable
     }
 
     /// <summary>
+    /// 等到运行时记下第 <paramref name="attempt"/> 次重建的排期
+    /// </summary>
+    /// <remarks>
+    /// 重建失败之后、进入下一次退避之前记这一条，记下时这次重建已经结束、插件又在退避里；重启计数在重建之前就递增，看计数分不出重建是否已经结束。返回是否在 <paramref name="timeout"/> 内记下
+    /// </remarks>
+    private static Task<bool> RebuildScheduledAsync(LogCapture logs, int attempt, TimeSpan timeout)
+        => EchoWasmPluginHost.WaitUntilAsync(() => logs.Entries.Any(e => e.Message.Contains(WatPlugin.PluginId, StringComparison.Ordinal) && e.Message.EndsWith($"(attempt {attempt}).", StringComparison.Ordinal)), timeout);
+
+    /// <summary>
     /// 把占位 <c>&lt;high&gt;</c>、<c>&lt;low&gt;</c> 换成孤立的高、低代理项
     /// </summary>
     private static string WithLoneSurrogates(string text)
@@ -289,6 +353,15 @@ public sealed class WasmPluginBindingTests : IDisposable
     /// 绑定根目录指向本用例的目录
     /// </remarks>
     private Task<TestHost> StartAsync(WatPlugin plugin, IReadOnlyList<string> grants, TimeProvider? clock, params (string Key, string Value)[] extra)
+        => StartAsync(plugin, grants, clock, null, extra);
+
+    /// <summary>
+    /// 启动装配了 Wasm 插件特性的宿主，可换上给定的时钟、把日志收进 <paramref name="logs"/>
+    /// </summary>
+    /// <remarks>
+    /// 绑定根目录指向本用例的目录
+    /// </remarks>
+    private Task<TestHost> StartAsync(WatPlugin plugin, IReadOnlyList<string> grants, TimeProvider? clock, LogCapture? logs, params (string Key, string Value)[] extra)
     {
         var configuration = new List<KeyValuePair<string, string?>>
         {
@@ -297,14 +370,21 @@ public sealed class WasmPluginBindingTests : IDisposable
         };
         configuration.AddRange(grants.Select(static (grant, index) => new KeyValuePair<string, string?>($"XiHan:Plugins:Wasm:Grants:{WatPlugin.PluginId}:{index}", grant)));
         configuration.AddRange(extra.Select(static e => new KeyValuePair<string, string?>(e.Key, e.Value)));
-        Action<IServiceCollection>? services = null;
-        if (clock is { } given)
+        void Services(IServiceCollection services)
         {
-            // 退避按宿主时钟等待：换成可推进的时钟，用例不必真的等
-            services = s => s.AddSingleton(given);
+            if (clock is { } given)
+            {
+                // 退避按宿主时钟等待：换成可推进的时钟，用例不必真的等
+                services.AddSingleton(given);
+            }
+
+            if (logs is not null)
+            {
+                services.AddSingleton<ILoggerFactory>(new LoggerFactory([logs]));
+            }
         }
 
-        return TestHost.StartAsync(b => b.UseServiceBindingRoot(_root).UseFeature<WasmPluginsFeature>(), configuration, services);
+        return TestHost.StartAsync(b => b.UseServiceBindingRoot(_root).UseFeature<WasmPluginsFeature>(), configuration, Services);
     }
 
     /// <summary>

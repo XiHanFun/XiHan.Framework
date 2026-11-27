@@ -37,7 +37,7 @@ public sealed record WasmPluginStatus
     public uint? ProtocolVersion { get; init; }
 
     /// <summary>
-    /// 崩溃后自动重建实例的累计次数
+    /// 崩溃或启动阶段失败后自动重建实例的累计次数
     /// </summary>
     public required int Restarts { get; init; }
 
