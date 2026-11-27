@@ -80,7 +80,7 @@
 - `ResourceName` 的 ID 段、`AddAuditDetail` 的键有孤立的代理项时抛 `ArgumentException`（ADR-0321）
 - 工作流的关联 ID（启动、信号、实例查询）有孤立的代理项时返回 `WORKFLOW_VALIDATION_002`（ADR-0321）
 - 知识库的文档 ID 有孤立的代理项时，摄入与删除返回 `AI_VALIDATION_001`，`RetrievalFilter` 构造时抛出（ADR-0321）
-- 作业与触发器的说明或数据有孤立的代理项时返回 `SCHEDULING_VALIDATION_001`，代码登记的这类作业同步不进存储、每个周期记日志重试：改正定义（ADR-0321）
+- 运行时登记的作业与触发器的说明或数据有孤立的代理项时返回 `SCHEDULING_VALIDATION_001`：改正定义（ADR-0321）
 - 下发给插件的绑定的主值或属性值有孤立的代理项时，插件配置失败：改正绑定（ADR-0321）
 - 以下配置有孤立的代理项时启动失败，去掉即可：Redis 缓存与 Redis 消息的 `KeyPrefix`、`XiHan:Messaging:DeadLetterSuffix`、Kafka 的 `TopicPrefix` 与 `ConsumerGroup`、RabbitMQ 的 `QueuePrefix` 与 `Exchange`、远程配置的命名空间、Nacos 的 `Group` 与 `Tenant`（ADR-0321）
 - 自定义元数据的值有孤立的代理项时构造 `BlobPutOptions` 抛 `ArgumentException`（以前文件系统存储收下、读回 U+FFFD）：写入之前先清理这类值（ADR-0322）
@@ -90,6 +90,21 @@
 - 定义目录的 `UpdateAsync`、`PublishAsync`、`DisableAsync`、`ArchiveAsync`、`DeleteAsync` 改写已有定义时取定义 ID 的锁、持有到调用结束：同时改同一份定义的调用，后到的那一项等 `XiHan:Workflow:LockTimeoutSeconds` 后以 `WORKFLOW_TIMEOUT_001` 失败，按等锁超时处理或重试（ADR-0326）
 - `Plugins.Conformance` 的 `SampleRequests` 有孤立的代理项时用例以 `InvalidOperationException` 失败，以前照发 U+FFFD：改正样例（ADR-0327）
 - `DataSourceRegistry.DisposeAsync` 等进行中的后台探测结束才释放数据源并返回：Provider 的探测不响应取消时，释放随之变慢（ADR-0327）
+- 只生成快速路径（`GenerationMode = Serialization`）的序列化上下文用作响应或带 Schema 的请求时写不出、按未处理的异常结束：去掉这个设置，用缺省的生成模式（ADR-0329）
+- `ResourceName` 的 ID 段有控制字符（U+0000–U+001F、U+007F–U+009F）时构造抛 `ArgumentException`、`TryParse` 为假：从外部输入拼 ID 段的代码先去掉或编码这些字符（ADR-0330）
+- `mcp` 命令的 stdin 一行超过 4 MiB 时答复解析错误（-32700）、这一行不执行：要收更长的消息，配大 `XiHan:Protocols:Mcp:MaxStdioLineBytes`（ADR-0331）
+- MCP 消息里任何一层的重复成员、`arguments` 里的孤立代理项或重复成员答复解析错误（-32700，HTTP 400），以前取最后一个照常执行或成为 `isError` 结果：客户端发合法的 JSON（ADR-0331）
+- CloudEvents Webhook 以 binary（缺省）发布时，头值里的空格与双引号写成 `%20` / `%22`：不按 CloudEvents 解码头值的接收方改成解码（ADR-0332）
+- CloudEvents 入站 binary 先解开双引号括起的头值，引号不配对、引号里有控制字符或反斜杠在末尾的头值回 400 `MESSAGING_VALIDATION_002`：发送方改正头值（ADR-0332）
+- binary 的空 `ce-subject` / `ce-time` 头与 structured / batch 的 `"subject": ""` 回 400 `MESSAGING_VALIDATION_002`：发送方不带空头，没有 `subject` 就省略（ADR-0332）
+- `MessageEnvelope { Subject = "" }` 抛 `ArgumentException`：领域事件的 `subject` 选择器改为返回 `null`；代理与发件箱里旧的 `"subject": ""` 消息读不出、按无法解码的消息了结，升级前先排空（ADR-0332）
+- 别的客户端以 UTF-8 以外的字符集写进 RFC 2047 encoded-word 的 S3 元数据，经 S3 Provider 读取与 `Head` 返回 `OBJECTSTORAGE_UNAVAILABLE_001`（列举与删除不受影响）：把这类对象的元数据改用 UTF-8 重写（ADR-0333）
+- S3 整读的流没读到末尾就释放时不再抛 `FrameworkException`、只记 Warning：要拿到「内容对不上 `ETag`」的报告就读到读返回 0（`ReadToEnd`、`CopyTo`）（ADR-0333）
+- 上下文的幂等键有孤立的代理项时，调用进程外与 Wasm 插件、投递给插件与经过 Wasm 中间件以 `PLUGINS_UNEXPECTED_001` 结束，以前 gRPC 写成 U+FFFD 照常调用：拼幂等键的代码先用 `UnicodeText.HasLoneSurrogate` 判断（ADR-0334）
+- 工作流启动与实例查询的发起人有孤立的代理项时返回 `WORKFLOW_VALIDATION_002`（`workflow.instance.starter_invalid`）：从外部输入拼发起人的先用 `UnicodeText.HasLoneSurrogate` 判断（ADR-0334）
+- `XiHan:Workflow:Database:HolderId`、`XiHan:Observability:OpenTelemetry:ServiceName` 有孤立的代理项时启动失败，`SetAuditAction` 的动作有控制字符或孤立的代理项时抛 `ArgumentException`：去掉这些字符（ADR-0334）
+- 代码登记的作业说明或数据有孤立的代理项、触发器名重复时 `AddJob` 抛 `ArgumentException`，触发器引用的日历没登记时调度特性启动失败：按消息里的作业名改定义，或补 `AddJobCalendar`（ADR-0335）
+- Wasm 插件启动阶段失败后按退避重建实例，退避期间的调用是 `PLUGINS_UNAVAILABLE_001`，以前是下一次调用按需再试：改正配置之后等下一次退避结束即恢复，不靠调用带起来（ADR-0337）
 :::
 
 ### 版本与兼容
@@ -125,6 +140,10 @@
 - **新增** 原语 `UnicodeText.HasLoneSurrogate`（Stable）：孤立代理项的判定，标识、Baggage 的值与运营方配置的前缀后缀都用它（ADR-0321）
 - **调整** `BaggageKeys.IsAcceptableValue` 拒收孤立的代理项，已登记键的这类值进上下文时丢弃（幂等键照留），`WithBaggage` 抛出；`HttpInvocation.FormatBaggage` 遇到这样的值抛 `ArgumentException`，不再写成 `%EF%BF%BD`（ADR-0321）
 - **修复** 只差在孤立代理项上的 Baggage 值、资源名、审计细节的键、关联 ID、文档 ID、插件绑定值、作业定义与配置的前缀后缀，不再在下游撞成同一个（ADR-0321）
+- **修复** 带 Schema 的类型化调用，请求里的浮点是 NaN 或无穷、或超过序列化上下文的深度上限时返回 `KERNEL_VALIDATION_001`（`reason` 为 `$`），不再是 `KERNEL_UNEXPECTED_001`；64 层、最里层有值的请求照常执行（ADR-0329）
+- **修复** 序列化上下文走源生成快速路径时，64 层、最里层是可空值的响应照常写出；更深的 `EncodeResponse` 只抛 `ArgumentException`，不再抛 `InvalidOperationException`（ADR-0329）
+- **新增** XGI 入口写不出响应时记一条 Error 日志（类别 `OperationInvoker`，带操作 ID、Trace ID 与错误码，不带响应内容）（ADR-0329）
+- **调整** 内核的清单读取不再经源生成反序列化，内核程序集小约 43 KB，读出的清单不变（ADR-0329）
 
 ### 宿主、协议与插件
 
@@ -170,6 +189,15 @@
 - **调整** CloudEvents Webhook 以 binary（缺省）发布时，structured 写不出的 JSON 数据在发出之前抛 `MESSAGING_VALIDATION_002`，与 structured 相同（ADR-0323）
 - **修复** 命令行没有发起调用就返回的失败（用法错误、未暴露的操作、未知命令、`mcp` 的会话选项）的 stderr `detail` 也按 `--locale` 翻译，以前总是默认区域；新增 `CommandLineFailure.WriteAsync(CommandContext, Error, int?)`（ADR-0325）
 - **调整** 进程外插件回调的会话令牌按 SHA-256 查找，再常数时间比较（ADR-0325）
+- **新增** `McpProtocolOptions.MaxStdioLineBytes`（`XiHan:Protocols:Mcp:MaxStdioLineBytes`，缺省 4 MiB）：stdio 一行的字节上限，超过的一行读到行尾丢弃、答复解析错误、会话继续（ADR-0331）
+- **调整** MCP 两种传输的每条消息先过 JSON 文本的共同检查，重复成员、孤立代理项、非法 UTF-8 都答复解析错误（-32700，HTTP 400），不执行 tool（ADR-0331）
+- **修复** MCP Streamable HTTP 正文字符串里的非法 UTF-8、`method` / `id` 里的孤立代理项由 500 改为 400 解析错误；stdio 不再因此结束会话（ADR-0331）
+- **修复** `McpStdioTransport.RunAsync` 每读一块之前核对取消，读一行的中途取消即抛 `OperationCanceledException`（ADR-0331）
+- **调整** CloudEvents binary 的头值照 HTTP 绑定 1.0.2 编解码：出站编码空格与双引号，入站先解开双引号括起的部分再做一轮百分号解码，坏的双引号字符串是 `header_invalid`（ADR-0332）
+- **调整** CloudEvents 入站的空 `ce-subject` 头与 `"subject": ""`、空 `ce-time` 头是信封不合法（ADR-0332）
+- **调整** 宿主写给插件的元数据里已登记 Baggage 的值有孤立的代理项时，这一次调用、投递或 Wasm 中间件钩子不交给插件，以 `PLUGINS_UNEXPECTED_001` 结束，插件照常服务（ADR-0334）
+- **调整** Wasm 插件启动阶段失败（组装 `Configure` 请求、`xihan_configure`、`xihan_start`）后按退避重建实例、计入重启次数，退避期间的调用是 `PLUGINS_UNAVAILABLE_001`，与进程外插件一致（ADR-0337）
+- **修复** 宿主写给 Wasm 插件的错误文案有孤立代理项时换成 U+FFFD 照写，回调的插件不再陷阱，中间件 `after` 阶段的调用不再以 `KERNEL_UNEXPECTED_001` 结束（ADR-0339）
 
 ### 配置
 
@@ -188,6 +216,8 @@
 - **修复** `Security.InMemory` 按严格的 UTF-8 字节比较 API Key，两个只差在孤立代理项上的 key 不再被当成同一个
 - **修复** JWT 的 `Secret` 按严格的 UTF-8 计长与编码，几个孤立代理项不再换成 U+FFFD 凑够 32 字节
 - **调整** `ResourceName` 的 ID 段拒收孤立的代理项（构造抛出、`TryParse` 为假），规范新增向量 `security/resource-names.json`（ADR-0321）
+- **调整** `ResourceName` 的 ID 段拒收控制字符（U+0000–U+001F 与 U+007F–U+009F），构造抛出、`TryParse` 为假，规范向量补用例（ADR-0330）
+- **调整** `SetAuditAction` 的动作有控制字符或孤立的代理项时抛 `ArgumentException`（ADR-0334）
 
 ### 持久化与消息
 
@@ -222,6 +252,8 @@
 - **新增** `services.AddMessageDataSchema(type, dataSchema)` 与 `MessageDataSchemas`（Preview）：领域事件、调度与工作流发布的信封按 `type` 带上 `dataschema`，不登记与以前相同（ADR-0323）
 - **调整** Redis 消息的 `KeyPrefix`、死信后缀、Kafka 的 `TopicPrefix` 与 `ConsumerGroup`、RabbitMQ 的 `QueuePrefix` 与 `Exchange` 有孤立的代理项时启动失败（ADR-0321）
 - **调整** `DataSourceRegistry.DisposeAsync` 先取消并等进行中的后台探测结束，再释放数据源，返回之后不再有它开的连接留在库上（ADR-0327）
+- **新增** 配置节 `XiHan:Messaging:DataSchemas`（数组，每项 `Type` / `DataSchema`，对应 `MessagingOptions.DataSchemas`）登记框架事件的数据模式，与代码登记的同一个 `type` 值不同时启动失败（ADR-0332）
+- **调整** `MessageEnvelope.Subject` 不收空串（抛 `ArgumentException`），只有空白的照收（ADR-0332）
 
 ### 缓存
 
@@ -237,6 +269,7 @@
 - **修复** 开了幂等的插件操作交回空载荷时照常记录并回放空载荷，不再以 `KERNEL_UNEXPECTED_001` 失败、留下「处理中」标记（ADR-0318）
 - **调整** `caching.idempotency.invalid_key`、`caching.inspector.prefix_invalid` 的模板补上孤立的代理项（10 个区域）；Redis 缓存的 `KeyPrefix` 有孤立的代理项时启动失败（ADR-0321）
 - **修复** 开了幂等的操作调用响应写不出（NaN、孤立的代理项、超过 64 层、重复成员）时，记下 `KERNEL_UNEXPECTED_001` 并在 `TimeToLive` 内回放、不再执行；以前 60 秒内的重试得 `CACHING_CONFLICT_002`，之后会再执行一次（ADR-0324）
+- **新增** 幂等记录写不出响应时首次调用记一条 Error 日志（类别 `IdempotencyMiddleware`），重试回放时不再记（ADR-0329）
 
 ### 调度
 
@@ -247,7 +280,8 @@
 - **调整** 计划文本的读法与写法相同：只认单个空格，间隔是 `[d.]hh:mm:ss[.fffffff]`，次数不带前导 0，选项按 `tz=`、`start=`、`end=`、`calendar=` 的次序且不重复，时刻按 RFC 3339 读（ADR-0297）
 - **修复** `JobSchedule.FromCron` 只收 IANA 时区名，不再写出读不回来的 `tz=China Standard Time`（ADR-0297）
 - **修复** 跟在 cron 以外的计划后面的 `tz=` 读成不合法，不再悄悄丢掉（ADR-0297）
-- **调整** 作业与触发器的说明与数据有孤立的代理项是 `SCHEDULING_VALIDATION_001`，运行时与代码登记同一条（ADR-0321）
+- **调整** 作业与触发器的说明与数据有孤立的代理项是 `SCHEDULING_VALIDATION_001`（ADR-0321）
+- **调整** 代码登记的作业不合法即失败：孤立的代理项、触发器名重复在 `AddJob` 时抛 `ArgumentException`，日历未登记在调度器启动时以 `SCHEDULING_VALIDATION_001` 失败，不再每个周期记日志重试、挡住排在后面的代码作业（ADR-0335）
 
 ### 工作流
 
@@ -269,6 +303,9 @@
 - **调整** 启动与信号的关联 ID 有孤立的代理项时返回 `WORKFLOW_VALIDATION_002`（新消息键 `workflow.instance.correlation_invalid`），实例查询的关联 ID 同样拒收，`workflow.instance.query_correlations_invalid` 的模板补上这一条（10 个区域，ADR-0321）
 - **调整** 定义目录改写已有定义的五个操作取定义 ID 的锁、持有到调用结束，同时改同一份定义的调用由此串行，后提交的不再悄悄覆盖先提交的（ADR-0326）
 - **修复** `Workflow.Database` 的查询列回填改写定义行也在定义 ID 的锁内，与同时进行的定义编辑不再有窗口，可以在有人编辑定义时运行，`Busy` 计入锁被占用的定义（ADR-0326）
+- **调整** 启动与实例查询的发起人有孤立的代理项时返回 `WORKFLOW_VALIDATION_002`（新消息键 `workflow.instance.starter_invalid`，10 个区域）；`Workflow.Database` 的 `HolderId` 有孤立的代理项时启动失败（ADR-0334）
+- **调整** `WORKFLOW_TIMEOUT_001` 的文案改成「工作流的锁」，不再说实例：按文案匹配的改按错误码判断（ADR-0336）
+- **优化** 表达式里两个容器比较、`contains` 找容器时，字符串只解码一次（ADR-0336）
 
 ### AI
 
@@ -313,12 +350,17 @@
 - **修复** S3 应答里的值 SDK 解析不了（`Last-Modified`、`Content-Length`、`x-amz-mp-parts-count` 等写错）时各步返回 `OBJECTSTORAGE_UNAVAILABLE_001`，不再抛 `FormatException` / `OverflowException`（ADR-0322）
 - **修复** S3 整读的内容对不上 `ETag` 时，读内容的流抛携带 `OBJECTSTORAGE_UNAVAILABLE_001` 的 `FrameworkException`，不再抛 SDK 的 `AmazonClientException`；`ETag` 不是十六进制的识别不再依赖调用栈（ADR-0322）
 - **修复** S3 条件写入探测里上传分片缺 `ETag` 时按尚未确认处理并放弃上传，不再发出带条件的完成（ADR-0322）
+- **修复** S3 的自定义元数据值能写进非 ASCII 字符与首尾空格：写不出原样的值照 RFC 2047 编码写入、读回时解码，解不了的 encoded-word 返回 `OBJECTSTORAGE_UNAVAILABLE_001`（ADR-0333）
+- **修复** S3 批量删除在 SDK 抛 `DeleteObjectsException` 时逐项报告，只有出错的那几项失败，不再整批报存储故障（ADR-0333）
+- **修复** S3 应答体不是良构的 XML、放弃分片上传与建桶的应答解析不了、列出分片交出不比起点大的编号时返回 `OBJECTSTORAGE_UNAVAILABLE_001`；发起分片上传时建桶失败不再抛出 SDK 的异常（ADR-0333）
+- **调整** S3 整读的流没读到末尾就释放时不再抛 `FrameworkException`，只记 Warning；读到末尾的那次读照旧抛出（ADR-0333）
 
 ### 可观测
 
 - **新增** Span `xihan.plugin.invoke`：宿主调用插件的操作与向插件投递事件各记一条，是 `xihan.invoke` 的子 Span，写给插件的 `traceparent` 以它为父级（ADR-0269）
 - **调整** 操作调用的 `xihan.invoke`、`xihan.invocations`、`xihan.invocation.duration` 新增标签 `xihan.operation`（操作 ID），两个指标的序列按操作分开；不是操作调用时不带这个标签（ADR-0269）
 - **修复** Linux 上的系统运行时长按十进制读，不再差一个计时单位；带符号、指数的 `/proc/uptime` 读成空（ADR-0286）
+- **调整** `OpenTelemetryOptions.ServiceName` 有孤立的代理项时装配失败（ADR-0334）
 
 ### 测试
 
