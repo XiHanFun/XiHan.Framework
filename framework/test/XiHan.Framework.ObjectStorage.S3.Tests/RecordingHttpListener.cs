@@ -190,6 +190,9 @@ internal sealed class RecordingHttpListener : IAsyncDisposable
     {
         await _stopping.CancelAsync();
         _listener.Stop();
+
+        // 先等接受循环结束再取连接：它在停止前最后接住的那条连接也要等到
+        await _accepting;
         Task[] connections;
         lock (_gate)
         {
@@ -197,7 +200,7 @@ internal sealed class RecordingHttpListener : IAsyncDisposable
         }
 
         // 停止信号让每条连接的读取以取消结束，处理任务自己吞掉它
-        await Task.WhenAll([_accepting, .. connections]);
+        await Task.WhenAll(connections);
         _stopping.Dispose();
     }
 
@@ -217,9 +220,9 @@ internal sealed class RecordingHttpListener : IAsyncDisposable
                 }
             }
         }
-        catch (Exception exception) when (exception is OperationCanceledException or SocketException or ObjectDisposedException)
+        catch (Exception exception) when (exception is OperationCanceledException or SocketException or ObjectDisposedException or InvalidOperationException)
         {
-            // 停止监听
+            // 停止监听；接住一条连接后监听器已停，下一次接受先查监听状态，抛的是 InvalidOperationException
         }
     }
 

@@ -107,9 +107,9 @@ internal sealed class TcpForwarder : IAsyncDisposable
                 _ = ForwardAsync(client);
             }
         }
-        catch (Exception exception) when (exception is SocketException or ObjectDisposedException)
+        catch (Exception exception) when (exception is SocketException or ObjectDisposedException or InvalidOperationException)
         {
-            // 监听器停止：结束
+            // 监听器停止：结束；接住一条连接后监听器已停，下一次接受先查监听状态，抛的是 InvalidOperationException
         }
     }
 
