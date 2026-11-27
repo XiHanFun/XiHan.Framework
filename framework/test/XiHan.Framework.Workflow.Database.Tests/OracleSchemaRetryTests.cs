@@ -8,10 +8,10 @@ using SqlSugar;
 namespace XiHan.Framework.Workflow.Database.Tests;
 
 /// <summary>
-/// Oracle 夹具建用户的管理连接失败时清池再试一次
+/// Oracle 夹具建用户的管理连接失败时等两秒、清池再试一次
 /// </summary>
 /// <remarks>
-/// 不需要 Oracle：管理连接指向一个只接受 TCP 连接、从不应答的本机端口，两次都按连接超时失败（ADR-0338）。真实服务上的那类偶发由 CI 的 oracle 分片验证
+/// 不需要 Oracle：管理连接指向一个只接受 TCP 连接、从不应答的本机端口，两次都按连接超时失败（ADR-0338、ADR-0350）。真实服务上的那类偶发由 CI 的 oracle 分片验证
 /// </remarks>
 public sealed class OracleSchemaRetryTests
 {

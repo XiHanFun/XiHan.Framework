@@ -2,6 +2,7 @@
 // See the LICENSE file in the project root for full license text.
 
 using System.Data.Common;
+using System.Diagnostics;
 using Microsoft.Extensions.DependencyInjection;
 using Oracle.ManagedDataAccess.Client;
 using SqlSugar;
@@ -16,7 +17,7 @@ namespace XiHan.Framework.Workflow.Database.Tests;
 /// 每个测试一个临时 Oracle 用户，宿主装配 SqlSugar 持久化与数据库工作流特性
 /// </summary>
 /// <remarks>
-/// 服务器来自环境变量 <see cref="EnvironmentVariable"/>（有建用户权限的连接串，如 <c>User Id=system;Password=…;Data Source=127.0.0.1:1521/FREEPDB1</c>），未设置即跳过，由 CI 的 oracle 分片运行。Oracle 没有「建库」，每个用例建一个随机名的用户，表建在它自己的 schema 里；缺省的 <c>NLS_COMP</c> 与 <c>NLS_SORT</c> 是 <c>BINARY</c>，<c>LIKE</c> 按码元比较，不必另定排序规则。空串存成 <c>NULL</c>，回填按 RFC-0021 把两者当作相同。行级锁，租约表不必放到另一个库。释放时停止宿主、结束它的会话并删用户
+/// 服务器来自环境变量 <see cref="EnvironmentVariable"/>（有建用户权限的连接串，如 <c>User Id=system;Password=…;Data Source=127.0.0.1:1521/FREEPDB1</c>），未设置即跳过，由 CI 的 oracle 分片运行。Oracle 没有「建库」，每个用例建一个随机名的用户，表建在它自己的 schema 里；缺省的 <c>NLS_COMP</c> 与 <c>NLS_SORT</c> 是 <c>BINARY</c>，<c>LIKE</c> 按码元比较，不必另定排序规则。空串存成 <c>NULL</c>，回填按 RFC-0021 把两者当作相同。行级锁，租约表不必放到另一个库。临时用户的连接串用连接池：不用池时每次操作都新开一个专用服务器进程，监听程序把交出去的连接都算作负载，没到 <c>PROCESSES</c> 上限就拒绝新连接（<c>ORA-12516</c>，ADR-0350）。释放时停止宿主、清池、结束它的会话并删用户
 /// </remarks>
 internal sealed class OracleSchema : IGatedDatabase
 {
@@ -24,6 +25,24 @@ internal sealed class OracleSchema : IGatedDatabase
     /// 指向测试服务器的环境变量名
     /// </summary>
     public const string EnvironmentVariable = "XIHAN_TEST_ORACLE";
+
+    /// <summary>
+    /// 管理连接失败之后等多久再试
+    /// </summary>
+    /// <remarks>
+    /// 监听程序拒绝新连接（<c>ORA-12516</c>）要等实例下一次报告负载才解除，实测约半秒（ADR-0350）
+    /// </remarks>
+    private static readonly TimeSpan _retryDelay = TimeSpan.FromSeconds(2);
+
+    /// <summary>
+    /// 删用户前最多等它的会话结束多久
+    /// </summary>
+    private static readonly TimeSpan _sessionWait = TimeSpan.FromSeconds(10);
+
+    /// <summary>
+    /// 等会话结束时查询的间隔
+    /// </summary>
+    private static readonly TimeSpan _sessionPoll = TimeSpan.FromMilliseconds(100);
 
     /// <summary>
     /// 有建用户权限的连接串
@@ -72,10 +91,10 @@ internal sealed class OracleSchema : IGatedDatabase
     }
 
     /// <summary>
-    /// 以 <paramref name="admin"/> 在服务器上建一个随机名的用户，管理连接失败时清池再试一次
+    /// 以 <paramref name="admin"/> 在服务器上建一个随机名的用户，管理连接失败时等两秒、清池再试一次
     /// </summary>
     /// <remarks>
-    /// CI 上一次管理连接超时（如 <c>ORA-50201</c>）之后，接着的用例曾在几毫秒内接连失败，像驱动在失败之后直接拒绝池里的请求：失败时清掉这个连接串的池、换一个用户名再试一次（ADR-0338）。只试一次；再失败以 <see cref="AggregateException"/> 报告两次的异常（第一次在前）。只是测试夹具的处理，不改 Provider
+    /// CI 上管理连接失败（<c>ORA-50201</c>，内层是监听程序暂时拒绝新连接的 <c>ORA-12516</c>）之后，紧接着的再试与后面的用例都在几毫秒内失败，落在同一段拒绝里（ADR-0338、ADR-0350）：失败时等 <see cref="_retryDelay"/>、清掉这个连接串的池、换一个用户名再试一次。只试一次；再失败以 <see cref="AggregateException"/> 报告两次的异常（第一次在前）。只是测试夹具的处理，不改 Provider
     /// </remarks>
     /// <exception cref="AggregateException">两次都失败</exception>
     internal static OracleSchema Create(string admin)
@@ -86,7 +105,9 @@ internal sealed class OracleSchema : IGatedDatabase
         }
         catch (Exception first) when (first is SqlSugarException or OracleException)
         {
-            // SqlSugar 把打开连接的失败包成不带内部异常的 SqlSugarException，执行语句的失败是 OracleException：两种都清池再试
+            // SqlSugar 把打开连接的失败包成不带内部异常的 SqlSugarException，执行语句的失败是 OracleException：两种都再试
+            // 先等监听程序解除拒绝：立即再试仍落在同一段拒绝里；清池免得再拿到池里断了的连接
+            Thread.Sleep(_retryDelay);
             using (var pooled = new OracleConnection(admin))
             {
                 OracleConnection.ClearPool(pooled);
@@ -98,13 +119,13 @@ internal sealed class OracleSchema : IGatedDatabase
             }
             catch (Exception second)
             {
-                throw new AggregateException("Creating the Oracle test user failed, and failed again after clearing the connection pool.", first, second);
+                throw new AggregateException("Creating the Oracle test user failed, and failed again after waiting and clearing the connection pool.", first, second);
             }
         }
     }
 
     /// <summary>
-    /// 建一个随机名的用户并授权，返回以它登录、不用连接池的夹具
+    /// 建一个随机名的用户并授权，返回以它登录的夹具
     /// </summary>
     private static OracleSchema CreateUser(string admin)
     {
@@ -119,8 +140,6 @@ internal sealed class OracleSchema : IGatedDatabase
         var builder = new DbConnectionStringBuilder { ConnectionString = admin };
         builder["User Id"] = user;
         builder["Password"] = password;
-        // 不用连接池：删用户时不能有它的会话，池里闲着的连接会挡住 DROP USER（ORA-01940）
-        builder["Pooling"] = "false";
         return new OracleSchema(admin, user, builder.ConnectionString);
     }
 
@@ -156,7 +175,7 @@ internal sealed class OracleSchema : IGatedDatabase
 
     /// <inheritdoc />
     /// <remarks>
-    /// 临时用户的连接串不用连接池；后台探针与刚结束的调用仍可能留着会话，先以管理账号结束它们，DROP USER 才不会因 ORA-01940 失败
+    /// 先清池，关掉临时用户闲着的连接；后台探针与刚结束的调用仍可能留着会话，再以管理账号结束它们并等它们消失，DROP USER 才不会因 ORA-01940 失败
     /// </remarks>
     public async ValueTask DisposeAsync()
     {
@@ -168,12 +187,35 @@ internal sealed class OracleSchema : IGatedDatabase
 
         OracleConnection.ClearAllPools();
         using var maintenance = Maintenance(_admin);
-        foreach (var session in maintenance.Ado.SqlQuery<string>("SELECT sid || ',' || serial# FROM v$session WHERE username = :u", new SugarParameter(":u", User)))
-        {
-            maintenance.Ado.ExecuteCommand($"ALTER SYSTEM KILL SESSION '{session}' IMMEDIATE");
-        }
-
+        await EndSessionsAsync(maintenance);
         maintenance.Ado.ExecuteCommand($"DROP USER {User} CASCADE");
+    }
+
+    /// <summary>
+    /// 结束临时用户的全部会话，等它们从 <c>v$session</c> 里消失
+    /// </summary>
+    /// <remarks>
+    /// 清池断开的连接与 <c>KILL SESSION … IMMEDIATE</c> 都不等会话真正结束；在那之前 DROP USER 报 ORA-01940（ADR-0350）。最多等 <see cref="_sessionWait"/>，到时仍有会话就交给 DROP USER 报错
+    /// </remarks>
+    private async Task EndSessionsAsync(SqlSugarClient maintenance)
+    {
+        var started = Stopwatch.GetTimestamp();
+        while (true)
+        {
+            // 已标成 KILLED 的不再杀一次，只等它消失；期间新出现的会话（后台探针刚连上）照样结束
+            foreach (var session in maintenance.Ado.SqlQuery<string>("SELECT sid || ',' || serial# FROM v$session WHERE username = :u AND status <> 'KILLED'", new SugarParameter(":u", User)))
+            {
+                maintenance.Ado.ExecuteCommand($"ALTER SYSTEM KILL SESSION '{session}' IMMEDIATE");
+            }
+
+            if (maintenance.Ado.GetInt("SELECT COUNT(*) FROM v$session WHERE username = :u", new SugarParameter(":u", User)) == 0
+                || Stopwatch.GetElapsedTime(started) >= _sessionWait)
+            {
+                return;
+            }
+
+            await Task.Delay(_sessionPoll);
+        }
     }
 
     /// <summary>

@@ -47,17 +47,13 @@ internal sealed class OracleSchema(string admin, string user, string connectionS
     /// 结束它的会话并删用户
     /// </summary>
     /// <remarks>
-    /// 用户的连接串不用连接池；并行的用例与后台探针仍可能留着会话，先以管理账号结束它们，DROP USER 才不会因 ORA-01940 失败
+    /// 先清池，关掉这个用户闲着的连接；并行的用例与后台探针仍可能留着会话，再以管理账号结束它们并等它们消失（<see cref="OracleTestServer.EndSessions"/>），DROP USER 才不会因 ORA-01940 失败
     /// </remarks>
     public void Dispose()
     {
         OracleTestServer.ClearPools();
         using var maintenance = OracleTestServer.Maintenance(admin);
-        foreach (var session in maintenance.Ado.SqlQuery<string>("SELECT sid || ',' || serial# FROM v$session WHERE username = :u", new SugarParameter(":u", User)))
-        {
-            maintenance.Ado.ExecuteCommand($"ALTER SYSTEM KILL SESSION '{session}' IMMEDIATE");
-        }
-
+        OracleTestServer.EndSessions(maintenance, User);
         maintenance.Ado.ExecuteCommand($"DROP USER {User} CASCADE");
     }
 }
