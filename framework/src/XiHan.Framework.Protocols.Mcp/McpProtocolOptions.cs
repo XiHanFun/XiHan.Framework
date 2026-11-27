@@ -27,7 +27,7 @@ public sealed record McpProtocolOptions
     /// <c>initialize</c> 答复里的服务端名
     /// </summary>
     /// <remarks>
-    /// 空表示用应用名
+    /// 为 <see langword="null"/>（没有配置）时用应用名；空串照写
     /// </remarks>
     public string? ServerName { get; init; }
 
@@ -35,7 +35,7 @@ public sealed record McpProtocolOptions
     /// <c>initialize</c> 答复里的服务端版本
     /// </summary>
     /// <remarks>
-    /// 默认为应用的版本（入口程序集的信息版本，去掉 <c>+</c> 之后的构建元数据；取不到为 <c>0.0.0</c>），不是框架版本：<c>initialize</c> 匿名可调，框架版本会告诉访问者该找哪个版本的已知缺陷（ADR-0209）
+    /// 默认为应用的版本（入口程序集的信息版本，去掉 <c>+</c> 之后的构建元数据；没有时取程序集版本，都取不到为 <c>0.0.0</c>），不是框架版本：<c>initialize</c> 匿名可调，框架版本会告诉访问者该找哪个版本的已知缺陷（ADR-0209）
     /// </remarks>
     public string ServerVersion
     {

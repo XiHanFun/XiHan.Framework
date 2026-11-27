@@ -1236,7 +1236,7 @@
           "key": "ServiceName",
           "type": "string",
           "sample": "orders-api",
-          "summary": "资源属性 service.name；缺省取入口程序集名"
+          "summary": "资源属性 service.name；缺省取入口程序集名；空白或有孤立的代理项即启动失败（ADR-0334）"
         },
         {
           "key": "ServiceVersion",
@@ -1792,7 +1792,7 @@
           "key": "ServerVersion",
           "type": "string",
           "sample": "1.0.0",
-          "summary": "initialize 答复里的服务端版本，不能为空白；不写时为框架版本"
+          "summary": "initialize 答复里的服务端版本，不能为空白；不写时为应用的版本（入口程序集的信息版本去掉 + 之后的构建元数据，没有时取程序集版本，都取不到为 0.0.0），不是框架版本（ADR-0209）"
         },
         {
           "key": "Instructions",
@@ -1804,7 +1804,7 @@
           "key": "AllowedOrigins:{index}",
           "type": "string",
           "sample": "https://console.example.com",
-          "summary": "HTTP 入口允许的浏览器源（scheme://host[:port]，http 或 https，没有路径）；请求带的 Origin 不在其中即 403"
+          "summary": "HTTP 入口允许的浏览器源（scheme://host[:port]，http 或 https，没有路径、查询、片段与用户信息）；请求带的 Origin 不在其中即 403"
         },
         {
           "key": "MaxRequestBodyBytes",
@@ -2429,7 +2429,7 @@
           "key": "HolderId",
           "type": "string",
           "sample": "workflow-node-1",
-          "summary": "本节点写进租约行的持有者标识；空白视为未配置，缺省机器名:进程 ID:8 位随机十六进制"
+          "summary": "本节点写进租约行的持有者标识；空白视为未配置，缺省机器名:进程 ID:8 位随机十六进制；有孤立的代理项即启动失败（ADR-0334）"
         },
         {
           "key": "LockConnection",
