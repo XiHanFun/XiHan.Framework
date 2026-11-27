@@ -141,6 +141,7 @@ Go 的写法与差异：
 - **JSON 读取**：线上编码、载荷与清单都不交给 `encoding/json` 读（它不查重复成员、成员名不区分大小写、把孤立的代理项换成 U+FFFD），SDK 先做规范的共同检查，再按自己的规则解码。写出时字符串只转义必须转义的字符，`<`、`>`、`&` 与非 ASCII 原样。
 - **`Result`**：`Success()` / `Result[Unit]` 写 `{"ok":true}`。可能没有的值用 `Result[Maybe[T]]`；值编码成 `null`（`nil` 指针、`nil` 切片）而类型不是 `Maybe` 时写出报错，空集合用非 `nil` 的空切片或空映射。
 - **`Result` 与 `Error` 的写出**：`Result[T].MarshalJSON` 与 `(*Error).MarshalJSON` 写不成合法的 JSON 文本即返回 `PRIMITIVES_VALIDATION_001` 的 `FrameworkError`、不交出文本（RFC-0001「写出与转交」，ADR-0320）：字符串（文案、细节与值的成员名与值，含映射的键、`ID` 与 `Maybe` 里的，以及内部错误的）不是合法的 UTF-8（含编成 UTF-8 的孤立代理项），整段文本从结果的根算起超过 64 层（成功值的最外层是第 2 层），或原样嵌进去的文本（`json.Marshaler`、`json.RawMessage`）有重复成员、`\ud800` 这样的转义或非法的字节。不写成 U+FFFD 或转义：`encoding/json` 把非法的字节换成 U+FFFD，SDK 写完之后按值再查一遍字符串。操作的响应里嵌着这样的 `Result` 或 `Error` 时，调用以 `kernel.invocation.unhandled_exception` 结束、不带 `inner`。插件写给宿主的错误（`ToProtoError`）细节写不出时这个错误不带细节、其余字段照写，内部错误的细节各自核对。
+- **写给宿主的错误文案**：自由文本错误的文案（`ToProtoError`，含内部错误的）不是合法的 UTF-8（含编成 UTF-8 的孤立代理项）时，按 Unicode 的「最大子部分」换成 U+FFFD 写出：从不能解码的位置起，能成为合法 UTF-8 序列开头的最长前缀换一个、不能的一个字节换一个（`ED A0 80` 换成三个），与 .NET 的 `Encoding.UTF8.GetString` 相同，`code`、`message_key`、`details` 与 `inner` 照写。原先照写非法的字节，protobuf-go 拒绝编码整条消息，这次应答整个写不出（`plugin/invocation.md` §3「写出 `Error` 的文案」，ADR-0339）。`strings.ToValidUTF8` 把连着的一串换成一个，与这条不同。
 - **数字**：`Error.Details` 按值模型读成 `int64` / `float64`；`Result[any]` 与值里的 `any` 保留原文的 `json.Number`，它不是合法的 JSON 数字时写出报错。
 - **`Error`**：`Literal` 与 `WithText` 的文案为空或只有空白时 panic。`(*Error).Unwrap()` 返回 `Inner`，`errors.Is` / `errors.As` 沿错误链查找。
 - **Baggage 的值**：已登记键的值除了非空、不超过 256 个 UTF-16 码元、不含控制字符，还必须是合法的 UTF-8：Go 的字符串以字节存放，孤立的代理项只能是编成 UTF-8 的代理项（`ED A0 80`–`ED BF BF`）这类非法字节，`primitives.IsBaggageEntryAcceptable` 拒收。外部输入（选项 `WithBaggage`、插件元数据）丢弃这个成员，`Context.WithBaggage` 当作编程错误 panic；幂等键照旧不按这条丢弃（ADR-0321）。
@@ -248,3 +249,4 @@ Go 自己的文本（日期、`Duration`、结构体）不跨语言：插件的�
 - `Result[T].MarshalJSON` 与 `(*Error).MarshalJSON` 遇到不是合法 UTF-8 的字符串、从结果的根算起超过 64 层，或原样嵌进去的文本有重复成员、孤立代理项的转义或非法的字节时返回 `PRIMITIVES_VALIDATION_001` 的 `FrameworkError`，原先写成 U+FFFD 或 `\ud800` 照常交出（ADR-0320）→ 外部来的字节放进结果与错误之前先用 `utf8.ValidString` 核对或用 `strings.ToValidUTF8` 换掉，`json.RawMessage` 只放合法、不过深的 JSON 文本。
 - 插件写给宿主的错误细节写不出时这个错误不带细节、其余照写，原先写成 U+FFFD 或 `\ud800`（ADR-0320）→ 不用改；要宿主看到细节就保证细节里的字符串是合法的 UTF-8。
 - 已登记 Baggage 键的值不是合法的 UTF-8（含编成 UTF-8 的孤立代理项）时，外部输入丢弃这个成员、`Context.WithBaggage` panic，原先照收（ADR-0321）→ 从外部输入拼值之前先用 `utf8.ValidString` 核对。
+- 插件写给宿主的错误文案（含内部错误的）不是合法的 UTF-8 时按最大子部分换成 U+FFFD 写出，原先 protobuf-go 拒绝编码、整条应答写不出（ADR-0339）→ 不用改；要宿主看到原文就保证文案是合法的 UTF-8。

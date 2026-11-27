@@ -37,7 +37,7 @@ import {
   type RequestShapeType,
 } from 'xihan-framework/operation';
 import { middleware, PipelineBuilder, Placement } from 'xihan-framework/pipeline';
-import { BaggageKey, ErrorInfo, PipelineStage, Result, writeJson } from 'xihan-framework/primitives';
+import { BaggageKey, ErrorInfo, PipelineStage, Result } from 'xihan-framework/primitives';
 
 // 请求的形状：调用器按它在文本顺序里核对载荷并构建请求（RFC-0011 规则 2）
 const CreateOrder = RequestShape.object({ quantity: RequestShape.required(RequestShape.int32()) });
@@ -68,14 +68,14 @@ const context = InvocationContext.create({ timeout: 2000, baggage: { [BaggageKey
 const response = await invoker.invoke(context, { id: 'orders.create', payload: '{"quantity":2}' });
 // response.outcome.ok === true，response.payload === '{"id":"o-t1","quantity":2}'
 const typed = await invoker.invokeTyped(context, createOrder, { quantity: 3 }); // Result<OrderCreated>
-const wire = writeJson(typed); // 线上编码：数字按值模型写，不用 JSON.stringify
+const wire = Result.write(typed); // 线上编码：数字按值模型写，不用 JSON.stringify；对方读不进的文本抛 FrameworkError
 ```
 
 1. 可恢复失败经 `Result.fail(ErrorInfo…)` 返回，不抛异常；错误码按 `<领域大写>_<KIND>_<NNN>`，文案用消息键 + 参数。`ErrorInfo.message` 先经 `setDefaultMessages` 设置的目录，再找 SDK 自带的内核错误英文模板（`builtInMessages`），都解析不了时是「键 (参数)」。
 2. 编程错误（参数非法、管道登记冲突、操作重复登记）抛 `FrameworkError`，带 `code`，有登记键的还带 `messageKey` 与 `details`；自己的参数校验用 `FrameworkError.invalidArgument(message)`。`result.valueOrThrow()` 把失败抛成带同样码、键、参数的 `FrameworkError`（`FrameworkError.fromErrorInfo`）。
 3. 处理器与事件处理器可以返回 `Result`，也可以返回 `Promise<Result>`；中间件、步与调用器返回 `Promise`。登记表缺省容量 10000，`new OperationRegistry({ capacity })` 可以改。
 4. 取消与截止时间是 `context.signal`，可以直接传给 `fetch`；调用器不与信号赛跑，处理器自己看信号后返回。`context.withSignal(signal)` 派生一个多跟一个取消信号的上下文，原来的取消、截止时间、追踪、Baggage 与对象袋照旧。
-5. 线上文本用 `writeJson` 写，用 `Result.parse` / `Result.parseMaybe` / `ErrorInfo.parse` 读；`fromJSON` 系列收已解析的值，看不出重复成员，也分不出 `2` 与 `2.0`。
+5. 线上文本用 `Result.write` / `ErrorInfo.write` 写（其他值用 `writeJson`），用 `Result.parse` / `Result.parseMaybe` / `ErrorInfo.parse` 读；`fromJSON` 系列收已解析的值，看不出重复成员，也分不出 `2` 与 `2.0`。
 
 ## 写一个插件
 
@@ -163,8 +163,9 @@ go run ./cmd/xihan-conformance plugin --dir <插件目录> --config '{"greeting"
 TypeScript 的写法与差异：
 
 - **JSON 读写**：读用 `readJsonText`（共同检查，读出保留文档顺序的 `JsonMembers`），写用 `writeJson`。`JSON.parse` 看不出重复成员，`JSON.stringify` 写不出 `bigint`、把 `2.0` 写成 `2`、把 `NaN` 写成 `null`，线上编码不用它们。
-- **`Result` 与 `ErrorInfo`**：成功值不能是 `null` 或 `undefined`，值是 `Maybe` 时用 `Result.parseMaybe` / `Result.fromJSONMaybe`（`null` 即无值）。`ErrorInfo.literal` 与 `withText` 的文案为空或只有空白时抛 `FrameworkError`。`result.toJSON()` 给出 `{ ok, value }` 或 `{ ok, error }` 的普通对象。交给对方按 RFC-0001 读的线上编码写成 `writeJson(result, { loneSurrogates: 'reject', nesting: 'reject', duplicateMembers: 'reject' })`（`ErrorInfo` 同样）：字符串（文案、细节与成功值里的成员名与值）有孤立的代理项、从结果的根算起嵌套超过 64 层或有重复的成员名时抛 `TypeError`、不交出文本，不写成对方读不进的 `\ud800` 转义（RFC-0001「写出与转交」，ADR-0320）。`JSON.stringify` 与缺省选项的 `writeJson` 照旧宽松，不用来写线上编码；SDK 没有另设严格写出的入口。
+- **`Result` 与 `ErrorInfo`**：成功值不能是 `null` 或 `undefined`，值是 `Maybe` 时用 `Result.parseMaybe` / `Result.fromJSONMaybe`（`null` 即无值）。`ErrorInfo.literal` 与 `withText` 的文案为空或只有空白时抛 `FrameworkError`。`result.toJSON()` 给出 `{ ok, value }` 或 `{ ok, error }` 的普通对象。交给对方按 RFC-0001 读的线上编码用 `Result.write(result)` / `ErrorInfo.write(error)` 写出，文本与 `writeJson` 写的相同（非有限的浮点照值模型写成字符串）；字符串（文案、消息键、细节与成功值里的成员名与值，含内部错误的）有孤立的代理项、从结果的根算起嵌套超过 64 层、有重复的成员名，或有值的成功写不出值（值没有 JSON 表示，或不是无值的 `Maybe` 却写成 `null`）时抛 `PRIMITIVES_VALIDATION_001` 的 `FrameworkError`、不交出文本，不写成对方读不进的 `\ud800` 转义；字符串、层数与成员名的问题以 `writeJson` 抛出的 `TypeError` 作 `cause`（RFC-0001「写出与转交」，ADR-0320、ADR-0340）。`JSON.stringify` 与缺省选项的 `writeJson` 照旧宽松，不用来写线上编码。
 - **写给宿主的错误细节**：插件交回或回调里写出的 `Error.details` 用 `nonFinite: 'string'` 加上述三个 `reject` 选项写出，写不出（孤立的代理项、超过 64 层、重复成员）时这个错误不带细节、其余字段照写，内部错误的细节各自核对（`plugin/invocation.md` §3，ADR-0320）。
+- **写给宿主的错误文案**：自由文本错误的文案（含内部错误的）里每个孤立的代理项换成一个 U+FFFD、成对的照抄，长度不变，与 .NET 的 `Encoding.UTF8` 相同；由 SDK 显式替换、不取决于 protobuf 库的缺省，写出的字节与原先经 `TextEncoder` 编出的相同（`plugin/invocation.md` §3「写出 `Error` 的文案」，ADR-0339）。
 - **Baggage 的值**：`isBaggageValueAcceptable` 逐个 UTF-16 码元判定孤立的代理项（高代理项之后必须紧跟低代理项），成对的是平面以外的一个字符、照收；外部输入丢弃这个成员，`withBaggage` 抛 `PRIMITIVES_VALIDATION_001` 的 `FrameworkError`，幂等键照旧不按这条丢弃（ADR-0321）。
 - **空白**：按 RFC-0001 写死的 25 个码位逐个比较，不用 JavaScript 的 `\s` 与 `trim`（它们不认 U+0085、却认 U+FEFF）。
 - **模板**：参数值为 `null` 写空串、不算缺值，`undefined` 算缺值。`formatMessage`、`tryFormatMessage` 与 `formatValue` 可带区域，`MessageCatalog` 按命中的区域取小数点与分组符。导入 `xihan-framework/plugin` 之后，英文回退也覆盖运行时的 `plugins.*` 键。
@@ -230,5 +231,5 @@ TypeScript 的写法与差异：
 - 操作的响应里的字符串有孤立的代理项时，调用在本地以 `KERNEL_UNEXPECTED_001` + `kernel.invocation.unhandled_exception` 失败、没有载荷，原先写成 `\ud800` 这样的转义，插件交回后由宿主以 `PLUGINS_UNEXPECTED_001` 拒绝、进程内调用照常成功（ADR-0318）；`JsonWriteOptions` 新增 `loneSurrogates?: 'escape' | 'reject'`，缺省不变 → 外部来的文本放进响应之前先用 `isWellFormed` / `toWellFormed` 核对或替换。
 - 操作的响应嵌套超过 64 层或同一个对象里有重复的成员名时，调用在本地以 `KERNEL_UNEXPECTED_001` + `kernel.invocation.unhandled_exception` 失败、没有载荷，原先照写，插件交回后由宿主以 `PLUGINS_UNEXPECTED_001` 拒绝、进程内调用照常成功（ADR-0319）；`JsonWriteOptions` 新增 `nesting?: 'unbounded' | 'reject'` 与 `duplicateMembers?: 'write' | 'reject'`，缺省不变 → `JsonMembers` 用不重复的名字，响应嵌套不超过 64 层。
 - 已登记 Baggage 键的值有孤立的代理项时 `isBaggageValueAcceptable` 为假，外部输入丢弃这个成员、`withBaggage` 抛 `PRIMITIVES_VALIDATION_001`，原先照收（ADR-0321）→ 从外部输入拼值之前先核对代理项成对。
-- `Result` 与 `ErrorInfo` 的线上编码改写成 `writeJson(value, { loneSurrogates: 'reject', nesting: 'reject', duplicateMembers: 'reject' })`：有孤立的代理项、从结果的根算起超过 64 层或有重复成员时抛 `TypeError`，不再写出对方读不进的文本（ADR-0320）→ 自己把结果写成线上文本的地方换上这三个选项，接住 `TypeError`。
+- 交给对方读的 `Result` 与 `ErrorInfo` 线上编码改用新增的 `Result.write` / `ErrorInfo.write` 写出：有孤立的代理项、从结果的根算起超过 64 层、有重复成员或有值的成功写不出值时抛 `PRIMITIVES_VALIDATION_001` 的 `FrameworkError`，不再写出对方读不进的文本；`JSON.stringify` 与缺省的 `writeJson` 照旧（ADR-0320、ADR-0340）→ 自己把结果写成线上文本的地方换成这两个入口，接住 `FrameworkError`；按本页先前的写法用了带三个 `reject` 选项的 `writeJson`、接 `TypeError` 的同样改掉。
 - 插件写给宿主的错误细节写不出时这个错误不带细节、其余照写，原先写成 `\ud800` 这样的转义（ADR-0320）→ 不用改；要宿主看到细节就保证细节里的字符串成对、层数与成员名合规。

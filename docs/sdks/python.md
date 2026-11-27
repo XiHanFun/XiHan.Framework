@@ -207,12 +207,13 @@ Python 的写法与差异：
 - **回调的载荷**：`Host.invoke` 的载荷是 `bytes | str`：`bytes` 原样发出，由宿主核对；`str` 在发出之前严格编码成 UTF-8，里面的代理项码点（成对的两个也一样）编码不成，即不发请求，结果为 `KERNEL_VALIDATION_001` + `kernel.operation.invalid_payload`（`id` 为操作 ID，`reason` 为 `$`），与宿主读到不是 JSON 的载荷相同；这一项排在回调端点、权限、租户、截止时间与取消的核对之后（`plugin/invocation.md` §5，ADR-0312）。发布的信封 `data` 只收 `bytes`，处理器也没有以 `str` 交回应答的接口，§1 与 §5 的 `data` 一条（ADR-0315）对它们不适用。
 - **回调客户端关闭之后**：运行时收尾时关闭回调客户端（`Host.close()`，可以调用多次），之后的回调不发请求、不重新连接，结果是 `PLUGINS_UNAVAILABLE_001` + `plugins.host.unavailable`（`reason` 为 `Unavailable: the host client is closed`），`publish` 的每一项都是这个错误；它排在本地核对与载荷的编码之后，`str` 载荷编不成的照旧是 `kernel.operation.invalid_payload`。进行中的回调被关闭切断时按映射表的 `Cancelled` 一行。原先关闭之后的回调由 `grpc.aio` 抛 `UsageError` 给作者（`plugin/invocation.md` §5，ADR-0328）。
 - **写给宿主的错误细节**：插件交回或回调里写出的 `Error.details` 写不出（字符串里有代理项码点，或写出的文本超过 64 层）时，这个错误不带细节、其余字段照写，内部错误的细节各自核对（`plugin/invocation.md` §3，ADR-0320）。
+- **写给宿主的错误文案**：自由文本错误的文案（含内部错误的）里每个代理项码点（U+D800–U+DFFF，成对出现的两个也各算一个）换成一个 U+FFFD 写出；原先 protobuf 抛 `UnicodeEncodeError`，整个错误写不出（`plugin/invocation.md` §3「写出 `Error` 的文案」，ADR-0339）。
 
 ## 语言映射
 
 规范把一部分写法交给各语言自己声明，Python 的写法如下。
 
-- **请求与响应的类型**：dataclass，也可以是原语、`list` / `tuple` / 键为 `str` 的 `dict`、枚举、`X | None`、`Maybe[T]`、`TypedId` 子类，或自带 `from_json_value` / `to_json_value` 的类型，用 SDK 自己的编解码。dataclass 的两个字段写进 JSON 是同一个成员名（区分大小写，含 `json_field` 改名撞上别的字段）时，编码与编译解码器都抛 `TypeError`：以它为请求类型注册操作时就报出，以它为响应类型的调用以 `KERNEL_UNEXPECTED_001` 结束（ADR-0319）。
+- **请求与响应的类型**：dataclass，也可以是原语、`list` / `tuple` / 键为 `str` 的 `dict`、枚举、`X | None`、`Maybe[T]`、`TypedId` 子类，或自带 `from_json_value` / `to_json_value` 的类型，用 SDK 自己的编解码。dataclass 的两个字段写进 JSON 是同一个成员名（区分大小写，含 `json_field` 改名撞上别的字段）时，编码与注册操作都抛 `TypeError`：请求与响应类型在注册时就报出，沿注解嵌套在内的 dataclass（字段、`list` / `tuple` 的元素、映射的值、`Maybe`、`Result`、联合类型、`Annotated` 与类型别名里的）同样（ADR-0319、ADR-0340）。注解里看不到的（`Any` / `JsonValue` 成员里放的 dataclass，注解解析不了的那一层以下）在写出时核对，响应写不出、调用以 `KERNEL_UNEXPECTED_001` 结束。
 - **请求类型的必填与可选**：dataclass 里没有缺省值的字段是必填的（`Maybe` 字段例外，没写时为无值）；有缺省值的字段（`= 0`、`= None`、`field(default_factory=list)`）是可选的，缺少时取缺省值。必填只要求成员出现，值为 `null` 也算出现。
 - **接受 `null` 的成员**：只有 `X | None`、`Maybe[X]`、`JsonValue` / `Any` 接受 `null`，`null` 即没有值（`None`）。规范里接受 `null` 的字符串、数组与对象在 Python 里写成 `str | None`、`list[X] | None`、`Inner | None`，数组项要接受 `null` 时写 `list[str | None]`；写成 `str`、`list[str]` 的成员遇到 `null` 按类型不符报出。
 - **数字类型**：`int` 是 64 位有符号整数；32 位整数写成 `Annotated[int, operation.Int32]`，其他范围用 `operation.IntRange(最小, 最大)`，超出范围即类型不符。`float` 是双精度浮点，也接受整数写法；`bool` 不是数字。`JsonValue` / `Any` 成员里的数字是保留原文的 `JsonNumber`（`float` 的子类，`text` 是原文；64 位范围内的整数仍是 `int`），写回时与读到的 JSON 值相等。
@@ -260,8 +261,9 @@ Python 的写法与差异：
 - 类型化响应写出的文本嵌套超过 64 层或有重复的成员名时，调用器与插件 `Invoke` 都以 `KERNEL_UNEXPECTED_001` + `kernel.invocation.unhandled_exception` 结束，没有参数、不带 `inner`、没有载荷；原先照常写出，插件交回之后由宿主以 `PLUGINS_UNEXPECTED_001` 拒绝（ADR-0319）→ 响应不要超过 64 层，`to_json_value` 不要交出同名成员。
 - `Result.to_json` 与 `Error.to_json` 遇到字符串里的代理项码点、从根算起嵌套超过 64 层或重复成员时抛 `ValueError`、不写出文本，原先写成 `\ud800` 这样的转义或照写（ADR-0320）→ 写出之前去掉这类值。
 - 已登记 Baggage 键的值有代理项码点时，建上下文丢弃这个成员、`with_baggage` 抛 `FrameworkError`，原先照收（ADR-0321）→ 从外部输入拼值之前先去掉。
-- dataclass 有两个字段写进 JSON 是同一个成员名（含 `json_field` 改名撞上别的字段）时，编码与以它为请求类型注册操作抛 `TypeError`，以它为响应类型的调用以 `KERNEL_UNEXPECTED_001` 结束，原先后一个覆盖前一个（ADR-0319）→ 改掉其中一个名字。
+- dataclass 有两个字段写进 JSON 是同一个成员名（含 `json_field` 改名撞上别的字段）时，编码与以它（含嵌套在内的类型）为请求或响应类型注册操作抛 `TypeError`，原先后一个覆盖前一个（ADR-0319、ADR-0340）→ 改掉其中一个名字。
 - `int` 的子类按十进制值写进 JSON，不再取它覆写的 `__str__`（ADR-0319）→ 不用改；要写别的文本的改成显式转换。
 - 插件写给宿主的错误细节有代理项码点或超过 64 层时这个错误不带细节、其余照写（ADR-0320）→ 不用改。
 - `Host.invoke` 的载荷也收 `str`，严格编码成 UTF-8，有代理项码点时不发请求、在本地以 `KERNEL_VALIDATION_001` 失败（ADR-0312）→ 不用改。
 - 回调客户端关闭之后，`Host.invoke` 与 `Host.publish` 在本地核对与载荷编码之后以 `plugins.host.unavailable` 结束、不发请求，原先 `grpc.aio` 抛 `UsageError`（ADR-0328）→ 接 `UsageError` 的地方改看结果。
+- 插件写给宿主的错误文案（含内部错误的）有代理项码点时各换成 U+FFFD 写出，原先 protobuf 抛 `UnicodeEncodeError`、整个错误写不出（ADR-0339）→ 不用改。

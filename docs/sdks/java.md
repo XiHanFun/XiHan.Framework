@@ -50,7 +50,7 @@
 | Java 包 | 内容 | 规范 |
 | --- | --- | --- |
 | `primitives` | `Error` / `ErrorCode`、`Result<T>`、`Maybe<T>`、`TypedId<Tag, V>`、`LifecycleState`、`PipelineStage`、`Stability`、`BaggageKeys`、消息键与模板（`MessageTemplate`、`MessageCatalog`、`MessageScope`、`KernelMessages`）、`FrameworkException` | RFC-0001、RFC-0010、`conventions/` |
-| `primitives.json` | 线上 JSON 编码：Jackson 模块 `PrimitivesModule` 与读取入口 `PrimitivesJson` | RFC-0001 |
+| `primitives.json` | 线上 JSON 编码：Jackson 模块 `PrimitivesModule` 与读写入口 `PrimitivesJson` | RFC-0001 |
 | `manifest` | `xihan.manifest.json` 的模型、按 Schema 严格读取、规范化输出与校验，能力声明与依赖文本 | RFC-0002、`manifest/manifest.schema.json` |
 | `invocation` | `Context`：取消与截止时间（可登记回调）、W3C 追踪、已登记的 Baggage、对象袋 `Items`、按派生传递的值 | RFC-0003 |
 | `pipeline` | 十一阶段的 `PipelineBuilder`：`use` / `useAt` / `useNamedInstance`、`before` / `after`、`describe` / `dump`、`build` | RFC-0004 |
@@ -83,7 +83,7 @@ OperationResponse response = invoker.invoke(context, OperationRequest.of("orders
 2. 配置错误（清单不合法、管道成环、操作重复登记、登记表已满）抛带错误码的 `FrameworkException`；参数格式不合法这类编程错误抛 `IllegalArgumentException`，状态不允许抛 `IllegalStateException`。
 3. 中间件、处理器与调用器都是同步方法，按虚拟线程设计，可以阻塞。取消与截止时间只经令牌通知，调用器不中断线程：处理器自己看 `context.isCancelled()`、`context.cancellationError()`（`KERNEL_TIMEOUT_001` 或 `KERNEL_CANCELLED_001`）、`onCancelled` 或 `awaitCancellation`。`withCancellation` / `withDeadline` / `withTimeout` 返回的 `CancellableContext` 用完要关闭（try-with-resources）。
 4. 中间件用 `Operations.find(context)`、`findRequest`、`findDecodedRequest`（Validate 阶段解码好的请求）与 `findResponse`（编码之前的响应对象）看这次调用。自己报内核错误时用工厂 `OperationErrors.notFound(id)`、`OperationErrors.invalidPayload(id, reason)`。
-5. 线上编码：`new ObjectMapper().registerModule(new PrimitivesModule())`；从线上收到的文本用 `PrimitivesJson.read(mapper, bytes, type)` 读，它先过共同的 JSON 文本检查。
+5. 线上编码：`new ObjectMapper().registerModule(new PrimitivesModule())`；交给对方读的 `Result` 与 `Error` 用 `PrimitivesJson.write(mapper, result)` / `write(mapper, error)` 写出，写不出抛 `IllegalArgumentException`；从线上收到的文本用 `PrimitivesJson.read(mapper, bytes, type)` 读，它先过共同的 JSON 文本检查。
 
 ## 写一个插件
 
@@ -166,9 +166,10 @@ Java 的写法与差异：
 - **JSON 文本**：共同检查 `JsonText.check` 是手写的逐字节检查器，不经 Jackson（它会跳过 BOM、按字节猜 UTF-16、放过孤立的代理项）。收字符串的入口（`JsonText.check(String)`、`ManifestJson.tryRead(String)`、`PrimitivesJson.read(mapper, String, …)`）先编成 UTF-8，字符串里有孤立的代理项按语法错误处理，不像 `String.getBytes` 那样换成 `?`。`OperationRequest.of(String id, String json)` 同样严格编码：文本里有孤立的代理项时请求照样建得出，`hasUnencodableText()` 为真，载荷是文本的广义 UTF-8（WTF-8，不是合法的 UTF-8），本地调用器读它报 `KERNEL_VALIDATION_001` + `kernel.operation.invalid_payload`（`reason` 为 `$`）；`Host.invoke` 在回调端点、权限、租户、截止时间与取消的核对之后以同一个错误在本地失败、不发请求；`OperationRequest.of(String, byte[])` 的字节原样发出，由宿主核对（`plugin/invocation.md` §5，ADR-0312）。
 - **发布的数据**：`Envelope.Builder.data(String)` 严格编码成 UTF-8：文本里有孤立的代理项时信封照样建得出，`hasUnencodableData()` 为真，`data()` 是文本的广义 UTF-8（WTF-8，不是合法的 UTF-8）；`Host.publish` 在回调端点、权限、租户、截止时间与取消的核对之后逐项核对，这一项不发出，结果为 `MESSAGING_VALIDATION_002` + `messaging.envelope.invalid`（`reason` 为 `the data has a lone surrogate and cannot be encoded as UTF-8`），其余各项照常组成一次请求、结果放回原位，每一项都编不成时不发请求，结果数按发出的信封数核对；`data(byte[])` 的字节原样发出，由宿主核对（`plugin/invocation.md` §5，ADR-0315）。处理器没有以字符串交回应答的接口：类型化的响应由调用器编码并过 JSON 文本检查，§1 的严格编码一条对 Java 不用改。
 - **写给宿主的错误细节**：插件交回或回调里写出的 `Error.details` 有孤立的代理项、嵌套超过 64 层时，这个错误不带细节、其余字段照写，内部错误的细节各自核对，不再经 protobuf 把孤立的代理项写成 `?`（`plugin/invocation.md` §3，ADR-0320）。
-- **回调客户端关闭之后**：插件停止、运行时收尾之后的 `Host.invoke` 与 `Host.publish` 不发请求、不重新连接，结果是 `PLUGINS_UNAVAILABLE_001` + `plugins.host.unavailable`（`reason` 为 `Unavailable: the plugin runtime has stopped`）。它排在本地核对与载荷、`data` 的编码之后：载荷编不成的照旧是 `kernel.operation.invalid_payload`，`publish` 里编不成的那一项照旧是 `messaging.envelope.invalid`、其余各项是已关闭的错误（`plugin/invocation.md` §5，ADR-0328）。
+- **写给宿主的错误文案**：自由文本错误的文案（含内部错误的）里每个孤立的代理项换成一个 U+FFFD、成对的照抄，长度不变，与 .NET 的 `Encoding.UTF8` 相同；原先经 protobuf-java 写成 `?`（`plugin/invocation.md` §3「写出 `Error` 的文案」，ADR-0339）。
+- **回调客户端关闭之后**：插件停止、运行时收尾之后的 `Host.invoke` 与 `Host.publish` 不发请求、不重新连接，结果是 `PLUGINS_UNAVAILABLE_001` + `plugins.host.unavailable`（`reason` 为 `Unavailable: the host client is closed`，与 TypeScript、Python、PHP SDK 相同）。它排在本地核对与载荷、`data` 的编码之后：载荷编不成的照旧是 `kernel.operation.invalid_payload`，`publish` 里编不成的那一项照旧是 `messaging.envelope.invalid`、其余各项是已关闭的错误（`plugin/invocation.md` §5，ADR-0328、ADR-0340）。
 - **Baggage 的值**：`BaggageKeys.isAcceptableValue` 还拒收孤立的代理项（成对的照收）：已登记键的这类值经 `Context.Builder.baggage` 进来时丢弃这个成员，`withBaggage` 抛 `IllegalArgumentException`；幂等键照旧不按这条丢弃（ADR-0321）。
-- **线上编码**：无值成功是 `Result<Unit>`，`Result<Maybe<T>>` 的无值是 `"value":null`。解码器自己核对重复成员、64 层与孤立的代理项，不看 `ObjectMapper` 的配置。`PrimitivesModule` 写出 `Result` 与 `Error` 时先写进缓冲、整段文本过共同检查（RFC-0001「写出与转交」，ADR-0320）：字符串（成员名与值，含细节、内部错误与成功值）有孤立的代理项、从结果或错误的根算起嵌套超过 64 层，或任何一层有重复的成员名（自定义序列化器、`@JsonRawValue` 原样嵌进去的文本）时抛 `JsonMappingException`，外层的写出器一个字符也不写，不写成 U+FFFD 或 `\ud800` 这样的转义。`Error.literal` 与 `withText` 的文案、`FrameworkException` 的说明为空或只有空白时抛 `IllegalArgumentException`。
+- **线上编码**：无值成功是 `Result<Unit>`，`Result<Maybe<T>>` 的无值是 `"value":null`。解码器自己核对重复成员、64 层与孤立的代理项，不看 `ObjectMapper` 的配置。`PrimitivesModule` 写出 `Result` 与 `Error` 时先写进缓冲、整段文本过共同检查（RFC-0001「写出与转交」，ADR-0320）：字符串（成员名与值，含细节、内部错误与成功值）有孤立的代理项、从结果或错误的根算起嵌套超过 64 层，或任何一层有重复的成员名（自定义序列化器、`@JsonRawValue` 原样嵌进去的文本）时写不出，外层的写出器一个字符也不写，不写成 U+FFFD 或 `\ud800` 这样的转义。经 `PrimitivesJson.write` 写出时抛 `IllegalArgumentException`，Jackson 的异常留作原因；直接用 `ObjectMapper` 写出时 Jackson 把它包成 `JsonMappingException`，原因是那个 `IllegalArgumentException`（ADR-0340）。`Error.literal` 与 `withText` 的文案、`FrameworkException` 的说明为空或只有空白时抛 `IllegalArgumentException`。
 - **空白**：按 RFC-0001 写死的 25 个码位判断，不用 `Character.isWhitespace` 或 `String.isBlank`（它们不含 U+0085、U+00A0、U+2007、U+202F，却含 U+001C–U+001F）。
 - **模板与区域**：`MessageTemplate.format(template, arguments, locale)` / `tryFormat(…, locale)` / `text(value, locale)` 与 `MessageCatalog.resolve(key, locale, arguments)` 按区域取小数点与分组符，不给区域按不变文化；`Error.message()` 按 `MessageScope` 的进程默认区域。
 - **调用器**：内置步骤的归属是 `OperationInvoker.KERNEL_OWNER`，调用器复制使用者的 `PipelineBuilder` 再加内置步骤，不改动它。Observe 阶段翻译异常时 `java.lang.Error` 不翻译，`FrameworkException` 的错误进 `inner`。响应在管道结束之后编码，编码时关掉 Jackson 的 `WRITE_NAN_AS_STRINGS`，非有限的浮点写不出、调用以未处理失败结束。响应里的字符串（值、成员名与映射的键）有孤立的代理项同样写不出，错误不带 `inner`（ADR-0318）。Jackson 把值与键里的孤立代理项写成转义，由写出之后的 JSON 文本检查拦下；`@JsonProperty` 这类预先编码的成员名由 Jackson 先抛出，原因链里没有框架异常。写出的整段文本过 JSON 文本检查：嵌套超过 64 层（`@JsonRawValue` 原样嵌进去的文本也算，从响应的根算起）或任何一层有重复的成员名（自定义 `JsonSerializer` 两次写同名成员、`@JsonRawValue`）同样写不出、不带 `inner`（ADR-0319）；Jackson 写出时不查重复成员、嵌套上限远大于 64，靠的是这道检查。
@@ -227,8 +228,10 @@ Java 的写法与差异：
 - 错误细节里的孤立代理项当作没有细节，原先换成 `?` 读出（ADR-0301）→ 不用改。
 - `OperationRequest.of(String, String)` 严格编码成 UTF-8：孤立的代理项不再换成 `?`，本地调用得到 `KERNEL_VALIDATION_001` + `kernel.operation.invalid_payload`（`reason` 为 `$`），`Host.invoke` 不发请求、在本地以同一个错误失败；新增 `OperationRequest.hasUnencodableText()`（ADR-0312）→ 不用改；要发出的 JSON 文本里不要有孤立的代理项。
 - `Envelope.Builder.data(String)` 严格编码成 UTF-8：孤立的代理项不再换成 `?`，`Host.publish` 不发出这一项、在本地以 `MESSAGING_VALIDATION_002` + `messaging.envelope.invalid` 失败，其余照常发布；新增 `Envelope.hasUnencodableData()`，`equals` 与 `hashCode` 也比较它（ADR-0315）→ 不用改；要发布的文本里不要有孤立的代理项。
-- `PrimitivesModule` 写出 `Result` 与 `Error` 时，字符串有孤立的代理项、从根算起嵌套超过 64 层或有重复成员即抛 `JsonMappingException`、什么也不写，原先孤立的代理项写成 `\ud800` 这样的转义、深层与重复成员照写（ADR-0320）→ 写出之前去掉这类值。
+- `PrimitivesModule` 写出 `Result` 与 `Error` 时，字符串有孤立的代理项、从根算起嵌套超过 64 层或有重复成员即写不出、什么也不写：经新增的 `PrimitivesJson.write` 抛 `IllegalArgumentException`，直接用 `ObjectMapper` 时抛以它为原因的 `JsonMappingException`；原先孤立的代理项写成 `\ud800` 这样的转义、深层与重复成员照写（ADR-0320、ADR-0340）→ 写出之前去掉这类值；交给对方读的线上编码改用 `PrimitivesJson.write`。
 - 已登记 Baggage 键的值有孤立的代理项时 `BaggageKeys.isAcceptableValue` 为假：`Context.Builder.baggage` 丢弃这个成员、`withBaggage` 抛 `IllegalArgumentException`，原先照收（ADR-0321）→ 从外部输入拼值之前先去掉孤立的代理项。
 - 插件写给宿主的错误细节有孤立的代理项或超过 64 层时这个错误不带细节、其余照写，原先孤立的代理项被 protobuf 写成 `?`（ADR-0320）→ 不用改。
 - `PluginMessages` 新增 `ENVELOPE_INVALID`，`catalog()` 与 `templates()` 多了 `messaging.envelope.invalid` 这个键（ADR-0315）→ 按键集断言的测试要更新。
 - 回调客户端关闭之后的 `Host.invoke` 与 `Host.publish` 不发请求、不重新连接，以 `plugins.host.unavailable` 结束，排在载荷与 `data` 的编码之后（ADR-0328）→ 不用改。
+- 回调客户端关闭之后，`plugins.host.unavailable` 的 `reason` 由 `Unavailable: the plugin runtime has stopped` 改为与其他 SDK 相同的 `Unavailable: the host client is closed`（ADR-0340）→ 按旧文本判断的地方更新。
+- 插件写给宿主的错误文案（含内部错误的）有孤立的代理项时各换成 U+FFFD 写出，原先被 protobuf 写成 `?`（ADR-0339）→ 不用改。

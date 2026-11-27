@@ -196,6 +196,7 @@ PHP 的写法与差异：
 - **回调的载荷**：`Host::invoke` 的 `$payload` 与信封的 `$data` 都是字节串，原样发出，由宿主核对；PHP 没有字符串与 UTF-8 之间的转换，`plugin/invocation.md` §1、§5 的严格编码（ADR-0312、ADR-0315）对 PHP 不用改。
 - **回调客户端关闭之后**：`Host::close()`（运行时收尾时调用，可以调用多次）之后的回调不发请求、不重新连接，结果是 `PLUGINS_UNAVAILABLE_001` + `plugins.host.unavailable`（`reason` 为 `Unavailable: the host client is closed`），排在本地核对之后，`publish` 的每一项都是这个错误；进行中的回调被切断时按映射表的 `Cancelled` 一行。`GrpcClient` 的连接是惰性的，原先关闭之后的回调会重新连上、照常发出（`plugin/invocation.md` §5，ADR-0328）。
 - **写给宿主的错误细节**：插件交回或回调里写出的 `Error.details` 不是合法的 UTF-8 或超过 64 层时，这个错误不带细节、其余字段照写，内部错误的细节各自核对（`plugin/invocation.md` §3，ADR-0320）。
+- **写给宿主的错误文案**：自由文本错误的文案（含内部错误的）不是合法的 UTF-8 时，按 Unicode 的「最大子部分」换成 U+FFFD 写出：从不能解码的位置起，能成为合法 UTF-8 序列开头的最长前缀换一个、不能的一个字节换一个，如 `"\xF0\x9F\x98b"` 写成 U+FFFD 加 `b`，编成 UTF-8 的代理项 `"\xED\xA0\x80"` 换成三个，`"\xC0\xAF"` 换成两个。与设了 `mb_substitute_character(0xFFFD)` 的 `mb_scrub` 相同，SDK 自己实现、不要求 mbstring；原先 protobuf 的 `setText` 抛出，整个错误写不出（`plugin/invocation.md` §3「写出 `Error` 的文案」，ADR-0339）。
 
 ## 语言映射
 
@@ -251,3 +252,4 @@ PHP 的写法与差异：
 - `Result::toJson()` 与 `Error::toJson()` 写出的文本从根算起嵌套超过 64 层或有重复成员时抛 `\JsonException`、不写出文本，原先在 512 层以内照写；非法的 UTF-8 照旧抛出（ADR-0320）→ 写出之前把值控制在 64 层以内，`RawJson` 只放没有重复成员的文本。
 - 插件写给宿主的错误细节超过 64 层时这个错误不带细节、其余照写（ADR-0320）→ 不用改。
 - `Host::close()` 之后的回调不再懒连接照常发出，在本地核对之后以 `plugins.host.unavailable` 结束、不发请求（ADR-0328）→ 不用改。
+- 插件写给宿主的错误文案（含内部错误的）不是合法的 UTF-8 时按最大子部分换成 U+FFFD 写出，原先 protobuf 的 `setText` 抛出、整个错误写不出（ADR-0339）→ 不用改。

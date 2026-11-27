@@ -198,12 +198,14 @@ assert_eq!(failed, r#"{"ok":false,"error":{"code":"ORDERS_CONFLICT_001","message
 ```
 
 - `Result<()>` 是不带值的成功，只写 `{"ok":true}`；值类型是 `Maybe<T>`（`Option<T>`）时 `value` 可以是 `null`；`TypedId` 编码为底层值。
-- `WireResult` 与 `Error` 序列化时先把整段文本写进缓冲、过 JSON 文本的共同检查，通过了才交给序列化器（RFC-0001「写出与转交」，ADR-0320）：从结果或错误的根算起嵌套超过 64 层（成功值的最外层是第 2 层），或 `RawValue`（含 `json::Json`）原样写进去的文本有重复成员、`"\ud800"` 这样的孤立代理项转义时写不出，序列化以 `PRIMITIVES_VALIDATION_001` 的错误失败、不交出文本。对任何序列化器都生效，代价是多写一遍；嵌在里面的 `WireResult` 与 `Error` 由最外层一并核对。`String` 总是合法的 UTF-8，字符串规则不用另查。
+- `WireResult` 与 `Error` 序列化时先把整段文本写进缓冲、过 JSON 文本的共同检查，通过了才交给序列化器（RFC-0001「写出与转交」，ADR-0320）：从结果或错误的根算起嵌套超过 64 层（成功值的最外层是第 2 层），或 `RawValue`（含 `json::Json`）原样写进去的文本有重复成员、`"\ud800"` 这样的孤立代理项转义时写不出，序列化以 `PRIMITIVES_VALIDATION_001` 的错误失败、不交出文本。对任何序列化器都生效：交给别的序列化器（如 `serde_json::to_vec`）时先在缓冲里写一遍核对、再写出，经 `json::to_vec` 写出时只写一遍、由它写完之后核对整段文本，结果相同（ADR-0340）；嵌在里面的 `WireResult` 与 `Error` 由最外层一并核对。`String` 总是合法的 UTF-8，字符串规则不用另查。
 - 插件写给宿主的错误细节是值树，字符串合法、成员名不重复，写不出的只有嵌套超过 64 层：这时这个错误不带细节、其余字段照写，内部错误的细节各自核对，正好 64 层照常写出（`plugin/invocation.md` §3，ADR-0320）。
+- 插件写给宿主的错误文案（含内部错误的）照写、不做 U+FFFD 替换：它取自 `Error` 的文案或错误码，都是 `String`，总是合法的 UTF-8，`plugin/invocation.md` §3「写出 `Error` 的文案」（ADR-0339）对 Rust 不用改。
 - 线上文本用 `primitives::json::from_slice` 读：它先过共同的 JSON 读取检查，数字按值模型。直接用 `serde_json::from_str` 读不到这些检查。写出用 `json::to_vec`（类型化，非有限的浮点写不出）或 `json::Model` / `json::to_value`（无类型，非有限的浮点写成字符串）。
+- `json::to_vec` 写完之后对整段文本过 JSON 文本的共同检查（`primitives::json::check`，ADR-0340）：从这个值的根算起嵌套超过 64 层（原样嵌进去的 `RawValue` 与 `json::Json` 也算）、任何一层有重复的成员名，或 `RawValue` 里有 `"\ud800"` 这样的孤立代理项转义时返回 `PRIMITIVES_VALIDATION_001` 的错误、不交出文本。`Host::invoke_json`、`Envelope::with_json_data` 与调用器编码响应都经它；交给宿主的线上文本（含 `WireResult` 与 `Error`）用它写，只写一遍。层数从整个值的根算起：64 层的结果外面再包一层结构体时 `json::to_vec` 写不出，`serde_json::to_vec` 照写。
 - `Error::literal` 与 `Error::with_text` 的文案为空或只有空白时 panic，`try_literal` 与 `try_with_text` 返回 `PRIMITIVES_VALIDATION_001`。空白按 RFC-0001 写死的 25 个码位判断（`primitives::is_whitespace`、`is_blank`），不用 `char::is_whitespace`。
 - 应答与发布的数据：`Envelope.data`、`Host::invoke` 的载荷与操作的应答都是字节（`Vec<u8>`），收字符串的入口（`Host::invoke`、`Envelope::with_data`）经 `Into<Vec<u8>>`，`&str` 总是合法的 UTF-8，`plugin/invocation.md` §1、§5 的严格编码（ADR-0312、ADR-0315）对 Rust 不用改。
-- 类型化的响应写出之后过 JSON 文本的共同检查（`primitives::json::check`，RFC-0011 规则 10 的「编码」，ADR-0319）：嵌套超过 64 层（从响应的根算起，嵌进去的 `RawValue` 与 `json::Json` 也算）、任何一层有重复的成员名（自定义的 `Serialize` 两次写同一个名字、`#[serde(flatten)]` 的映射键与字段同名、`RawValue` 原样交出的）、`RawValue` 里 `"\ud800"` 这样的孤立代理项转义，都在本地以 `KERNEL_UNEXPECTED_001` + `kernel.invocation.unhandled_exception` 失败，没有参数、不带 `inner`、没有载荷。serde_json 写出时不数层数、不核对成员名，`RawValue::from_string` 只核对语法，所以写完再读一遍整段文本，代价与写出同阶。`String` 总是合法的 UTF-8，ADR-0318 的字符串规则对 Rust 不用另查；任意 JSON 的成员用 `json::Json`。
+- 类型化的响应写出之后过 JSON 文本的共同检查（`primitives::json::check`，RFC-0011 规则 10 的「编码」，ADR-0319）：嵌套超过 64 层（从响应的根算起，嵌进去的 `RawValue` 与 `json::Json` 也算）、任何一层有重复的成员名（自定义的 `Serialize` 两次写同一个名字、`#[serde(flatten)]` 的映射键与字段同名、`RawValue` 原样交出的）、`RawValue` 里 `"\ud800"` 这样的孤立代理项转义，都在本地以 `KERNEL_UNEXPECTED_001` + `kernel.invocation.unhandled_exception` 失败，没有参数、不带 `inner`、没有载荷。serde_json 写出时不数层数、不核对成员名，`RawValue::from_string` 只核对语法，所以 `json::to_vec` 写完再读一遍整段文本，代价与写出同阶。`String` 总是合法的 UTF-8，ADR-0318 的字符串规则对 Rust 不用另查；任意 JSON 的成员用 `json::Json`。
 
 ### 消息模板
 
