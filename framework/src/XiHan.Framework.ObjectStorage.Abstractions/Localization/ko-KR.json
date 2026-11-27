@@ -9,6 +9,8 @@
   "objectstorage.list.page_size_invalid": "목록 페이지 크기 {pageSize}은(는) 1에서 {max} 사이여야 합니다.",
   "objectstorage.blob.content_type_invalid": "요청의 콘텐츠 형식은 {max}자 이하의 미디어 형식이어야 합니다.",
   "objectstorage.blob.content_type_unsupported": "저장소는 콘텐츠 형식 '{contentType}'을(를) 그대로 저장할 수 없습니다. 클라이언트가 이 값을 다시 씁니다.",
+  "objectstorage.blob.metadata_too_large": "저장소가 사용자 지정 메타데이터가 너무 크다며 거부했습니다. 저장소는 자체 방식으로 크기를 계산합니다(예: 비 ASCII 값을 인코딩한 뒤의 길이).",
+  "objectstorage.blob.metadata_value_unsupported": "저장소는 사용자 지정 메타데이터 '{name}'의 값을 그대로 저장할 수 없습니다. 다른 값으로 저장됩니다.",
   "objectstorage.multipart.part_too_small": "파트 {part}은(는) {length}바이트입니다. 마지막 파트를 제외한 각 파트는 최소 {minimum}바이트여야 합니다.",
   "objectstorage.multipart.part_unknown": "파트 {part}이(가) 업로드되지 않았거나 ETag가 일치하지 않습니다.",
   "objectstorage.multipart.parts_empty": "파트 목록은 비워 둘 수 없습니다.",

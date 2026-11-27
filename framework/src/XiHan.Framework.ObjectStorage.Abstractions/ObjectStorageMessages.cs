@@ -231,6 +231,22 @@ public static class ObjectStorageMessages
     public const string ContentTypeUnsupported = "objectstorage.blob.content_type_unsupported";
 
     /// <summary>
+    /// 存储收不下的自定义元数据
+    /// </summary>
+    /// <remarks>
+    /// 没有参数。与 <see cref="ObjectStorageErrors.MetadataTooLarge"/> 搭配
+    /// </remarks>
+    public const string MetadataTooLarge = "objectstorage.blob.metadata_too_large";
+
+    /// <summary>
+    /// 存储不能原样存取的自定义元数据值
+    /// </summary>
+    /// <remarks>
+    /// 参数：<c>name</c>。与 <see cref="ObjectStorageErrors.MetadataValueUnsupported"/> 搭配
+    /// </remarks>
+    public const string MetadataValueUnsupported = "objectstorage.blob.metadata_value_unsupported";
+
+    /// <summary>
     /// 本包的消息目录
     /// </summary>
     public static MessageCatalog Catalog => MessageCatalog.FromEmbeddedResources(CatalogName, typeof(ObjectStorageMessages));

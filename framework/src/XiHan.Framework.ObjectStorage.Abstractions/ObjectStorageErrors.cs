@@ -97,6 +97,22 @@ public static class ObjectStorageErrors
     public const string ContentTypeUnsupported = "OBJECTSTORAGE_VALIDATION_007";
 
     /// <summary>
+    /// 存储收不下的自定义元数据
+    /// </summary>
+    /// <remarks>
+    /// 名与值合 <see cref="Blobs.BlobPutOptions.MaxMetadataBytes"/> 的上限（按原值计），存储却按它自己的计法判定超过上限而拒收（S3：服务回 400 <c>MetadataTooLarge</c>，Amazon S3 按请求头里编码之后的字节数计）。写入与分片上传的发起以它失败，不当作存储故障；Provider 不预先按编码之后的长度拒收。HTTP 400，没有参数（RFC-0012「契约」，ADR-0343）
+    /// </remarks>
+    public const string MetadataTooLarge = "OBJECTSTORAGE_VALIDATION_008";
+
+    /// <summary>
+    /// 存储不能原样存取的自定义元数据值
+    /// </summary>
+    /// <remarks>
+    /// 值合 <see cref="Blobs.BlobPutOptions.Metadata"/> 的文法，但所用的存储会把它存成另一个值、读回的不是写入的值（S3：整个是 RFC 2047 encoded-word 形状的只有 ASCII 的值，Amazon S3 先解码再存，读回时又被当作 encoded-word 解码）。写入与分片上传的发起在发出任何请求之前以它失败，不改写后照写；HTTP 400，参数 <c>name</c> 是那一项的元数据名，不带值（RFC-0012「契约」，ADR-0343）
+    /// </remarks>
+    public const string MetadataValueUnsupported = "OBJECTSTORAGE_VALIDATION_009";
+
+    /// <summary>
     /// 不覆盖写入在本存储上无法保证
     /// </summary>
     /// <remarks>

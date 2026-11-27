@@ -12,7 +12,7 @@ namespace XiHan.Framework.ObjectStorage.S3;
 /// 自定义元数据的值在 <c>x-amz-meta-*</c> 头里的写法
 /// </summary>
 /// <remarks>
-/// S3 的用户元数据经 HTTP 头存取，头值只能是可打印 ASCII 与空格，首尾的空白不算在值里（RFC 9110 §5.5）；.NET 的 HTTP 客户端不发出含非 ASCII 字符的请求头。头写不出原样的值照 RFC 2047 编成 <c>=?UTF-8?B?…?=</c>，读回时解码（RFC-0012「S3 Provider」，ADR-0333）。不用 SDK 的 <c>AWSConfigsS3.EnableUnicodeEncodingForObjectMetadata</c>：它是进程级的全局开关，且逐个 UTF-16 码元做百分号编码、拆开成对的代理项
+/// S3 的用户元数据经 HTTP 头存取，头值只能是可打印 ASCII 与空格，首尾的空白不算在值里（RFC 9110 §5.5）；.NET 的 HTTP 客户端不发出含非 ASCII 字符的请求头。头写不出原样的值照 RFC 2047 编成 <c>=?UTF-8?B?…?=</c>，读回时解码（RFC-0012「S3 Provider」，ADR-0333）。整个是 encoded-word 形状的只有 ASCII 的值存不成原样（Amazon S3 先解码再存，读回时又被解码），由 <see cref="IsEncodedWords"/> 认出、写入之前拒收；别的写入方原样写进头的 UTF-8 字节读回时还原成字节、严格按 UTF-8 解出（ADR-0343）。不用 SDK 的 <c>AWSConfigsS3.EnableUnicodeEncodingForObjectMetadata</c>：它是进程级的全局开关，且逐个 UTF-16 码元做百分号编码、拆开成对的代理项
 /// </remarks>
 internal static class S3MetadataHeader
 {
@@ -53,11 +53,17 @@ internal static class S3MetadataHeader
     /// 写进请求头的值
     /// </summary>
     /// <remarks>
-    /// 值里有 U+0020–U+007E 之外的字符、以空格开头或结尾，或以 <c>=?</c> 开头且以 <c>?=</c> 结尾（原样写出，读回时会被当作 encoded-word）时，编成以一个空格隔开的若干 encoded-word，每个至多 45 个字节、在 UTF-8 字符的边界处拆开；其余原样。值已过 <c>BlobPutOptions.Metadata</c> 的核对：不含控制字符与孤立的代理项
+    /// 值里有 U+0020–U+007E 之外的字符、以空格开头或结尾，或以 <c>=?</c> 开头且以 <c>?=</c> 结尾时，编成以一个空格隔开的若干 encoded-word，每个至多 45 个字节、在 UTF-8 字符的边界处拆开；其余原样。值已过 <c>BlobPutOptions.Metadata</c> 的核对（不含控制字符与孤立的代理项），整个是 encoded-word 形状的值也已由调用方按 <see cref="IsEncodedWords"/> 拒收
     /// </remarks>
     public static string Encode(string value)
     {
         ArgumentNullException.ThrowIfNull(value);
+        // 整个是 encoded-word 形状的值原样写出读回时被解码，编码写出 Amazon S3 又先解码再存：调用方在写入之前拒收（ADR-0343），走到这里是核对被绕过
+        if (IsEncodedWords(value))
+        {
+            throw new ArgumentException("The metadata value is shaped as RFC 2047 encoded-words, which the S3 service would not keep as given.", nameof(value));
+        }
+
         if (!NeedsEncoding(value))
         {
             return value;
@@ -97,26 +103,31 @@ internal static class S3MetadataHeader
     /// 解出应答头里的值
     /// </summary>
     /// <remarks>
-    /// 值整个是以空格或制表符隔开的一个或多个 encoded-word 时解码：相邻 encoded-word 之间的空白忽略（RFC 2047 §6.2），各个解出的字节连起来按 UTF-8 解码；不是这样的值原样交出。解不了时为假：charset 不是 UTF-8（可带 RFC 2231 的 <c>*语言</c> 后缀）、encoding 不是 B 或 Q、B 不是带补齐的 base64、Q 的 <c>=</c> 之后不是两位十六进制数字、字节不是合法的 UTF-8、解出的值含控制字符。单个 encoded-word 超过 75 个字符照常解码：别的写入方不一定拆开
+    /// 有 U+0080 及以上字符的值（<see cref="IsRaw"/>）是别的写入方原样写进头的字节：.NET 的 HTTP 客户端把每个字节读成一个 U+0000–U+00FF 的字符（Latin-1），还原成字节再严格按 UTF-8 解码（ADR-0343）。只有 ASCII 的值整个是以空格或制表符隔开的一个或多个 encoded-word 时解码：相邻 encoded-word 之间的空白忽略（RFC 2047 §6.2），各个解出的字节连起来按 UTF-8 解码；不是这样的值原样交出。解不了时为假：charset 不是 UTF-8（可带 RFC 2231 的 <c>*语言</c> 后缀）、encoding 不是 B 或 Q、B 不是带补齐的 base64、Q 的 <c>=</c> 之后不是两位十六进制数字、字节不是合法的 UTF-8、解出的值含控制字符；原样的字节里有 U+00FF 之外的字符（不是按 Latin-1 交来的，还原不了）同此。单个 encoded-word 超过 75 个字符照常解码：别的写入方不一定拆开
     /// </remarks>
     public static bool TryDecode(string value, [NotNullWhen(true)] out string? decoded)
     {
         ArgumentNullException.ThrowIfNull(value);
-        decoded = value;
-        // 为空、首尾有空白的不是「整个是 encoded-word」：原样交出（HTTP 本来就去掉首尾的空白）
-        if (value.Length == 0 || IsLinearWhiteSpace(value[0]) || IsLinearWhiteSpace(value[^1]))
+        if (IsRaw(value))
         {
-            return true;
+            // 每个字符就是服务发来的一个字节：U+00FF 之外的字符不是这样交来的（应用注册了按别的编码读头的客户端），还原不出字节，不猜（ADR-0343）
+            if (value.AsSpan().ContainsAnyExceptInRange('\u0000', (char)0xFF))
+            {
+                decoded = null;
+                return false;
+            }
+
+            return TryDecodeUtf8(Encoding.Latin1.GetBytes(value), out decoded);
         }
 
-        var words = value.Split([' ', '\t'], StringSplitOptions.RemoveEmptyEntries);
-        if (!words.All(IsEncodedWord))
+        decoded = value;
+        if (!IsEncodedWords(value))
         {
             return true;
         }
 
         var bytes = new List<byte>(value.Length);
-        foreach (var word in words)
+        foreach (var word in value.Split([' ', '\t'], StringSplitOptions.RemoveEmptyEntries))
         {
             var parts = word[WordStart.Length..^WordEnd.Length].Split('?');
             var charset = parts[0];
@@ -134,9 +145,62 @@ internal static class S3MetadataHeader
             }
         }
 
+        return TryDecodeUtf8([.. bytes], out decoded);
+    }
+
+    /// <summary>
+    /// 应答头里的值是不是别的写入方原样写进头的字节
+    /// </summary>
+    /// <remarks>
+    /// 有 U+0080 及以上的字符即是：Provider 写出的总是只有 ASCII 的值，encoded-word 也只有 ASCII（ADR-0343）
+    /// </remarks>
+    public static bool IsRaw(string value)
+    {
+        ArgumentNullException.ThrowIfNull(value);
+        return value.AsSpan().ContainsAnyExceptInRange('\u0000', '\u007F');
+    }
+
+    /// <summary>
+    /// 值是否整个是以空格或制表符隔开的一个或多个 RFC 2047 encoded-word
+    /// </summary>
+    /// <remarks>
+    /// 读回时解码的就是这个形状，写入时拒收的也是它，两处同一个判定（ADR-0333 备选 7、ADR-0343）：为空、首尾有空白、有一部分不是 encoded-word 的都不是。encoded-word 只有 ASCII，这样的值因此只有 ASCII
+    /// </remarks>
+    public static bool IsEncodedWords(string value)
+    {
+        ArgumentNullException.ThrowIfNull(value);
+        // 首尾有空白的不算：HTTP 本来就去掉首尾的空白，读回时原样交出
+        if (value.Length == 0 || IsLinearWhiteSpace(value[0]) || IsLinearWhiteSpace(value[^1]))
+        {
+            return false;
+        }
+
+        return value.Split([' ', '\t'], StringSplitOptions.RemoveEmptyEntries).All(IsEncodedWord);
+    }
+
+    /// <summary>
+    /// 值是否要编码才能原样存取
+    /// </summary>
+    /// <remarks>
+    /// 非 ASCII 的头写不出，首尾的空格被 HTTP 去掉。以 <c>=?</c> 开头且以 <c>?=</c> 结尾的值（整个是 encoded-word 形状的已由调用方拒收）原样写出时，RustFS 1.0.6 会当作 encoded-word 去解、解不了即以 400 <c>InvalidArgument</c> 拒收（ADR-0343 实测），所以照旧编码
+    /// </remarks>
+    private static bool NeedsEncoding(string value)
+        => value.AsSpan().ContainsAnyExceptInRange(' ', '~')
+            || value.StartsWith(' ')
+            || value.EndsWith(' ')
+            || (value.StartsWith(WordStart, StringComparison.Ordinal) && value.EndsWith(WordEnd, StringComparison.Ordinal));
+
+    /// <summary>
+    /// 严格按 UTF-8 解出字节，并核对解出的值没有控制字符
+    /// </summary>
+    /// <remarks>
+    /// 字节不是合法的 UTF-8（含编成 UTF-8 的代理项）或解出控制字符时为假。解出的值也要合元数据值的文法：头里写不出的控制字符经编码或原样的字节就能带进来，交出去调用方原样写回即被拒绝
+    /// </remarks>
+    private static bool TryDecodeUtf8(ReadOnlySpan<byte> bytes, [NotNullWhen(true)] out string? decoded)
+    {
         try
         {
-            decoded = _strictUtf8.GetString([.. bytes]);
+            decoded = _strictUtf8.GetString(bytes);
         }
         catch (DecoderFallbackException)
         {
@@ -144,7 +208,6 @@ internal static class S3MetadataHeader
             return false;
         }
 
-        // 解出的值也要合元数据值的文法：头里写不出的控制字符经编码就能带进来，交出去调用方原样写回即被拒绝
         if (decoded.AsSpan().ContainsAnyInRange('\u0000', '\u001F') || decoded.AsSpan().ContainsAnyInRange('\u007F', '\u009F'))
         {
             decoded = null;
@@ -153,15 +216,6 @@ internal static class S3MetadataHeader
 
         return true;
     }
-
-    /// <summary>
-    /// 值是否要编码才能原样存取
-    /// </summary>
-    private static bool NeedsEncoding(string value)
-        => value.AsSpan().ContainsAnyExceptInRange(' ', '~')
-            || value.StartsWith(' ')
-            || value.EndsWith(' ')
-            || (value.StartsWith(WordStart, StringComparison.Ordinal) && value.EndsWith(WordEnd, StringComparison.Ordinal));
 
     /// <summary>
     /// 是否是线性空白（空格或制表符）

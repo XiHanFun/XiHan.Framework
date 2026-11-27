@@ -9,6 +9,8 @@
   "objectstorage.list.page_size_invalid": "La taille de page {pageSize} de la liste doit être comprise entre 1 et {max}.",
   "objectstorage.blob.content_type_invalid": "Le type de contenu de la requête doit être un type de média d'au plus {max} caractères.",
   "objectstorage.blob.content_type_unsupported": "Le stockage ne peut pas conserver le type de contenu '{contentType}' tel quel ; son client le réécrirait.",
+  "objectstorage.blob.metadata_too_large": "Le stockage a refusé les métadonnées personnalisées car elles sont trop volumineuses ; il calcule la taille à sa manière, par exemple après l'encodage des valeurs non ASCII.",
+  "objectstorage.blob.metadata_value_unsupported": "Le stockage ne peut pas conserver tel quel la valeur des métadonnées personnalisées '{name}' ; il enregistrerait une autre valeur.",
   "objectstorage.multipart.part_too_small": "La partie {part} fait {length} octets ; chaque partie sauf la dernière doit faire au moins {minimum} octets.",
   "objectstorage.multipart.part_unknown": "La partie {part} n'a pas été téléversée ou son ETag ne correspond pas.",
   "objectstorage.multipart.parts_empty": "La liste des parties ne doit pas être vide.",

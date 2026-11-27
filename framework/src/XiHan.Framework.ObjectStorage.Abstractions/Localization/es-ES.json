@@ -9,6 +9,8 @@
   "objectstorage.list.page_size_invalid": "El tamaño de página {pageSize} del listado debe estar entre 1 y {max}.",
   "objectstorage.blob.content_type_invalid": "El tipo de contenido de la solicitud debe ser un tipo de medio de {max} caracteres como máximo.",
   "objectstorage.blob.content_type_unsupported": "El almacenamiento no puede conservar el tipo de contenido '{contentType}' tal como se indicó; su cliente lo reescribiría.",
+  "objectstorage.blob.metadata_too_large": "El almacenamiento rechazó los metadatos personalizados por ser demasiado grandes; calcula el tamaño a su manera, por ejemplo tras codificar los valores no ASCII.",
+  "objectstorage.blob.metadata_value_unsupported": "El almacenamiento no puede conservar el valor de los metadatos personalizados '{name}' tal como se indicó; guardaría otro valor.",
   "objectstorage.multipart.part_too_small": "La parte {part} tiene {length} bytes; todas las partes excepto la última deben tener al menos {minimum} bytes.",
   "objectstorage.multipart.part_unknown": "La parte {part} no se ha cargado o su ETag no coincide.",
   "objectstorage.multipart.parts_empty": "La lista de partes no puede estar vacía.",

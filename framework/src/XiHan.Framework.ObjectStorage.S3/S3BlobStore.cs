@@ -23,7 +23,7 @@ namespace XiHan.Framework.ObjectStorage.S3;
 /// S3 对象存储
 /// </summary>
 /// <remarks>
-/// 容器即桶，键即对象键。不覆盖写入用条件请求（<c>If-None-Match: *</c>）保证原子，已存在返回 <see cref="ObjectStorageErrors.BlobExists"/>；服务是否认条件写入要先探明（ADR-0089、ADR-0090）：特性启动或命名实例建出时探一次，没探明就在后台重试，这期间不覆盖的写入与分片上传返回 <see cref="ObjectStorageErrors.ConditionalWriteUnconfirmed"/>，探明不认或选项关闭条件写入时一律返回 <see cref="ObjectStorageErrors.ConditionalWriteUnavailable"/>；批量删除先逐键 HEAD 得知是否存在，再一次 <c>DeleteObjects</c>，SDK 对有错误项的应答抛出 <see cref="DeleteObjectsException"/> 时从它带的应答逐项报告（ADR-0333）；列举经 <c>ListObjectsV2</c>，条目只有键、长度、ETag 与修改时间（内容类型为默认值、自定义元数据为空，需要时再 HEAD）。范围读取经 <c>Range</c> 请求头；分片上传直接映射 S3 的 multipart（不覆盖的完成带 <c>If-None-Match: *</c>）；预签名地址由 SDK 本地签出（签名 V4），客户端直连存储。不存在的键与桶映射为 <see cref="ObjectStorageErrors.BlobNotFound"/>，其余服务端与网络错误映射为 <see cref="ObjectStorageErrors.StoreUnavailable"/>，服务应答成功却缺了必需的内容同此（发起分片上传的应答没有可用的上传标识，ADR-0302；上传分片的应答没有可用的 ETag、列出的分片没有可用的编号或 ETag 或长度为负，ADR-0308；读取、HEAD 与写入的应答没有可用的 ETag，读取与 HEAD 的应答没有修改时间，列举截断却没有能前进的续页标记、列出的对象缺 ETag 或修改时间，列出分片的分页不前进或超过 10000 片，批量删除的错误项认不出是哪一项，ADR-0313；整读的 ETag 不是十六进制、SDK 当作 MD5 解码不了，ADR-0317；读取与 HEAD 的应答没有可用的 Content-Length，列出的对象没有可用的长度，任一步的应答 SDK 解析不了，列出的分片里同一编号出现两次，ADR-0322；响应体不是良构的 XML，放弃分片上传与建桶的应答解析不了，列出的分片编号不比这一页的起点大，自定义元数据里有解不了的 RFC 2047 encoded-word，ADR-0333）。整读的内容对不上应答声明的 ETag 或校验和时 SDK 读到末尾才发现，读内容的流抛出携带 <see cref="ObjectStorageErrors.StoreUnavailable"/> 的 <see cref="FrameworkException"/>（ADR-0322）；没读到末尾就释放时不抛出，只记 Warning（ADR-0333）。自定义元数据的值头写不出原样时照 RFC 2047 编码写入、读回时解码（<see cref="S3MetadataHeader"/>，ADR-0333）。写入结果的修改时间是本机时钟：PutObject 的应答本来就不带修改时间，要服务端记下的时刻就在写入之后再 <see cref="HeadAsync"/>（ADR-0313、ADR-0322）。内容类型原样存取：SDK 写不出原值的（<see cref="S3ContentTypeHeader"/>）写入与分片上传的发起返回 <see cref="ObjectStorageErrors.ContentTypeUnsupported"/>，不发请求；读取时 SDK 按 .NET 的写法交出它解析得了的值（ADR-0295）。没有公开构造（ADR-0266，公开面不出现 SDK 的类型）：缺省实例由 <see cref="S3ObjectStorageFeature"/> 建出，客户端归容器所有，释放实例什么都不做；命名实例由 <see cref="S3BlobStoreProvider"/> 按定义建出（经 <c>BlobStores</c>，或直接调它的 <c>CreateAsync</c>），自己建客户端并在后台重试探测，释放实例即停止重试、释放客户端
+/// 容器即桶，键即对象键。不覆盖写入用条件请求（<c>If-None-Match: *</c>）保证原子，已存在返回 <see cref="ObjectStorageErrors.BlobExists"/>；服务是否认条件写入要先探明（ADR-0089、ADR-0090）：特性启动或命名实例建出时探一次，没探明就在后台重试，这期间不覆盖的写入与分片上传返回 <see cref="ObjectStorageErrors.ConditionalWriteUnconfirmed"/>，探明不认或选项关闭条件写入时一律返回 <see cref="ObjectStorageErrors.ConditionalWriteUnavailable"/>；批量删除先逐键 HEAD 得知是否存在，再一次 <c>DeleteObjects</c>，SDK 对有错误项的应答抛出 <see cref="DeleteObjectsException"/> 时从它带的应答逐项报告（ADR-0333）；列举经 <c>ListObjectsV2</c>，条目只有键、长度、ETag 与修改时间（内容类型为默认值、自定义元数据为空，需要时再 HEAD）。范围读取经 <c>Range</c> 请求头；分片上传直接映射 S3 的 multipart（不覆盖的完成带 <c>If-None-Match: *</c>）；预签名地址由 SDK 本地签出（签名 V4），客户端直连存储。不存在的键与桶映射为 <see cref="ObjectStorageErrors.BlobNotFound"/>，其余服务端与网络错误映射为 <see cref="ObjectStorageErrors.StoreUnavailable"/>，服务应答成功却缺了必需的内容同此（发起分片上传的应答没有可用的上传标识，ADR-0302；上传分片的应答没有可用的 ETag、列出的分片没有可用的编号或 ETag 或长度为负，ADR-0308；读取、HEAD 与写入的应答没有可用的 ETag，读取与 HEAD 的应答没有修改时间，列举截断却没有能前进的续页标记、列出的对象缺 ETag 或修改时间，列出分片的分页不前进或超过 10000 片，批量删除的错误项认不出是哪一项，ADR-0313；整读的 ETag 不是十六进制、SDK 当作 MD5 解码不了，ADR-0317；读取与 HEAD 的应答没有可用的 Content-Length，列出的对象没有可用的长度，任一步的应答 SDK 解析不了，列出的分片里同一编号出现两次，ADR-0322；响应体不是良构的 XML，放弃分片上传与建桶的应答解析不了，列出的分片编号不比这一页的起点大，自定义元数据里有解不了的 RFC 2047 encoded-word，ADR-0333）。整读的内容对不上应答声明的 ETag 或校验和时 SDK 读到末尾才发现，读内容的流抛出携带 <see cref="ObjectStorageErrors.StoreUnavailable"/> 的 <see cref="FrameworkException"/>（ADR-0322）；没读到末尾就释放时不抛出，只记 Warning（ADR-0333）。自定义元数据的值头写不出原样时照 RFC 2047 编码写入、读回时解码（<see cref="S3MetadataHeader"/>，ADR-0333）；整个是 encoded-word 形状的只有 ASCII 的值存不成原样，写入与分片上传的发起返回 <see cref="ObjectStorageErrors.MetadataValueUnsupported"/>、不发请求，服务以 <c>MetadataTooLarge</c> 拒收元数据时返回 <see cref="ObjectStorageErrors.MetadataTooLarge"/>，别的写入方原样写进头的 UTF-8 字节读回时严格按 UTF-8 解出、解不了按不合规的应答返回（ADR-0343）。写入结果的修改时间是本机时钟：PutObject 的应答本来就不带修改时间，要服务端记下的时刻就在写入之后再 <see cref="HeadAsync"/>（ADR-0313、ADR-0322）。内容类型原样存取：SDK 写不出原值的（<see cref="S3ContentTypeHeader"/>）写入与分片上传的发起返回 <see cref="ObjectStorageErrors.ContentTypeUnsupported"/>，不发请求；读取时 SDK 按 .NET 的写法交出它解析得了的值（ADR-0295）。没有公开构造（ADR-0266，公开面不出现 SDK 的类型）：缺省实例由 <see cref="S3ObjectStorageFeature"/> 建出，客户端归容器所有，释放实例什么都不做；命名实例由 <see cref="S3BlobStoreProvider"/> 按定义建出（经 <c>BlobStores</c>，或直接调它的 <c>CreateAsync</c>），自己建客户端并在后台重试探测，释放实例即停止重试、释放客户端
 /// </remarks>
 [ApiLevel(Stability.Stable, "5.0")]
 public sealed partial class S3BlobStore : IBlobStore, IBlobMultipartStore, IBlobUrlSigner, IDisposable, IAsyncDisposable
@@ -198,12 +198,12 @@ public sealed partial class S3BlobStore : IBlobStore, IBlobMultipartStore, IBlob
     /// <summary>
     /// 读取的应答
     /// </summary>
-    private static readonly ObjectAnswer _getObjectAnswer = new("GetObject", "GetObject returned no usable ETag", "GetObject returned no Last-Modified", "GetObject returned no usable Content-Length", "GetObject returned user metadata with an RFC 2047 encoded-word that does not decode to a valid value");
+    private static readonly ObjectAnswer _getObjectAnswer = new("GetObject", "GetObject returned no usable ETag", "GetObject returned no Last-Modified", "GetObject returned no usable Content-Length", "GetObject returned user metadata with an RFC 2047 encoded-word that does not decode to a valid value", "GetObject returned user metadata with raw non-ASCII bytes that do not decode as UTF-8 to a valid value");
 
     /// <summary>
     /// HEAD 的应答
     /// </summary>
-    private static readonly ObjectAnswer _headObjectAnswer = new("HeadObject", "HeadObject returned no usable ETag", "HeadObject returned no Last-Modified", "HeadObject returned no usable Content-Length", "HeadObject returned user metadata with an RFC 2047 encoded-word that does not decode to a valid value");
+    private static readonly ObjectAnswer _headObjectAnswer = new("HeadObject", "HeadObject returned no usable ETag", "HeadObject returned no Last-Modified", "HeadObject returned no usable Content-Length", "HeadObject returned user metadata with an RFC 2047 encoded-word that does not decode to a valid value", "HeadObject returned user metadata with raw non-ASCII bytes that do not decode as UTF-8 to a valid value");
 
     /// <summary>
     /// S3 客户端
@@ -652,6 +652,12 @@ public sealed partial class S3BlobStore : IBlobStore, IBlobMultipartStore, IBlob
             return ContentTypeUnsupported(options.ContentType);
         }
 
+        // 服务会存成另一个值的元数据值同样什么请求都不发：宁可报错，不悄悄改值（ADR-0343）
+        if (FindAlteredMetadataName(options.Metadata) is { } altered)
+        {
+            return MetadataValueUnsupported(altered);
+        }
+
         // 不覆盖的发起要求条件写入已确认：探明之前、不认或关闭时拒绝，不发起没有保证的上传
         if (!options.Overwrite && await _conditionalWrites.RefuseAsync(container, key, cancellationToken).ConfigureAwait(false) is { } refused)
         {
@@ -694,6 +700,11 @@ public sealed partial class S3BlobStore : IBlobStore, IBlobMultipartStore, IBlob
                 }
 
                 return Result.Success(new BlobMultipartUpload(container, key, response.UploadId) { Overwrite = options.Overwrite });
+            }
+            catch (AmazonS3Exception exception) when (IsMetadataTooLarge(exception))
+            {
+                // 元数据的上限按服务自己的计法（Amazon S3 按编码之后的头）超了：是调用方能改的输入，不是存储故障（ADR-0343）
+                return MetadataTooLarge();
             }
             catch (AmazonS3Exception exception) when (!ensured && _options.EnsureBuckets && IsNoSuchBucket(exception))
             {
@@ -1144,6 +1155,12 @@ public sealed partial class S3BlobStore : IBlobStore, IBlobMultipartStore, IBlob
             return ContentTypeUnsupported(upload.Options.ContentType);
         }
 
+        // 服务会存成另一个值的元数据值同样先于一切判定、连 Head 也不发：宁可报错，不悄悄改值（ADR-0343）
+        if (FindAlteredMetadataName(upload.Options.Metadata) is { } altered)
+        {
+            return MetadataValueUnsupported(altered);
+        }
+
         // 条件写入没确认（尚未探明、不认或关闭）时照样先查再写会在并发时静默覆盖，所以明确拒绝，不做没有保证的尝试
         if (!upload.Options.Overwrite && await _conditionalWrites.RefuseAsync(container, upload.Key, cancellationToken).ConfigureAwait(false) is { } refused)
         {
@@ -1225,6 +1242,11 @@ public sealed partial class S3BlobStore : IBlobStore, IBlobMultipartStore, IBlob
                 catch (AmazonS3Exception exception) when (exception.StatusCode == HttpStatusCode.PreconditionFailed)
                 {
                     return Exists(container, upload.Key);
+                }
+                catch (AmazonS3Exception exception) when (IsMetadataTooLarge(exception))
+                {
+                    // 元数据的上限按服务自己的计法（Amazon S3 按编码之后的头）超了：是调用方能改的输入，不是存储故障；服务拒收了，对象没有写进去（ADR-0343）
+                    return MetadataTooLarge();
                 }
                 catch (AmazonS3Exception exception) when (!ensured && _options.EnsureBuckets && IsNoSuchBucket(exception))
                 {
@@ -1329,23 +1351,46 @@ public sealed partial class S3BlobStore : IBlobStore, IBlobMultipartStore, IBlob
     /// 响应里的自定义元数据（去掉 <c>x-amz-meta-</c> 前缀，解开 RFC 2047 的 encoded-word）
     /// </summary>
     /// <remarks>
-    /// 有一个值解不了时为 <see langword="null"/>：调用方按不合规的应答返回，不原样交出编码的文本（ADR-0333）
+    /// 有一个值解不了时为 <see langword="null"/>，<paramref name="undecodable"/> 是那个值（只用来分辨原因，不进错误与日志）：调用方按不合规的应答返回，不原样交出编码的文本或读成 Latin-1 的乱码（ADR-0333、ADR-0343）
     /// </remarks>
-    private static Dictionary<string, string>? ReadMetadata(MetadataCollection metadata)
+    private static Dictionary<string, string>? ReadMetadata(MetadataCollection metadata, out string undecodable)
     {
         var result = new Dictionary<string, string>(StringComparer.Ordinal);
         foreach (var key in metadata.Keys)
         {
             var name = key.StartsWith(MetadataPrefix, StringComparison.OrdinalIgnoreCase) ? key[MetadataPrefix.Length..] : key;
-            if (!S3MetadataHeader.TryDecode(metadata[key], out var value))
+            var answered = metadata[key];
+            if (!S3MetadataHeader.TryDecode(answered, out var value))
             {
+                undecodable = answered;
                 return null;
             }
 
             result[name] = value;
         }
 
+        undecodable = string.Empty;
         return result;
+    }
+
+    /// <summary>
+    /// 第一个服务会存成另一个值的元数据名
+    /// </summary>
+    /// <remarks>
+    /// 整个是 encoded-word 形状的只有 ASCII 的值（<see cref="S3MetadataHeader.IsEncodedWords"/>，判定同读回时解码的形状）：原样写出读回时被解码，编码写出 Amazon S3 又先解码、存下只有 ASCII 的原值并原样返回（ADR-0343）。按名的序数次序取第一个，同一份元数据每次报同一个名；没有为 <see langword="null"/>
+    /// </remarks>
+    private static string? FindAlteredMetadataName(IReadOnlyDictionary<string, string> metadata)
+    {
+        string? first = null;
+        foreach (var (name, value) in metadata)
+        {
+            if (S3MetadataHeader.IsEncodedWords(value) && (first is null || string.CompareOrdinal(name, first) < 0))
+            {
+                first = name;
+            }
+        }
+
+        return first;
     }
 
     /// <summary>
@@ -1380,10 +1425,10 @@ public sealed partial class S3BlobStore : IBlobStore, IBlobMultipartStore, IBlob
             return UnusableAnswer(container, answer.Operation, answer.ContentLengthMissingReason);
         }
 
-        // 解不了的 encoded-word 同缺内容：原样交出是编码的文本，替换掉又是乱码，都不是存进去的值（ADR-0333）
-        if (ReadMetadata(metadata) is not { } values)
+        // 解不了的 encoded-word 与原样的字节同缺内容：原样交出是编码的文本或乱码，替换掉又是另一种乱码，都不是存进去的值（ADR-0333、ADR-0343）
+        if (ReadMetadata(metadata, out var undecodable) is not { } values)
         {
-            return UnusableAnswer(container, answer.Operation, answer.MetadataUndecodableReason);
+            return UnusableAnswer(container, answer.Operation, S3MetadataHeader.IsRaw(undecodable) ? answer.MetadataBytesUndecodableReason : answer.MetadataUndecodableReason);
         }
 
         return Result.Success(new BlobMetadata
@@ -1452,6 +1497,14 @@ public sealed partial class S3BlobStore : IBlobStore, IBlobMultipartStore, IBlob
     private static bool IsNoSuchBucket(AmazonS3Exception exception) => exception.ErrorCode == "NoSuchBucket";
 
     /// <summary>
+    /// 服务按它自己的计法判定自定义元数据超过上限
+    /// </summary>
+    /// <remarks>
+    /// S3 回 400 <c>MetadataTooLarge</c>：AWS SDK for .NET 4.0 抛出 <c>ErrorCode</c> 为它的 <see cref="AmazonS3Exception"/>、不重发（ADR-0343 实测）
+    /// </remarks>
+    private static bool IsMetadataTooLarge(AmazonS3Exception exception) => exception.ErrorCode == "MetadataTooLarge";
+
+    /// <summary>
     /// 该异常是存储故障（服务端错误、网络错误、SDK 超时）而不是调用方取消
     /// </summary>
     /// <remarks>
@@ -1481,6 +1534,23 @@ public sealed partial class S3BlobStore : IBlobStore, IBlobMultipartStore, IBlob
     /// </remarks>
     private static Error ContentTypeUnsupported(string contentType)
         => Error.Validation(ObjectStorageErrors.ContentTypeUnsupported, ObjectStorageMessages.ContentTypeUnsupported, MessageArguments.Of(("contentType", contentType)));
+
+    /// <summary>
+    /// 服务收不下的自定义元数据
+    /// </summary>
+    /// <remarks>
+    /// 没有参数：服务不说是哪一项、上限按什么计（ADR-0343）
+    /// </remarks>
+    private static Error MetadataTooLarge() => Error.Validation(ObjectStorageErrors.MetadataTooLarge, ObjectStorageMessages.MetadataTooLarge);
+
+    /// <summary>
+    /// 服务会存成另一个值的元数据值
+    /// </summary>
+    /// <remarks>
+    /// 参数只有元数据名、不带值：值至多约 2 KB，也可能是业务数据（ADR-0343）
+    /// </remarks>
+    private static Error MetadataValueUnsupported(string name)
+        => Error.Validation(ObjectStorageErrors.MetadataValueUnsupported, ObjectStorageMessages.MetadataValueUnsupported, MessageArguments.Of(("name", name)));
 
     /// <summary>
     /// 存储不可用
@@ -1545,5 +1615,6 @@ public sealed partial class S3BlobStore : IBlobStore, IBlobMultipartStore, IBlob
     /// <param name="LastModifiedMissingReason">没有修改时间时的文本</param>
     /// <param name="ContentLengthMissingReason">没有可用的长度时的文本（ADR-0322）</param>
     /// <param name="MetadataUndecodableReason">自定义元数据里有解不了的 RFC 2047 encoded-word 时的文本（ADR-0333）</param>
-    private sealed record ObjectAnswer(string Operation, string ETagMissingReason, string LastModifiedMissingReason, string ContentLengthMissingReason, string MetadataUndecodableReason);
+    /// <param name="MetadataBytesUndecodableReason">自定义元数据里有别的写入方原样写进头、解不成合法值的字节时的文本（ADR-0343）</param>
+    private sealed record ObjectAnswer(string Operation, string ETagMissingReason, string LastModifiedMissingReason, string ContentLengthMissingReason, string MetadataUndecodableReason, string MetadataBytesUndecodableReason);
 }

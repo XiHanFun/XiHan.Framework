@@ -12,10 +12,10 @@ using XiHan.Framework.Testing;
 namespace XiHan.Framework.ObjectStorage.S3.Tests;
 
 /// <summary>
-/// 自定义元数据的值在线上照 RFC 2047 编码与解码（ADR-0333）
+/// 自定义元数据的值在线上的编解码，存不成原样与收不下时的校验错误
 /// </summary>
 /// <remarks>
-/// 以前值原样写进 <c>x-amz-meta-*</c> 请求头：有非 ASCII 字符时 .NET 的 HTTP 客户端不发出这个头，写入以 <see cref="ObjectStorageErrors.StoreUnavailable"/> 失败；首尾的空格被 HTTP 去掉；读回的 encoded-word 原样交出。走真实的 SDK 与套接字，对端是回环上的 <see cref="RecordingHttpListener"/>，核对线上的请求头与按应答头解出的元数据，不连 S3 服务。期望的编码由 Python 的 <c>base64</c> 与 UTF-8 编码独立算出
+/// 照 RFC 2047 编码与解码（ADR-0333）。整个是 encoded-word 形状的只有 ASCII 的值写入与分片上传的发起返回 <see cref="ObjectStorageErrors.MetadataValueUnsupported"/>、一个请求都不发；服务以 400 <c>MetadataTooLarge</c> 拒收时返回 <see cref="ObjectStorageErrors.MetadataTooLarge"/>，以前按存储故障返回 <see cref="ObjectStorageErrors.StoreUnavailable"/>（ADR-0343）。以前值原样写进 <c>x-amz-meta-*</c> 请求头：有非 ASCII 字符时 .NET 的 HTTP 客户端不发出这个头，写入以 <see cref="ObjectStorageErrors.StoreUnavailable"/> 失败；首尾的空格被 HTTP 去掉；读回的 encoded-word 原样交出。走真实的 SDK 与套接字，对端是回环上的 <see cref="RecordingHttpListener"/>，核对线上的请求头与按应答头解出的元数据，不连 S3 服务。期望的编码由 Python 的 <c>base64</c> 与 UTF-8 编码独立算出
 /// </remarks>
 public sealed class S3MetadataWireTests
 {
@@ -43,7 +43,7 @@ public sealed class S3MetadataWireTests
     /// 写入的值与线上的请求头值
     /// </summary>
     /// <remarks>
-    /// 非 ASCII（含平面以外的字符）、首尾的空格、形如 encoded-word 的 ASCII 编码；中间的连续空格、空串、只是含有 <c>=?</c> 的 ASCII 原样写
+    /// 非 ASCII（含平面以外的字符）、首尾的空格、以 <c>=?</c> 开头且以 <c>?=</c> 结尾而不整个是 encoded-word 形状的 ASCII 编码（首尾有空格的 encoded-word 形状也是）；中间的连续空格、空串、只是含有 <c>=?</c> 的 ASCII 原样写。整个是 encoded-word 形状的不写，见 <see cref="EncodedWordShapedValues"/>（ADR-0343）
     /// </remarks>
     public static TheoryData<string, string> WrittenValues => new()
     {
@@ -52,14 +52,38 @@ public sealed class S3MetadataWireTests
         { " lead", "=?UTF-8?B?IGxlYWQ=?=" },
         { "trail ", "=?UTF-8?B?dHJhaWwg?=" },
         { " ", "=?UTF-8?B?IA==?=" },
-        { "=?UTF-8?B?YQ==?=", "=?UTF-8?B?PT9VVEYtOD9CP1lRPT0/PQ==?=" },
+        { " =?UTF-8?B?5Lit?=", "=?UTF-8?B?ID0/VVRGLTg/Qj81TGl0Pz0=?=" },
+        { "=?UTF-8?B?5Lit?= ", "=?UTF-8?B?PT9VVEYtOD9CPzVMaXQ/PSA=?=" },
         { "=?x?=", "=?UTF-8?B?PT94Pz0=?=" },
+        { "=?UTF-8?B?5Lit?==?UTF-8?B?5paH?=", "=?UTF-8?B?PT9VVEYtOD9CPzVMaXQ/PT0/VVRGLTg/Qj81cGFIPz0=?=" },
+        { "=?UTF-8?B?5Lit?= note", "=?UTF-8?B?5Lit?= note" },
         { "plain", "plain" },
         { "a  b", "a  b" },
         { "", "" },
         { "=? not a word", "=? not a word" },
         { "ends ?=", "ends ?=" },
     };
+
+    /// <summary>
+    /// 整个是 encoded-word 形状的只有 ASCII 的值
+    /// </summary>
+    /// <remarks>
+    /// 判定同读回时解码的形状：一个或多个以空格隔开的 encoded-word，认不认得 charset 与 encoding 都算（ADR-0343）
+    /// </remarks>
+    public static TheoryData<string> EncodedWordShapedValues =>
+    [
+        "=?UTF-8?B?YQ==?=",
+        "=?utf-8?q?a?=",
+        "=?UTF-8?B?5Lit?= =?UTF-8?Q?x?=",
+        "=?UTF-8?B?5Lit?=  =?UTF-8?B?5paH?=",
+        "=?ISO-8859-1?Q?caf=E9?=",
+        "=?x?y?z?=",
+    ];
+
+    /// <summary>
+    /// 服务以元数据太大拒收时的 S3 错误响应体
+    /// </summary>
+    private const string MetadataTooLargeBody = """<?xml version="1.0" encoding="UTF-8"?><Error><Code>MetadataTooLarge</Code><Message>Your metadata headers exceed the maximum allowed metadata size.</Message><RequestId>R1</RequestId><HostId>H1</HostId></Error>""";
 
     /// <summary>
     /// 应答头里的值与解出的元数据
@@ -186,6 +210,80 @@ public sealed class S3MetadataWireTests
     }
 
     [Theory]
+    [MemberData(nameof(EncodedWordShapedValues))]
+    public async Task OnTheWire_AnEncodedWordShapedValue_IsRefusedBeforeAnyRequest(string value)
+    {
+        // 原样写出读回时被解码，编码写出 Amazon S3 又先解码再存：宁可报错，不悄悄改值。不覆盖的写入连 HEAD 也不发，分片上传的发起同此
+        await using var endpoint = RecordingHttpListener.Answering("200 OK", ETagHeader);
+        using var store = Store(endpoint, new LogCapture());
+        var metadata = new Dictionary<string, string> { ["title"] = value, ["owner"] = "alice" };
+
+        var put = await store.PutAsync(new ContainerName(Bucket), new BlobKey(Key), Encoding.UTF8.GetBytes("abc"), new BlobPutOptions { Metadata = metadata }, CancellationToken.None);
+        var guarded = await store.PutAsync(new ContainerName(Bucket), new BlobKey(Key), Encoding.UTF8.GetBytes("abc"), new BlobPutOptions { Metadata = metadata, Overwrite = false }, CancellationToken.None);
+        var started = await store.StartAsync(new ContainerName(Bucket), new BlobKey(Key), new BlobPutOptions { Metadata = metadata }, CancellationToken.None);
+
+        foreach (var error in new[] { put.Error, guarded.Error, started.Error })
+        {
+            Assert.Equal(ObjectStorageErrors.MetadataValueUnsupported, error?.Code);
+            Assert.Equal(ObjectStorageMessages.MetadataValueUnsupported, error!.MessageKey);
+            Assert.Equal("title", Assert.Single(error.Details!).Value);
+        }
+
+        Assert.Equal(0, endpoint.ConnectionCount);
+    }
+
+    [Fact]
+    public async Task OnTheWire_SeveralRefusedValues_NameTheFirstInOrdinalOrder()
+    {
+        await using var endpoint = RecordingHttpListener.Answering("200 OK", ETagHeader);
+        using var store = Store(endpoint, new LogCapture());
+        var options = new BlobPutOptions { Metadata = new Dictionary<string, string> { ["zeta"] = "=?UTF-8?B?YQ==?=", ["plain"] = "ok", ["alpha"] = "=?UTF-8?B?Yg==?=", ["b"] = "=?x?y?z?=" } };
+
+        var put = await store.PutAsync(new ContainerName(Bucket), new BlobKey(Key), Encoding.UTF8.GetBytes("abc"), options, CancellationToken.None);
+
+        Assert.Equal("alpha", put.Error?.Details?["name"]);
+        Assert.Equal(0, endpoint.ConnectionCount);
+    }
+
+    [Fact]
+    public async Task OnTheWire_AContentTypeTheStoreCannotWrite_IsReportedBeforeTheMetadata()
+    {
+        // 两样都写不出原值时先报内容类型：核对的次序固定（RFC-0012「S3 Provider」）
+        await using var endpoint = RecordingHttpListener.Answering("200 OK", ETagHeader);
+        using var store = Store(endpoint, new LogCapture());
+        var options = new BlobPutOptions { ContentType = "text/plain;", Metadata = new Dictionary<string, string> { ["title"] = "=?UTF-8?B?YQ==?=" } };
+
+        var put = await store.PutAsync(new ContainerName(Bucket), new BlobKey(Key), Encoding.UTF8.GetBytes("abc"), options, CancellationToken.None);
+
+        Assert.Equal(ObjectStorageErrors.ContentTypeUnsupported, put.Error?.Code);
+        Assert.Equal(0, endpoint.ConnectionCount);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task OnTheWire_AServiceRefusingTheMetadataAsTooLarge_ReturnsMetadataTooLarge(bool multipart)
+    {
+        // 680 个「中」合计 2044 个字节，没超契约的上限；编码之后约 3.3 KB，Amazon S3 按头计会以 400 MetadataTooLarge 拒收。
+        // 以前按存储故障返回 StoreUnavailable、reason 是异常类型；尝试次数取 3，核对 SDK 不因它重发
+        await using var endpoint = RecordingHttpListener.AnsweringWithBody("400 Bad Request", MetadataTooLargeBody, "Content-Type: application/xml");
+        var logs = new LogCapture();
+        using var store = Store(endpoint, logs, maxAttempts: 3);
+        var options = new BlobPutOptions { Metadata = new Dictionary<string, string> { ["long"] = string.Concat(Enumerable.Repeat("中", 680)) } };
+
+        var error = multipart
+            ? (await store.StartAsync(new ContainerName(Bucket), new BlobKey(Key), options, CancellationToken.None)).Error
+            : (await store.PutAsync(new ContainerName(Bucket), new BlobKey(Key), Encoding.UTF8.GetBytes("abc"), options, CancellationToken.None)).Error;
+
+        Assert.Equal(ObjectStorageErrors.MetadataTooLarge, error?.Code);
+        Assert.Equal(ObjectStorageMessages.MetadataTooLarge, error!.MessageKey);
+        Assert.True(error.Details is null || error.Details.Count == 0);
+        Assert.Single(endpoint.Requests);
+        // 是调用方能改的输入，不当作存储故障记 Warning
+        Assert.DoesNotContain(logs.Entries, static entry => entry.Level >= LogLevel.Warning);
+    }
+
+    [Theory]
     [MemberData(nameof(AnsweredValues))]
     public async Task OnTheWire_AHead_DecodesEncodedWords(string answered, string expected)
     {
@@ -272,12 +370,12 @@ public sealed class S3MetadataWireTests
     }
 
     /// <summary>
-    /// 指向回环对端、不探测条件写入、只尝试一次的存储，日志收进 <paramref name="logs"/>
+    /// 指向回环对端、不探测条件写入的存储，日志收进 <paramref name="logs"/>
     /// </summary>
     /// <remarks>
-    /// 客户端归存储所有，释放存储即释放它
+    /// 客户端归存储所有，释放存储即释放它；缺省只尝试一次
     /// </remarks>
-    private static S3BlobStore Store(RecordingHttpListener endpoint, LogCapture logs)
+    private static S3BlobStore Store(RecordingHttpListener endpoint, LogCapture logs, int maxAttempts = 1)
     {
         var options = new S3ObjectStorageOptions
         {
@@ -285,7 +383,7 @@ public sealed class S3MetadataWireTests
             AccessKey = "ak",
             SecretKey = "sk",
             ConditionalWrites = false,
-            MaxAttempts = 1,
+            MaxAttempts = maxAttempts,
         };
         var client = S3ObjectStorageFeature.CreateClient(options);
         return new S3BlobStore(client, options, TimeProvider.System, logs, S3ConditionalWriteGate.Unprobed(client, options, TimeProvider.System), owned: true);

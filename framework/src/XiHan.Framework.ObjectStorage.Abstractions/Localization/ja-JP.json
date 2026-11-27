@@ -9,6 +9,8 @@
   "objectstorage.list.page_size_invalid": "一覧のページサイズ {pageSize} は 1 から {max} の範囲で指定してください。",
   "objectstorage.blob.content_type_invalid": "リクエストのコンテンツタイプは {max} 文字以内のメディアタイプでなければなりません。",
   "objectstorage.blob.content_type_unsupported": "ストアはコンテンツタイプ '{contentType}' をそのまま保存できません。クライアントがこの値を書き換えます。",
+  "objectstorage.blob.metadata_too_large": "ストアはカスタムメタデータが大きすぎるとして拒否しました。ストアは独自の方法でサイズを数えます（例: 非 ASCII の値をエンコードした後の長さ）。",
+  "objectstorage.blob.metadata_value_unsupported": "ストアはカスタムメタデータ '{name}' の値をそのまま保存できません。別の値として保存されます。",
   "objectstorage.multipart.part_too_small": "パート {part} は {length} バイトです。最後のパート以外は {minimum} バイト以上である必要があります。",
   "objectstorage.multipart.part_unknown": "パート {part} はアップロードされていないか、ETag が一致しません。",
   "objectstorage.multipart.parts_empty": "パートの一覧を空にすることはできません。",

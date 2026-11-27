@@ -12,7 +12,7 @@ namespace XiHan.Framework.ObjectStorage.S3.Tests;
 /// 本机回环上记录请求头的假 HTTP 对端
 /// </summary>
 /// <remarks>
-/// 既能当 S3 的端点，也能当 HTTP 代理：把每个请求头原样记下，按 <c>Content-Length</c> 读掉请求体（带 <c>Expect: 100-continue</c> 时先回 100），再按设定应答——不应答（核对超时）、要求代理凭据（没带就 407）、其余回给定的状态码、响应头与响应体（缺省没有响应体）。应答可以按请求的到达次序各不相同（<see cref="AnsweringInTurn"/>），也可以原样写出响应头、不另加 <c>Content-Length</c>（<see cref="AnsweringVerbatim"/>）。不转发任何请求：用例核对的是本进程发出了什么
+/// 既能当 S3 的端点，也能当 HTTP 代理：把每个请求头原样记下，按 <c>Content-Length</c> 读掉请求体（带 <c>Expect: 100-continue</c> 时先回 100），再按设定应答——不应答（核对超时）、要求代理凭据（没带就 407）、其余回给定的状态码、响应头与响应体（缺省没有响应体）。应答可以按请求的到达次序各不相同（<see cref="AnsweringInTurn"/>），也可以原样写出响应头、不另加 <c>Content-Length</c>（<see cref="AnsweringVerbatim"/>）；响应头按 Latin-1 写出，经 <see cref="RawHeader"/> 能带任意字节。不转发任何请求：用例核对的是本进程发出了什么
 /// </remarks>
 internal sealed class RecordingHttpListener : IAsyncDisposable
 {
@@ -166,6 +166,14 @@ internal sealed class RecordingHttpListener : IAsyncDisposable
     public static RecordingHttpListener Silent() => new(silent: true, proxyAuthorization: null, new Reply(string.Empty, string.Empty, []));
 
     /// <summary>
+    /// 值原样是 <paramref name="value"/> 这些字节的一行响应头
+    /// </summary>
+    /// <remarks>
+    /// 响应头按 Latin-1 写出，每个字节写成一个 U+0000–U+00FF 的字符即原样上线：用来构造别的客户端不按 RFC 2047、直接把 UTF-8 字节写进头的应答，也能写出不是合法 UTF-8 的字节
+    /// </remarks>
+    public static string RawHeader(string name, ReadOnlySpan<byte> value) => name + ": " + Encoding.Latin1.GetString(value);
+
+    /// <summary>
     /// 请求头里某个头的值
     /// </summary>
     /// <remarks>
@@ -290,7 +298,8 @@ internal sealed class RecordingHttpListener : IAsyncDisposable
                         : reply.Verbatim
                             ? $"HTTP/1.1 {reply.Status}\r\n{headers}Connection: close\r\n\r\n"
                             : $"HTTP/1.1 {reply.Status}\r\n{headers}Content-Length: {body.Length.ToString(CultureInfo.InvariantCulture)}\r\n\r\n";
-                    await stream.WriteAsync(Encoding.ASCII.GetBytes(response), _stopping.Token);
+                    // 按 Latin-1 写出：U+0000–U+00FF 的每个字符恰好写成一个字节，响应头因此能带任意字节（RawHeader），只有 ASCII 的头与以前相同
+                    await stream.WriteAsync(Encoding.Latin1.GetBytes(response), _stopping.Token);
                     if (!challenged && body.Length > 0)
                     {
                         await stream.WriteAsync(body, _stopping.Token);

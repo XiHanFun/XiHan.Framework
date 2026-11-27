@@ -9,6 +9,8 @@
   "objectstorage.list.page_size_invalid": "Die Seitengröße {pageSize} der Auflistung muss zwischen 1 und {max} liegen.",
   "objectstorage.blob.content_type_invalid": "Der Inhaltstyp der Anfrage muss ein Medientyp mit höchstens {max} Zeichen sein.",
   "objectstorage.blob.content_type_unsupported": "Der Speicher kann den Inhaltstyp '{contentType}' nicht unverändert speichern; sein Client würde ihn umschreiben.",
+  "objectstorage.blob.metadata_too_large": "Der Speicher hat die benutzerdefinierten Metadaten als zu groß abgelehnt; er zählt die Größe auf seine eigene Weise, etwa nach dem Kodieren von Nicht-ASCII-Werten.",
+  "objectstorage.blob.metadata_value_unsupported": "Der Speicher kann den Wert der benutzerdefinierten Metadaten '{name}' nicht unverändert speichern; er würde einen anderen Wert speichern.",
   "objectstorage.multipart.part_too_small": "Teil {part} ist {length} Bytes groß; jeder Teil außer dem letzten muss mindestens {minimum} Bytes groß sein.",
   "objectstorage.multipart.part_unknown": "Teil {part} wurde nicht hochgeladen oder sein ETag stimmt nicht überein.",
   "objectstorage.multipart.parts_empty": "Die Liste der Teile darf nicht leer sein.",
