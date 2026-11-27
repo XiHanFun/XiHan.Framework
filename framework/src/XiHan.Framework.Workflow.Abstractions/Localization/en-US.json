@@ -183,6 +183,7 @@
   "workflow.instance.query_sort_invalid": "Workflow instances cannot be sorted by '{sort}'.",
   "workflow.instance.query_sorts_too_many": "Workflow instances accept at most {max} sort items; {count} were given.",
   "workflow.instance.runaway": "Workflow instance '{id}' executed more than {limit} nodes in one burst; it was faulted as a runaway loop.",
+  "workflow.instance.starter_invalid": "The starter ID must not contain lone surrogates.",
   "workflow.instance.timed_out": "Workflow instance '{id}' exceeded its timeout.",
   "workflow.instance_status.canceled": "Canceled",
   "workflow.instance_status.completed": "Completed",

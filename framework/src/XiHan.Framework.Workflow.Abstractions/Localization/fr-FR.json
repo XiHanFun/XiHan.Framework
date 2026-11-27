@@ -183,6 +183,7 @@
   "workflow.instance.query_sort_invalid": "Les instances de workflow ne peuvent pas être triées par « {sort} ».",
   "workflow.instance.query_sorts_too_many": "Les instances de workflow acceptent au plus {max} critères de tri ; {count} ont été fournis.",
   "workflow.instance.runaway": "L'instance de workflow '{id}' a exécuté plus de {limit} nœuds en une rafale ; elle a été mise en défaut comme boucle infinie.",
+  "workflow.instance.starter_invalid": "L'ID de l'initiateur ne doit pas contenir de substituts isolés.",
   "workflow.instance.timed_out": "L'instance de flux de travail '{id}' a dépassé son délai.",
   "workflow.instance_status.canceled": "Annulé",
   "workflow.instance_status.completed": "Terminé",

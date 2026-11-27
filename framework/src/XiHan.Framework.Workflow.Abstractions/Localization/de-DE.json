@@ -183,6 +183,7 @@
   "workflow.instance.query_sort_invalid": "Workflow-Instanzen können nicht nach '{sort}' sortiert werden.",
   "workflow.instance.query_sorts_too_many": "Workflow-Instanzen akzeptieren höchstens {max} Sortierangaben; {count} wurden angegeben.",
   "workflow.instance.runaway": "Die Workflow-Instanz '{id}' hat in einem Durchlauf mehr als {limit} Knoten ausgeführt und wurde als Endlosschleife auf Fehler gesetzt.",
+  "workflow.instance.starter_invalid": "Die Initiator-ID darf keine ungepaarten Surrogate enthalten.",
   "workflow.instance.timed_out": "Die Workflow-Instanz '{id}' hat ihr Zeitlimit überschritten.",
   "workflow.instance_status.canceled": "Abgebrochen",
   "workflow.instance_status.completed": "Abgeschlossen",

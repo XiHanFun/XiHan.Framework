@@ -34,7 +34,7 @@ builder.AddXiHan(xihan => xihan
     .UseFeature<DatabaseWorkflowFeature>());
 ```
 
-每个节点的 `HolderId` 需要唯一：
+每个节点的 `HolderId` 需要唯一，空白视为没配，有孤立的代理项时读取选项抛出 `ArgumentException`、应用启动失败（ADR-0334）：
 
 ```json
 { "XiHan": { "Workflow": { "Database": { "PollIntervalSeconds": 1, "BatchSize": 100, "HolderId": "node-1" } } } }

@@ -131,6 +131,13 @@ internal sealed partial class WorkflowEngine : IWorkflowEngine
             return correlationInvalid;
         }
 
+        // 发起人进实例、待办与事件的 starterId，是「我发起的」的查询条件与 Starter 规则解析出的处理人：同样在进存储之前拒收（ADR-0334）。
+        // 子实例继承的发起人也经这里
+        if (StarterInvalid(request.StarterId) is { } starterInvalid)
+        {
+            return starterInvalid;
+        }
+
         if (request.Depth > _options.MaxSubWorkflowDepth)
         {
             return Error.Validation(WorkflowErrors.InputInvalid, WorkflowMessages.InstanceDepth, MessageArguments.Of(("depth", request.Depth), ("max", _options.MaxSubWorkflowDepth)));
@@ -1817,6 +1824,11 @@ internal sealed partial class WorkflowEngine : IWorkflowEngine
             return ValueTask.FromResult<Result<IReadOnlyList<WorkflowInstance>>>(invalid);
         }
 
+        if (StarterInvalid(query.StarterId) is { } starterInvalid)
+        {
+            return ValueTask.FromResult<Result<IReadOnlyList<WorkflowInstance>>>(starterInvalid);
+        }
+
         // 排序项只能是白名单里不重复的字段、不超过上限（越界来自请求）：可以改正的输入，以校验错误返回、不进存储；计数不排序，不校验
         if (query.SortsError() is { } sortsError)
         {
@@ -1841,6 +1853,11 @@ internal sealed partial class WorkflowEngine : IWorkflowEngine
             return ValueTask.FromResult<Result<long>>(invalid);
         }
 
+        if (StarterInvalid(query.StarterId) is { } starterInvalid)
+        {
+            return ValueTask.FromResult<Result<long>>(starterInvalid);
+        }
+
         if (query.CorrelationIds is { Count: 0 })
         {
             return ValueTask.FromResult(Result.Success(0L));
@@ -1858,6 +1875,17 @@ internal sealed partial class WorkflowEngine : IWorkflowEngine
     private static Error? CorrelationInvalid(string? correlationId)
         => correlationId is not null && UnicodeText.HasLoneSurrogate(correlationId)
             ? Error.Validation(WorkflowErrors.InputInvalid, WorkflowMessages.InstanceCorrelationInvalid)
+            : null;
+
+    /// <summary>
+    /// 启动或实例查询的发起人有孤立的代理项时的校验错误
+    /// </summary>
+    /// <remarks>
+    /// <c>WORKFLOW_VALIDATION_002</c> + <see cref="WorkflowMessages.InstanceStarterInvalid"/>（RFC-0021「实例与执行」，ADR-0334）；没给发起人或发起人合法为 <see langword="null"/>
+    /// </remarks>
+    private static Error? StarterInvalid(string? starterId)
+        => starterId is not null && UnicodeText.HasLoneSurrogate(starterId)
+            ? Error.Validation(WorkflowErrors.InputInvalid, WorkflowMessages.InstanceStarterInvalid)
             : null;
 
     /// <summary>

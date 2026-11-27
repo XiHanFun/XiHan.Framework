@@ -69,12 +69,14 @@ public sealed record DatabaseWorkflowOptions
     /// 本节点的持有者标识，写进租约行的 <c>Holder</c>
     /// </summary>
     /// <remarks>
-    /// 默认 <c>机器名:进程 ID:8 位随机十六进制</c>
+    /// 默认 <c>机器名:进程 ID:8 位随机十六进制</c>。不能为空白，也不能有孤立的代理项（ADR-0334）：它是租约行 <c>Holder</c> 的前缀，经数据库参数宽松编码之后存下的是另一段文本，两个只差在孤立代理项上的节点在租约表里分不开
     /// </remarks>
     public string HolderId
     {
         get => field;
-        init => field = !string.IsNullOrWhiteSpace(value) ? value : throw new ArgumentException("The holder ID must not be empty.", nameof(value));
+        init => field = string.IsNullOrWhiteSpace(value)
+            ? throw new ArgumentException("The holder ID must not be empty.", nameof(value))
+            : !UnicodeText.HasLoneSurrogate(value) ? value : throw new ArgumentException("The holder ID must not contain lone surrogates.", nameof(value));
     } = _defaultHolderId;
 
     /// <summary>

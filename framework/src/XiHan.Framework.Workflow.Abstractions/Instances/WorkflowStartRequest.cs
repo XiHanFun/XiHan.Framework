@@ -57,6 +57,9 @@ public sealed record WorkflowStartRequest
     /// <summary>
     /// 发起人
     /// </summary>
+    /// <remarks>
+    /// 不能有孤立的代理项，否则启动返回 <c>WORKFLOW_VALIDATION_002</c>（消息键 <c>workflow.instance.starter_invalid</c>）：它写进实例、待办与事件，是「我发起的」的查询条件与 <c>Starter</c> 规则解析出的处理人，宽松编码之后两个不同的发起人是同一个人（ADR-0334）
+    /// </remarks>
     public string? StarterId { get; init; }
 
     /// <summary>

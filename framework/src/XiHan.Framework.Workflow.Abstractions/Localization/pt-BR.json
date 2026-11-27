@@ -183,6 +183,7 @@
   "workflow.instance.query_sort_invalid": "As instâncias de fluxo de trabalho não podem ser ordenadas por '{sort}'.",
   "workflow.instance.query_sorts_too_many": "As instâncias de fluxo de trabalho aceitam no máximo {max} critérios de ordenação; foram informados {count}.",
   "workflow.instance.runaway": "A instância de fluxo de trabalho '{id}' executou mais de {limit} nós em uma rajada e foi marcada como falha por loop descontrolado.",
+  "workflow.instance.starter_invalid": "O ID do iniciador não pode conter substitutos isolados.",
   "workflow.instance.timed_out": "A instância de fluxo de trabalho '{id}' excedeu o tempo limite.",
   "workflow.instance_status.canceled": "Cancelado",
   "workflow.instance_status.completed": "Concluído",

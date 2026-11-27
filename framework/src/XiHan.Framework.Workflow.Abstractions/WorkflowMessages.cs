@@ -63,6 +63,14 @@ public static class WorkflowMessages
     public const string InstanceCorrelationInvalid = "workflow.instance.correlation_invalid";
 
     /// <summary>
+    /// 启动或实例查询的发起人有孤立的代理项
+    /// </summary>
+    /// <remarks>
+    /// 没有参数：发起人本身就写不成合法的文本（RFC-0021「实例与执行」，ADR-0334）
+    /// </remarks>
+    public const string InstanceStarterInvalid = "workflow.instance.starter_invalid";
+
+    /// <summary>
     /// 一个波次执行的节点数超过上限
     /// </summary>
     /// <remarks>

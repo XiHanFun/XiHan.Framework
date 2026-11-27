@@ -112,6 +112,9 @@ public sealed record WorkflowInstanceQuery
     /// <summary>
     /// 发起人
     /// </summary>
+    /// <remarks>
+    /// 有孤立的代理项时 <see cref="Engine.IWorkflowEngine.ListInstancesAsync"/> 与 <see cref="Engine.IWorkflowEngine.CountInstancesAsync"/> 返回 <c>WORKFLOW_VALIDATION_002</c>（消息键 <c>workflow.instance.starter_invalid</c>），不进存储（ADR-0334）
+    /// </remarks>
     public string? StarterId { get; init; }
 
     /// <summary>

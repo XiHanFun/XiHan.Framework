@@ -183,6 +183,7 @@
   "workflow.instance.query_sort_invalid": "Las instancias de flujo de trabajo no se pueden ordenar por '{sort}'.",
   "workflow.instance.query_sorts_too_many": "Las instancias de flujo de trabajo admiten como máximo {max} criterios de ordenación; se indicaron {count}.",
   "workflow.instance.runaway": "La instancia de flujo de trabajo '{id}' ejecutó más de {limit} nodos en una ráfaga y se marcó como fallida por bucle descontrolado.",
+  "workflow.instance.starter_invalid": "El ID del iniciador no debe contener suplentes sin pareja.",
   "workflow.instance.timed_out": "La instancia de flujo de trabajo '{id}' superó su tiempo límite.",
   "workflow.instance_status.canceled": "Cancelado",
   "workflow.instance_status.completed": "Completado",

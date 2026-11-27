@@ -141,6 +141,20 @@ public sealed class DatabaseWorkflowTests
     }
 
     [Fact]
+    public void HolderId_WithALoneSurrogate_IsRejected_AndAPairIsKept()
+    {
+        // RFC-0021「默认实现与 Provider」（ADR-0334）：持有者标识是租约行 Holder 的前缀，经数据库参数宽松编码之后存下的是另一段文本；修之前照收
+        foreach (var holder in new[] { "node-7\uD800", "\uDC00node", "node\uDE00\uD83D" })
+        {
+            Assert.Throws<ArgumentException>(() => new DatabaseWorkflowOptions { HolderId = holder });
+            var configuration = new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?> { [$"{DatabaseWorkflowOptions.ConfigurationSection}:HolderId"] = holder }).Build();
+            Assert.Throws<ArgumentException>(() => DatabaseWorkflowOptions.FromConfiguration(configuration));
+        }
+
+        Assert.Equal("node-😀", new DatabaseWorkflowOptions { HolderId = "node-😀" }.HolderId);
+    }
+
+    [Fact]
     public async Task LockConnection_PutsTheLeaseTableInItsOwnDatabase()
     {
         await using var database = new SqliteDatabase();

@@ -183,6 +183,7 @@
   "workflow.instance.query_sort_invalid": "인스턴스 조회는 '{sort}'(으)로 정렬할 수 없습니다.",
   "workflow.instance.query_sorts_too_many": "인스턴스 조회의 정렬 항목은 최대 {max}개입니다({count}개가 지정됨).",
   "workflow.instance.runaway": "워크플로 인스턴스 '{id}'이(가) 한 번의 실행에서 {limit}개를 넘는 노드를 실행해 무한 루프로 보고 오류 처리했습니다.",
+  "workflow.instance.starter_invalid": "시작자 ID에는 짝이 없는 서로게이트를 포함할 수 없습니다.",
   "workflow.instance.timed_out": "워크플로 인스턴스 '{id}'이(가) 제한 시간을 초과했습니다.",
   "workflow.instance_status.canceled": "취소됨",
   "workflow.instance_status.completed": "완료됨",

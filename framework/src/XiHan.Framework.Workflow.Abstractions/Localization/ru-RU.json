@@ -183,6 +183,7 @@
   "workflow.instance.query_sort_invalid": "Экземпляры рабочих процессов нельзя сортировать по «{sort}».",
   "workflow.instance.query_sorts_too_many": "Для экземпляров рабочих процессов допускается не более {max} условий сортировки; указано {count}.",
   "workflow.instance.runaway": "Экземпляр рабочего процесса '{id}' выполнил более {limit} узлов за один проход и переведён в сбой как бесконечный цикл.",
+  "workflow.instance.starter_invalid": "Идентификатор инициатора не должен содержать непарные суррогаты.",
   "workflow.instance.timed_out": "Экземпляр рабочего процесса '{id}' превысил тайм-аут.",
   "workflow.instance_status.canceled": "Отменён",
   "workflow.instance_status.completed": "Завершён",

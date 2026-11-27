@@ -183,6 +183,7 @@
   "workflow.instance.query_sort_invalid": "執行個體查詢不支援按 '{sort}' 排序。",
   "workflow.instance.query_sorts_too_many": "執行個體查詢最多 {max} 個排序項，收到 {count} 個。",
   "workflow.instance.runaway": "工作流程實例 '{id}' 在一個波次裡執行了超過 {limit} 個節點，按無窮迴圈處理為故障。",
+  "workflow.instance.starter_invalid": "發起人 ID 不能含孤立的代理字元。",
   "workflow.instance.timed_out": "工作流實例 '{id}' 超過了逾時時間。",
   "workflow.instance_status.canceled": "已取消",
   "workflow.instance_status.completed": "已完成",

@@ -1552,6 +1552,7 @@ const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.InstanceQuerySortDu
 const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.InstanceQuerySortInvalid = "workflow.instance.query_sort_invalid" -> string!
 const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.InstanceQuerySortsTooMany = "workflow.instance.query_sorts_too_many" -> string!
 const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.InstanceRunaway = "workflow.instance.runaway" -> string!
+const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.InstanceStarterInvalid = "workflow.instance.starter_invalid" -> string!
 const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.InstanceStatusCanceled = "workflow.instance_status.canceled" -> string!
 const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.InstanceStatusCompleted = "workflow.instance_status.completed" -> string!
 const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.InstanceStatusFaulted = "workflow.instance_status.faulted" -> string!
