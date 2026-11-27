@@ -79,6 +79,8 @@ builder.AddXiHan(xihan => xihan
 }
 ```
 
+`ServiceName` 编成 UTF-8 作为每个信号的资源属性 `service.name`，只有空白或有孤立的代理项时装配失败（`ArgumentException`，ADR-0334）。
+
 运行后：每次经管道的调用在收集器里出现一个名为 `xihan.invoke` 的 Span（HTTP 请求下挂在 ASP.NET Core 的请求 Span 之下），指标里有 `xihan.invocations` 与 `xihan.invocation.duration`，日志以资源 `service.name = orders` 导出；把 `Console` 改为 `true` 可以先在控制台看到同样的内容。`Profiles.Full` 已包含这个特性，只需补配置。
 
 ## 导出到 OpenTelemetry

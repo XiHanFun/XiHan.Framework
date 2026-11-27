@@ -150,7 +150,7 @@ builder.AddXiHan(xihan => xihan
 | `Id` | 新的 UUID v7（`N` 格式） |
 | `Source` | `/<topic>` |
 | `Type` | 登记的类型 |
-| `Subject` | 选择器的结果，没有选择器时省略 |
+| `Subject` | 选择器的结果，没有选择器或选择器返回 `null` 时省略；选择器返回空串时派发抛 `ArgumentException`（信封不收空的 `Subject`，ADR-0332），没有对象时返回 `null` |
 | `Time` | `IDomainEvent.OccurredAt` |
 | `Data` | 用登记的 `JsonTypeInfo` 序列化的事件 |
 | `DataSchema` | 应用为这个 `Type` 登记了数据模式时带上，没登记的省略 |
@@ -163,7 +163,18 @@ builder.AddXiHan(xihan => xihan
 context.Services.AddMessageDataSchema("orders.placed", "https://schemas.example.com/orders/placed.json");
 ```
 
-`type` 与数据模式都不能为空、只有空白或有孤立的代理项，数据模式不核对 URI 语法；同一个 `type` 再登记同一个值只记一次，另一个值抛 `ArgumentException`，最多 10000 个 `type`，满了再登记新的抛 `InvalidOperationException`。表只作用于框架自己构造的信封，应用自己构造的信封照写 `DataSchema`；不登记与以前相同。
+部署时只改配置也能登记：配置节 `XiHan:Messaging:DataSchemas` 是数组，每项 `Type` 与 `DataSchema`（`MessagingOptions.DataSchemas`，ADR-0332），由消息 Provider 的特性装配时登记进同一张表。`type` 不进键名，带点号也写得进环境变量：
+
+```json
+{ "XiHan": { "Messaging": { "DataSchemas": [ { "Type": "orders.placed", "DataSchema": "https://schemas.example.com/orders/placed.json" } ] } } }
+```
+
+```bash
+XiHan__Messaging__DataSchemas__0__Type=orders.placed
+XiHan__Messaging__DataSchemas__0__DataSchema=https://schemas.example.com/orders/placed.json
+```
+
+`type` 与数据模式都不能为空、只有空白或有孤立的代理项，数据模式不核对 URI 语法；同一个 `type` 再登记同一个值只记一次，另一个值抛 `ArgumentException`，最多 10000 个 `type`（配置的与代码的合计），满了再登记新的抛 `InvalidOperationException`。配置项缺 `Type` 或 `DataSchema`、为空或有孤立的代理项时启动失败，消息带配置键；配置与代码登记了同一个 `type` 而值不同时同样失败，不论谁先登记，配置不会悄悄顶掉代码里的登记。表只作用于框架自己构造的信封，应用自己构造的信封照写 `DataSchema`；不登记与以前相同。
 
 同一主题的事件一次 `PublishManyAsync`，主题按首次出现的顺序；任一项失败即派发失败，工作单元回滚，聚合的缓冲保留；全部成功后清空每个聚合的缓冲再提交。
 

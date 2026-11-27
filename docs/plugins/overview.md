@@ -156,7 +156,7 @@ app.MapXiHanOperations();
 2. 在 `XiHan:Plugins:OutOfProcess:Directories` 或 `XiHan:Plugins:Wasm:Directories` 列出插件目录（一个目录一个插件，相对路径相对当前目录），在 `Grants` 里授予权限。
 3. 特性在配置阶段同步完成发现：读清单、核对权限、启动进程或实例化模块、握手，然后核对握手声明与清单。
 4. 握手声明的操作登记为代理操作，清单声明的权限码与它们一次登记，消息目录以清单 ID 为归属注册进本地化器，订阅登记事件处理器；Wasm 插件的中间件按 `清单 ID:中间件名` 插进对应阶段。
-5. 启动阶段启动 `onStartup` 的插件（`Configure` → `Start` → 健康监视）。懒激活的插件在握手后停下，首次调用或投递时再启动。
+5. 启动阶段启动 `onStartup` 的插件（`Configure` → `Start` → 健康监视）。这一步失败的插件进入 `Failed`，进程外与 Wasm 插件都按退避在后台重试、计入 `RestartLimit`，退避期间的调用是 `PLUGINS_UNAVAILABLE_001`（ADR-0337）。懒激活的插件在握手后停下，首次调用或投递时再启动，那时的失败由下一次调用再试。
 
 发现阶段的失败分三种结果：
 

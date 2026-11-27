@@ -70,7 +70,7 @@ stdio 传输的命令行应用（仓库示例 `framework/samples/SimpleCli`）�
 echo '{"jsonrpc":"2.0","id":1,"method":"tools/list"}' | dotnet run --project framework/samples/SimpleCli -- mcp
 ```
 
-stdio 传输下 stdout 每行一条 JSON-RPC 消息，日志只写 stderr。`mcp` 命令接受与 `invoke` 相同的上下文选项：`--authorization`（或环境变量 `XIHAN_AUTHORIZATION`）、`--tenant`、`--correlation`、`--locale`、`--timeout`，作用于会话里的每个 `tools/call`。
+stdio 传输下 stdin 与 stdout 每行一条 JSON-RPC 消息，日志只写 stderr；stdin 的一行超过 4 MiB（`XiHan:Protocols:Mcp:MaxStdioLineBytes`）时答复解析错误（-32700）、这一行不执行，消息有重复成员等不合法的 JSON 文本同样答复解析错误，读法见 [MCP](/protocols/mcp#stdio-传输)。`mcp` 命令接受与 `invoke` 相同的上下文选项：`--authorization`（或环境变量 `XIHAN_AUTHORIZATION`）、`--tenant`、`--correlation`、`--locale`、`--timeout`，作用于会话里的每个 `tools/call`。
 
 ## 在各工具中配置
 

@@ -116,7 +116,7 @@ public sealed class ArchiveJob : IJob
 | `JobSchedulerEngine`、`SchedulerOptions` | 引擎（同时是 `IJobScheduler`）与选项；`NodeId`、`IsLeader`、`IsRunning`、`RunningCount`、`PollOnceAsync`（测试与一致性套件用：执行一个轮询周期，并等本周期起的运行连同收尾结束） |
 | `IJobStore`、`JobRecord`、`TriggerRecord`、`TriggerState`、`SchedulerNodeRecord` | Provider 契约与存储形态；按查询或过滤项列出的六个读取都以 `List` 开头：`ListTriggersAsync`、`ListRunsAsync`、`ListRunningRunsAsync`、`ListLastRunsAsync`、`ListCancelRequestedRunsAsync`、`ListNodesAsync`（ADR-0270） |
 | `ILeaderElection`、`LeaderLease` | 租约式领导选举 |
-| `SchedulingTopics`、`SchedulingEventData` | `scheduling.job.*` / `scheduling.run.*` 事件；`AddMessageDataSchema(SchedulingTopics.…, dataSchema)` 登记了数据模式的主题，发布的信封带上 `dataschema`（ADR-0323） |
+| `SchedulingTopics`、`SchedulingEventData` | `scheduling.job.*` / `scheduling.run.*` 事件；`AddMessageDataSchema(SchedulingTopics.…, dataSchema)` 或配置节 `XiHan:Messaging:DataSchemas`（ADR-0332）登记了数据模式的主题，发布的信封带上 `dataschema`（ADR-0323） |
 | `SchedulingErrors`、`SchedulingMessages`、`SchedulingCapabilities` | 错误码、消息键（目录 `scheduling`）、能力 ID |
 
 `SchedulingServiceCollectionExtensions` 提供 `AddJob<TJob>`（两个重载）、`AddJobType<TJob>`（两个重载）、`AddJobCalendar`、`GetJobRegistry`、`GetJobTypeRegistry`、`GetJobCalendars`，以及给 Provider 用的 `AddJobSchedulerEngine(options)`。
@@ -190,6 +190,7 @@ public sealed class ExportRunner(IJobScheduler scheduler)
 - 一次运行用到的数据按「作业数据 ← 触发器数据 ← 手动触发数据」逐键覆盖；超过 `Timeout` 取消令牌，作业返回之前时限已过的运行记为 `SCHEDULING_TIMEOUT_001`。
 - 重试：被取消与失联的运行不重试；重试是新的一次运行，`JobRun.Trigger` 为 `Retry`、`Attempt` 加一、`RetryOf` 指向首次运行。集群唯一的作业把重试写成存储里的一次性触发器，`RunOnEveryInstance` 的作业在本实例进程内等待后重试。
 - cron 是 Quartz 风格的文法（5 / 6 / 7 段、`?`、`L`、`W`、`#`、名字、时区与夏令时），但不是 Quartz 的超集：星期数字按 Unix 约定（0 / 7 = 周日、1 = 周一，Quartz 是 1 = 周日、7 = 周六）；周段单独的 `L`（Quartz 里是周六）与反向范围（如 `FRI-MON`、`22-2`，Quartz 跨界回绕）不支持、解析报错；多了 5 段写法，日与周同时限定时取并集。
+- 代码登记的作业不合法即启动失败（ADR-0335）：说明与数据有孤立的代理项、触发器名重复时 `AddJob` 抛 `ArgumentException`（参数 `definition`，消息 `Job '<作业名>' is invalid: <原因>.`），作业不进登记表；触发器引用的日历没有登记时 `JobSchedulerEngine.StartAsync` 在开始轮询之前抛 `FrameworkException`（`SCHEDULING_VALIDATION_001`，消息 `Code-defined job '<作业名>' is invalid: <原因>.`），实现包的特性随之启动失败（`KERNEL_HOSTING_002`），登记之后才改坏的数据也在这里拦下。原因与运行时 `ScheduleAsync` 返回的 `reason` 同一段文本；运行时登记的照旧返回 `SCHEDULING_VALIDATION_001`。同步写存储失败照旧记日志、下个周期重试。
 - 代码登记的作业被运行时 `ScheduleAsync` 改过后来源是 `Overridden`：启动同步时代码定义没变（指纹 `CodeFingerprint` 相同）就保留运行时的修改，代码改了以代码为准并记警告；`RestoreAsync` 随时恢复为代码定义（ADR-0053）。
 - 事件只在装配了消息能力时发布，发布失败只记日志。
 
@@ -204,7 +205,7 @@ public sealed class ExportRunner(IJobScheduler scheduler)
 | `SCHEDULING_NOTFOUND_003` | 触发器不存在 |
 | `SCHEDULING_NOTFOUND_004` | 运行不存在或已结束 |
 | `SCHEDULING_NOTFOUND_005` | 作业没有代码定义，不能恢复 |
-| `SCHEDULING_VALIDATION_001` | 作业定义不合法（触发器名重复、日历未登记、作业或触发器的说明与数据有孤立的代理项） |
+| `SCHEDULING_VALIDATION_001` | 作业定义不合法（触发器名重复、日历未登记、作业或触发器的说明与数据有孤立的代理项）；代码登记的作业日历未登记时以它让调度器启动失败（ADR-0335） |
 | `SCHEDULING_VALIDATION_002` | 运行历史查询的分页越界（`SchedulingErrors.RunQueryInvalid`，HTTP 400） |
 | `SCHEDULING_VALIDATION_003` | 作业状态列表的查询不合法：每页条数越界或续页令牌不是调度器给出的（HTTP 400） |
 | `SCHEDULING_CONFLICT_001` | 作业正在运行且不允许并发 |

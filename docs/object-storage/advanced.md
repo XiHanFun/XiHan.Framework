@@ -79,7 +79,7 @@ if (opened.TryGetValue(out var part))
 
 长度为空时读到末尾，超出末尾时截断。起点不在对象内（含空对象）返回 `OBJECTSTORAGE_VALIDATION_001`。
 
-S3 上读取与 `Head` 的应答缺 `Content-Length`（或为负）、应答里的值 SDK 解析不了时返回 `OBJECTSTORAGE_UNAVAILABLE_001`，不按 0 交出。整读（不带范围）的内容对不上 `ETag` 时，SDK 读到内容末尾才发现：读内容的流抛出携带 `OBJECTSTORAGE_UNAVAILABLE_001` 的 `FrameworkException`（读够长度之后的释放也一样），已经读到的字节要丢弃（ADR-0322）。细则见 [ObjectStorage.S3](/packages/objectstorage-s3#行为与限制)。
+S3 上读取与 `Head` 的应答缺 `Content-Length`（或为负）、应答里的值 SDK 解析不了时返回 `OBJECTSTORAGE_UNAVAILABLE_001`，不按 0 交出。整读（不带范围）的内容对不上 `ETag` 时，SDK 读到内容末尾才发现：读内容的流在读到末尾（读返回 0）的那次读里抛出携带 `OBJECTSTORAGE_UNAVAILABLE_001` 的 `FrameworkException`，已经读到的字节要丢弃（ADR-0322）；没读到末尾就释放流（例如只 `ReadExactly` 声明的长度）时释放不抛出，只记一条 Warning，要这个报告就读到返回 0（`ReadToEnd`、`CopyTo`，ADR-0333）。细则见 [ObjectStorage.S3](/packages/objectstorage-s3#行为与限制)。
 
 ## 分片上传
 
@@ -100,8 +100,8 @@ S3 上读取与 `Head` 的应答缺 `Content-Length`（或为负）、应答里�
 | 发起的应答成功却没有可用的上传标识（S3：兼容服务的缺陷或中间的代理改写了响应体） | 发起返回 `OBJECTSTORAGE_UNAVAILABLE_001`，不抛异常、不重发；服务端可能已经建出这个上传，由桶的生命周期规则清理 |
 | 上传分片的应答成功却没有可用的 `ETag`（S3：缺失、为空或去掉引号之后只有空白） | 这一片返回 `OBJECTSTORAGE_UNAVAILABLE_001`，不抛异常、不重发；可以重传同一编号（后一次覆盖） |
 | 列出的分片里有一片没有可用的编号（缺失或不在 1 到 10000）、没有可用的 `ETag` 或长度为负（S3） | 整个列出返回 `OBJECTSTORAGE_UNAVAILABLE_001`，不抛异常，不跳过那一片；长度缺失照旧当作 0 |
-| 列出分片的应答说截断了，续页标记却缺失、不比这一页的起点大或不小于 10000，或同一编号出现两次（同一页里或跨页）（S3） | 整个列出返回 `OBJECTSTORAGE_UNAVAILABLE_001`，不交出已列出的部分；标记每页严格增大，一次列出至多请求 10000 页，不会循环不止 |
-| 任一步的应答里的值 SDK 解析不了（S3：`Last-Modified` 不是日期、`Content-Length` 或 `x-amz-mp-parts-count` 不是数等） | 这一步返回 `OBJECTSTORAGE_UNAVAILABLE_001`，不把 SDK 的 `FormatException` 抛给调用方 |
+| 列出分片的应答说截断了，续页标记却缺失、不比这一页的起点大或不小于 10000，同一编号出现两次（同一页里或跨页），或这一页交出的编号不比这一页的起点大（S3） | 整个列出返回 `OBJECTSTORAGE_UNAVAILABLE_001`，不交出已列出的部分；标记每页严格增大，一次列出至多请求 10000 页，不会循环不止；重复又不比起点大的按重复报告 |
+| 任一步的应答 SDK 解析不了（S3：`Last-Modified` 不是日期、`Content-Length` 或 `x-amz-mp-parts-count` 不是数，响应体不是良构的 XML 等，含放弃分片上传与建桶） | 这一步返回 `OBJECTSTORAGE_UNAVAILABLE_001`，不把 SDK 的 `FormatException`、`XmlException` 抛给调用方；发起时建桶失败同样返回它 |
 | 完成之后取元数据的应答缺 `ETag` 或修改时间（S3） | 完成返回 `OBJECTSTORAGE_UNAVAILABLE_001`，这时对象已经拼成，不重发；可以 `HeadAsync` 再看 |
 
 文件系统把分片暂存在容器下的 `uploads/<上传标识>/`，暂存的分片计入总配额，超过 `MultipartExpiryHours`（缺省 168 小时）仍未完成的上传即过期，拒绝再传分片与完成并被清掉，细则见 [ObjectStorage.FileSystem](/packages/objectstorage-filesystem)；S3 直接映射原生 multipart，未完成的上传按桶的生命周期规则清理：给桶配放弃未完成分片上传的规则（Amazon S3 的 `AbortIncompleteMultipartUpload`，如 1 天；兼容服务用等价的规则），发起时缺上传标识而放弃不了的上传才会被清掉。条件写入探测用的 `HealthBucket` 同样要配，规则示例见 [ObjectStorage.S3](/packages/objectstorage-s3#条件写入探测)。

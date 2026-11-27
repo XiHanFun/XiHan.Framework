@@ -201,7 +201,7 @@ public sealed class TenantMemberPolicy : IPolicy
 
 ## 资源名
 
-资源名 `ResourceName` 是 `xrn:<partition>:<service>:<tenant>:<type>/<id>`，用于策略判定与审计，例如 `xrn:cn:shop:acme:order/42`。分区、服务、类型段只允许小写字母、数字与连字符；租户段可以为空（全局资源），否则与租户 ID 同一文法：小写字母或数字开头，之后是小写字母、数字、`.`、`_`、`-`，不超过 64 个字符；ID 段不含 `/`、空白与孤立的代理项（成对的照常合法，ADR-0321），只差在孤立代理项上的两个资源名进审计记录、日志与 JSON 之后分不开。`ResourceName.Parse` 与构造不合法时抛出 `ArgumentException`，`ResourceName.TryParse` 返回 `false`；从用户输入拼 ID 段之前先用 `UnicodeText.HasLoneSurrogate` 判断。文法的向量是规范的 `security/resource-names.json`。
+资源名 `ResourceName` 是 `xrn:<partition>:<service>:<tenant>:<type>/<id>`，用于策略判定与审计，例如 `xrn:cn:shop:acme:order/42`。分区、服务、类型段只允许小写字母、数字与连字符；租户段可以为空（全局资源），否则与租户 ID 同一文法：小写字母或数字开头，之后是小写字母、数字、`.`、`_`、`-`，不超过 64 个字符；ID 段不含 `/`、空白、控制字符（U+0000–U+001F 与 U+007F–U+009F，即 Unicode 的 `Cc` 类，ADR-0330）与孤立的代理项（成对的照常合法，ADR-0321）：资源名原样写进日志、审计记录与 JSON，终端转义序列（U+001B 起头）与退格能改写显示的一行，只差在孤立代理项上的两个资源名也分不开。`ResourceName.Parse` 与构造不合法时抛出 `ArgumentException`，`ResourceName.TryParse` 返回 `false`；从用户输入（实体 ID、文件名）拼 ID 段之前先去掉或编码控制字符（例如百分号编码）、用 `UnicodeText.HasLoneSurrogate` 判断，或先以 `ResourceName.TryParse` 核对。已经写进审计的旧资源名文本照常能按 `AuditQuery.Resource` 精确查询。文法的向量是规范的 `security/resource-names.json`。
 
 资源经 `RequireXiHanPermission(code, resource)`、`RequireXiHanPolicy(name, resource)` 或 `AuthorizationRequirement` 的 `Resource` 成员进入请求，策略在 `request.Resource` 上读到它。`AuthorizationRequirement` 用对象初始化器构造（`new AuthorizationRequirement { Policy = name, Resource = resource }`，`Policy` 是 `required` 成员、不能为空白，`Resource` 不给即不针对具体资源），权限码的要求用快捷写法 `Permission(code, resource)`：
 

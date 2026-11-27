@@ -112,7 +112,7 @@ public sealed class RoleAssigneeProvider : IAssigneeProvider
 | `WorkflowVariables` | `JsonObject` 变量的视图与类型化读取（`Get<T>`、`TryGet<T>`） |
 | `IWorkflowDefinitionStore`、`IWorkflowInstanceStore`、`IWorkflowBookmarkStore`、`IWorkflowTransaction`、`IWorkflowInstanceLock` | Provider 契约；存储是作用域服务，每个方法的第一个参数是分区（`tenantId`，空为平台）；书签存储的 `AvailableAsync` 按分区、种类、键与可领取时刻限量查询，供外部任务领取下推条数；`ListUserTasksAsync` / `CountUserTasksAsync` 按待办查询的条件列出与计数运行中实例的用户任务书签；`IWorkflowTransaction` 回答能不能加入调用方事务（`IsActive`）、能不能写（`EnsureWritable`） |
 | `DueBookmarkPoller`、`WorkflowOptions` | 到期书签轮询与保留期清理（应用不在服务状态的周期什么也不做、不记告警，周期中途进入排空即停下、不告警；手动的 `PollOnceAsync` / `HousekeepAsync` 照实告警）；引擎选项 |
-| `WorkflowTopics`、`WorkflowEventData` | `workflow.*` 事件；`AddMessageDataSchema(WorkflowTopics.…, dataSchema)` 登记了数据模式的主题，引擎与 `PublishEvent` 活动发布的信封带上 `dataschema`（ADR-0323） |
+| `WorkflowTopics`、`WorkflowEventData` | `workflow.*` 事件；`AddMessageDataSchema(WorkflowTopics.…, dataSchema)` 或配置节 `XiHan:Messaging:DataSchemas`（ADR-0332）登记了数据模式的主题，引擎与 `PublishEvent` 活动发布的信封带上 `dataschema`（ADR-0323） |
 | `WorkflowErrors`、`WorkflowMessages`、`WorkflowCapabilities` | 错误码、消息键（目录 `workflow`，故障原因也是消息键，`WorkflowFault.Localize()` / `ToError()` 按调用方的区域本地化，ADR-0105）、能力 ID |
 
 `WorkflowServiceCollectionExtensions` 提供 `AddActivity<TActivity>`、`AddAssigneeProvider<TProvider>`、`AddWorkflowOutcomeHandler<THandler>`，以及给 Provider 用的 `AddWorkflowEngine(options)`。`AddWorkflowEngine` 把引擎、目录、任务服务、外部任务服务注册为作用域服务，表达式求值器、轮询器与 `WorkflowHttpClient` 注册为单例，并登记 19 个内置活动。
@@ -184,7 +184,7 @@ public sealed class GreetingFlow(IWorkflowDefinitionCatalog catalog, IWorkflowEn
 | 错误码 | 含义 |
 | --- | --- |
 | `WORKFLOW_VALIDATION_001` | 定义不合法，`details.errors` 列出全部问题 |
-| `WORKFLOW_VALIDATION_002` | 启动或操作的输入不合法（HTTP 400）：缺必填变量、子流程深度超限、任务结果不允许、跳转目标不存在、迁移目标不兼容、任务查询缺条件或分页越界、实例查询的分页、关联 ID 集合或清理的条数越界、启动与信号的关联 ID 有孤立的代理项（`workflow.instance.correlation_invalid`）、实例查询的关联 ID 有空白或孤立的代理项、定义查询的分页越界、定义与实例查询的排序项不合法 |
+| `WORKFLOW_VALIDATION_002` | 启动或操作的输入不合法（HTTP 400）：缺必填变量、子流程深度超限、任务结果不允许、跳转目标不存在、迁移目标不兼容、任务查询缺条件或分页越界、实例查询的分页、关联 ID 集合或清理的条数越界、启动与信号的关联 ID 有孤立的代理项（`workflow.instance.correlation_invalid`）、启动与实例查询的发起人有孤立的代理项（`workflow.instance.starter_invalid`，ADR-0334）、实例查询的关联 ID 有空白或孤立的代理项、定义查询的分页越界、定义与实例查询的排序项不合法 |
 | `WORKFLOW_VALIDATION_003` | 表达式语法不合法或求值失败 |
 | `WORKFLOW_NOTFOUND_001` | 定义不存在、没有已发布版本或在别的分区 |
 | `WORKFLOW_NOTFOUND_002` | 实例不存在或在别的分区 |
@@ -197,7 +197,7 @@ public sealed class GreetingFlow(IWorkflowDefinitionCatalog catalog, IWorkflowEn
 | `WORKFLOW_CONFLICT_005` | 同一关联 ID 下已有未结束的实例（`RejectActive`） |
 | `WORKFLOW_DENIED_001` | 操作者不是任务的指派人 |
 | `WORKFLOW_DENIED_002` | 工作者没有持有外部任务的锁，或锁已过期 |
-| `WORKFLOW_TIMEOUT_001` | 等实例锁超时，含目录改写已有定义时等定义 ID 的锁超时（ADR-0326） |
+| `WORKFLOW_TIMEOUT_001` | 等工作流的锁超时：锁键是实例 ID、定义 ID（定时启动、目录改写已有定义，ADR-0326）或重用策略查重的派生键；文案（`workflow.lock.timeout`）是「等待工作流的锁 '{id}' 超时」，不再说「实例」，按文案匹配的改按错误码判断（ADR-0336） |
 | `WORKFLOW_UNAVAILABLE_001` | 工作流存储不可达；或引擎在调用之外被调用时应用不在服务状态 |
 | `WORKFLOW_UNAVAILABLE_002` | 工作流存储容量已满 |
 | `WORKFLOW_UNEXPECTED_001` | 活动抛出未处理异常，或引擎内部故障（波次上限、死汇合） |

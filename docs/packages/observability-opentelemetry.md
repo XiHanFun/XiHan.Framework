@@ -47,7 +47,7 @@ builder.AddXiHan(xihan => xihan
 
 | 键 | 类型 | 缺省 | 说明 |
 | --- | --- | --- | --- |
-| `ServiceName` | string | 入口程序集名，取不到时 `xihan` | 资源属性 `service.name` |
+| `ServiceName` | string | 入口程序集名，取不到时 `xihan` | 资源属性 `service.name`；只有空白或有孤立的代理项时装配失败（`ArgumentException`，ADR-0334） |
 | `ServiceVersion` | string | 入口程序集版本 | 资源属性 `service.version` |
 | `Tracing` | bool | `true` | 是否注册追踪提供者 |
 | `Metrics` | bool | `true` | 是否注册指标提供者 |

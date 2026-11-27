@@ -44,7 +44,7 @@ builder.AddXiHan(xihan => xihan
 | `Source` | 必填，来源 URI 引用（如 `/orders`） |
 | `Type` | 必填，事件类型（如 `orders.placed`） |
 | `Time` | 可选，发生时间；从线上读出的一律是 UTC 时刻（`Offset` 为零），按时刻使用，要别的时区自己换算 |
-| `Subject` | 可选，事件所涉的对象（如 `order/42`） |
+| `Subject` | 可选，事件所涉的对象（如 `order/42`），`null` 是没有；给了就不能是空串（CloudEvents 规定出现时必须非空，否则抛 `ArgumentException`），只有空白的照收（ADR-0332） |
 | `DataSchema` | 可选，CloudEvents 的 `dataschema`：数据遵循的模式（如 `https://example.com/schemas/order.json`），`null` 是没有；给了就不能是空串或只有空白（否则抛 `ArgumentException`），与 `Source` 一样不核对 URI 语法，框架也不按它取模式、校验数据。四个代理、CloudEvents 协议绑定与插件协议都原样收发，binary 模式的空 `ce-dataschema` 头与结构化 JSON 的空串一样不合法。领域事件、调度与工作流发布的信封按 `type` 带上应用用 `AddMessageDataSchema(type, dataSchema)` 登记的模式（ADR-0323，见[领域事件](/messaging/domain-events#事件到信封的映射)） |
 | `DataContentType` | 数据内容类型，缺省 `application/json` |
 | `Data` | 数据字节 |

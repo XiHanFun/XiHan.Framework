@@ -58,6 +58,7 @@ app.MapXiHanMcp();      // POST /mcp
 | `XiHan:Protocols:Mcp:Tools:<操作 ID>` | string | — | 显式 tool 名，匹配 `^[A-Za-z0-9_-]{1,64}$` |
 | `XiHan:Protocols:Mcp:AllowedOrigins:<序号>` | string | 空 | HTTP 入口允许的浏览器源（`scheme://host[:port]`）；请求带的 `Origin` 不在其中即 403 |
 | `XiHan:Protocols:Mcp:MaxRequestBodyBytes` | 正整数 | 4194304 | HTTP 入口的请求体上限，超过即 413 |
+| `XiHan:Protocols:Mcp:MaxStdioLineBytes` | 正整数（最大 2147483647） | 4194304 | stdio 一行的字节上限（行尾与开头的 BOM 不算），超过的一行读到行尾丢弃、答复解析错误（-32700）、接着读下一行（ADR-0331）；不是 32 位的正整数时启动报 `ArgumentException`、消息带配置键 |
 
 ```json
 {
@@ -78,9 +79,9 @@ app.MapXiHanMcp();      // POST /mcp
 | 类型 | 说明 |
 | --- | --- |
 | `McpProtocolFeature` | 特性入口 |
-| `McpProtocolOptions` | `ServerName`、`ServerVersion`、`Instructions`、`Tools`、`AllowedOrigins`、`MaxRequestBodyBytes`；`ToolNameFor(contract)`、`IsAllowedOrigin(origin)` |
+| `McpProtocolOptions` | `ServerName`、`ServerVersion`、`Instructions`、`Tools`、`AllowedOrigins`、`MaxRequestBodyBytes`、`MaxStdioLineBytes`（缺省常量 `DefaultMaxStdioLineBytes`）；`ToolNameFor(contract)`、`IsAllowedOrigin(origin)` |
 | `Transports.McpEndpointRouteBuilderExtensions` | `MapXiHanMcp(pattern)`，缺省 `/mcp` |
-| `Transports.McpStdioTransport` | `RunAsync(server, services, input, output, cancellationToken)`：按行读写的 stdio 传输，`input` 是 stdin 的字节流，由调用方释放；先按 LF、CR 或 CR LF 分行（开头的 UTF-8 BOM 不算内容），再把每一行严格解码成 UTF-8，有非法 UTF-8 的一行答复解析错误（-32700）、接着读下一行。自己托管时传 `Console.OpenStandardInput()`，不要用 `Console.In` |
+| `Transports.McpStdioTransport` | `RunAsync(server, services, input, output, cancellationToken)`：按行读写的 stdio 传输，`input` 是 stdin 的字节流，由调用方释放；先按 LF、CR 或 CR LF 分行（开头的 UTF-8 BOM 不算内容），再把每一行严格解码成 UTF-8，有非法 UTF-8 的一行答复解析错误（-32700）、接着读下一行；一行超过 `MaxStdioLineBytes` 时读到行尾为止丢弃、同样答复解析错误；每读一块之前核对取消，读一行的中途取消抛出 `OperationCanceledException`。自己托管时传 `Console.OpenStandardInput()`，不要用 `Console.In` |
 | `Server.McpServer` | JSON-RPC 服务端：`Tools`、`FindTool`，由特性构造、交给传输处理消息；常量 `ProtocolVersion` = `2025-06-18`、`ProtocolVersionHeader` = `MCP-Protocol-Version` |
 | `Tools.McpTool` | 一个 tool：名字、操作描述、输入 / 输出 Schema、提示 |
 | `Tools.McpToolAnnotations` | `For(contract)`：只读、破坏性、幂等提示 |
@@ -103,14 +104,15 @@ tool 描述的消息键、提示的推导表与 JSON-RPC 错误表见 [gRPC、MC
 
 - `tools/list` 不分页；`inputSchema` 在请求 Schema 的 `type` 不是 `object` 或没有 Schema 时为 `{"type":"object"}`，`outputSchema` 只在响应 Schema 是对象时给出。
 - `tools/call` 成功时 `content[0].text` 是响应 JSON，响应是对象时同时给 `structuredContent`。
-- `tools/call` 的调用来源记 `mcp` 与 tool 名，HTTP 传输时远端地址、User-Agent 与来源页沿用外层请求（ADR-0043）；stdio 的答复只含 ASCII；stdin 按字节分行、逐行严格解码成 UTF-8，不随控制台代码页，非法的 UTF-8 不换成 U+FFFD 执行（ADR-0320）。
+- `tools/call` 的调用来源记 `mcp` 与 tool 名，HTTP 传输时远端地址、User-Agent 与来源页沿用外层请求（ADR-0043）；stdio 的答复只含 ASCII；stdin 按字节分行、逐行严格解码成 UTF-8，不随控制台代码页，非法的 UTF-8 不换成 U+FFFD 执行（ADR-0320）；一行不超过 `MaxStdioLineBytes`，超过的一行读到行尾丢弃、答复解析错误、会话继续（ADR-0331）。
+- 两种传输交来的每条消息先整条过 JSON 文本的共同检查：非法的 UTF-8、转义出的孤立代理项、任何一层重复的成员（含 `arguments` 里的）、嵌套超过 64 层，都与不是 JSON 一样答复解析错误（-32700，`id` 为 `null`，HTTP 400），不执行任何 tool；以前 HTTP 上的非法 UTF-8 与 `method` / `id` 里的孤立代理项是 500，重复成员取最后一个照常执行，`arguments` 里的这类问题是 `isError` 结果（ADR-0331）。
 - 不开 SSE 流、不建会话（不发 `Mcp-Session-Id`），`GET` / `DELETE` 为 405；`MCP-Protocol-Version` 不受支持时 400，缺失按当前版本处理。
 - HTTP 入口先校验源、内容类型与请求体大小（ADR-0199）：带 `Origin` 而不在 `AllowedOrigins` 里 403，`Content-Type` 不是 `application/json` 415，请求体超过 `MaxRequestBodyBytes` 413。
 - stdio 没有外层认证：会话的凭据在每个 `tools/call` 的管道里认证，没给或无效时要求权限或登录的操作得到 `isError` 结果；会话选项不合法时的用法错误按 `--locale` 翻译（ADR-0325）。
 
 | 错误码 | 情形 | JSON-RPC `error.code` |
 | --- | --- | --- |
-| `PROTOCOLS_VALIDATION_001` | 请求体不是 JSON / 不是 JSON-RPC 2.0 请求 / `tools/call` 缺 `name` | -32700 / -32600 / -32602 |
+| `PROTOCOLS_VALIDATION_001` | 请求体或 stdio 的一行不是 JSON、没过 JSON 文本的共同检查、stdio 的一行不是合法的 UTF-8 或超过 `MaxStdioLineBytes` / 不是 JSON-RPC 2.0 请求 / `tools/call` 缺 `name` | -32700 / -32600 / -32602 |
 | `PROTOCOLS_VALIDATION_002` | 协议版本不受支持 | -32600 |
 | `PROTOCOLS_VALIDATION_003` | tool 参数不是 JSON 对象 | -32602 |
 | `PROTOCOLS_VALIDATION_004` | 推导或配置的 tool 名不合法（启动失败） | — |

@@ -89,7 +89,7 @@ public sealed class TenantSyncPlanner(IJobScheduler scheduler)
 `JobSchedulerEngine` 由 Provider 特性装配，在应用进入服务状态后开始轮询，每个 `PollInterval`（缺省 1 秒）执行一个周期：
 
 1. 应用不在服务状态（启动中、排空中）时什么都不做，只释放持有的领导租约，另一个在服务的实例下一个周期就接手。
-2. 首个周期把代码登记的作业写入存储；失败时记日志，下个周期重试。
+2. 首个周期把代码登记的作业写入存储；存储写不进去时记日志，下个周期重试。定义不合法的代码作业在登记与启动时就已失败，不会走到这里（ADR-0335）。
 3. 存储共享时写节点心跳。
 4. 续约领导租约，没有时尝试获取（资源 `LeaseResource`，存活 `LeaseTimeToLive`）。
 5. 领导者每 `HousekeepingInterval`（缺省 60 秒）维护一次：恢复失联节点，删除结束早于 `HistoryRetention`（缺省 7 天）的历史。
@@ -157,7 +157,7 @@ public sealed class IndexRebuilder(ILeaderElection election)
 
 ## 事件
 
-装配了消息能力时，引擎经 `IMessagePublisher` 发布 CloudEvents 信封：`Source` 为 `/scheduling`，`Subject` 为运行 ID（作业级事件为作业名），`Data` 是 `SchedulingEventData` 的 JSON（作业、触发器名、运行 ID、触发来源、状态、各时刻、错误码与消息、`Attempt`、`RetryOf`、节点）。没有发布者时跳过，发布失败只记日志。信封的 `Type` 是主题；应用用 `services.AddMessageDataSchema(SchedulingTopics.RunFailed, "https://schemas.example.com/scheduling/run.json")` 给某个主题登记了数据模式时，信封带上这个 `dataschema`，没登记的不带（ADR-0323，见[领域事件](/messaging/domain-events)）。
+装配了消息能力时，引擎经 `IMessagePublisher` 发布 CloudEvents 信封：`Source` 为 `/scheduling`，`Subject` 为运行 ID（作业级事件为作业名），`Data` 是 `SchedulingEventData` 的 JSON（作业、触发器名、运行 ID、触发来源、状态、各时刻、错误码与消息、`Attempt`、`RetryOf`、节点）。没有发布者时跳过，发布失败只记日志。信封的 `Type` 是主题；应用用 `services.AddMessageDataSchema(SchedulingTopics.RunFailed, "https://schemas.example.com/scheduling/run.json")` 给某个主题登记了数据模式时（也可以写在配置节 `XiHan:Messaging:DataSchemas`，ADR-0332），信封带上这个 `dataschema`，没登记的不带（ADR-0323，见[领域事件](/messaging/domain-events)）。
 
 | 主题（`SchedulingTopics`） | 时机 |
 | --- | --- |

@@ -110,11 +110,13 @@ curl -s -X POST localhost:5000/mcp -H "Content-Type: application/json" -H "Autho
 
 `/mcp` 本身是经过 `UseXiHan()` 的普通端点：请求凭据在外层认证，凭据无效时整个请求以 401 Problem Details 拒绝、带 `WWW-Authenticate` 质询，不进入 JSON-RPC；应用未就绪时 503。没有凭据的请求照常进入，按契约的授权在每个 `tools/call` 的管道里判定，所以匿名客户端能 `tools/list`，调需要权限的 tool 时得到 `isError`。
 
-JSON-RPC 错误的 `error.data.code` 是框架错误码。解析与入口校验的失败带 HTTP 错误状态：请求体不是 JSON（-32700）、不是 JSON-RPC 2.0 请求、协议版本不受支持是 400，`Origin` 不被允许是 403，`Content-Type` 不对是 415，请求体过大是 413（后五种都是 -32600）。进入 JSON-RPC 之后的失败是 HTTP 200 加错误对象：方法不受支持是 -32601，`tools/call` 缺 `name`、tool 未登记、`arguments` 不是对象是 -32602。逐项的错误码见[包参考](/packages/protocols-mcp#行为与限制)。
+两种传输交来的每条消息先整条过 JSON 文本的共同检查（RFC-0001「JSON 文本」）：字符串里非法的 UTF-8、转义出的孤立代理项（`"\ud800"`，`method`、`id` 与 `arguments` 里都算）、任何一层重复的成员（含重复的 `id`、`method`、`params.name` 与 `arguments` 里的成员）、嵌套超过 64 层，都与不是 JSON 一样答复解析错误（-32700，`id` 为 `null`，`data.code` 为 `PROTOCOLS_VALIDATION_001`，HTTP 400），不执行任何 tool（ADR-0331）。所以重复的 `name` 不会悄悄执行后一个 tool，`arguments` 里的这类问题也不再是带位置的 `isError` 结果；客户端发合法的 JSON 即可。
+
+JSON-RPC 错误的 `error.data.code` 是框架错误码。解析与入口校验的失败带 HTTP 错误状态：请求体不是 JSON 或没过上面的共同检查（-32700）、不是 JSON-RPC 2.0 请求、协议版本不受支持是 400，`Origin` 不被允许是 403，`Content-Type` 不对是 415，请求体过大是 413（后五种都是 -32600）。进入 JSON-RPC 之后的失败是 HTTP 200 加错误对象：方法不受支持是 -32601，`tools/call` 缺 `name`、tool 未登记、`arguments` 不是对象是 -32602。逐项的错误码见[包参考](/packages/protocols-mcp#行为与限制)。
 
 ## stdio 传输
 
-桌面 MCP 客户端常以子进程方式启动服务端，经 stdin / stdout 通信。装配了 `McpProtocolFeature` 与 `AddXiHanCommandLine()` 的命令行宿主提供 `mcp` 命令：stdin 与 stdout 每行一条 JSON-RPC 消息，日志只写 stderr，stdin 关闭即结束会话。stdin 按字节读：先按 LF、CR 或 CR LF 分行（开头的 UTF-8 BOM 不算内容），再把每一行严格解码成 UTF-8，与控制台代码页无关（Windows 上重定向的标准输入不按 936、437 等代码页解码，中文参数不会成乱码）。一行里有非法的 UTF-8（截断的序列、单独的 `0xFF`、编码成 UTF-8 的代理项）时与不是 JSON 的一样答复解析错误（`id` 为 `null`、-32700、`data.code` 为 `PROTOCOLS_VALIDATION_001`），这一行不执行，接着读下一行，不换成 U+FFFD 再处理；只有空白的行跳过。答复里的非 ASCII 字符按 JSON 转义成 `\uXXXX`，只含 ASCII，按任何控制台输出代码页写出都是合法的 UTF-8。
+桌面 MCP 客户端常以子进程方式启动服务端，经 stdin / stdout 通信。装配了 `McpProtocolFeature` 与 `AddXiHanCommandLine()` 的命令行宿主提供 `mcp` 命令：stdin 与 stdout 每行一条 JSON-RPC 消息，日志只写 stderr，stdin 关闭即结束会话。stdin 按字节读：先按 LF、CR 或 CR LF 分行（开头的 UTF-8 BOM 不算内容），再把每一行严格解码成 UTF-8，与控制台代码页无关（Windows 上重定向的标准输入不按 936、437 等代码页解码，中文参数不会成乱码）。一行里有非法的 UTF-8（截断的序列、单独的 `0xFF`、编码成 UTF-8 的代理项）时与不是 JSON 的一样答复解析错误（`id` 为 `null`、-32700、`data.code` 为 `PROTOCOLS_VALIDATION_001`），这一行不执行，接着读下一行，不换成 U+FFFD 再处理；只有空白的行跳过。一行不超过 `MaxStdioLineBytes`（缺省 4194304 字节，即 4 MiB，与 HTTP 入口的请求体上限相同；行尾与开头的 BOM 不算），刚好等于上限的照常处理；超过的一行读到行尾为止丢弃、不再缓冲，同样答复解析错误，接着读下一行，会话不结束（ADR-0331）。要收更长的消息就配大 `XiHan:Protocols:Mcp:MaxStdioLineBytes`。解码之后的每一行同样过上面的共同检查，`method` 或 `id` 里转义出的孤立代理项答复解析错误、接着读下一行，不再让会话异常结束。取消在读一行的中途到达时，每读一块之前核对，`RunAsync` 抛出 `OperationCanceledException`。答复里的非 ASCII 字符按 JSON 转义成 `\uXXXX`，只含 ASCII，按任何控制台输出代码页写出都是合法的 UTF-8。
 
 ```bash
 echo '{"jsonrpc":"2.0","id":1,"method":"tools/list"}' | dotnet run --project framework/samples/SimpleCli -- mcp
@@ -146,7 +148,7 @@ XIHAN_AUTHORIZATION="ApiKey dev-alice-key" dotnet run --project framework/sample
 
 ## 选项
 
-配置节 `XiHan:Protocols:Mcp`（`McpProtocolOptions`）有服务端的名字、版本与说明（`ServerName`、`ServerVersion`、`Instructions`，后者是给大模型的使用说明，空时不写）、按操作的 tool 名（`Tools:<操作 ID>`）、HTTP 入口允许的浏览器源（`AllowedOrigins`）与请求体上限（`MaxRequestBodyBytes`），类型与缺省值见[包参考](/packages/protocols-mcp#配置)。
+配置节 `XiHan:Protocols:Mcp`（`McpProtocolOptions`）有服务端的名字、版本与说明（`ServerName`、`ServerVersion`、`Instructions`，后者是给大模型的使用说明，空时不写）、按操作的 tool 名（`Tools:<操作 ID>`）、HTTP 入口允许的浏览器源（`AllowedOrigins`）与请求体上限（`MaxRequestBodyBytes`）、stdio 一行的字节上限（`MaxStdioLineBytes`），类型与缺省值见[包参考](/packages/protocols-mcp#配置)。
 
 `initialize` 总是答复本服务端的协议版本与 `capabilities.tools.listChanged = false`，由客户端决定是否继续；`ping` 答复 `{}`。
 

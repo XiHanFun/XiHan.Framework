@@ -73,9 +73,9 @@ public sealed class Inbox(IWorkflowTaskService tasks)
 | --- | --- |
 | `Name` + `Version` / `DefinitionId` | 找定义；`Version` 为空取最新已发布版本。定义不存在或不是 `Published` → `WORKFLOW_NOTFOUND_001` |
 | `Variables` | 初始变量；声明了的变量缺省时补默认值，缺必填 → `WORKFLOW_VALIDATION_002` |
-| `StarterId` | 发起人，`Starter` 指派规则与 `ExcludeStarter` 用它 |
+| `StarterId` | 发起人，`Starter` 指派规则与 `ExcludeStarter` 用它；有孤立的代理项时启动返回 `WORKFLOW_VALIDATION_002`（消息键 `workflow.instance.starter_invalid`，没有参数），排在关联 ID 之后、找定义之前，不写实例（ADR-0334） |
 | `CorrelationId` | 业务关联 ID，信号按它匹配，重用策略按它查重；有孤立的代理项时启动返回 `WORKFLOW_VALIDATION_002`（消息键 `workflow.instance.correlation_invalid`，没有参数），在找定义、开事务之前返回，`SignalAsync` 的关联 ID 同样（ADR-0321） |
-| `ReusePolicy` | `AllowDuplicate`（缺省）、`RejectActive`（已有未结束实例 → `WORKFLOW_CONFLICT_005`）、`ReturnActive`（返回已有实例）；没有 `CorrelationId` 时忽略。查重只看同一分区的实例；查重与写入在同一把实例锁里，并发的同键启动只建一个实例；等锁超时是 `WORKFLOW_TIMEOUT_001` |
+| `ReusePolicy` | `AllowDuplicate`（缺省）、`RejectActive`（已有未结束实例 → `WORKFLOW_CONFLICT_005`）、`ReturnActive`（返回已有实例）；没有 `CorrelationId` 时忽略。查重只看同一分区的实例；查重与写入在同一把实例锁里，并发的同键启动只建一个实例；等锁超时是 `WORKFLOW_TIMEOUT_001`（文案是「等待工作流的锁 '<锁键>' 超时」，ADR-0336） |
 | `StartAt` | 延迟启动：开始节点以定时书签挂起到该时刻 |
 | `DisplayName` | 实例显示名，空取定义的 |
 
@@ -299,6 +299,7 @@ public sealed class LeaveReports(IWorkflowEngine engine)
 | 条件 | 说明 |
 | --- | --- |
 | `CorrelationIds` | 一组关联 ID，实例的关联 ID 是其中之一即匹配；重复的只算一个。`null` 不过滤，**空集合不匹配任何实例**（列表为空、计数为 0，不进存储）。最多 1000 个（`WorkflowInstanceQuery.MaxCorrelationIds`），不能有空白或含孤立代理项的 ID，否则列表与计数都返回 `WORKFLOW_VALIDATION_002`（消息键 `workflow.instance.query_correlations_invalid`） |
+| `StarterId` | 发起人；有孤立的代理项时列表与计数都返回 `WORKFLOW_VALIDATION_002`（消息键 `workflow.instance.starter_invalid`），不进存储（ADR-0334） |
 | `TopLevelOnly` | 只取顶层实例（`ParentInstanceId` 为空）。子流程继承父实例的发起人与关联 ID，「我发起的」与按单据查进度都要加它 |
 | `Keyword` | 匹配实例标题或关联 ID，规则见[关键字](/workflow/definitions#关键字) |
 

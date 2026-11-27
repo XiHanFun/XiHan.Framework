@@ -90,7 +90,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
 | `XiHan:Workflow:Database:PollIntervalSeconds` | 正数 | 1 | 到期书签的轮询周期 |
 | `XiHan:Workflow:Database:BatchSize` | 整数 ≥ 1 | 100 | 每次轮询最多恢复的书签数 |
 | `XiHan:Workflow:Database:LockLeaseSeconds` | 正数 | 60 | 实例锁与轮询领导权的租约时长 |
-| `XiHan:Workflow:Database:HolderId` | 字符串 | `机器名:进程 ID:8 位随机十六进制` | 租约持有者标识，每个节点唯一 |
+| `XiHan:Workflow:Database:HolderId` | 字符串 | `机器名:进程 ID:8 位随机十六进制` | 租约持有者标识，每个节点唯一；有孤立的代理项时启动失败（`ArgumentException`，ADR-0334） |
 | `XiHan:Workflow:Database:LockConnection` | 字符串 | — | 租约表的命名连接；SQLite 上必须配，见下文「SQLite 上的租约表」 |
 | `XiHan:Workflow:Database:HealthProbeIntervalSeconds` | 正数 | 15 | 健康项重探间隔 |
 

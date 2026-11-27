@@ -92,7 +92,7 @@ public sealed class NightlyReportJob(IReportService reports) : IJob
 | `AddJobType<TJob>()` / `AddJobType<TJob>(key)` | 只登记作业类型（键缺省为类型全名），供运行时用 `ScheduleAsync` 新建的作业引用 |
 | `AddJobCalendar(name, calendar)` | 按名登记排除日历，触发器的计划用 `Calendar` 引用 |
 
-同名重复 `AddJob` 是编程错误，启动时抛出。代码登记的作业在引擎首个周期写入存储，来源记为 `Code`。完整定义的写法：
+同名重复 `AddJob` 是编程错误，启动时抛出。代码登记的作业不合法也是编程错误，启动即失败，不留到运行时每个周期重试（ADR-0335）：说明与数据有孤立的代理项、触发器名重复，`AddJob` 当场抛 `ArgumentException`（消息 `Job '<作业名>' is invalid: <原因>.`），作业不进登记表；触发器引用的日历没有登记（`AddJobCalendar` 可以写在 `AddJob` 之后，登记时判定不了）在调度的实现包特性启动时以 `SCHEDULING_VALIDATION_001` 失败（消息 `Code-defined job '<作业名>' is invalid: <原因>.`，内核包成 `KERNEL_HOSTING_002`），默认的失败策略下应用不启动。登记之后才改坏的数据同样在启动时拦下。按消息里的作业名改定义，或补上 `AddJobCalendar`。代码登记的作业在引擎首个周期写入存储，来源记为 `Code`；存储不可用时记日志、下个周期重试。完整定义的写法：
 
 ```csharp
 using System.Text.Json.Nodes;
@@ -129,7 +129,7 @@ builder.Services.AddJob<NightlyReportJob>(new JobDefinition("reports.nightly", t
 | 属性 | 缺省 | 说明 |
 | --- | --- | --- |
 | `Triggers` | 空 | 空为只能手动触发；同一作业内触发器名重复是 `SCHEDULING_VALIDATION_001` |
-| `Data` | 空 | 传给作业的数据，被触发器与手动触发的数据逐层覆盖同名键；作业与触发器的说明、数据（逐层的成员名与字符串值）有孤立的代理项是 `SCHEDULING_VALIDATION_001`（`reason` 为 `the definition has a lone surrogate in a description or the data`）：运行时登记直接返回它，代码登记的作业同步不过、每个周期记日志重试（ADR-0321） |
+| `Data` | 空 | 传给作业的数据，被触发器与手动触发的数据逐层覆盖同名键；作业与触发器的说明、数据（逐层的成员名与字符串值）有孤立的代理项是 `SCHEDULING_VALIDATION_001`（`reason` 为 `the definition has a lone surrogate in a description or the data`）：运行时登记直接返回它（ADR-0321），代码登记的作业在 `AddJob` 时就抛 `ArgumentException`（ADR-0335） |
 | `AllowConcurrent` | `false` | `false` 时整个集群同一作业同一时刻最多一次运行 |
 | `RunOnEveryInstance` | `false` | `true` 时每个实例按自己的时钟各自运行，不经存储抢占 |
 | `RequestsRecovery` | `false` | 运行所在节点失联时由领导者重新入队一次（`JobTrigger.Recovery`） |

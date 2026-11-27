@@ -109,12 +109,15 @@ static bool IsTransient(Error error)
 | `ResourceExhausted` | `PLUGINS_UNAVAILABLE_002` | Wasm 沙箱资源不足：回调嵌套超限、客体内存分配失败 |
 | `HostUnsupported` | `PLUGINS_UNAVAILABLE_003` | 宿主进程不满足载体要求：Windows 强制用户态影子栈时 Wasm 陷阱会终止进程 |
 | `Timeout` | `PLUGINS_TIMEOUT_001` | 握手、配置、启动或停止超时 |
-| `Unexpected` | `PLUGINS_UNEXPECTED_001` | 配置、启动、停止或调用时发生未预期的失败；清单声明的绑定读不出、超过大小上限或下发前的核对不合，配置节有孤立的代理项，`Configure` 请求超过总上限；插件交回的应答载荷不是合法的 JSON 文本 |
+| `Unexpected` | `PLUGINS_UNEXPECTED_001` | 配置、启动、停止或调用时发生未预期的失败；清单声明的绑定读不出、超过大小上限或下发前的核对不合，配置节有孤立的代理项，`Configure` 请求超过总上限；插件交回的应答载荷不是合法的 JSON 文本；要写给插件的已登记 Baggage 值有孤立的代理项（ADR-0334） |
 | `Crashed` | `PLUGINS_UNEXPECTED_002` | 插件进程异常退出，或 Wasm 实例陷阱、导出函数返回 0 |
 
 `PLUGINS_UNAVAILABLE_003` 是配置错误，以 `FrameworkException` 抛出、不本地化；其余错误以 `Result` 返回，文案按调用方区域翻译。进程内宿主有自己的一组错误码常量，见 [Plugins.InProcess](./plugins-inprocess)。
 
-两个载体共用的另几处规则也在本包（ADR-0292、ADR-0293、ADR-0315）：
+两个载体共用的另几处规则也在本包（ADR-0292、ADR-0293、ADR-0315、ADR-0334、ADR-0339）：
+
+- 写给插件的元数据：代理操作的调用、投递与 Wasm 中间件的钩子交给载体之前核对上下文里已登记的 Baggage，有孤立的代理项（只有幂等键可能带着）即这一次不交给插件，`PLUGINS_UNEXPECTED_001` + `plugins.process.failed`（`id` 为清单 ID，`phase` 为操作 ID、`event` 或中间件名，`reason` 为 `baggage '<键>' has a lone surrogate and cannot be encoded as UTF-8`），不启动进程、不取实例，插件照常服务、不计入重启；有 Idempotency 阶段的宿主先在那里以 `CACHING_VALIDATION_001` 拒绝（`plugin/invocation.md` §2）。
+- 写给插件的错误：`Error` 的文案（`text`，含内部错误的）里的孤立代理项各换成一个 U+FFFD 写出（成对的照抄，长度不变），`code`、`message_key`、`details` 与 `inner` 照写，两种载体同一处；进程内的 `Error` 与日志仍是原文（`plugin/invocation.md` §3「写出 `Error` 的文案」）。
 
 - 核对插件交回的应答：代理操作把载体的运行时包一层，成功应答的载荷不为空时先过内核 `JsonText.FindProblem` 的共同检查，没过即 `PLUGINS_UNEXPECTED_001` + `plugins.process.failed`（`phase` 为操作 ID，`reason` 为 `the response payload is not valid JSON text at '<路径>'`），载荷不交出；核对在 `xihan.plugin.invoke` Span 之内，两种载体结论相同、都不按崩溃处理。幂等回放（`DecodeResponse`）做同一道检查，没过返回 `KERNEL_VALIDATION_001`（`reason` 是问题的路径）。空的载荷表示没有响应体，不查，幂等回放时原样包回同样的空载荷；只有空白的载荷照样检查（ADR-0318）。
 - 组装 `Configure` 请求：清单声明的配置节先写成 JSON，键或值里有孤立的代理项即不发（`reason` 为 `the configuration has a lone surrogate and cannot be encoded as UTF-8`，不带键与值）；再按清单的顺序逐个绑定核对有没有、类型与属性，逐个都合格之后整个请求按 protobuf 二进制编码不超过 2097152 字节；下发的 `type` 总是清单声明的类型。不合即不发，`PLUGINS_UNEXPECTED_001` + `plugins.process.failed`（`phase` 为 `configure`），`reason` 是只带绑定名、类型名与上限的固定英文文本（全文见[资源绑定](/configuration/bindings#下发给插件的绑定)），并记一条 Error：`The configure request of plugin <清单 ID> is not sent: <reason>; the plugin is not configured.`。

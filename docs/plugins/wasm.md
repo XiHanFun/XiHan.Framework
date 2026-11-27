@@ -180,7 +180,7 @@ Wasm 插件清单 `contributes.pipeline` 的每一项在对应阶段插入一个
 
 每个插件一个实例，调用串行，并发到达的调用排队，排队时间计入截止时间。配置节 `XiHan:Plugins:Wasm` 里，`Directories` 列出插件目录，`Grants:<清单 ID>` 授予 `capability:` 权限与清单要读的宿主配置节、绑定，`Mounts:<清单 ID>:<客体路径>` 把客体路径映射到宿主目录（清单的 `fs.read:` / `fs.write:` 只有映射了才算授予，没有映射时加载以 `PLUGINS_DENIED_001` 拒绝）；沙箱的上限是 `MemoryLimitBytes`（缺省 64 MiB）、`StackLimitBytes`（缺省 1 MiB）、`CallTimeoutSeconds`（缺省 30）与 `MiddlewareTimeoutMilliseconds`（缺省 100）。全部键、类型与缺省值见[包参考](/packages/plugins-wasm#配置)。
 
-清单声明并授予的资源绑定随 `xihan_configure` 下发，来源与宿主自己的特性相同（Service Binding 目录与 `XiHan:Bindings`），每次配置插件时重新解析，带名字、清单声明的类型、主值与全部属性（只挂属性文件、没有主值的绑定照常下发、主值为空）。下发之前宿主按清单核对：必需（`required` 缺省 `true`）的绑定没给或只给了类型、来源声明的类型与清单不同、属性名或大小不合下发的上限、主值或属性值有孤立的代理项（`reason` 为 `binding '<绑定名>' has a lone surrogate and cannot be encoded as UTF-8`，不带属性名与值，ADR-0321）、绑定目录多于 128 个文件（`reason` 为 `binding '<绑定名>' has more than 128 files`）、整个请求按 protobuf 二进制编码超过 2 MiB（写进客体内存的 JSON 更长，核对仍按二进制的大小），这一次配置都失败；可以没有的绑定在清单写 `"required": false`。规则与 `reason` 见[资源绑定](/configuration/bindings#下发给插件的绑定)。插件自己的配置节（清单 `contributes.config.section`）的键或值里有孤立的代理项时同样不调用 `xihan_configure`，这一次配置失败（`reason` 为 `the configuration has a lone surrogate and cannot be encoded as UTF-8`，不带键与值），排在绑定的核对之前（ADR-0315）。配置失败的插件进入 `Failed`：启动时的配置失败不在后台重试，下一次调用按需再试，改正之后的那次调用配置并启动；崩溃之后重建时的配置失败按退避再试（ADR-0260、ADR-0325）。宿主为每次调用插件的操作与每次事件投递记一条 Span `xihan.plugin.invoke`（`xihan.invoke` 的子 Span，标签 `xihan.plugin.id`，操作调用另带 `xihan.operation`），见[日志与可观测性](/common/observability#内核发出什么)。
+清单声明并授予的资源绑定随 `xihan_configure` 下发，来源与宿主自己的特性相同（Service Binding 目录与 `XiHan:Bindings`），每次配置插件时重新解析，带名字、清单声明的类型、主值与全部属性（只挂属性文件、没有主值的绑定照常下发、主值为空）。下发之前宿主按清单核对：必需（`required` 缺省 `true`）的绑定没给或只给了类型、来源声明的类型与清单不同、属性名或大小不合下发的上限、主值或属性值有孤立的代理项（`reason` 为 `binding '<绑定名>' has a lone surrogate and cannot be encoded as UTF-8`，不带属性名与值，ADR-0321）、绑定目录多于 128 个文件（`reason` 为 `binding '<绑定名>' has more than 128 files`）、整个请求按 protobuf 二进制编码超过 2 MiB（写进客体内存的 JSON 更长，核对仍按二进制的大小），这一次配置都失败；可以没有的绑定在清单写 `"required": false`。规则与 `reason` 见[资源绑定](/configuration/bindings#下发给插件的绑定)。插件自己的配置节（清单 `contributes.config.section`）的键或值里有孤立的代理项时同样不调用 `xihan_configure`，这一次配置失败（`reason` 为 `the configuration has a lone surrogate and cannot be encoded as UTF-8`，不带键与值），排在绑定的核对之前（ADR-0315）。配置失败的插件进入 `Failed`，与进程外插件一样在后台按退避重建实例（1 秒起翻倍、上限 60 秒，计入 `RestartLimit`）：启动 `onStartup` 的插件、运行期加载的插件启动阶段失败（组装 `Configure` 请求、`xihan_configure`、`xihan_start`），以及崩溃之后重建时的配置失败都是如此，运行期加载的失败照样返回给调用方；退避期间的调用与投递是 `PLUGINS_UNAVAILABLE_001`，改正配置之后在下一次退避结束时恢复，不再由调用带起来（ADR-0260、ADR-0325、ADR-0337）。发现阶段（实例化与握手）失败的不重试，懒激活插件首次调用时的失败由下一次调用再试。宿主为每次调用插件的操作与每次事件投递记一条 Span `xihan.plugin.invoke`（`xihan.invoke` 的子 Span，标签 `xihan.plugin.id`，操作调用另带 `xihan.operation`），见[日志与可观测性](/common/observability#内核发出什么)。
 
 取值不合类型与范围时，`WasmPluginOptions.FromConfiguration` 以带配置键的 `ArgumentException` 拒绝启动。CPU 按 epoch 中断强制截止：操作与事件用调用上下文的剩余时间（没有时取 `CallTimeout`），中间件用 `MiddlewareTimeout`，生命周期调用用 `CallTimeout`。
 
@@ -195,6 +195,9 @@ Wasm 插件清单 `contributes.pipeline` 的每一项在对应阶段插入一个
 | 内存超过上限 | `memory.grow` 失败或陷阱，按崩溃重建 |
 | 回调嵌套超过 8 层、客体内存分配失败 | `PLUGINS_UNAVAILABLE_002`，实例不变 |
 | 中间件陷阱、超时或无响应 | 调用以 `PLUGINS_UNAVAILABLE_001` 失败，插件按崩溃重建 |
+| 启动阶段失败（组装 `Configure` 请求、`xihan_configure`、`xihan_start`） | 插件 `Failed`，按退避重建实例、计入重启次数；运行期加载的失败照样返回给调用方，退避期间的调用是 `PLUGINS_UNAVAILABLE_001`（ADR-0337） |
+| 上下文的已登记 Baggage（只有幂等键可能）有孤立的代理项 | 这次调用、投递或中间件钩子不交给插件，以 `PLUGINS_UNEXPECTED_001` 结束（`reason` 为 `baggage '<键>' has a lone surrogate and cannot be encoded as UTF-8`），中间件随之关闭调用，实例不变（ADR-0334） |
+| 宿主写给插件的错误文案（回调与发布的结果、中间件 `after` 阶段的 `outcome`）有孤立的代理项 | 各换成一个 U+FFFD 照写，其余字段照写，插件不再因此陷阱，`after` 阶段的调用拿到的仍是下游自己的失败（ADR-0339） |
 | 重建次数在窗口内超过上限 | 保持 `Failed`，直到 `UnloadAsync` + `LoadAsync` |
 | 发现时清单不合法、权限未授予或未映射、模块文件不存在 | 不实例化，插件以 `Failed` 登记，不重试 |
 
