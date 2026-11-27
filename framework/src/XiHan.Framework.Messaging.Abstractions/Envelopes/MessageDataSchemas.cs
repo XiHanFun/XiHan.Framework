@@ -10,7 +10,7 @@ namespace XiHan.Framework.Messaging.Abstractions.Envelopes;
 /// 按 CloudEvents <c>type</c> 登记的数据模式
 /// </summary>
 /// <remarks>
-/// 框架自己构造的信封（领域事件、调度与工作流的事件）按自己的 <c>type</c> 查这张表，查到即带上这个 <c>dataschema</c>（RFC-0009「框架事件的数据模式」，ADR-0323）。由 <see cref="MessagingServiceCollectionExtensions.AddMessageDataSchema"/> 在装配期填充、以实例注册为单例；没有登记任何模式时容器里没有它。
+/// 框架自己构造的信封（领域事件、调度与工作流的事件）按自己的 <c>type</c> 查这张表，查到即带上这个 <c>dataschema</c>（RFC-0009「框架事件的数据模式」，ADR-0323）。由 <see cref="MessagingServiceCollectionExtensions.AddMessageDataSchema"/> 与配置节 <c>XiHan:Messaging:DataSchemas</c>（<see cref="MessagingOptions.DataSchemas"/>，消息 Provider 装配时登记，ADR-0332）在装配期填充、以实例注册为单例；没有登记任何模式时容器里没有它。
 /// 有界（10000 个 <c>type</c>），装配期写入、发布时并发读取；应用自己构造的信封与发布者都不按它补
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
@@ -70,6 +70,30 @@ public sealed class MessageDataSchemas
     /// </remarks>
     internal void Add(string type, string dataSchema)
     {
+        Validate(type, dataSchema);
+
+        // 先查容量再写入：两步不是原子的，装配期是单线程的，这里只防止无界增长
+        if (!_schemas.ContainsKey(type) && _schemas.Count >= _capacity)
+        {
+            throw new InvalidOperationException($"The data schema registry has reached its capacity of {_capacity} event types.");
+        }
+
+        // 同一个值是重复的装配调用，只记一次；另一个值不取先登记的也不取后登记的，两处对同一个 type 有分歧是装配错误
+        var registered = _schemas.GetOrAdd(type, dataSchema);
+        if (!string.Equals(registered, dataSchema, StringComparison.Ordinal))
+        {
+            throw new ArgumentException($"Event type '{type}' already has data schema '{registered}'; it cannot also have '{dataSchema}'.", nameof(dataSchema));
+        }
+    }
+
+    /// <summary>
+    /// 核对一个 <c>type</c> 与它的数据模式
+    /// </summary>
+    /// <remarks>
+    /// 登记（<see cref="Add"/>）与从配置读（<see cref="MessagingOptions.DataSchemas"/>）共用这一条：<paramref name="type"/> 照 <see cref="MessageEnvelope.Type"/>、<paramref name="dataSchema"/> 照 <see cref="MessageEnvelope.DataSchema"/>，不能为空或只有空白；两者都不能有孤立的代理项。不合抛出 <see cref="ArgumentException"/>
+    /// </remarks>
+    internal static void Validate(string type, string dataSchema)
+    {
         ArgumentException.ThrowIfNullOrWhiteSpace(type);
         ArgumentNullException.ThrowIfNull(dataSchema);
         if (string.IsNullOrWhiteSpace(dataSchema))
@@ -86,19 +110,6 @@ public sealed class MessageDataSchemas
         if (UnicodeText.HasLoneSurrogate(dataSchema))
         {
             throw new ArgumentException($"The data schema for event type '{type}' must not contain lone surrogates.", nameof(dataSchema));
-        }
-
-        // 先查容量再写入：两步不是原子的，装配期是单线程的，这里只防止无界增长
-        if (!_schemas.ContainsKey(type) && _schemas.Count >= _capacity)
-        {
-            throw new InvalidOperationException($"The data schema registry has reached its capacity of {_capacity} event types.");
-        }
-
-        // 同一个值是重复的装配调用，只记一次；另一个值不取先登记的也不取后登记的，两处对同一个 type 有分歧是装配错误
-        var registered = _schemas.GetOrAdd(type, dataSchema);
-        if (!string.Equals(registered, dataSchema, StringComparison.Ordinal))
-        {
-            throw new ArgumentException($"Event type '{type}' already has data schema '{registered}'; it cannot also have '{dataSchema}'.", nameof(dataSchema));
         }
     }
 }

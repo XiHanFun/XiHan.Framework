@@ -4,6 +4,7 @@
 using System.Text.RegularExpressions;
 using Microsoft.Extensions.Configuration;
 using XiHan.Framework.Kernel.Hosting;
+using XiHan.Framework.Messaging.Abstractions.Envelopes;
 using XiHan.Framework.Primitives;
 
 namespace XiHan.Framework.Messaging.Abstractions;
@@ -21,6 +22,22 @@ public sealed partial record MessagingOptions
     /// 配置节
     /// </summary>
     public const string ConfigurationSection = "XiHan:Messaging";
+
+    /// <summary>
+    /// 数据模式的配置节
+    /// </summary>
+    /// <remarks>
+    /// 数组，每项 <c>Type</c> 与 <c>DataSchema</c>
+    /// </remarks>
+    private const string DataSchemasSection = ConfigurationSection + ":DataSchemas";
+
+    /// <summary>
+    /// 共享的空数据模式表
+    /// </summary>
+    /// <remarks>
+    /// 没有配置数据模式的选项都指向它，缺省选项之间照旧相等
+    /// </remarks>
+    private static readonly IReadOnlyDictionary<string, string> _noDataSchemas = new Dictionary<string, string>(StringComparer.Ordinal);
 
     /// <summary>
     /// 一条消息最多投递次数（含首次）
@@ -63,8 +80,34 @@ public sealed partial record MessagingOptions
     }
 
     /// <summary>
-    /// 从配置读取：<c>MaxAttempts</c>、<c>DeadLetterSuffix</c>、<c>InstanceId</c>
+    /// 从配置登记的数据模式
     /// </summary>
+    /// <remarks>
+    /// CloudEvents <c>type</c> → <c>dataschema</c>，读自数组形式的配置节 <c>XiHan:Messaging:DataSchemas</c>（每项 <c>Type</c> 与 <c>DataSchema</c>；<c>type</c> 带点号写不成配置键，所以用数组，环境变量写成 <c>XiHan__Messaging__DataSchemas__0__Type</c>）。
+    /// 消息 Provider 装配时由 <see cref="MessagingRegistration.Configure"/> 登记进 <see cref="MessageDataSchemas"/>，与 <see cref="MessagingServiceCollectionExtensions.AddMessageDataSchema"/> 同一张表、同一套规则：同一个 <c>type</c> 值不同即装配失败，不论谁先登记（RFC-0009「框架事件的数据模式」，ADR-0332）。
+    /// 每项照 <see cref="MessagingServiceCollectionExtensions.AddMessageDataSchema"/> 核对（不能为空或只有空白，不能有孤立的代理项），不合抛出 <see cref="ArgumentException"/>。缺省为空
+    /// </remarks>
+    public IReadOnlyDictionary<string, string> DataSchemas
+    {
+        get => field;
+        init
+        {
+            ArgumentNullException.ThrowIfNull(value);
+            foreach (var (type, dataSchema) in value)
+            {
+                MessageDataSchemas.Validate(type, dataSchema);
+            }
+
+            field = value;
+        }
+    } = _noDataSchemas;
+
+    /// <summary>
+    /// 从配置读取：<c>MaxAttempts</c>、<c>DeadLetterSuffix</c>、<c>InstanceId</c>、<c>DataSchemas</c>
+    /// </summary>
+    /// <remarks>
+    /// 值不合法时抛出 <see cref="ArgumentException"/>，消息带出错的配置键
+    /// </remarks>
     public static MessagingOptions FromConfiguration(IConfiguration configuration)
     {
         ArgumentNullException.ThrowIfNull(configuration);
@@ -88,7 +131,64 @@ public sealed partial record MessagingOptions
                 : throw new ArgumentException($"{ConfigurationSection}:InstanceId must be 1 to 64 letters, digits, '.', '_' or '-', starting with a letter or digit, but was '{instance}'.");
         }
 
-        return options;
+        var dataSchemas = ReadDataSchemas(configuration.GetSection(DataSchemasSection));
+        return dataSchemas.Count > 0 ? options with { DataSchemas = dataSchemas } : options;
+    }
+
+    /// <summary>
+    /// 读数据模式的配置节
+    /// </summary>
+    /// <remarks>
+    /// 每项的 <c>Type</c> 与 <c>DataSchema</c> 都要有；值照 <see cref="MessageDataSchemas.Validate"/> 核对。同一个 <c>type</c> 再写同一个值只记一次，另一个值抛出：与代码登记的规则相同（ADR-0332）
+    /// </remarks>
+    private static Dictionary<string, string> ReadDataSchemas(IConfigurationSection section)
+    {
+        var schemas = new Dictionary<string, string>(StringComparer.Ordinal);
+        var origins = new Dictionary<string, string>(StringComparer.Ordinal);
+        foreach (var entry in section.GetChildren())
+        {
+            var type = DataSchemaMember(entry, "Type");
+            var dataSchema = DataSchemaMember(entry, "DataSchema");
+
+            // 同一个 type 有分歧是装配错误：不取先写的也不取后写的，消息里指出两处
+            if (schemas.TryGetValue(type, out var existing))
+            {
+                if (!string.Equals(existing, dataSchema, StringComparison.Ordinal))
+                {
+                    throw new ArgumentException($"'{entry.Path}:DataSchema' gives event type '{type}' the data schema '{dataSchema}', but '{origins[type]}:DataSchema' already gives it '{existing}'.");
+                }
+
+                continue;
+            }
+
+            schemas[type] = dataSchema;
+            origins[type] = entry.Path;
+        }
+
+        return schemas;
+    }
+
+    /// <summary>
+    /// 读一项数据模式里的一个成员
+    /// </summary>
+    /// <remarks>
+    /// 没有、空串或只有空白、有孤立的代理项都抛出 <see cref="ArgumentException"/>，消息带这个成员的配置键
+    /// </remarks>
+    private static string DataSchemaMember(IConfigurationSection entry, string member)
+    {
+        var path = $"{entry.Path}:{member}";
+        var value = entry[member];
+        if (value is null)
+        {
+            throw new ArgumentException($"'{path}' must be set: each entry of '{DataSchemasSection}' has a 'Type' and a 'DataSchema'.");
+        }
+
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            throw new ArgumentException($"'{path}' must not be empty.");
+        }
+
+        return !UnicodeText.HasLoneSurrogate(value) ? value : throw new ArgumentException($"'{path}' must not contain lone surrogates.");
     }
 
     /// <summary>

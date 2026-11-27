@@ -9,7 +9,7 @@
 * CloudEvents 1.0 信封，租户、主体、关联、区域与追踪自动补齐
 * 竞争订阅与广播订阅，失败重试后进死信
 * 领域事件按主题批量发布
-* 按 CloudEvents `type` 登记数据模式（`AddMessageDataSchema`），领域事件、调度与工作流发布的信封带上 `dataschema`
+* 按 CloudEvents `type` 登记数据模式（`AddMessageDataSchema`，或配置节 `XiHan:Messaging:DataSchemas` 的数组，每项 `Type` 与 `DataSchema`），领域事件、调度与工作流发布的信封带上 `dataschema`
 * 事务性发件箱，与业务写入同事务；积压与死信有健康项，死信可以批量重投
 
 ## 如何使用
@@ -67,7 +67,7 @@ switch (outcome.Disposition)
 
 * `MessageEnvelope`：CloudEvents 信封，`DataSchema` 承载可选的 `dataschema`（非空字符串，不核对 URI 语法），四个代理都原样收发；`Subject` 给了就不能是空串（CloudEvents 规定出现时必须非空）
 * `CloudEventsFormat`：信封的结构化 JSON 编码。读取先过 JSON 文本的共同检查（重复的成员不合法），`time` 只认带 `T`、秒与偏移的 RFC 3339 时刻并读成 UTC，`data` 与 `data_base64` 不能同时出现，扩展属性的值是字符串、数字或布尔；写不出读得回来的文档时 `Encode` 抛出，规范属性与扩展属性的字符串里有孤立的代理项、JSON 数据的字符串里有不合法的 UTF-8 字节也一样（不写成 U+FFFD）
-* `MessageDataSchemas`：按 `type` 登记的数据模式，由 `services.AddMessageDataSchema(type, dataSchema)` 填充；取值照 `MessageEnvelope.DataSchema`，另拒孤立的代理项，同一个 `type` 登记另一个值抛出，最多 10000 个 `type`；只作用于框架构造的信封
+* `MessageDataSchemas`：按 `type` 登记的数据模式，由 `services.AddMessageDataSchema(type, dataSchema)` 与配置节 `XiHan:Messaging:DataSchemas`（`MessagingOptions.DataSchemas`，消息 Provider 装配时登记；环境变量写成 `XiHan__Messaging__DataSchemas__0__Type`）填充；取值照 `MessageEnvelope.DataSchema`，另拒孤立的代理项，同一个 `type` 登记另一个值抛出（配置与代码之间也一样，不论谁先登记），配置项缺 `Type` 或 `DataSchema` 时启动失败，最多 10000 个 `type`；只作用于框架构造的信封
 * `IMessagePublisher`：发布入口，支持批量
 * `IMessageHandler`、`SubscriptionMode`：处理器与订阅方式
 * `IMessageBroker`：代理接口，提供程序实现它

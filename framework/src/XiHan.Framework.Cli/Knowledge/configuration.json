@@ -674,6 +674,18 @@
           "type": "string",
           "sample": "orders-api-0",
           "summary": "本实例在消息代理上的标识（广播订阅的 RabbitMQ 独占队列与 Kafka 消费组用它）；不写时每次启动随机生成。1 到 64 个字母、数字、.、_、-，字母或数字开头，不合文法启动失败；必须每个同时在线的实例唯一（如 Pod 名），重复时 Kafka 广播退化成竞争、RabbitMQ 后启动的实例启动失败"
+        },
+        {
+          "key": "DataSchemas:{index}:Type",
+          "type": "string",
+          "sample": "orders.placed",
+          "summary": "要带上数据模式的 CloudEvents type（领域事件、调度与工作流发布的信封）；与同一项的 DataSchema 成对出现，缺一个、为空或有孤立的代理项启动失败"
+        },
+        {
+          "key": "DataSchemas:{index}:DataSchema",
+          "type": "string",
+          "sample": "https://example.com/schemas/order-placed.json",
+          "summary": "这个 type 的 dataschema（非空，不核对 URI 语法）；同一个 type 与代码里 AddMessageDataSchema 或另一项给了不同的值时启动失败"
         }
       ]
     },

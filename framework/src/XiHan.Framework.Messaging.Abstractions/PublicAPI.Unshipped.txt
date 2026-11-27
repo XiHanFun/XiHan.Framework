@@ -83,6 +83,8 @@ XiHan.Framework.Messaging.Abstractions.MessagingInstance.MessagingInstance(XiHan
 XiHan.Framework.Messaging.Abstractions.MessagingMessages
 XiHan.Framework.Messaging.Abstractions.MessagingOptions
 XiHan.Framework.Messaging.Abstractions.MessagingOptions.<Clone>$() -> XiHan.Framework.Messaging.Abstractions.MessagingOptions!
+XiHan.Framework.Messaging.Abstractions.MessagingOptions.DataSchemas.get -> System.Collections.Generic.IReadOnlyDictionary<string!, string!>!
+XiHan.Framework.Messaging.Abstractions.MessagingOptions.DataSchemas.init -> void
 XiHan.Framework.Messaging.Abstractions.MessagingOptions.DeadLetterSuffix.get -> string!
 XiHan.Framework.Messaging.Abstractions.MessagingOptions.DeadLetterSuffix.init -> void
 XiHan.Framework.Messaging.Abstractions.MessagingOptions.Equals(XiHan.Framework.Messaging.Abstractions.MessagingOptions? other) -> bool
