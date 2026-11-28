@@ -17,7 +17,7 @@ namespace XiHan.Framework.Workflow.Database.Tests;
 /// 每个测试一个临时 Oracle 用户，宿主装配 SqlSugar 持久化与数据库工作流特性
 /// </summary>
 /// <remarks>
-/// 服务器来自环境变量 <see cref="EnvironmentVariable"/>（有建用户权限的连接串，如 <c>User Id=system;Password=…;Data Source=127.0.0.1:1521/FREEPDB1</c>），未设置即跳过，由 CI 的 oracle 分片运行。Oracle 没有「建库」，每个用例建一个随机名的用户，表建在它自己的 schema 里；缺省的 <c>NLS_COMP</c> 与 <c>NLS_SORT</c> 是 <c>BINARY</c>，<c>LIKE</c> 按码元比较，不必另定排序规则。空串存成 <c>NULL</c>，回填按 RFC-0021 把两者当作相同。行级锁，租约表不必放到另一个库。临时用户的连接串用连接池：不用池时每次操作都新开一个专用服务器进程，监听程序把交出去的连接都算作负载，没到 <c>PROCESSES</c> 上限就拒绝新连接（<c>ORA-12516</c>，ADR-0350）。释放时停止宿主、清池、结束它的会话并删用户
+/// 服务器来自环境变量 <see cref="EnvironmentVariable"/>（有建用户权限的连接串，如 <c>User Id=system;Password=…;Data Source=127.0.0.1:1521/FREEPDB1</c>），未设置即跳过，由 CI 的 oracle 分片运行。Oracle 没有「建库」，每个用例建一个随机名的用户，表建在它自己的 schema 里；缺省的 <c>NLS_COMP</c> 与 <c>NLS_SORT</c> 是 <c>BINARY</c>，<c>LIKE</c> 按码元比较，不必另定排序规则。空串存成 <c>NULL</c>，回填按 RFC-0021 把两者当作相同。行级锁，租约表不必放到另一个库。临时用户的连接串用连接池：不用池时每次操作都新开一个专用服务器进程，监听程序把交出去的连接都算作负载，没到 <c>PROCESSES</c> 上限就拒绝新连接（<c>ORA-12516</c>，ADR-0350）。释放时停止宿主、锁账户、清池、结束它的会话并删用户
 /// </remarks>
 internal sealed class OracleSchema : IGatedDatabase
 {
@@ -188,7 +188,7 @@ internal sealed class OracleSchema : IGatedDatabase
 
     /// <inheritdoc />
     /// <remarks>
-    /// 先清池，关掉临时用户闲着的连接；后台探针与刚结束的调用仍可能留着会话，再以管理账号结束它们并等它们消失，DROP USER 才不会因 ORA-01940 失败
+    /// 停止宿主之后先锁账户再清池：清池之后 ODP.NET 会给这个用户补建连接，锁住之后就建不进来（ADR-0352）。清池关掉闲着的连接，剩下的再以管理账号结束并等它们消失，DROP USER 才不会因 ORA-01940 失败
     /// </remarks>
     public async ValueTask DisposeAsync()
     {
@@ -198,8 +198,10 @@ internal sealed class OracleSchema : IGatedDatabase
             _host = null;
         }
 
-        OracleConnection.ClearAllPools();
         using var maintenance = Maintenance(_admin);
+        // 不先锁：清池后补建的连接正在登录时被杀，回 ORA-00031、要过几秒才从 v$session 消失，CI 上超过等待上限（ADR-0352）
+        maintenance.Ado.ExecuteCommand($"ALTER USER {User} ACCOUNT LOCK");
+        OracleConnection.ClearAllPools();
         await EndSessionsAsync(maintenance);
         maintenance.Ado.ExecuteCommand($"DROP USER {User} CASCADE");
     }
@@ -215,7 +217,7 @@ internal sealed class OracleSchema : IGatedDatabase
         var started = Stopwatch.GetTimestamp();
         while (true)
         {
-            // 已标成 KILLED 的不再杀一次，只等它消失；期间新出现的会话（后台探针刚连上）照样结束
+            // 已标成 KILLED 的不再杀一次，只等它消失；期间新出现的会话（锁账户之前已在登录的）照样结束
             foreach (var session in maintenance.Ado.SqlQuery<string>("SELECT sid || ',' || serial# FROM v$session WHERE username = :u AND status <> 'KILLED'", new SugarParameter(":u", User)))
             {
                 try

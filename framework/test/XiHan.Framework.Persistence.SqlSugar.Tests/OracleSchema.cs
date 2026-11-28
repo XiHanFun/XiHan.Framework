@@ -44,15 +44,17 @@ internal sealed class OracleSchema(string admin, string user, string connectionS
         });
 
     /// <summary>
-    /// 结束它的会话并删用户
+    /// 锁住账户、结束它的会话并删用户
     /// </summary>
     /// <remarks>
-    /// 先清池，关掉这个用户闲着的连接；并行的用例与后台探针仍可能留着会话，再以管理账号结束它们并等它们消失（<see cref="OracleTestServer.EndSessions"/>），DROP USER 才不会因 ORA-01940 失败
+    /// 先锁账户再清池：清池之后 ODP.NET 会给这个用户补建连接，锁住之后就建不进来（ADR-0352）。清池关掉闲着的连接，剩下的再以管理账号结束并等它们消失（<see cref="OracleTestServer.EndSessions"/>），DROP USER 才不会因 ORA-01940 失败
     /// </remarks>
     public void Dispose()
     {
-        OracleTestServer.ClearPools();
         using var maintenance = OracleTestServer.Maintenance(admin);
+        // 不先锁：清池后补建的连接正在登录时被杀，回 ORA-00031、要过几秒才从 v$session 消失，CI 上超过等待上限（ADR-0352）
+        maintenance.Ado.ExecuteCommand($"ALTER USER {User} ACCOUNT LOCK");
+        OracleTestServer.ClearPools();
         OracleTestServer.EndSessions(maintenance, User);
         maintenance.Ado.ExecuteCommand($"DROP USER {User} CASCADE");
     }

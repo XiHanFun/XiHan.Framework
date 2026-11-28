@@ -142,7 +142,7 @@ internal static class OracleTestServer
         var started = Stopwatch.GetTimestamp();
         while (true)
         {
-            // 已标成 KILLED 的不再杀一次，只等它消失；期间新出现的会话（后台探针刚连上）照样结束
+            // 已标成 KILLED 的不再杀一次，只等它消失；期间新出现的会话（锁账户之前已在登录的）照样结束
             foreach (var session in maintenance.Ado.SqlQuery<string>("SELECT sid || ',' || serial# FROM v$session WHERE username = :u AND status <> 'KILLED'", new SugarParameter(":u", user)))
             {
                 try

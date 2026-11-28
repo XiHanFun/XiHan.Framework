@@ -2,7 +2,7 @@
 
 ## 状态
 
-已采纳（只改测试夹具：`Persistence.SqlSugar.Tests` 的 `OracleTestServer` 与 `OracleSchema`、`Workflow.Database.Tests` 的 `OracleSchema`；框架的包、公开面、错误码、消息键、配置键与规范都不变）。更正 ADR-0338 决策 11 的前提：失败不是驱动在拒绝池里的请求，是监听程序暂时拒绝新连接。2026-11-28 修订：结束会话时回 `ORA-00030`、`ORA-00031` 不算失败（推送后 CI 的 oracle rest 分片有两条用例在这里失败）。
+已采纳（只改测试夹具：`Persistence.SqlSugar.Tests` 的 `OracleTestServer` 与 `OracleSchema`、`Workflow.Database.Tests` 的 `OracleSchema`；框架的包、公开面、错误码、消息键、配置键与规范都不变）。更正 ADR-0338 决策 11 的前提：失败不是驱动在拒绝池里的请求，是监听程序暂时拒绝新连接。2026-11-28 修订：结束会话时回 `ORA-00030`、`ORA-00031` 不算失败（推送后 CI 的 oracle rest 分片有两条用例在这里失败）。ADR-0352 更正这次修订的判断：`ORA-00031` 来自清池之后驱动补建、正在登录的连接，删用户前改为先锁账户。
 
 ## 日期
 
