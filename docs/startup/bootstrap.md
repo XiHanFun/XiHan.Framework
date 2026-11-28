@@ -65,9 +65,9 @@ return await builder.Build().RunXiHanCommandLineAsync(args);
 1. `AddXiHan` 回调：收集 `UseFeature`、`UseProvider`、`UseOptions` 与管道改动。此时什么都还没有注册。
 2. 回调返回，`AppBuilder.Build()` 执行：校验每份清单、求解能力图谱、拓扑排序、解析资源绑定，再按拓扑顺序调用各特性的 `Configure`，最后把 `App`、内置中间件、权限表、操作登记表与宿主服务注册进容器。求解失败在这里抛出 `FrameworkException`，进程不会带着错误的图谱继续，错误码见[能力图谱与 Provider](/startup/capabilities)。
 3. 宿主的 `builder.Build()` 构建容器。
-4. 宿主启动：先打印[启动 Banner](#启动-banner)，内核的宿主服务再把图谱与管道打进启动日志，执行启动核对，然后按拓扑顺序启动特性（实现了 `IHostedFeature` 的调用 `StartAsync`），应用进入 `Ready` 或 `Degraded`。细节见[生命周期与健康](/startup/lifecycle)。
+4. 宿主启动：先打印[启动 Banner](#启动-banner)，内核的宿主服务再把图谱与管道打进启动日志，执行启动核对，然后按拓扑顺序启动特性（实现了 `IHostedFeature` 的调用 `StartAsync`），应用进入 `Ready` 或 `Degraded`。这些都在宿主的 `StartingAsync` 阶段完成，之后才轮到应用的其他宿主服务与 Web 服务器。细节见[生命周期与健康](/startup/lifecycle)。
 5. 请求、命令、消息或作业进入，经 `App.InvokeAsync` 走完管道，见[执行管道](/startup/pipeline)。
-6. 停止：按逆拓扑顺序停止特性。
+6. 停止：其他宿主服务都停下之后，按逆拓扑顺序停止特性。
 
 所以：服务注册写在特性的 `Configure` 里或 `builder.Services` 上都可以，但 `UseFeature` 必须在回调里完成：回调返回时 `AppBuilder` 已经构建，之后再调用 `UseFeature`、`UseProvider` 这类方法抛出 `KERNEL_HOSTING_004`。需要按环境选特性时，在回调里按配置或环境变量分支，`AppBuilder.Configuration` 就是宿主配置。
 

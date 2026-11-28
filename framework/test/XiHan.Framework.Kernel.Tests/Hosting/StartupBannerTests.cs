@@ -57,7 +57,7 @@ public sealed partial class StartupBannerTests
         var services = new ServiceCollection();
         new AppBuilder(services, Hosts.Configuration(("XiHan:Kernel:Banner:Enabled", "false"))).Build();
 
-        // 注册顺序就是启动顺序；Banner 另在 StartingAsync 打印，早于全部宿主服务的 StartAsync
+        // 两者都在 StartingAsync 里干活，注册顺序就是它们的先后：Banner 先打印，应用再启动（ADR-0353）
         Type?[] expected = [typeof(StartupBannerService), typeof(AppHostedService)];
         Assert.Equal(expected, services.Where(static d => d.ServiceType == typeof(IHostedService)).Select(static d => d.ImplementationType).ToArray());
         Assert.False(Assert.IsType<StartupBannerOptions>(services.Single(static d => d.ServiceType == typeof(StartupBannerOptions)).ImplementationInstance).Enabled);

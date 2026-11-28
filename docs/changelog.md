@@ -110,6 +110,7 @@
 - S3 的写入与分片上传的发起遇到整个是 RFC 2047 encoded-word 形状的 ASCII 元数据值（如 `=?UTF-8?B?5Lit?=`）时返回 `OBJECTSTORAGE_VALIDATION_009`（参数 `name`），不发请求：把这类值先解开再写，或换一个值；文件系统存储不受影响（ADR-0343）
 - Wasm 插件写来的消息有重复成员或嵌套超过 64 层时按读不出的消息处理，应答是 `PLUGINS_UNEXPECTED_001` 并重建实例，回调与发布以 `PLUGINS_VALIDATION_005` 应答，以前后一个覆盖前一个、照常读入：自己拼消息的插件改正输出（ADR-0345）
 - `XiHan:Scheduling:NodeId` 与 `XiHan:Scheduling:Kubernetes:Holder` 有孤立的代理项时启动失败（以前节点 ID 照收，数据库实现上作业一次也不运行；Kubernetes 的持有者写成 U+FFFD）：去掉这些字符（ADR-0348）
+- 应用自己的宿主服务（含 `BackgroundService`）改在特性就绪之后启动、特性停止之前停止：`StartAsync` 里有特性启动时要用的准备工作的，改成登记在 `AddXiHan` 之前的 `IHostedLifecycleService.StartingAsync`，或做成特性（ADR-0353）
 :::
 
 ### 版本与兼容
@@ -151,6 +152,7 @@
 - **调整** 内核的清单读取不再经源生成反序列化，内核程序集小约 43 KB，读出的清单不变（ADR-0329）
 - **修复** 只生成快速路径（`GenerationMode = Serialization`）的序列化上下文用作响应或带 Schema 的请求时恢复能写，不用再去掉这个设置；64 层、最里层是可空值或更深的仍写不出（ADR-0342）
 - **优化** 响应与带 Schema 的请求先走源生成快速路径写出，只在 64 层、最里层是可空值或更深时按元数据再写一遍，写出的字节与写不出时的异常不变，正常的响应少分配（基准里每次少 312 B，ADR-0342）
+- **调整** 内核在宿主的 `StartingAsync` 里执行启动核对并启动特性、`StoppedAsync` 里停止：应用的宿主服务可以直接写成 `BackgroundService`，开始时特性已就绪，启动核对不过时不会开始（ADR-0353）
 
 ### 宿主、协议与插件
 
@@ -378,6 +380,7 @@
 - **修复** Linux 上的系统运行时长按十进制读，不再差一个计时单位；带符号、指数的 `/proc/uptime` 读成空（ADR-0286）
 - **调整** `OpenTelemetryOptions.ServiceName` 有孤立的代理项时装配失败（ADR-0334）
 - **修复** 经完整管道的 XGI 入口（gRPC、MCP、命令行 `invoke`、AI 工具、插件回调）写不出响应时，`xihan.invoke` 状态为 Error，`xihan.outcome` 与 `xihan.invocations`、`xihan.invocation.duration` 记 `failure`，以前记 `success`（ADR-0341）
+- **调整** OpenTelemetry 的提供者在内核的启动核对里建出，特性启动期间的 Span 与指标照常收到；导出器配置有误时以启动核对失败终止启动（ADR-0353）
 
 ### 测试
 

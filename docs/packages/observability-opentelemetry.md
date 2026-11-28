@@ -119,7 +119,7 @@ public sealed class TracingTests
             static b => b.UseFeature<OpenTelemetryObservabilityFeature>(),
             services: services => services.ConfigureOpenTelemetryTracerProvider((_, tracing) => tracing.AddInMemoryExporter(activities)));
 
-        // 提供者是惰性单例，先解析让监听器挂上
+        // 提供者在启动时已经建出，这里取出来是为了导出前 ForceFlush
         var tracer = host.Services.GetRequiredService<TracerProvider>();
         await host.InvokeAsync(static context =>
         {
@@ -140,6 +140,7 @@ public sealed class TracingTests
 
 - 能力没被选中时（另有显式 Provider 提供 `observability.export@1`）只登记选项，不注册任何提供者。
 - `Tracing`、`Metrics`、`Logging` 为假时对应的提供者不注册，`TracerProvider` 等服务不存在。
+- 提供者在内核的启动核对里建出，早于任何特性启动，特性启动期间产生的 Span 与指标都收得到，与特性的先后无关；导出器配置有误、提供者建不出时应用启动失败（ADR-0353）。
 - `xihan.invoke` 的父级与采样按 RFC-0003 规则 7：同一 trace 的当前 Activity 是父级，否则以上游 `traceparent` 为远端父级（上游「不采样」就不采样），没有上游时是按 `SamplingRatio` 采样的根 Span；HTTP 与消息两种载体的细节见[日志与可观测性](/common/observability#采样)。
 - 指标 `xihan.invocations` 与 `xihan.invocation.duration` 的序列按 `xihan.operation` × `xihan.outcome` 分开（ADR-0269）；要去掉操作维度，应用用 `ConfigureOpenTelemetryMeterProvider` 给这两个仪表各加一个只留 `xihan.outcome` 的视图，写法见[日志与可观测性](/common/observability#去掉操作维度)。
 - 只靠环境变量启用 OTLP 时，端点与协议都按 OpenTelemetry 的标准环境变量（`OTEL_EXPORTER_OTLP_ENDPOINT`、`OTEL_EXPORTER_OTLP_PROTOCOL`）与默认端口决定；配置里只写 `Otlp:Protocol` 不写 `Otlp:Endpoint` 时装配失败，不静默忽略。

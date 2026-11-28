@@ -20,7 +20,8 @@ namespace XiHan.Framework.Observability.OpenTelemetry;
 /// OpenTelemetry 的能力包入口
 /// </summary>
 /// <remarks>
-/// 提供 <c>observability.export@1</c>。内核的 Activity 与 Meter 加上 .NET 与 ASP.NET Core 内置的源与仪表按选项接到追踪、指标与日志提供者；配置了端点或标准环境变量时启用 OTLP 导出器，<c>Console</c> 为真时同时写到控制台
+/// 提供 <c>observability.export@1</c>。内核的 Activity 与 Meter 加上 .NET 与 ASP.NET Core 内置的源与仪表按选项接到追踪、指标与日志提供者；配置了端点或标准环境变量时启用 OTLP 导出器，<c>Console</c> 为真时同时写到控制台。
+/// 提供者在内核的启动核对里建出，早于任何特性启动（ADR-0353）
 /// </remarks>
 [ApiLevel(Stability.Stable, "5.0")]
 public sealed class OpenTelemetryObservabilityFeature : IFeature
@@ -104,5 +105,14 @@ public sealed class OpenTelemetryObservabilityFeature : IFeature
                 builder.UseOtlpExporter();
             }
         }
+
+        // 提供者在启动核对里建出：核对在容器建好之后、任何特性启动之前执行，特性启动期间的 Span 与指标都收得到，与特性的先后无关。
+        // OpenTelemetry 自带的宿主服务也建它们，但内核在宿主的 StartingAsync 里启动特性，那时它的 StartAsync 还没轮到（ADR-0353）
+        context.AddStartupCheck(static services =>
+        {
+            _ = services.GetService<TracerProvider>();
+            _ = services.GetService<MeterProvider>();
+            _ = services.GetService<LoggerProvider>();
+        });
     }
 }

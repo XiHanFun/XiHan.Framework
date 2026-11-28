@@ -4,6 +4,7 @@
 using System.Diagnostics;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using OpenTelemetry;
 using OpenTelemetry.Logs;
 using OpenTelemetry.Metrics;
@@ -98,6 +99,31 @@ public sealed class OpenTelemetryObservabilityTests
         Assert.Null(host.Services.GetService<TracerProvider>());
         Assert.Null(host.Services.GetService<MeterProvider>());
         Assert.Null(host.Services.GetService<LoggerProvider>());
+    }
+
+    [Fact]
+    public async Task GenericHost_BuildsProvidersBeforeAnyFeatureStarts()
+    {
+        // 名字每次不同：监听者是进程级的，别的用例建出的提供者听不到这两个名字
+        var source = $"XiHan.Tests.Probe.{Guid.NewGuid():N}";
+        var meter = $"XiHan.Tests.Probe.{Guid.NewGuid():N}";
+        var probe = new TelemetryProbeFeature(source, meter);
+        var builder = Host.CreateEmptyApplicationBuilder(new HostApplicationBuilderSettings());
+        builder.Configuration["XiHan:Kernel:Banner:Enabled"] = "false";
+        builder.Configuration[$"{OpenTelemetryOptions.ConfigurationSection}:Sources"] = source;
+        builder.Configuration[$"{OpenTelemetryOptions.ConfigurationSection}:Meters"] = meter;
+        // 计量提供者有读取器才启用仪表：两个信号各挂一个内存导出器，与部署时有导出器的情形一致
+        builder.Services.ConfigureOpenTelemetryTracerProvider((_, tracing) => tracing.AddInMemoryExporter(new List<Activity>()));
+        builder.Services.ConfigureOpenTelemetryMeterProvider((_, metrics) => metrics.AddInMemoryExporter(new List<Metric>()));
+        // 探测特性排在前面：提供者不靠特性的启动顺序建出
+        builder.AddXiHan(b => b.UseFeature(probe).UseFeature<OpenTelemetryObservabilityFeature>());
+        using var host = builder.Build();
+
+        await host.StartAsync(TestContext.Current.CancellationToken);
+        await host.StopAsync(TestContext.Current.CancellationToken);
+
+        Assert.True(probe.TracingListened);
+        Assert.True(probe.MetricsListened);
     }
 
     [Fact]

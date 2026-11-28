@@ -58,6 +58,17 @@ Started → Degraded（启动完成时缺少可选依赖，不经 Ready）
 4. 停止按逆拓扑顺序进行：依赖者先停，被依赖者后停，停止期间依赖仍可用。每个特性进入 `Draining`，调用 `StopAsync`，完成后进入 `Stopped`。
 5. 停止超时记为 `KERNEL_HOSTING_003`，抛出异常记为失败；两者都不中断其余特性的停止。
 
+### 与其他宿主服务的先后
+
+内核在宿主的 `StartingAsync` 阶段启动应用，在 `StoppedAsync` 阶段停止应用。通用宿主先跑完全部 `StartingAsync`，才调用任何宿主服务的 `StartAsync`；所有 `StopAsync` 都返回之后，才调用 `StoppedAsync`。所以：
+
+- 应用自己登记的普通宿主服务（包括 `BackgroundService`）开始时，启动核对已经通过，特性都已就绪；这和登记在 `AddXiHan` 之前、之后还是由特性登记无关，宿主并发启停时也一样。
+- 停止时这些宿主服务先停，特性后停，它们停止期间仍能用框架的能力。
+- 启动核对不过时，它们一个都不会开始。
+- 宿主服务的 `StartAsync` 排在特性之后，特性启动时要用到的准备工作不能放在这里。改成登记在 `AddXiHan` 之前的 `IHostedLifecycleService.StartingAsync`，或者做成特性。
+
+常驻的后台循环可以直接写成 `BackgroundService`；要随特性的拓扑顺序启停、参与特性状态与健康的，实现 `IHostedFeature`；到点执行的工作用[作业调度](/scheduling/jobs)。
+
 ## 最小示例
 
 只在启动时建立连接、停止时释放的特性实现 `IHostedFeature`：
