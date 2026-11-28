@@ -23,6 +23,19 @@ internal static class OracleTestServer
     public const string EnvironmentVariable = "XIHAN_TEST_ORACLE";
 
     /// <summary>
+    /// 要结束的会话已经不存在（ORA-00030）
+    /// </summary>
+    private const int SessionMissing = 30;
+
+    /// <summary>
+    /// 会话一时结束不了，已标成 KILLED（ORA-00031）
+    /// </summary>
+    /// <remarks>
+    /// 带 <c>IMMEDIATE</c> 也会这样回；会话随后自己消失（ADR-0350 修订）
+    /// </remarks>
+    private const int SessionMarkedForKill = 31;
+
+    /// <summary>
     /// 管理连接失败之后等多久再试
     /// </summary>
     /// <remarks>
@@ -121,7 +134,7 @@ internal static class OracleTestServer
     /// 结束 <paramref name="user"/> 的全部会话，等它们从 <c>v$session</c> 里消失
     /// </summary>
     /// <remarks>
-    /// 清池断开的连接与 <c>KILL SESSION … IMMEDIATE</c> 都不等会话真正结束；在那之前 DROP USER 报 ORA-01940（ADR-0350）。最多等 <see cref="_sessionWait"/>，到时仍有会话就交给 DROP USER 报错
+    /// 清池断开的连接与 <c>KILL SESSION … IMMEDIATE</c> 都不等会话真正结束；在那之前 DROP USER 报 ORA-01940（ADR-0350）。最多等 <see cref="_sessionWait"/>，到时仍有会话就交给 DROP USER 报错；结束时回 ORA-00030（已经没了）或 ORA-00031（只标成了 KILLED）不算失败
     /// </remarks>
     public static void EndSessions(SqlSugarClient maintenance, string user)
     {
@@ -132,7 +145,14 @@ internal static class OracleTestServer
             // 已标成 KILLED 的不再杀一次，只等它消失；期间新出现的会话（后台探针刚连上）照样结束
             foreach (var session in maintenance.Ado.SqlQuery<string>("SELECT sid || ',' || serial# FROM v$session WHERE username = :u AND status <> 'KILLED'", new SugarParameter(":u", user)))
             {
-                maintenance.Ado.ExecuteCommand($"ALTER SYSTEM KILL SESSION '{session}' IMMEDIATE");
+                try
+                {
+                    maintenance.Ado.ExecuteCommand($"ALTER SYSTEM KILL SESSION '{session}' IMMEDIATE");
+                }
+                catch (OracleException e) when (e.Number is SessionMissing or SessionMarkedForKill)
+                {
+                    // 查完到结束之间会话自己没了，或一时结束不了、已标成 KILLED：都不是失败，下面照常等它从 v$session 里消失
+                }
             }
 
             if (maintenance.Ado.GetInt("SELECT COUNT(*) FROM v$session WHERE username = :u", new SugarParameter(":u", user)) == 0

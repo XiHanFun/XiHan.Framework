@@ -2,7 +2,7 @@
 
 ## 状态
 
-已采纳（只改测试夹具：`Persistence.SqlSugar.Tests` 的 `OracleTestServer` 与 `OracleSchema`、`Workflow.Database.Tests` 的 `OracleSchema`；框架的包、公开面、错误码、消息键、配置键与规范都不变）。更正 ADR-0338 决策 11 的前提：失败不是驱动在拒绝池里的请求，是监听程序暂时拒绝新连接。
+已采纳（只改测试夹具：`Persistence.SqlSugar.Tests` 的 `OracleTestServer` 与 `OracleSchema`、`Workflow.Database.Tests` 的 `OracleSchema`；框架的包、公开面、错误码、消息键、配置键与规范都不变）。更正 ADR-0338 决策 11 的前提：失败不是驱动在拒绝池里的请求，是监听程序暂时拒绝新连接。2026-11-28 修订：结束会话时回 `ORA-00030`、`ORA-00031` 不算失败（推送后 CI 的 oracle rest 分片有两条用例在这里失败）。
 
 ## 日期
 
@@ -52,6 +52,7 @@
 1. 两个 Oracle 夹具给临时用户的连接串去掉 `Pooling=false`，用驱动缺省的连接池。释放的顺序照旧：先清池，再结束会话，最后删用户；结束会话改为等它们从 `v$session` 里消失：
    - 每 100 ms 查一次：还没标成 `KILLED` 的会话结束掉，期间新出现的也算；已标成 `KILLED` 的只等它消失。
    - 最多等 10 秒，到时仍有会话就照常 `DROP USER`，由它报 `ORA-01940`。
+   - 结束一个会话时回 `ORA-00030`（查完之后它自己没了）或 `ORA-00031`（一时结束不了、已标成 `KILLED`；带 `IMMEDIATE` 也会这样回）不算失败，照常等它消失（2026-11-28 修订）。
    - 管理连接用的同一个 `SqlSugarClient`，不另开连接。
 2. 建用户时管理连接失败的处理：
    - 先等 2 秒（实测约半秒解除），再清池、换一个用户名再试一次。
@@ -65,7 +66,8 @@
 - **验证**：
   - 两个夹具的再试用例在本机通过，各约 4.3 秒；架构测试 97 条通过。
   - 在复现条件下（Linux、4 CPU、临时 Oracle），整个程序集连同 Oracle 门控用例都跑过，覆盖 CI 的 rest、workflow-a、workflow-b 三个分片：`Persistence.SqlSugar.Tests` 连跑三次 465 条 0 失败（约 30 秒）；`Workflow.Database.Tests` 548 条 0 失败（656 秒）。
-  - 最终结论要等 CI。
+  - CI：推送后（run 46045245513）三个 oracle 分片首跑都过。下一次推送（run 46160646160）rest 分片两条用例在释放时失败：`OracleTestServer.EndSessions` 结束会话回 `ORA-00031`（会话已标成要结束），即 `OracleSchemaConformanceTests.NamedDataSource_ReadsTheSameSchema` 与 `SqlSugarUniqueKeyConflictTests.Add_OfAnUndeletedTwin_ReportsUniqueKeyConflict_OnTheSoftDeletableEntity_OnOracle`。改用连接池之前释放时几乎没有会话要结束，碰不到这一步。
+  - 修订之后（2026-11-28）在复现条件下：`Persistence.SqlSugar.Tests` 连跑三次 465 条 0 失败（31–33 秒），`Workflow.Database.Tests` 548 条 0 失败（1159 秒，上次 656 秒；放过的两个错误码只在 Oracle 回它们时才多等，上次没有一条用例因它们失败，多出的时间多半是机器负载）。没写能复现 `ORA-00031` 的用例：要碰上 Oracle 一时结束不了会话的时刻，本机这几次都没碰上。
 - **CI 时长**：在复现条件下，workflow-a 比改前快；再试只在失败时多等 2 秒；删用户只在会话还没消失时多等，每次至多 10 秒。
 
 ## 没有解决的
