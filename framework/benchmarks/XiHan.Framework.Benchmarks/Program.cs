@@ -11,8 +11,7 @@ if (args is ["--resident-memory", var output])
     return await ResidentMemoryProbe.RunAsync(output).ConfigureAwait(false);
 }
 
-Program.RunBenchmarks(args);
-return 0;
+return Program.RunBenchmarks(args);
 
 /// <summary>
 /// 基准入口
@@ -24,11 +23,14 @@ return 0;
 internal static partial class Program
 {
     /// <summary>
-    /// 交给 BenchmarkDotNet 按命令行运行基准
+    /// 交给 BenchmarkDotNet 按命令行运行基准，有基准没跑成时返回 1
     /// </summary>
     /// <remarks>
+    /// BenchmarkDotNet 在生成的项目构建失败、基准运行出错时照样正常返回，只在结果里记下；不看结果，性能门禁就把没跑成的基准当成没有这个基准（ADR-0351）。
     /// 单独一个不内联的方法：入口方法编译时不引用 BenchmarkDotNet 的类型，探针进程就不会装载它，测到的常驻内存只含框架自己
     /// </remarks>
     [MethodImpl(MethodImplOptions.NoInlining)]
-    private static void RunBenchmarks(string[] args) => BenchmarkSwitcher.FromAssembly(typeof(Program).Assembly).Run(args);
+    private static int RunBenchmarks(string[] args)
+        => BenchmarkSwitcher.FromAssembly(typeof(Program).Assembly).Run(args)
+            .Any(static summary => summary.HasCriticalValidationErrors || summary.Reports.Any(static report => !report.Success)) ? 1 : 0;
 }
