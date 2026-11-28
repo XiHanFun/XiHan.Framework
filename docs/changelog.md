@@ -2,9 +2,10 @@
 
 本页记录 XiHan Framework 各版本中使用者可感知的变更，每条标注 **新增 / 修复 / 优化 / 调整 / 移除** 类别；仓库自身的 CI、测试工程与构建脚本不列入。
 
-## 未发布
+## v5.0.0-rc.8（2026-11-29）
 
-::: warning 升级须知
+::: warning 候选版须知
+- 这是候选版，安装要带 `--prerelease`
 - `IMessageHandler.HandleAsync`、`ICredentialHandler.AuthenticateAsync`、`ITenantResolver.ResolveAsync`、`IInvocationAuthenticationFilter.AuthenticatedAsync` 不再收 `CancellationToken`：实现删掉最后一个参数，令牌改读 `context.CancellationToken`
 - 三处改名，查找替换：`IAuthenticationHandler` → `ICredentialHandler`（三个实现改成 `ApiKeyCredentialHandler` / `JwtCredentialHandler` / `OpenIdConnectCredentialHandler`），内核 `AuthorizationResult` → `AuthorizationDecision`，内核插件的 `PermissionGrant` → `PluginPermissions`（`Security.Abstractions` 的 `PermissionGrant` 不变）
 - 仓储与工作单元的异步方法返回 `ValueTask`：自写的仓储、工作单元与测试替身把 `Task` 换成 `ValueTask`；把返回值交给 `Task.WhenAll`、`Func<Task>` 形参或要等待多次的调用加 `.AsTask()`
@@ -115,6 +116,7 @@
 
 ### 版本与兼容
 
+- **调整** 框架钉在规范 `v1.0.0-rc.4` 上
 - **调整** 收调用上下文的四个处理器契约不再另收 `CancellationToken`：`IMessageHandler.HandleAsync`、`ICredentialHandler.AuthenticateAsync`、`ITenantResolver.ResolveAsync`、`IInvocationAuthenticationFilter.AuthenticatedAsync` 删掉最后一个参数，取消与截止时间只看 `context.CancellationToken`（ADR-0263）
 
 ### 内核与原语
